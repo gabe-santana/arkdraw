@@ -26,7 +26,6 @@
   <a href="#quick-start"><b>Quick start</b></a> ·
   <a href="#feature-tour"><b>Features</b></a> ·
   <a href="#import-and-export"><b>Import &amp; export</b></a> ·
-  <a href="#drawio-parity"><b>draw.io parity</b></a> ·
   <a href="#web-vs-desktop"><b>Web vs desktop</b></a> ·
   <a href="docs/web.md"><b>Docs</b></a>
 </p>
@@ -63,7 +62,7 @@
   <tr>
     <td valign="top">
       <h3>draw.io-compatible</h3>
-      Opens and saves <code>.drawio</code>. Imports Visio, Gliffy, Lucid, Mermaid, CSV and SQL. Familiar shortcuts. <a href="docs/PARITY.md">354 draw.io features tracked</a>.
+      Opens and saves <code>.drawio</code>. Imports Visio, Gliffy, Lucid, Mermaid, CSV and SQL. Familiar shortcuts.
     </td>
     <td valign="top">
       <h3>Official cloud icons</h3>
@@ -233,16 +232,6 @@ npm run docker:build && npm run docker:run  # http://localhost:8080
 
 Exports can use light, dark or automatic appearance, include the grid, and be printed or copied to the clipboard as PNG or SVG.
 
-## draw.io parity
-
-Every feature in draw.io's inventory ([`DRAWIO_FEATURES.md`](DRAWIO_FEATURES.md)) is checked against the code in [`docs/PARITY.md`](docs/PARITY.md):
-
-| Implemented | Partial | Missing | Out of scope | Total |
-| :---: | :---: | :---: | :---: | :---: |
-| **234** | **62** | **37** | **21** | **354** |
-
-The main gaps are shape-engine depth (no parametric handles or custom connection points yet), some vendor libraries (Cisco, Citrix, Office/M365, OpenStack, …) and customisation (plugins, UI languages). Cloud storage integrations and real-time multi-user editing are out of scope by design; OpenDraw shares through files, share links, the read-only viewer, the embed API, HTML export and in-file comments instead.
-
 ## Cloud icon packs and licensing
 
 | Pack | Icons | Pack | Icons |
@@ -334,7 +323,7 @@ Configure it in *Extras → AI provider & API key…*.
 ├── public/               static assets, PWA manifest, vendor icon packs (fetched)
 ├── scripts/              icon pack builder, PWA icon generator, CSP generator
 ├── test/                 Vitest suites
-├── docs/                 web edition, CLI export, animation spec, draw.io parity
+├── docs/                 web edition, CLI export, animation spec
 └── deploy/, Dockerfile   nginx image for the web edition
 ```
 
@@ -376,7 +365,7 @@ The code is built to be extended:
 - **Shape libraries**: add a module to `src/shapes/libs/`; the registry discovers it.
 - **Commands and shortcuts**: add an entry to `src/app/actions.tsx`. Menus, the context menu, shortcuts and the command palette are all generated from it.
 
-Looking for something to work on? The partial and missing items in [`docs/PARITY.md`](docs/PARITY.md) are a good place to start.
+Looking for something to work on? Check the [open issues](https://github.com/gabe-santana/opendraw/issues).
 
 ## License
 
