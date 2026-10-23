@@ -6,11 +6,39 @@ import type { ElementStyle } from '@/model/types';
 import { lineHeight, wrapText } from '@/lib/text';
 import { RoundRect, rr, strokeAttrs } from '../kit';
 import { TextLines } from '../TextLines';
-import type { ShapeDef, ShapeLibrary, ShapeRenderContext } from '../types';
+import type { ParamHandle, ParamValues, ShapeDef, ShapeLibrary, ShapeParam, ShapeRenderContext } from '../types';
+import { handle, param, pn, ps } from '../params';
 import { Line, TONE, Tint, f, ink, item, roundRectD, shape, solid } from './_kit2';
 
-/** Header band size of a pool / lane. */
+/** Header band size of a pool / lane (without a `startSize` param). */
 export const bandSize = (len: number) => Math.min(32, len * 0.35);
+
+/** Header band size: the `startSize` param (draw.io swimlane) when present. */
+const band = (len: number, p?: ParamValues) => (p && p.startSize !== undefined ? Math.max(0, Math.min(len, pn(p, 'startSize'))) : bandSize(len));
+
+/** Swimlane params: header size and header fill (draw.io startSize / swimlaneFillColor). */
+export const SWIM_PARAMS = (startSize = 30, kinds?: { horizontal: string; vertical: string }): ShapeParam[] => [
+  param.px('startSize', 'Header', startSize, { drawioDefault: 23 }),
+  param.color('swimlaneFillColor', 'Header fill'),
+  ...(kinds
+    ? [{
+        key: 'orientation', label: 'Header at', kind: 'enum', default: 'horizontal', drawio: false, kindOptions: kinds,
+        options: [{ value: 'horizontal', label: 'Left' }, { value: 'vertical', label: 'Top' }],
+      } satisfies ShapeParam]
+    : []),
+];
+
+/** Header-size handle on the band edge: left band (`H`) or top band (`V`). */
+export const swimHandles = (side: 'H' | 'V') => ({ w, h, p }: { w: number; h: number; p: ParamValues }): ParamHandle[] =>
+  side === 'H'
+    ? [handle(band(w, p), h / 2, (pt) => ({ params: { startSize: Math.round(Math.min(w, pt.x)) } }))]
+    : [handle(w / 2, band(h, p), (pt) => ({ params: { startSize: Math.round(Math.min(h, pt.y)) } }))];
+
+/** Header band: custom fill (opaque) or the default translucent tint. */
+function HeaderBand({ d, style, params, tint }: { d: string; style: ElementStyle; params?: ParamValues; tint: number }) {
+  const fill = ps(params, 'swimlaneFillColor');
+  return fill ? <path d={d} fill={fill} stroke="none" /> : <Tint d={d} s={style} k={tint} />;
+}
 
 /** Text rotated -90Â° (reads bottom-to-top), centred at (cx, cy) within `len` px. */
 export function RotatedText({ cx, cy, len, text, style }: { cx: number; cy: number; len: number; text: string; style: ElementStyle }) {
@@ -31,13 +59,13 @@ const topBand = (w: number, b: number, r: number) =>
   r > 0 ? `M0,${f(b)} V${f(r)} Q0,0 ${f(r)},0 H${f(w - r)} Q${f(w)},0 ${f(w)},${f(r)} V${f(b)} Z` : `M0,0 H${f(w)} V${f(b)} H0 Z`;
 
 /** Pool / lane with a header band on the left and a rotated title. */
-export function renderPoolH({ w, h, style, text }: ShapeRenderContext, opts: { rounded?: boolean; tint?: number } = {}) {
-  const b = bandSize(w);
+export function renderPoolH({ w, h, style, text, params }: ShapeRenderContext, opts: { rounded?: boolean; tint?: number } = {}) {
+  const b = band(w, params);
   const r = opts.rounded ? rr(w, h, style.radius) : 0;
   return (
     <>
       <RoundRect w={w} h={h} s={style} r={r} />
-      <Tint d={leftBand(b, h, Math.min(r, b))} s={style} k={opts.tint ?? 0.08} />
+      <HeaderBand d={leftBand(b, h, Math.min(r, b))} style={style} params={params} tint={opts.tint ?? 0.08} />
       <path d={`M${f(b)},0 V${f(h)}`} fill="none" {...strokeAttrs({ ...style, strokeStyle: 'solid' })} />
       <RotatedText cx={b / 2} cy={h / 2} len={h} text={text} style={style} />
     </>
@@ -45,19 +73,19 @@ export function renderPoolH({ w, h, style, text }: ShapeRenderContext, opts: { r
 }
 
 /** Pool / lane with a header band on top (text goes in the band via `textBox`). */
-export function renderPoolV({ w, h, style }: ShapeRenderContext, opts: { rounded?: boolean; tint?: number } = {}) {
-  const b = bandSize(h);
+export function renderPoolV({ w, h, style, params }: ShapeRenderContext, opts: { rounded?: boolean; tint?: number } = {}) {
+  const b = band(h, params);
   const r = opts.rounded ? rr(w, h, style.radius) : 0;
   return (
     <>
       <RoundRect w={w} h={h} s={style} r={r} />
-      <Tint d={topBand(w, b, Math.min(r, b))} s={style} k={opts.tint ?? 0.08} />
+      <HeaderBand d={topBand(w, b, Math.min(r, b))} style={style} params={params} tint={opts.tint ?? 0.08} />
       <path d={`M0,${f(b)} H${f(w)}`} fill="none" {...strokeAttrs({ ...style, strokeStyle: 'solid' })} />
     </>
   );
 }
 
-export const topBandBox = (w: number, h: number) => ({ x: 8, y: 0, w: Math.max(1, w - 16), h: bandSize(h) });
+export const topBandBox = (w: number, h: number, p?: ParamValues) => ({ x: 8, y: 0, w: Math.max(1, w - 16), h: Math.max(1, band(h, p)) });
 
 // ----- List ------------------------------------------------------------------
 
@@ -160,24 +188,35 @@ function renderGroup({ w, h, style }: ShapeRenderContext) {
 
 const headerBox = (w: number) => ({ x: 12, y: 0, w: Math.max(1, w - 24), h: 32 });
 
+const POOL_KINDS = { horizontal: 'lane.poolH', vertical: 'lane.poolV' };
+const LANE_KINDS = { horizontal: 'lane.laneH', vertical: 'lane.laneV' };
+
 export const shapes: ShapeDef[] = [
   shape('lane.poolH', 'Pool (horizontal)', 'swimlane;horizontal=0;startSize=30;html=1;container=1;collapsible=0;whiteSpace=wrap;', (ctx) => renderPoolH(ctx, { rounded: true }), {
     container: true,
     rounded: true,
     textPlacement: 'custom',
+    params: SWIM_PARAMS(30, POOL_KINDS),
+    handles: swimHandles('H'),
   }),
   shape('lane.poolV', 'Pool (vertical)', 'swimlane;startSize=30;html=1;container=1;collapsible=0;whiteSpace=wrap;', (ctx) => renderPoolV(ctx, { rounded: true }), {
     container: true,
     rounded: true,
     textBox: topBandBox,
+    params: SWIM_PARAMS(30, POOL_KINDS),
+    handles: swimHandles('V'),
   }),
   shape('lane.laneH', 'Lane (horizontal)', 'swimlane;horizontal=0;startSize=30;swimlaneLine=1;html=1;container=1;collapsible=0;whiteSpace=wrap;', (ctx) => renderPoolH(ctx, { tint: 0.04 }), {
     container: true,
     textPlacement: 'custom',
+    params: SWIM_PARAMS(30, LANE_KINDS),
+    handles: swimHandles('H'),
   }),
   shape('lane.laneV', 'Lane (vertical)', 'swimlane;startSize=30;swimlaneLine=1;html=1;container=1;collapsible=0;whiteSpace=wrap;', (ctx) => renderPoolV(ctx, { tint: 0.04 }), {
     container: true,
     textBox: topBandBox,
+    params: SWIM_PARAMS(30, LANE_KINDS),
+    handles: swimHandles('V'),
   }),
   shape(
     'lane.list',

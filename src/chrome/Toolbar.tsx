@@ -29,7 +29,7 @@ export function Toolbar() {
   }, [tool]);
 
   return (
-    <div className="animate-slide-up pointer-events-auto relative flex items-center gap-0.5 rounded-2xl bg-panel p-1.5 shadow-pop" ref={ref}>
+    <div role="toolbar" aria-label="Tools" className="animate-slide-up pointer-events-auto relative flex items-center gap-0.5 rounded-2xl bg-panel p-1.5 shadow-pop" ref={ref}>
       {indicator && (
         <div
           className="absolute top-1.5 h-9 rounded-[10px] bg-accent shadow-[0_2px_8px_-2px_var(--accent)] transition-[left,width] duration-200 ease-[cubic-bezier(.3,1.25,.5,1)]"

@@ -68,7 +68,7 @@ interface Insets {
   left: number;
 }
 
-export const isContainerShape = (s: ShapeElement) => !!getShapeDef(s.kind).container;
+export const isContainerShape = (s: ShapeElement) => s.container ?? !!getShapeDef(s.kind).container;
 
 /** Header + padding around a container's content area. */
 export function containerInsets(s: ShapeElement, snap = 1): Insets {

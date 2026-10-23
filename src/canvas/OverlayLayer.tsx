@@ -10,8 +10,12 @@ import type { AnchorSide, ConnectorElement, DiagramElement, ShapeElement, Vec } 
 import { isConnector, isShape } from '@/model/types';
 import { anchorPoint, boxCorners, center, rotatePoint, rotatedBounds, SIDES, SIDE_NORMALS, unionRects } from '@/lib/geometry';
 import { connectorGeometryInDoc } from '@/lib/connectorGeometry';
-import { getShapeDef } from '@/shapes/registry';
+import { ConnectionPointMarkers, ExtraLabelHandles } from './ConnectionPointMarkers';
+import { useEndpointDrag } from './connectorDrop';
+import { ParamHandles } from './ParamHandles';
 import { isLocked, shapeRect, useEditor } from '@/store/editor';
+import { isContainerShape } from '@/interaction/container';
+import { useInteraction } from '@/interaction/store';
 
 const HANDLES = [
   ['nw', 0, 0, 'nwse-resize'],
@@ -51,7 +55,10 @@ export function OverlayLayer({ freehand }: { freehand?: Vec[] | null }) {
   const tool = useEditor((s) => s.tool);
   const dragging = useEditor((s) => !!s.interactionBase);
   const flash = useEditor((s) => s.flash);
+  const brush = useInteraction((s) => s.brush);
   const connectionPoints = useEditor((s) => s.settings.connectionPoints);
+  // Dragging a connector end: show the hovered shape's points as drop targets.
+  const endpointDrag = useEndpointDrag((s) => s.active);
 
   const shapes = selected.filter(isShape);
   const connectors = selected.filter(isConnector);
@@ -59,7 +66,7 @@ export function OverlayLayer({ freehand }: { freehand?: Vec[] | null }) {
   const bounds = useMemo(() => unionRects(shapes.map((s) => rotatedBounds(s))), [shapes]);
   const locked = selected.some((e) => isLocked(doc, e));
   const showAnchorsFor =
-    isShape(hover) && !isLocked(doc, hover) && (tool === 'select' || tool === 'connector') && (!dragging || !!draft) && hover.behavior?.connectable !== false && (connectionPoints || tool === 'connector' || !!draft) ? hover : null;
+    isShape(hover) && !isLocked(doc, hover) && (tool === 'select' || tool === 'connector') && (!dragging || !!draft || endpointDrag) && hover.behavior?.connectable !== false && (connectionPoints || tool === 'connector' || !!draft || endpointDrag) ? hover : null;
 
   const px = 1 / z;
   const hs = 8 * px;
@@ -143,9 +150,12 @@ export function OverlayLayer({ freehand }: { freehand?: Vec[] | null }) {
           </g>
         )}
 
+        {/* Parametric shape handles (yellow diamonds) */}
+        <ParamHandles />
+
         {/* Container collapse toggles */}
         {shapes
-          .filter((s) => getShapeDef(s.kind).container && !s.rotation)
+          .filter((s) => isContainerShape(s) && !s.rotation)
           .map((s) => (
             <g key={`c-${s.id}`} data-collapse={s.id} style={{ pointerEvents: 'all', cursor: 'pointer' }} transform={`translate(${s.x + s.w - 22 * px} ${s.y + 8 * px})`}>
               <rect width={14 * px} height={14 * px} rx={3 * px} fill="#ffffff" stroke={ACCENT} strokeWidth={1 * px} />
@@ -154,7 +164,7 @@ export function OverlayLayer({ freehand }: { freehand?: Vec[] | null }) {
           ))}
 
         {/* Anchor dots + quick-connect arrows */}
-        {showAnchorsFor && <Anchors shape={showAnchorsFor} z={z} highlight={!!draft} quick={!draft && !dragging && tool === 'select'} />}
+        {showAnchorsFor && <Anchors shape={showAnchorsFor} z={z} highlight={!!draft || endpointDrag} quick={!draft && !dragging && tool === 'select'} />}
 
         {/* Connect preview */}
         {draft && (
@@ -166,7 +176,7 @@ export function OverlayLayer({ freehand }: { freehand?: Vec[] | null }) {
 
         {/* Freehand preview */}
         {freehand && freehand.length > 1 && (
-          <polyline points={freehand.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" stroke="#1e293b" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+          <polyline points={freehand.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" stroke={brush.color} strokeWidth={brush.width} strokeLinecap="round" strokeLinejoin="round" />
         )}
 
         {/* Smart guides */}
@@ -285,6 +295,7 @@ function Anchors({ shape, z, highlight, quick }: { shape: ShapeElement; z: numbe
           </g>
         );
       })}
+      <ConnectionPointMarkers shape={shape} z={z} highlight={highlight} />
     </g>
   );
 }
@@ -340,6 +351,7 @@ function ConnectorSelection({
           style={{ pointerEvents: 'all', cursor: 'move' }}
         />
       )}
+      {!editing && !locked && single && <ExtraLabelHandles conn={conn} g={g} z={z} />}
       {!editing &&
         !locked &&
         ([['source', g.start], ['target', g.end]] as const).map(([end, p]) => {

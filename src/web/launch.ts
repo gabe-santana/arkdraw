@@ -40,6 +40,19 @@ export interface LaunchParams {
   exitButton: boolean;
   /** Viewer: show the toolbar chrome (`?toolbar=0` hides it, e.g. for tiny embeds). */
   toolbar: boolean;
+  /** draw.io editor options, applied by src/automation/urlParams.ts: */
+  /** `?lang=de` — document language (spell check, dictation, `label_<lang>` placeholders); the UI stays English. */
+  lang: string | null;
+  /** `?libs=general;uml` — shape libraries to show expanded. */
+  libs: string | null;
+  /** `?clibs=Uhttps%3A…;Uhttps%3A…` — custom library URLs to load (draw.io's `U` prefix optional). */
+  clibs: string[];
+  /** `?grid=0|1` — grid on or off for this session. */
+  grid: boolean | null;
+  /** `?math=1` — new shapes typeset LaTeX labels. */
+  math: boolean | null;
+  /** `?ui=dark|light|min|simple|sketch|atlas|kennedy` — theme / panel layout. */
+  ui: string | null;
 }
 
 const FALSY = new Set(['0', 'false', 'no', 'off']);
@@ -112,6 +125,23 @@ export function parseLaunchParams(href: string): LaunchParams {
     saveButton: !optOut(q, 'saveBtn') && !flag(q, 'noSaveBtn'),
     exitButton: !optOut(q, 'exitBtn') && !flag(q, 'noExitBtn'),
     toolbar: !optOut(q, 'toolbar'),
+    lang: q.get('lang')?.trim() || null,
+    libs: q.get('libs')?.trim() || null,
+    clibs: (q.get('clibs') ?? '')
+      .split(';')
+      .map((u) => u.trim().replace(/^U/, ''))
+      .filter(Boolean)
+      .map((u) => {
+        try {
+          return decodeURIComponent(u);
+        } catch {
+          return u;
+        }
+      })
+      .filter((u) => /^https?:\/\//i.test(u)),
+    grid: q.has('grid') ? !FALSY.has((q.get('grid') ?? '').toLowerCase()) : null,
+    math: q.has('math') ? !FALSY.has((q.get('math') ?? '').toLowerCase()) : null,
+    ui: q.get('ui')?.trim().toLowerCase() || null,
   };
 }
 

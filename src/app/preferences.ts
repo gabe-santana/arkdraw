@@ -13,6 +13,10 @@ export interface Preferences {
   defaultFont: FontKey;
   /** Recently used colours (most recent first). */
   recentColors: string[];
+  /** Write changes back to the open file automatically (src/automation/autosave.ts). */
+  autosave?: boolean;
+  /** Show the start screen on launch (src/chrome/StartScreen.tsx). */
+  startScreen?: boolean;
 }
 
 const KEY = 'opendraw:preferences';

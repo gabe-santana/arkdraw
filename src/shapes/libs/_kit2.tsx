@@ -9,6 +9,7 @@ import type { LucideProps } from 'lucide-react';
 import type { ElementStyle, Rect } from '@/model/types';
 import { PALETTE } from '@/model/defaults';
 import { fillOf, strokeAttrs } from '../kit';
+import { withParams } from '../params';
 import { TextLines } from '../TextLines';
 import type { LibraryItem, ShapeDef, ShapeRenderContext } from '../types';
 
@@ -256,13 +257,14 @@ export const solidTone = (k: keyof typeof TONE): Partial<ElementStyle> => ({
 type Render = (ctx: ShapeRenderContext) => ReturnType<ShapeDef['render']>;
 
 /** Shape definition shorthand: `shape(kind, label, drawio, render, extra)`. */
-export const shape = (kind: string, label: string, drawio: string, render: Render, extra: Partial<ShapeDef> = {}): ShapeDef => ({
-  kind,
-  label,
-  drawio,
-  render,
-  ...extra,
-});
+export const shape = (kind: string, label: string, drawio: string, render: Render, extra: Partial<ShapeDef> = {}): ShapeDef =>
+  withParams({
+    kind,
+    label,
+    drawio,
+    render,
+    ...extra,
+  });
 
 /** Library item shorthand. */
 export const item = (kind: string, label: string, w: number, h: number, extra: Partial<LibraryItem> = {}): LibraryItem => ({

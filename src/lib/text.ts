@@ -6,7 +6,7 @@
  * wrapping, so we wrap ourselves using canvas text metrics.
  */
 import type { ElementStyle } from '@/model/types';
-import { FONT_STACKS } from '@/model/defaults';
+import { fontStack, isMonoFamily } from '@/text/fonts';
 
 type TextStyle = Pick<ElementStyle, 'fontFamily' | 'fontSize' | 'bold' | 'italic'>;
 
@@ -17,7 +17,7 @@ export const LINE_HEIGHT = 1.3;
 export const lineHeight = (fontSize: number) => fontSize * LINE_HEIGHT;
 
 export function cssFont(s: TextStyle): string {
-  return `${s.italic ? 'italic ' : ''}${s.bold ? 700 : 400} ${s.fontSize}px ${FONT_STACKS[s.fontFamily]}`;
+  return `${s.italic ? 'italic ' : ''}${s.bold ? 700 : 400} ${s.fontSize}px ${fontStack(s.fontFamily)}`;
 }
 
 export function measureText(text: string, s: TextStyle): number {
@@ -38,7 +38,7 @@ export function measureText(text: string, s: TextStyle): number {
     w = ctx.measureText(text).width;
   } else {
     // Headless fallback (tests): average glyph width estimate.
-    w = text.length * s.fontSize * (s.fontFamily === 'mono' ? 0.6 : 0.55);
+    w = text.length * s.fontSize * (isMonoFamily(s.fontFamily) ? 0.6 : 0.55);
   }
   if (widthCache.size > 20000) widthCache.clear();
   widthCache.set(key, w);

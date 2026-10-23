@@ -3,8 +3,10 @@
  * (draw.io "Basic", "Misc" and "Advanced" palettes).
  */
 import { Image as ImageIcon, Link2 } from 'lucide-react';
-import { Body, Detail, HorizontalCylinder, RoundRect, inset } from '../kit';
-import type { ShapeDef, ShapeLibrary } from '../types';
+import { Body, Detail, HorizontalCylinder, RoundRect, hCylRx, inset } from '../kit';
+import type { ParamValues, ShapeDef, ShapeLibrary, ShapeRenderContext } from '../types';
+import { handle, param, pn } from '../params';
+import { tapeD } from '../paramGeometry';
 import {
   BodyEO, FillOnly, Glyph, Line, Oval, Shade, Tint, arcD, ellipseD, f, fitPts, fracBox, item, normPath, pathOf,
   regularPts, ringD, roundRectD, roundedPolyD, sectorD, shape, solid, starPts, waveD, type Pt,
@@ -16,6 +18,21 @@ const m = (w: number, h: number) => Math.min(w, h);
 const star = (n: number, inner: number) => (w: number, h: number) => pathOf(fitPts(starPts(0, 0, 1, 1, n, inner), w, h));
 /** A regular polygon whose vertices fill the bounds. */
 const regular = (n: number, rot = -90) => (w: number, h: number) => pathOf(fitPts(regularPts(0, 0, 1, 1, n, rot), w, h));
+
+/** Number of sides of a regular polygon (not a draw.io key; kept for our own round-trip). */
+const SIDES = (n: number) => param.count('sides', 'Sides', n, 3, 24, { drawio: 'polySides' });
+
+/** Inner-radius handle on the first inner vertex of a star fitted to the bounds. */
+function starHandle(w: number, h: number, p: ParamValues) {
+  const raw = starPts(0, 0, 1, 1, pn(p, 'points'), pn(p, 'inner'));
+  const span = (i: 0 | 1) => Math.max(1e-6, Math.max(...raw.map((q) => q[i])) - Math.min(...raw.map((q) => q[i])));
+  // The centre rides along through the fit (as the last point) so we can measure from it.
+  const pts = fitPts([...raw, [0, 0]], w, h);
+  const [cx, cy] = pts[pts.length - 1];
+  const sx = w / span(0);
+  const sy = h / span(1);
+  return handle(pts[1][0], pts[1][1], (pt) => ({ params: { inner: Math.hypot((pt.x - cx) / sx, (pt.y - cy) / sy) } }));
+}
 
 const STARS: Array<[string, string, number, number, string]> = [
   ['basic.star4', '4-point star', 4, 0.38, 'shape=mxgraph.basic.4_point_star_2;dx=0.8;'],
@@ -37,8 +54,8 @@ const teardrop = (w: number, h: number) =>
   `C${w * 0.22},${h} 0,${h * 0.85} 0,${h * 0.66} C0,${h * 0.42} ${w * 0.38},${h * 0.18} ${w / 2},0 Z`;
 
 /** Plus sign with equal arm thickness. */
-function plus(w: number, h: number) {
-  const t = m(w, h) * 0.34;
+function plus(w: number, h: number, size: number) {
+  const t = m(w, h) * size;
   const x0 = (w - t) / 2;
   const y0 = (h - t) / 2;
   return pathOf([
@@ -82,17 +99,43 @@ function cornerRect(w: number, h: number, r: number, [tl, tr, br, bl]: [number, 
   );
 }
 
+/** draw.io partialRectangle: which sides get an outline. */
+export const PARTIAL_SIDES = (top: number, right: number, bottom: number, left: number) => [
+  param.bool('top', 'Top', !!top, { drawioDefault: 1 }),
+  param.bool('right', 'Right', !!right, { drawioDefault: 1 }),
+  param.bool('bottom', 'Bottom', !!bottom, { drawioDefault: 1 }),
+  param.bool('left', 'Left', !!left, { drawioDefault: 1 }),
+];
+
+function renderPartial({ w, h, style, params }: ShapeRenderContext) {
+  const on = (k: string) => pn(params, k) !== 0;
+  const d = [on('top') && `M0,0 H${w}`, on('right') && `M${w},0 V${h}`, on('bottom') && `M0,${h} H${w}`, on('left') && `M0,0 V${h}`].filter(Boolean).join(' ');
+  return (
+    <>
+      <FillOnly d={roundRectD(0, 0, w, h, 0)} s={style} />
+      {d && <Detail d={d} s={style} />}
+    </>
+  );
+}
+
 const shapes: ShapeDef[] = [
   // ----- Stars & polygons ---------------------------------------------------
   ...STARS.map(([kind, label, n, inner, drawio]) =>
-    shape(kind, label, drawio, ({ w, h, style }) => <Body d={star(n, inner)(w, h)} s={style} />, {
+    shape(kind, label, drawio, ({ w, h, style, params }) => <Body d={star(pn(params, 'points'), pn(params, 'inner'))(w, h)} s={style} />, {
+      params: [
+        param.count('points', 'Points', n, 3, 24, { drawio: 'starPoints' }),
+        param.pct('inner', 'Inner radius', inner, { min: 0.05, max: 0.95, drawio: 'innerRadius' }),
+      ],
+      handles: ({ w, h, p }) => [starHandle(w, h, p)],
       textBox: (w, h) => fracBox(w, h, 0.18, 0.34, 0.82, 0.74),
     }),
   ),
-  shape('basic.pentagon', 'Pentagon', 'shape=mxgraph.basic.pentagon;', ({ w, h, style }) => <Body d={regular(5)(w, h)} s={style} />, {
+  shape('basic.pentagon', 'Pentagon', 'shape=mxgraph.basic.pentagon;', ({ w, h, style, params }) => <Body d={regular(pn(params, 'sides'))(w, h)} s={style} />, {
+    params: [SIDES(5)],
     textBox: (w, h) => fracBox(w, h, 0.2, 0.3, 0.8, 0.85),
   }),
-  shape('basic.heptagon', 'Heptagon', 'shape=mxgraph.basic.polygon;polyCoords=[[0.5,0],[0.89,0.19],[1,0.61],[0.72,1],[0.28,1],[0,0.61],[0.11,0.19]];', ({ w, h, style }) => <Body d={regular(7)(w, h)} s={style} />, {
+  shape('basic.heptagon', 'Heptagon', 'shape=mxgraph.basic.polygon;polyCoords=[[0.5,0],[0.89,0.19],[1,0.61],[0.72,1],[0.28,1],[0,0.61],[0.11,0.19]];', ({ w, h, style, params }) => <Body d={regular(pn(params, 'sides'))(w, h)} s={style} />, {
+    params: [SIDES(7)],
     textBox: (w, h) => fracBox(w, h, 0.16, 0.2, 0.84, 0.85),
   }),
   shape('basic.octagon', 'Octagon', 'shape=mxgraph.basic.octagon2;dx=15;', ({ w, h, style }) => {
@@ -110,9 +153,15 @@ const shapes: ShapeDef[] = [
   ), { textBox: (w, h) => fracBox(w, h, 0.18, 0.35, 0.82, 0.95) }),
 
   // ----- Symbols --------------------------------------------------------------
-  shape('basic.plus', 'Cross', 'shape=cross;size=0.34;', ({ w, h, style }) => <Body d={plus(w, h)} s={style} />, {
-    textBox: (w, h) => {
-      const t = m(w, h) * 0.34;
+  shape('basic.plus', 'Cross', 'shape=cross;size=0.34;', ({ w, h, style, params }) => <Body d={plus(w, h, pn(params, 'size'))} s={style} />, {
+    params: [param.pct('size', 'Thickness', 0.34, { drawioDefault: 0.2 })],
+    // draw.io: the handle sits at the centre minus half the arm thickness.
+    handles: ({ w, h, p }) => {
+      const t = (m(w, h) * pn(p, 'size')) / 2;
+      return [handle(w / 2 - t, h / 2 - t, (pt) => ({ params: { size: (Math.min(h / 2 - pt.y, w / 2 - pt.x) * 2) / m(w, h) } }))];
+    },
+    textBox: (w, h, p) => {
+      const t = m(w, h) * pn(p, 'size');
       return { x: 4, y: (h - t) / 2, w: Math.max(1, w - 8), h: t };
     },
   }),
@@ -157,9 +206,14 @@ const shapes: ShapeDef[] = [
   ), { textPlacement: 'below' }),
 
   // ----- Rings, pies and frames -------------------------------------------
-  shape('basic.donut', 'Donut', 'shape=mxgraph.basic.donut;dx=25;', ({ w, h, style }) => (
-    <BodyEO d={`${ellipseD(w / 2, h / 2, w / 2, h / 2)} ${ellipseD(w / 2, h / 2, w / 4, h / 4)}`} s={style} />
-  ), { textBox: (w, h) => fracBox(w, h, 0.24, 0.32, 0.76, 0.68) }),
+  shape('basic.donut', 'Donut', 'shape=mxgraph.basic.donut;dx=25;', ({ w, h, style, params }) => {
+    const t = Math.min(pn(params, 'dx'), m(w, h) / 2);
+    return <BodyEO d={`${ellipseD(w / 2, h / 2, w / 2, h / 2)} ${ellipseD(w / 2, h / 2, Math.max(0, w / 2 - t), Math.max(0, h / 2 - t))}`} s={style} />;
+  }, {
+    params: [param.px('dx', 'Thickness', 25)],
+    handles: ({ w, h, p }) => [handle(Math.min(pn(p, 'dx'), m(w, h) / 2), h / 2, (pt) => ({ params: { dx: Math.round(pt.x) } }))],
+    textBox: (w, h) => fracBox(w, h, 0.24, 0.32, 0.76, 0.68),
+  }),
   shape('basic.pie', 'Pie', 'shape=mxgraph.basic.pie;startAngle=0.25;endAngle=1;', ({ w, h, style }) => (
     <Body d={sectorD(w / 2, h / 2, w / 2, h / 2, 0, 270)} s={style} />
   ), { textBox: (w, h) => fracBox(w, h, 0.15, 0.5, 0.5, 0.85) }),
@@ -169,10 +223,14 @@ const shapes: ShapeDef[] = [
   shape('basic.arcLine', 'Arc', 'shape=mxgraph.basic.arc;startAngle=0.3;endAngle=0.1;', ({ w, h, style }) => (
     <Detail d={arcD(w / 2, h / 2, w / 2, h / 2, 200, 340)} s={style} />
   ), { boxHit: true, textPlacement: 'below' }),
-  shape('basic.frame', 'Frame', 'shape=mxgraph.basic.frame;dx=10;', ({ w, h, style }) => {
-    const t = Math.min(14, m(w, h) * 0.18);
+  shape('basic.frame', 'Frame', 'shape=mxgraph.basic.frame;dx=10;', ({ w, h, style, params }) => {
+    const t = Math.min(pn(params, 'dx'), m(w, h) / 2);
     return <BodyEO d={`${roundRectD(0, 0, w, h, 0)} ${roundRectD(t, t, w - t * 2, h - t * 2, 0)}`} s={style} />;
-  }, { textBox: (w, h) => inset(w, h, Math.min(14, m(w, h) * 0.18) + 6) }),
+  }, {
+    params: [param.px('dx', 'Thickness', 14, { drawioDefault: 10 })],
+    handles: ({ w, h, p }) => [handle(Math.min(pn(p, 'dx'), m(w, h) / 2), h / 2, (pt) => ({ params: { dx: Math.round(pt.x) } }))],
+    textBox: (w, h, p) => inset(w, h, Math.min(pn(p, 'dx'), m(w, h) / 2) + 6),
+  }),
   shape('basic.roundedFrame', 'Rounded frame', 'shape=mxgraph.basic.rounded_frame;dx=10;', ({ w, h, style }) => {
     const t = Math.min(14, m(w, h) * 0.18);
     const r = Math.min(style.radius + t, m(w, h) / 2);
@@ -180,30 +238,22 @@ const shapes: ShapeDef[] = [
   }, { rounded: true, textBox: (w, h) => inset(w, h, Math.min(14, m(w, h) * 0.18) + 6) }),
 
   // ----- Partial rectangles -------------------------------------------------
-  shape('basic.partialTB', 'Partial rectangle (top & bottom)', 'shape=partialRectangle;left=0;right=0;whiteSpace=wrap;', ({ w, h, style }) => (
-    <>
-      <FillOnly d={roundRectD(0, 0, w, h, 0)} s={style} />
-      <Detail d={`M0,0 H${w} M0,${h} H${w}`} s={style} />
-    </>
-  ), { boxHit: true }),
-  shape('basic.partialLR', 'Partial rectangle (sides)', 'shape=partialRectangle;top=0;bottom=0;whiteSpace=wrap;', ({ w, h, style }) => (
-    <>
-      <FillOnly d={roundRectD(0, 0, w, h, 0)} s={style} />
-      <Detail d={`M0,0 V${h} M${w},0 V${h}`} s={style} />
-    </>
-  ), { boxHit: true }),
-  shape('basic.partialOpenRight', 'Partial rectangle (open right)', 'shape=partialRectangle;right=0;whiteSpace=wrap;', ({ w, h, style }) => (
-    <>
-      <FillOnly d={roundRectD(0, 0, w, h, 0)} s={style} />
-      <Detail d={`M${w},0 H0 V${h} H${w}`} s={style} />
-    </>
-  ), { boxHit: true }),
-  shape('basic.partialBottom', 'Underline box', 'shape=partialRectangle;top=0;left=0;right=0;whiteSpace=wrap;', ({ w, h, style }) => (
-    <>
-      <FillOnly d={roundRectD(0, 0, w, h, 0)} s={style} />
-      <Detail d={`M0,${h} H${w}`} s={style} />
-    </>
-  ), { boxHit: true }),
+  shape('basic.partialTB', 'Partial rectangle (top & bottom)', 'shape=partialRectangle;left=0;right=0;whiteSpace=wrap;', renderPartial, {
+    boxHit: true,
+    params: PARTIAL_SIDES(1, 0, 1, 0),
+  }),
+  shape('basic.partialLR', 'Partial rectangle (sides)', 'shape=partialRectangle;top=0;bottom=0;whiteSpace=wrap;', renderPartial, {
+    boxHit: true,
+    params: PARTIAL_SIDES(0, 1, 0, 1),
+  }),
+  shape('basic.partialOpenRight', 'Partial rectangle (open right)', 'shape=partialRectangle;right=0;whiteSpace=wrap;', renderPartial, {
+    boxHit: true,
+    params: PARTIAL_SIDES(1, 0, 1, 1),
+  }),
+  shape('basic.partialBottom', 'Underline box', 'shape=partialRectangle;top=0;left=0;right=0;whiteSpace=wrap;', renderPartial, {
+    boxHit: true,
+    params: PARTIAL_SIDES(0, 0, 1, 0),
+  }),
 
   // ----- Corner variants ----------------------------------------------------
   shape('basic.oneRound', 'One round corner', 'shape=mxgraph.basic.corner_round_rect;dx=12;', ({ w, h, style }) => (
@@ -215,25 +265,34 @@ const shapes: ShapeDef[] = [
   shape('basic.topRound', 'Top round corners', 'shape=mxgraph.basic.rect;fillColor2=none;strokeWidth=1;size=20;indent=5;rounded=1;', ({ w, h, style }) => (
     <Body d={cornerRect(w, h, Math.max(style.radius, 4) * 1.5, [1, 1, 0, 0])} s={style} />
   ), { rounded: true }),
-  shape('basic.snip', 'Snipped corner', 'shape=mxgraph.basic.corner_snip_rect;dx=12;', ({ w, h, style }) => (
-    <Body d={cutCorners(w, h, Math.min(16, m(w, h) * 0.3), [false, true, false, false])} s={style} />
-  )),
-  shape('basic.diagSnip', 'Diagonal snipped corners', 'shape=mxgraph.basic.diag_snip_rect;dx=12;', ({ w, h, style }) => (
-    <Body d={cutCorners(w, h, Math.min(16, m(w, h) * 0.3), [true, false, true, false])} s={style} />
-  )),
-  shape('basic.plaque', 'Plaque', 'shape=plaque;size=10;', ({ w, h, style }) => {
-    const c = Math.min(12, m(w, h) * 0.22);
+  shape('basic.snip', 'Snipped corner', 'shape=mxgraph.basic.corner_snip_rect;dx=12;', ({ w, h, style, params }) => (
+    <Body d={cutCorners(w, h, Math.min(pn(params, 'dx'), m(w, h) / 2), [false, true, false, false])} s={style} />
+  ), {
+    params: [param.px('dx', 'Corner', 16, { drawioDefault: 6 })],
+    handles: ({ w, h, p }) => [handle(w - Math.min(pn(p, 'dx'), m(w, h) / 2), 0, (pt) => ({ params: { dx: Math.round(w - pt.x) } }))],
+  }),
+  shape('basic.diagSnip', 'Diagonal snipped corners', 'shape=mxgraph.basic.diag_snip_rect;dx=12;', ({ w, h, style, params }) => (
+    <Body d={cutCorners(w, h, Math.min(pn(params, 'dx'), m(w, h) / 2), [true, false, true, false])} s={style} />
+  ), {
+    params: [param.px('dx', 'Corner', 16, { drawioDefault: 6 })],
+    handles: ({ w, h, p }) => [handle(Math.min(pn(p, 'dx'), m(w, h) / 2), 0, (pt) => ({ params: { dx: Math.round(pt.x) } }))],
+  }),
+  shape('basic.plaque', 'Plaque', 'shape=plaque;size=10;', ({ w, h, style, params }) => {
+    const c = Math.min(pn(params, 'size'), m(w, h) / 2);
     return (
       <Body
         d={`M${c},0 H${w - c} A${c},${c} 0 0 0 ${w},${c} V${h - c} A${c},${c} 0 0 0 ${w - c},${h} H${c} A${c},${c} 0 0 0 0,${h - c} V${c} A${c},${c} 0 0 0 ${c},0 Z`}
         s={style}
       />
     );
+  }, {
+    params: [param.px('size', 'Corner', 12, { drawioDefault: 16 })],
+    handles: ({ w, h, p }) => [handle(Math.min(pn(p, 'size'), m(w, h) / 2), 0, (pt) => ({ params: { size: Math.round(pt.x) } }))],
   }),
 
   // ----- Classic draw.io general extras ---------------------------------------
-  shape('basic.cube', 'Cube', 'shape=cube;size=16;', ({ w, h, style }) => {
-    const d = Math.min(16, m(w, h) * 0.22);
+  shape('basic.cube', 'Cube', 'shape=cube;size=16;', ({ w, h, style, params }) => {
+    const d = Math.min(pn(params, 'size'), m(w, h));
     return (
       <>
         <Body d={pathOf([[d, d], [w, d], [w, h], [d, h]])} s={style} />
@@ -244,24 +303,41 @@ const shapes: ShapeDef[] = [
       </>
     );
   }, {
-    textBox: (w, h) => {
-      const d = Math.min(16, m(w, h) * 0.22);
+    params: [param.px('size', 'Depth', 16, { drawioDefault: 20 })],
+    handles: ({ w, h, p }) => {
+      const d = Math.min(pn(p, 'size'), m(w, h));
+      return [handle(d, d, (pt) => ({ params: { size: Math.round(Math.max(0, (pt.x + pt.y) / 2)) } }))];
+    },
+    textBox: (w, h, p) => {
+      const d = Math.min(pn(p, 'size'), m(w, h));
       return { x: d + 6, y: d + 4, w: Math.max(1, w - d - 12), h: Math.max(1, h - d - 8) };
     },
   }),
-  shape('basic.step', 'Step', 'shape=step;perimeter=stepPerimeter;size=0.2;fixedSize=1;', ({ w, h, style }) => {
-    const s = Math.min(w * 0.25, h * 0.5);
+  shape('basic.step', 'Step', 'shape=step;perimeter=stepPerimeter;size=0.2;', ({ w, h, style, params }) => {
+    const s = w * pn(params, 'size');
     return <Body d={pathOf([[0, 0], [w - s, 0], [w, h / 2], [w - s, h], [0, h], [s, h / 2]])} s={style} />;
-  }, { textBox: (w, h) => inset(w, h, Math.min(w * 0.25, h * 0.5) + 2, 6) }),
-  shape('basic.tape', 'Tape', 'shape=tape;size=0.2;whiteSpace=wrap;', ({ w, h, style }) => (
-    <Body d={wavyBand(w, h, h * 0.09, 2)} s={style} />
-  ), { textBox: (w, h) => fracBox(w, h, 0.06, 0.2, 0.94, 0.8) }),
+  }, {
+    params: [param.pct('size', 'Notch', 0.2, { max: 0.5, fixedSizeOf: 'w' })],
+    handles: ({ w, h, p }) => [handle(w * pn(p, 'size'), h / 2, (pt) => ({ params: { size: pt.x / w } }))],
+    textBox: (w, h, p) => inset(w, h, Math.min(w * 0.45, w * pn(p, 'size') + 2), 6),
+  }),
+  shape('basic.tape', 'Tape', 'shape=tape;size=0.2;whiteSpace=wrap;', ({ w, h, style, params }) => (
+    <Body d={tapeD(w, h, pn(params, 'size'))} s={style} />
+  ), {
+    params: [param.pct('size', 'Wave', 0.2, { max: 0.6, drawioDefault: 0.4 })],
+    handles: ({ w, h, p }) => [handle(w / 2, (h * pn(p, 'size')) / 2, (pt) => ({ params: { size: (pt.y * 2) / h } }))],
+    textBox: (w, h, p) => fracBox(w, h, 0.06, Math.min(0.45, pn(p, 'size')), 0.94, Math.max(0.55, 1 - pn(p, 'size'))),
+  }),
   shape('basic.wave', 'Wave', 'shape=mxgraph.basic.wave2;dy=0.25;', ({ w, h, style }) => (
     <Body d={wavyBand(w, h, h * 0.16, 4)} s={style} />
   ), { textBox: (w, h) => fracBox(w, h, 0.06, 0.3, 0.94, 0.7) }),
-  shape('basic.card', 'Card', 'shape=card;size=18;whiteSpace=wrap;', ({ w, h, style }) => (
-    <Body d={cutCorners(w, h, Math.min(18, m(w, h) * 0.3), [true, false, false, false])} s={style} />
-  ), { textBox: (w, h) => inset(w, h, 10, 8) }),
+  shape('basic.card', 'Card', 'shape=card;size=18;whiteSpace=wrap;', ({ w, h, style, params }) => (
+    <Body d={cutCorners(w, h, Math.min(pn(params, 'size'), m(w, h)), [true, false, false, false])} s={style} />
+  ), {
+    params: [param.px('size', 'Corner', 18, { drawioDefault: 30 })],
+    handles: ({ w, h, p }) => [handle(Math.min(pn(p, 'size'), m(w, h)), 0, (pt) => ({ params: { size: Math.round(pt.x) } }))],
+    textBox: (w, h) => inset(w, h, 10, 8),
+  }),
   shape('basic.multiDocument', 'Multi-document', 'shape=mxgraph.flowchart.multi-document;whiteSpace=wrap;', ({ w, h, style }) => {
     const o = Math.min(8, w * 0.08, h * 0.1);
     const doc = (x: number, y: number, dw: number, dh: number) => {
@@ -283,8 +359,8 @@ const shapes: ShapeDef[] = [
       return { x: 8, y: o * 2 + 4, w: Math.max(1, w - o * 2 - 16), h: Math.max(1, (h - o * 2) * 0.8 - 8) };
     },
   }),
-  shape('basic.documentFold', 'Folded document', 'shape=note;size=16;whiteSpace=wrap;backgroundOutline=1;', ({ w, h, style }) => {
-    const c = Math.min(18, m(w, h) * 0.28);
+  shape('basic.documentFold', 'Folded document', 'shape=note;size=16;whiteSpace=wrap;backgroundOutline=1;', ({ w, h, style, params }) => {
+    const c = Math.min(pn(params, 'size'), m(w, h));
     return (
       <>
         <Body d={pathOf([[0, 0], [w - c, 0], [w, c], [w, h], [0, h]])} s={style} />
@@ -292,22 +368,35 @@ const shapes: ShapeDef[] = [
         <Shade d={pathOf([[w - c, 0], [w - c, c], [w, c]])} k={0.06} />
       </>
     );
-  }, { textBox: (w, h) => inset(w, h, 10, Math.min(18, m(w, h) * 0.28) * 0.6 + 6) }),
+  }, {
+    params: [param.px('size', 'Fold', 18, { drawioDefault: 30 })],
+    handles: ({ w, h, p }) => [handle(w - Math.min(pn(p, 'size'), m(w, h)), 0, (pt) => ({ params: { size: Math.round(w - pt.x) } }))],
+    textBox: (w, h, p) => inset(w, h, 10, Math.min(pn(p, 'size'), m(w, h)) * 0.6 + 6),
+  }),
 
   // ----- Misc / Advanced --------------------------------------------------------
-  shape('misc.dataStorage', 'Data storage', 'shape=dataStorage;fixedSize=1;size=12;whiteSpace=wrap;', ({ w, h, style }) => {
-    const s = Math.min(14, w * 0.15);
+  shape('misc.dataStorage', 'Data storage', 'shape=dataStorage;fixedSize=1;size=12;whiteSpace=wrap;', ({ w, h, style, params }) => {
+    const s = Math.min(pn(params, 'size'), w / 2);
     return <Body d={`M${s},0 H${w} A${s},${h / 2} 0 0 0 ${w},${h} H${s} A${s},${h / 2} 0 0 1 ${s},0 Z`} s={style} />;
-  }, { textBox: (w, h) => ({ x: 14, y: 6, w: Math.max(1, w - 30), h: Math.max(1, h - 12) }) }),
+  }, {
+    params: [param.px('size', 'Curve', 14, { fixedSizeOf: 'w', drawioDefault: 0.1 })],
+    handles: ({ w, p }) => [handle(Math.min(pn(p, 'size'), w / 2), 0, (pt) => ({ params: { size: Math.round(pt.x) } }))],
+    textBox: (w, h, p) => ({ x: Math.min(pn(p, 'size'), w / 2), y: 6, w: Math.max(1, w - Math.min(pn(p, 'size'), w / 2) * 2 - 2), h: Math.max(1, h - 12) }),
+  }),
   shape('misc.hCylinder', 'Horizontal cylinder', 'shape=cylinder3;direction=south;size=15;boundedLbl=1;whiteSpace=wrap;', HorizontalCylinder, {
-    textBox: (w, h) => {
-      const rx = Math.min(w * 0.12, h * 0.2, 16);
+    params: [param.px('size', 'Depth', 15, { max: 500 })],
+    handles: ({ w, h, p }) => [handle(w - hCylRx(w, h, p.size), h / 2, (pt) => ({ params: { size: Math.round(Math.min(w / 2, w - pt.x)) } }))],
+    textBox: (w, h, p) => {
+      const rx = hCylRx(w, h, p?.size);
       return { x: rx + 4, y: 6, w: Math.max(1, w - rx * 3 - 8), h: Math.max(1, h - 12) };
     },
   }),
-  shape('misc.loopLimit', 'Loop limit', 'shape=loopLimit;size=14;whiteSpace=wrap;', ({ w, h, style }) => (
-    <Body d={cutCorners(w, h, Math.min(16, m(w, h) * 0.3), [true, true, false, false])} s={style} />
-  )),
+  shape('misc.loopLimit', 'Loop limit', 'shape=loopLimit;size=14;whiteSpace=wrap;', ({ w, h, style, params }) => (
+    <Body d={cutCorners(w, h, Math.min(pn(params, 'size'), w / 2, h), [true, true, false, false])} s={style} />
+  ), {
+    params: [param.px('size', 'Corner', 16, { drawioDefault: 20 })],
+    handles: ({ w, h, p }) => [handle(Math.min(pn(p, 'size'), w / 2, h), 0, (pt) => ({ params: { size: Math.round(pt.x) } }))],
+  }),
   shape('misc.display', 'Display', 'shape=display;whiteSpace=wrap;', ({ w, h, style }) => {
     const s = Math.min(w * 0.18, h * 0.6);
     return <Body d={`M0,${h / 2} L${s},0 H${w - s} A${s},${h / 2} 0 0 1 ${w - s},${h} H${s} Z`} s={style} />;
@@ -381,8 +470,8 @@ const shapes: ShapeDef[] = [
   shape('misc.link', 'Link', 'text;html=1;fontColor=#2563EB;fontStyle=4;align=left;spacingLeft=24;', ({ h, style }) => (
     <Glyph Icon={Link2} cx={Math.min(h, 24) / 2 + 2} cy={h / 2} size={Math.min(h * 0.7, 18)} s={style} color={style.textColor} />
   ), { boxHit: true, textBox: (w, h) => ({ x: Math.min(h, 24) + 4, y: 0, w: Math.max(1, w - Math.min(h, 24) - 4), h }) }),
-  shape('misc.curlyLeft', 'Curly brace (left)', 'shape=curlyBracket;rounded=1;size=0.5;', ({ w, h, style }) => {
-    const x = w * 0.5;
+  shape('misc.curlyLeft', 'Curly brace (left)', 'shape=curlyBracket;rounded=1;size=0.5;', ({ w, h, style, params }) => {
+    const x = w * pn(params, 'size');
     const r = Math.min(w * 0.5, h * 0.1);
     return (
       <Detail
@@ -390,9 +479,14 @@ const shapes: ShapeDef[] = [
         s={style}
       />
     );
-  }, { boxHit: true }),
-  shape('misc.curlyRight', 'Curly brace (right)', 'shape=curlyBracket;rounded=1;size=0.5;flipH=1;', ({ w, h, style }) => {
-    const x = w * 0.5;
+  }, {
+    boxHit: true,
+    params: [param.pct('size', 'Spine', 0.5)],
+    handles: ({ w, h, p }) => [handle(w * pn(p, 'size'), h / 4, (pt) => ({ params: { size: pt.x / w } }))],
+  }),
+  // Drawn mirrored natively; exported as draw.io's flipped curlyBracket, so `size` is measured from the right.
+  shape('misc.curlyRight', 'Curly brace (right)', 'shape=curlyBracket;rounded=1;size=0.5;flipH=1;', ({ w, h, style, params }) => {
+    const x = w * (1 - pn(params, 'size'));
     const r = Math.min(w * 0.5, h * 0.1);
     return (
       <Detail
@@ -400,10 +494,15 @@ const shapes: ShapeDef[] = [
         s={style}
       />
     );
-  }, { boxHit: true }),
-  shape('misc.bracketLeft', 'Square bracket', 'shape=partialRectangle;right=0;fillColor=none;', ({ w, h, style }) => (
-    <Detail d={`M${w},0 H0 V${h} H${w}`} s={style} />
-  ), { boxHit: true }),
+  }, {
+    boxHit: true,
+    params: [param.pct('size', 'Spine', 0.5)],
+    handles: ({ w, h, p }) => [handle(w * (1 - pn(p, 'size')), h / 4, (pt) => ({ params: { size: 1 - pt.x / w } }))],
+  }),
+  shape('misc.bracketLeft', 'Square bracket', 'shape=partialRectangle;right=0;fillColor=none;', renderPartial, {
+    boxHit: true,
+    params: PARTIAL_SIDES(1, 0, 1, 1),
+  }),
   shape('misc.hline', 'Horizontal line', 'line;strokeWidth=2;html=1;', ({ w, h, style }) => (
     <Detail d={`M0,${h / 2} H${w}`} s={style} />
   ), { boxHit: true, textBox: (w, h) => ({ x: 0, y: 0, w, h: h / 2 }) }),

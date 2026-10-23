@@ -2,14 +2,20 @@
  * Pure SVG renderers for diagram elements — no store access. The canvas wraps
  * them with subscriptions; exporters call them directly with a static doc.
  */
-import { createContext, memo, useContext, useMemo, type ReactNode } from 'react';
+import { connectorAria, shapeAria } from '@/interaction/aria';
+import { createContext, memo, useContext, useMemo } from 'react';
 import type { ConnectorElement, ElementStyle, Rect, ShapeElement } from '@/model/types';
-import { getShapeDef, strokeAttrs, textBoxOf } from '@/shapes/registry';
+import { getShapeDef, strokeAttrs } from '@/shapes/registry';
 import { TextBlock, TextLines } from '@/shapes/TextLines';
 import { roughen, seedFor } from '@/shapes/sketch';
-import { arrowParts, connectorGeometry, type ConnectorGeometry, type Lookup } from '@/lib/connectorGeometry';
+import { connectorGeometry, type ConnectorGeometry, type Lookup } from '@/lib/connectorGeometry';
 import { lineHeight, measureText, wrapText } from '@/lib/text';
+import { connectorStroke, ExtraLabels, SketchConnector } from './connectorShapes';
 import { connectorEffect, revealProgress, shapeEffect } from '@/animation/timeline';
+import { CustomShadowFilter, hasCustomShadow, shadowFilterUrl } from '@/styling/shadow';
+import { shapeLabelBox } from '@/text/labelLayout';
+import { localizedText } from '@/text/translations';
+import { needsRich, richSize, RichTextBlock } from '@/text/RichTextBlock';
 
 export const SHADOW_FILTER_ID = 'od-shadow';
 export const GLASS_GRADIENT_ID = 'od-glass';
@@ -35,6 +41,10 @@ export interface LabelVars {
   pageNumber: number;
   pageCount: number;
   fileName: string;
+  /** Parent lookup for %key%: containers, layer, page, document (src/automation/placeholders.ts). */
+  lookup?: (key: string, el: ShapeElement | ConnectorElement) => string | undefined;
+  /** Diagram language: show `label_<lang>` translations (src/text/translations.ts). */
+  language?: string;
 }
 export const LabelVarsContext = createContext<LabelVars>({ pageName: 'Page 1', pageNumber: 1, pageCount: 1, fileName: 'Untitled' });
 
@@ -51,7 +61,7 @@ function expandPlaceholders(text: string, el: ShapeElement | ConnectorElement, v
     id: el.id,
     label: el.text,
   };
-  return text.replace(/%([A-Za-z_][\w.-]*)%/g, (m, key: string) => el.data?.[key] ?? builtins[key.toLowerCase()] ?? m);
+  return text.replace(/%([A-Za-z_][\w.-]*)%/g, (m, key: string) => el.data?.[key] ?? vars.lookup?.(key, el) ?? builtins[key.toLowerCase()] ?? m);
 }
 
 /** Animation inputs; omitted when not animating. */
@@ -91,29 +101,8 @@ function gradientDef(id: string, s: ElementStyle) {
 }
 
 /** Text box for a label, honoring label position (relative to the unrotated shape). */
-function shapeLabelLayout(el: ShapeElement): { box: Rect; style: ElementStyle } | null {
-  const def = getShapeDef(el.kind);
-  const placement = def.textPlacement ?? 'inside';
-  if (placement === 'custom') return null;
-  const st = el.style;
-  const pad = st.spacing ?? 0;
-  const pos = st.labelPosition ?? (placement === 'below' ? 'bottom' : 'inside');
-  const W = 200;
-  switch (pos) {
-    case 'bottom':
-      return { box: { x: el.x - 60, y: el.y + el.h + 6 + pad, w: el.w + 120, h: 0 }, style: { ...st, verticalAlign: 'top', textAlign: 'center' } };
-    case 'top':
-      return { box: { x: el.x - 60, y: el.y - 6 - pad, w: el.w + 120, h: 0 }, style: { ...st, verticalAlign: 'bottom', textAlign: 'center' } };
-    case 'left':
-      return { box: { x: el.x - W - 8 - pad, y: el.y, w: W, h: el.h }, style: { ...st, textAlign: 'right' } };
-    case 'right':
-      return { box: { x: el.x + el.w + 8 + pad, y: el.y, w: W, h: el.h }, style: { ...st, textAlign: 'left' } };
-    default: {
-      const b = textBoxOf(def, el.w, el.h);
-      return { box: { x: b.x + el.x + pad, y: b.y + el.y + pad, w: Math.max(1, b.w - pad * 2), h: Math.max(1, b.h - pad * 2) }, style: st };
-    }
-  }
-}
+// 9-grid positions and per-side spacing: src/text/labelLayout.ts.
+const shapeLabelLayout: (el: ShapeElement) => { box: Rect; style: ElementStyle } | null = shapeLabelBox;
 
 function ShapeLabel({ el, text }: { el: ShapeElement; text: string }) {
   const layout = shapeLabelLayout(el);
@@ -141,7 +130,8 @@ export const ShapeBody = memo(function ShapeBody({ el, interactive, hideText, fr
   const fx = frame ? shapeEffect(el, frame.t, reveal) : null;
   const gradId = el.style.gradient && el.style.fill !== 'none' ? `od-g-${el.id}` : null;
   const style: ElementStyle = gradId ? { ...el.style, fill: `url(#${gradId})` } : el.style;
-  const text = el.style.placeholders ? expandPlaceholders(el.text, el, vars) : el.text;
+  const label = localizedText(el, vars.language);
+  const text = el.style.placeholders ? expandPlaceholders(label, el, vars) : label;
 
   // Geometry in local coordinates; memoized independent of position so drags are cheap.
   const geometry = useMemo(() => {
@@ -155,10 +145,12 @@ export const ShapeBody = memo(function ShapeBody({ el, interactive, hideText, fr
       table: el.table,
       crop: el.crop,
       collapsed: el.collapsed,
+      stencil: el.stencil,
+      params: el.params,
     });
-    return el.style.sketch ? roughen(node, seedFor(el.id), 0, el.style.sketchFill ?? 'hachure') : node;
+    return el.style.sketch ? roughen(node, seedFor(el.id), 0, el.style.sketchFill ?? 'hachure', el.style.sketchRoughness) : node;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [def, w, h, style, text, hideText, el.icon, el.points, el.table, el.crop, el.collapsed, el.id]);
+  }, [def, w, h, style, text, hideText, el.icon, el.points, el.table, el.crop, el.collapsed, el.id, el.stencil, el.params]);
 
   if (reveal <= 0) return null;
   const cx = el.x + w / 2;
@@ -170,11 +162,13 @@ export const ShapeBody = memo(function ShapeBody({ el, interactive, hideText, fr
   return (
     <g
       data-el={interactive ? el.id : undefined}
+      {...(interactive && shapeAria(el))}
       opacity={el.style.opacity * (fx?.opacity ?? 1)}
       transform={[fx?.transform, rotate].filter(Boolean).join(' ') || undefined}
     >
       {el.tooltip && <title>{el.tooltip}</title>}
       {gradId && <defs>{gradientDef(gradId, el.style)}</defs>}
+      {shadow && hasCustomShadow(el.style) && <defs><CustomShadowFilter elId={el.id} style={el.style} /></defs>}
       {fx?.glow !== undefined && (
         <rect
           x={el.x - 4}
@@ -190,7 +184,7 @@ export const ShapeBody = memo(function ShapeBody({ el, interactive, hideText, fr
       )}
       <g
         transform={`${flip} translate(${el.x} ${el.y})`.trim()}
-        filter={shadow ? `url(#${SHADOW_FILTER_ID})` : undefined}
+        filter={shadow ? shadowFilterUrl(el.id, el.style, SHADOW_FILTER_ID) : undefined}
         pointerEvents={interactive && !def.boxHit ? 'all' : undefined}
       >
         {interactive && def.boxHit && <rect width={w} height={h} fill="transparent" />}
@@ -254,33 +248,19 @@ export const ConnectorBody = memo(function ConnectorBody({
   const color = el.style.stroke === 'none' ? '#475569' : el.style.stroke;
   const sw = el.style.strokeWidth;
   const drawing = reveal < 1;
-  const label = el.style.placeholders ? expandPlaceholders(el.text, el, vars) : el.text;
-  const shape = el.connectorShape ?? 'line';
-  const body: ReactNode =
-    shape === 'pipe' ? (
-      <>
-        <path d={g.path} fill="none" stroke={color} strokeWidth={sw + 7} strokeLinejoin="round" strokeOpacity={el.style.strokeOpacity} />
-        <path d={g.path} fill="none" stroke={el.style.fill !== 'none' ? el.style.fill : '#ffffff'} strokeWidth={sw + 3.5} strokeLinejoin="round" />
-      </>
-    ) : shape === 'arrow' ? (
-      <>
-        <path d={g.path} fill="none" stroke={color} strokeWidth={14} strokeLinejoin="round" strokeOpacity={el.style.strokeOpacity} />
-        <path d={g.path} fill="none" stroke={el.style.fill !== 'none' ? el.style.fill : '#ffffff'} strokeWidth={14 - sw * 2} strokeLinejoin="round" />
-      </>
-    ) : (
-      <path
-        d={g.path}
-        fill="none"
-        {...s}
-        stroke={color}
-        pathLength={drawing ? 1 : undefined}
-        strokeDasharray={drawing ? `${reveal} 1` : (fx?.dashArray ?? s.strokeDasharray)}
-        strokeDashoffset={drawing ? undefined : fx?.dashOffset}
-      />
-    );
+  const baseLabel = localizedText(el, vars.language);
+  const label = el.style.placeholders ? expandPlaceholders(baseLabel, el, vars) : baseLabel;
+  const lineWork = connectorStroke(el, g, {
+    color,
+    heads: !drawing,
+    strokeAttrs: s,
+    pathLength: drawing ? 1 : undefined,
+    dashArray: drawing ? `${reveal} 1` : fx?.dashArray,
+    dashOffset: drawing ? undefined : fx?.dashOffset,
+  });
 
   return (
-    <g data-el={interactive ? el.id : undefined} opacity={el.style.opacity}>
+    <g data-el={interactive ? el.id : undefined} {...(interactive && connectorAria(el))} opacity={el.style.opacity}>
       {el.tooltip && <title>{el.tooltip}</title>}
       {interactive && (
         <path d={g.path} fill="none" stroke="transparent" strokeWidth={14} vectorEffect="non-scaling-stroke" pointerEvents="stroke" />
@@ -288,51 +268,23 @@ export const ConnectorBody = memo(function ConnectorBody({
       {fx?.glow !== undefined && (
         <path d={g.path} fill="none" stroke={color} strokeWidth={sw + 8} strokeOpacity={0.08 + 0.22 * fx.glow} strokeLinecap="round" strokeLinejoin="round" />
       )}
-      {body}
-      {!drawing && shape === 'arrow' && <BlockArrowHead at={g.end} dir={g.endDir} color={color} fill={el.style.fill !== 'none' ? el.style.fill : '#ffffff'} sw={sw} />}
-      {!drawing && shape !== 'arrow' && (
-        <>
-          {arrowParts(el.startArrow, g.start, g.startDir, sw).map((p, i) => (
-            <ArrowPath key={`s${i}`} d={p.d} fill={p.fill} color={color} sw={sw} />
-          ))}
-          {arrowParts(el.endArrow, g.end, g.endDir, sw).map((p, i) => (
-            <ArrowPath key={`e${i}`} d={p.d} fill={p.fill} color={color} sw={sw} />
-          ))}
-        </>
-      )}
+      {el.style.sketch && !drawing ? <SketchConnector el={el} node={lineWork} path={g.path} /> : lineWork}
       {fx?.dots?.map((d, i) => <circle key={i} cx={d.x} cy={d.y} r={3 + sw} fill={color} />)}
       {label && !hideLabel && !drawing && <ConnectorLabel el={el} text={label} at={g.label} bg={labelBg} />}
+      {!drawing && <ExtraLabels el={el} g={g} bg={labelBg} />}
       {interactive && el.link && <LinkBadge x={g.label.x + 10} y={g.label.y - 10} />}
     </g>
   );
 });
 
-function BlockArrowHead({ at, dir, color, fill, sw }: { at: { x: number; y: number }; dir: { x: number; y: number }; color: string; fill: string; sw: number }) {
-  const n = { x: -dir.y, y: dir.x };
-  const back = 18;
-  const half = 13;
-  const P = (p: { x: number; y: number }) => `${p.x},${p.y}`;
-  const b = { x: at.x - dir.x * back, y: at.y - dir.y * back };
-  return <path d={`M${P(at)} L${P({ x: b.x + n.x * half, y: b.y + n.y * half })} L${P({ x: b.x - n.x * half, y: b.y - n.y * half })} Z`} fill={fill} stroke={color} strokeWidth={sw} strokeLinejoin="round" />;
-}
-
-function ArrowPath({ d, fill, color, sw }: { d: string; fill: 'solid' | 'paper' | 'none'; color: string; sw: number }) {
-  return (
-    <path
-      d={d}
-      fill={fill === 'solid' ? color : fill === 'paper' ? '#ffffff' : 'none'}
-      stroke={color}
-      strokeWidth={sw}
-      strokeLinejoin="round"
-      strokeLinecap="round"
-    />
-  );
-}
-
 const LABEL_MAX_WIDTH = 220;
 
 /** Wrapped lines and size of a connector label. */
 export function labelLayout(el: ConnectorElement, text = el.text) {
+  if (needsRich(text, el.style)) {
+    const r = richSize(text, LABEL_MAX_WIDTH, el.style);
+    return { lines: [] as string[], w: Math.max(r.w, 4), h: r.h };
+  }
   const lines = wrapText(text, LABEL_MAX_WIDTH, el.style);
   const w = Math.max(...lines.map((l) => measureText(l, el.style)), 4);
   const h = lines.length * lineHeight(el.style.fontSize);
@@ -343,10 +295,15 @@ function ConnectorLabel({ el, text, at, bg }: { el: ConnectorElement; text: stri
   const { lines, w, h } = labelLayout(el, text);
   const padX = 6;
   const padY = 3;
+  const rich = needsRich(text, el.style);
   return (
     <g>
-      <rect x={at.x - w / 2 - padX} y={at.y - h / 2 - padY} width={w + padX * 2} height={h + padY * 2} rx={5} fill={el.style.labelBackground ?? bg} />
-      <TextLines lines={lines} x={at.x} y={at.y - h / 2} anchor="middle" style={el.style} />
+      <rect x={at.x - w / 2 - padX} y={at.y - h / 2 - padY} width={w + padX * 2} height={h + padY * 2} rx={5} fill={el.style.labelBackground ?? bg} stroke={el.style.labelBorderColor} />
+      {rich ? (
+        <RichTextBlock box={{ x: at.x - w / 2, y: at.y - h / 2, w, h }} text={text} style={{ ...el.style, labelBackground: undefined, labelBorderColor: undefined, verticalAlign: 'top' }} math={!!el.style.math} />
+      ) : (
+        <TextLines lines={lines} x={at.x} y={at.y - h / 2} anchor="middle" style={el.style} />
+      )}
     </g>
   );
 }

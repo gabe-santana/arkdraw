@@ -4,7 +4,7 @@
  * are filled from defaults, and invalid elements are skipped instead of
  * failing the whole file.
  */
-import type { ConnectorElement, DiagramElement, Doc, Layer, Page, PageSettings, ShapeElement } from '@/model/types';
+import type { ConnectorElement, DiagramElement, Doc, DocumentMeta, Layer, Page, PageSettings, ShapeElement } from '@/model/types';
 import { uid } from '@/lib/id';
 import { DEFAULT_CONNECTOR_STYLE, DEFAULT_STYLE } from '@/model/defaults';
 
@@ -17,6 +17,8 @@ interface FilePage {
   name: string;
   settings: PageSettings;
   layers?: Layer[];
+  /** Page-level key/value data (Edit Data on pages). */
+  data?: Record<string, string>;
   /** Elements in z-order, back to front. */
   elements: DiagramElement[];
 }
@@ -26,22 +28,26 @@ export interface OpenDrawFile {
   version: number;
   generator: string;
   savedAt: string;
+  /** File properties (title, author, description, timestamps, document data). */
+  meta?: DocumentMeta;
   pages: FilePage[];
 }
 
 const DEFAULT_SETTINGS: PageSettings = { background: null, paper: 'A4', landscape: false, pageView: false };
 
-export function serializePages(pages: Page[]): string {
+export function serializePages(pages: Page[], meta?: DocumentMeta): string {
   const file: OpenDrawFile = {
     format: FILE_FORMAT,
     version: FILE_VERSION,
     generator: `OpenDraw ${__APP_VERSION__}`,
     savedAt: new Date().toISOString(),
+    ...(meta && Object.keys(meta).length ? { meta } : {}),
     pages: pages.map((p) => ({
       id: p.id,
       name: p.name,
       settings: p.settings,
       ...(p.doc.layers ? { layers: p.doc.layers } : {}),
+      ...(p.data && Object.keys(p.data).length ? { data: p.data } : {}),
       elements: p.doc.order.map((id) => p.doc.elements[id]).filter(Boolean),
     })),
   };
@@ -56,11 +62,18 @@ export class FileFormatError extends Error {}
 
 const num = (v: unknown, fallback = 0) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback);
 
+const isVec = (v: unknown): v is { x: number; y: number } =>
+  !!v && typeof v === 'object' && Number.isFinite((v as { x: unknown }).x) && Number.isFinite((v as { y: unknown }).y);
+const ROUTINGS = ['orthogonal', 'straight', 'curved', 'elbow-h', 'elbow-v', 'entity', 'isometric'];
+
 function normalizeEndpoint(e: unknown): ConnectorElement['source'] {
   const o = (e ?? {}) as Record<string, unknown>;
   return {
     ...(typeof o.elementId === 'string' ? { elementId: o.elementId } : {}),
     ...(typeof o.side === 'string' ? { side: o.side as ConnectorElement['source']['side'] } : {}),
+    ...(isVec(o.fixed) ? { fixed: { x: o.fixed.x, y: o.fixed.y } } : {}),
+    ...(isVec(o.fixedOffset) ? { fixedOffset: { x: o.fixedOffset.x, y: o.fixedOffset.y } } : {}),
+    ...(typeof o.edgeT === 'number' && Number.isFinite(o.edgeT) ? { edgeT: o.edgeT } : {}),
     x: num(o.x),
     y: num(o.y),
   };
@@ -90,7 +103,7 @@ function normalizeElement(raw: unknown): DiagramElement | null {
       ...(o as unknown as ConnectorElement),
       source: normalizeEndpoint(o.source),
       target: normalizeEndpoint(o.target),
-      routing: o.routing === 'straight' || o.routing === 'curved' ? o.routing : 'orthogonal',
+      routing: ROUTINGS.includes(o.routing as string) ? (o.routing as ConnectorElement['routing']) : 'orthogonal',
       startArrow: (o.startArrow as ConnectorElement['startArrow']) ?? 'none',
       endArrow: (o.endArrow as ConnectorElement['endArrow']) ?? 'triangle',
       text,
@@ -150,7 +163,18 @@ export function parsePages(text: string): Page[] {
     name: typeof p.name === 'string' ? p.name : `Page ${i + 1}`,
     settings: { ...DEFAULT_SETTINGS, ...(p.settings ?? {}) },
     doc: docFromElements(Array.isArray(p.elements) ? p.elements : [], p.layers),
+    ...(p.data && typeof p.data === 'object' ? { data: p.data } : {}),
   }));
+}
+
+/** File properties of a serialized diagram (undefined for older files or non-JSON). */
+export function parseMeta(text: string): DocumentMeta | undefined {
+  try {
+    const meta = (JSON.parse(text) as Partial<OpenDrawFile>)?.meta;
+    return meta && typeof meta === 'object' ? meta : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /** First page only (clipboard, single-page callers). */

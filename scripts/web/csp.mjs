@@ -28,10 +28,11 @@ export function csp(frameAncestors = process.env.FRAME_ANCESTORS || '*') {
   return [
     "default-src 'self'",
     `script-src 'self' ${scriptHashes}`.trim(),
-    "style-src 'self' 'unsafe-inline'",
+    // Google Fonts picked for labels (stylesheet + font files, loaded on demand).
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     // Image shapes and backgrounds may point at remote images.
     "img-src 'self' data: blob: https: http:",
-    "font-src 'self' data:",
+    "font-src 'self' data: https://fonts.gstatic.com",
     // ?url= diagrams, AI providers (cloud + local Ollama on localhost).
     "connect-src 'self' data: blob: https: http://localhost:* http://127.0.0.1:*",
     "worker-src 'self' blob:",

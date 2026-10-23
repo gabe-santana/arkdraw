@@ -111,3 +111,49 @@
 - Collection license: CC0-1.0 — https://raw.githubusercontent.com/gilbarbara/logos/master/LICENSE.txt (via the `@iconify-json/logos` npm package).
 
 - CC0 covers the collection's copyright only; the logos themselves are trademarks of their respective owners and their use is subject to each owner's brand guidelines.
+
+## Material Symbols (`material`)
+
+- Icons: 3928
+- Version: @iconify-json/material-symbols@1.2.96
+- Source: https://github.com/google/material-design-icons (via npm @iconify-json/material-symbols)
+- Vendor page: https://github.com/google/material-design-icons
+- Summary: Apache-2.0 (Material Symbols by Google).
+
+- License: Apache License 2.0 — https://github.com/google/material-design-icons/blob/master/LICENSE (via the `@iconify-json/material-symbols` npm package).
+
+- Only the "Outline" variant of each symbol is included (the filled variant when no outline exists).
+
+## Font Awesome Free (`fontawesome`)
+
+- Icons: 1565
+- Version: @iconify-json/fa6-solid@1.2.4, @iconify-json/fa6-regular@1.2.4
+- Source: https://fontawesome.com/ (via npm @iconify-json/fa6-solid, @iconify-json/fa6-regular)
+- Vendor page: https://fontawesome.com/
+- Summary: CC BY 4.0 (Font Awesome Free 6 icons by Fonticons, Inc.). Attribution required.
+
+- Attribution: "Font Awesome Free" by Fonticons, Inc. (https://fontawesome.com), icons licensed under CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/ and https://fontawesome.com/license/free (via the `@iconify-json/fa6-solid` and `@iconify-json/fa6-regular` npm packages).
+
+- Only the Solid and Regular styles are included; the Brands set (trademarks) is not. The SVGs were recoloured from `currentColor` to a dark slate and optimized; no other changes.
+
+## Fluent UI System Icons (`fluent`)
+
+- Icons: 2444
+- Version: @iconify-json/fluent@1.2.60
+- Source: https://github.com/microsoft/fluentui-system-icons (via npm @iconify-json/fluent)
+- Vendor page: https://github.com/microsoft/fluentui-system-icons
+- Summary: MIT (Fluent UI System Icons, Copyright (c) Microsoft Corporation).
+
+- License: MIT — https://github.com/microsoft/fluentui-system-icons/blob/main/LICENSE (via the `@iconify-json/fluent` npm package).
+
+- Only the 24px "Regular" variants are included.
+
+## Bootstrap Icons (`bootstrap-icons`)
+
+- Icons: 2076
+- Version: @iconify-json/bi@1.2.7
+- Source: https://icons.getbootstrap.com/ (via npm @iconify-json/bi)
+- Vendor page: https://icons.getbootstrap.com/
+- Summary: MIT (Bootstrap Icons, Copyright (c) The Bootstrap Authors).
+
+- License: MIT — https://github.com/twbs/icons/blob/main/LICENSE.md (via the `@iconify-json/bi` npm package).

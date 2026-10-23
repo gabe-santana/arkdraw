@@ -7,9 +7,12 @@ import { Kbd } from '@/ui/Kbd';
 import { SceneLayer } from './SceneLayer';
 import { OverlayLayer } from './OverlayLayer';
 import { TextEditor } from './TextEditor';
+import { ExtraLabelEditor } from './ExtraLabelEditor';
 import { useCanvasInteractions } from './useCanvasInteractions';
 import { registerCanvasElement } from './viewport';
 import { ShapePicker } from './ShapePicker';
+import { InteractionLayer } from '@/interaction/InteractionLayer';
+import { Scrollbars } from '@/styling/Scrollbars';
 
 export function Canvas({ dark }: { dark: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -58,11 +61,15 @@ export function Canvas({ dark }: { dark: boolean }) {
     <div
       ref={ref}
       data-canvas
-      className="absolute inset-0 overflow-hidden bg-canvas outline-none"
+      tabIndex={0}
+      role="application"
+      aria-roledescription="diagram canvas"
+      aria-label="Diagram canvas. Tab moves between shapes, Alt+Arrow follows connections, Shift+F10 opens the context menu."
+      className="absolute inset-0 overflow-hidden bg-canvas outline-none focus-visible:shadow-[inset_0_0_0_2px_var(--selection)]"
       style={{
         cursor,
         backgroundColor: pageBg ?? undefined,
-        backgroundImage: settings.grid ? `radial-gradient(circle, var(--grid-dot) ${dot}px, transparent ${dot + 0.4}px)` : undefined,
+        backgroundImage: settings.grid ? `radial-gradient(circle, ${settings.gridColor ?? 'var(--grid-dot)'} ${dot}px, transparent ${dot + 0.4}px)` : undefined,
         backgroundSize: `${step}px ${step}px`,
         backgroundPosition: `${camera.x - step / 2}px ${camera.y - step / 2}px`,
         touchAction: 'none',
@@ -76,9 +83,12 @@ export function Canvas({ dark }: { dark: boolean }) {
     >
       <SceneLayer dark={dark} />
       <OverlayLayer freehand={freehand} />
+      <InteractionLayer />
       <TextEditor />
+      <ExtraLabelEditor />
       {empty && <EmptyState />}
       <ShapePicker />
+      {settings.scrollbars && <Scrollbars />}
     </div>
   );
 }

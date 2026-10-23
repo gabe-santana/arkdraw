@@ -7,7 +7,7 @@
  * (orthogonal A*, straight, curved, elbow, entity-relation, isometric) and
  * line jumps where connectors cross.
  */
-import type { ArrowHead, ConnectorElement, DiagramElement, Endpoint, Rect, ShapeElement, Vec } from '@/model/types';
+import type { AnchorSide, ArrowHead, ConnectorElement, DiagramElement, Endpoint, Rect, ShapeElement, Vec } from '@/model/types';
 import { getShapeDef } from '@/shapes/registry';
 import {
   anchorPoint, axisDirection, center, dist, normalize, pointAlongPolyline, rotatePoint, rotateVec, rotatedBounds,
@@ -66,12 +66,69 @@ function shapeAt(e: Endpoint, lookup: Lookup): ShapeElement | undefined {
 
 type EndMode = 'perimeter' | 'side' | 'horizontal';
 
-function resolveEnd(e: Endpoint, shape: ShapeElement | undefined, otherRef: Vec, mode: EndMode): RouteEnd {
+/** Connector-to-connector attachments resolve recursively; this caps the chain (and breaks cycles). */
+const MAX_EDGE_DEPTH = 4;
+let edgeDepth = 0;
+
+/** The connector an endpoint is attached to (connect-to-edge), if any. */
+function edgeAt(e: Endpoint, lookup: Lookup, self: string): ConnectorElement | undefined {
+  if (!e.elementId || e.elementId === self) return undefined;
+  const el = lookup(e.elementId);
+  return el?.type === 'connector' ? el : undefined;
+}
+
+/** Point `edgeT` along another connector's path. */
+function edgeEnd(e: Endpoint, edge: ConnectorElement, lookup: Lookup, otherRef: Vec): RouteEnd {
+  const fallback = { x: e.x, y: e.y };
+  let point = fallback;
+  if (edgeDepth < MAX_EDGE_DEPTH) {
+    edgeDepth++;
+    try {
+      point = pointAlongPolyline(connectorGeometry(edge, lookup).samples, Math.min(1, Math.max(0, e.edgeT ?? 0.5)));
+    } finally {
+      edgeDepth--;
+    }
+  }
+  return { point, dir: axisDirection(point, otherRef), rect: null };
+}
+
+/** The side whose edge is nearest to a point given as box fractions. */
+function nearestSide(fx: number, fy: number): AnchorSide {
+  const d: Array<[AnchorSide, number]> = [['top', fy], ['right', 1 - fx], ['bottom', 1 - fy], ['left', fx]];
+  return d.reduce((a, b) => (b[1] < a[1] ? b : a))[0];
+}
+
+/** Fixed connection point (draw.io exitX/exitY + exitDx/exitDy) → world point + outward direction. */
+function fixedEnd(e: Endpoint, shape: ShapeElement, mode: EndMode): { point: Vec; dir: Vec } {
+  const f = e.fixed!;
+  const fx = shape.flipH ? 1 - f.x : f.x;
+  const fy = shape.flipV ? 1 - f.y : f.y;
+  const rect = rectOf(shape);
+  const c = center(rect);
+  const deg = shape.rotation ?? 0;
+  const local = { x: rect.x + fx * rect.w + (e.fixedOffset?.x ?? 0), y: rect.y + fy * rect.h + (e.fixedOffset?.y ?? 0) };
+  const point = rotatePoint(local, c, deg);
+  let side = nearestSide(fx, fy);
+  if (mode === 'horizontal' && (side === 'top' || side === 'bottom')) side = fx >= 0.5 ? 'right' : 'left';
+  const normal = rotateVec(SIDE_NORMALS[side], deg);
+  // Fixed points leave perpendicular to their side (like draw.io constraints).
+  return { point, dir: mode === 'perimeter' ? normalize(normal) : snapToAxis(normal) };
+}
+
+function resolveEnd(e: Endpoint, shape: ShapeElement | undefined, otherRef: Vec, mode: EndMode, spacing = 0): RouteEnd {
+  const end = resolveEndRaw(e, shape, otherRef, mode);
+  // Perimeter spacing: keep a gap between the shape and the connector end.
+  if (!spacing || !end.rect) return end;
+  return { ...end, point: { x: end.point.x + end.dir.x * spacing, y: end.point.y + end.dir.y * spacing } };
+}
+
+function resolveEndRaw(e: Endpoint, shape: ShapeElement | undefined, otherRef: Vec, mode: EndMode): RouteEnd {
   if (!shape) return { point: { x: e.x, y: e.y }, dir: axisDirection({ x: e.x, y: e.y }, otherRef), rect: null };
   const rect = rectOf(shape);
   const c = center(rect);
   const deg = shape.rotation ?? 0;
   const bounds = rotatedBounds(shape);
+  if (e.fixed) return { ...fixedEnd(e, shape, mode), rect: bounds };
   if (mode === 'perimeter' && (!e.side || e.side === 'auto')) {
     const p = perimeterPoint(shape, otherRef);
     return { point: p, dir: normalize(sub(otherRef, c)), rect: bounds };
@@ -96,9 +153,12 @@ export function endpointPositions(conn: ConnectorElement, lookup: Lookup) {
   const sRef = wps[0] ?? (tShape ? center(rectOf(tShape)) : conn.target);
   const tRef = wps[wps.length - 1] ?? (sShape ? center(rectOf(sShape)) : conn.source);
   const mode = modeFor(conn);
+  const sEdge = sShape ? undefined : edgeAt(conn.source, lookup, conn.id);
+  const tEdge = tShape ? undefined : edgeAt(conn.target, lookup, conn.id);
+  const spacing = conn.perimeterSpacing ?? 0;
   return {
-    a: resolveEnd(conn.source, sShape, sRef, mode),
-    b: resolveEnd(conn.target, tShape, tRef, mode),
+    a: sEdge ? edgeEnd(conn.source, sEdge, lookup, sRef) : resolveEnd(conn.source, sShape, sRef, mode, spacing),
+    b: tEdge ? edgeEnd(conn.target, tEdge, lookup, tRef) : resolveEnd(conn.target, tShape, tRef, mode, spacing),
   };
 }
 
@@ -191,9 +251,9 @@ function splineThrough(pts: Vec[]): { d: string; samples: Vec[]; c1: Vec; c2: Ve
  * SVG path for a polyline with softly rounded corners and optional line jumps
  * (small arcs where other connectors cross underneath).
  */
-export function polylinePath(points: Vec[], radius: number, jumps: Vec[] = [], jumpStyle: 'arc' | 'gap' | 'sharp' = 'arc'): string {
+export function polylinePath(points: Vec[], radius: number, jumps: Vec[] = [], jumpStyle: 'arc' | 'gap' | 'sharp' = 'arc', jumpSize = 6): string {
   if (points.length < 2) return '';
-  const J = 6;
+  const J = Math.max(1, jumpSize);
   let d = `M${points[0].x},${points[0].y}`;
   // A straight run from `from` to `to`, inserting the jumps that lie on it.
   const run = (from: Vec, to: Vec) => {
@@ -238,8 +298,8 @@ export function polylinePath(points: Vec[], radius: number, jumps: Vec[] = [], j
 
 export function connectorGeometry(conn: ConnectorElement, lookup: Lookup, obstacles: Rect[] = [], jumps: Vec[] = []): ConnectorGeometry {
   const { a, b } = endpointPositions(conn, lookup);
-  const startInset = arrowInset(conn.startArrow, conn.style.strokeWidth);
-  const endInset = arrowInset(conn.endArrow, conn.style.strokeWidth);
+  const startInset = arrowInset(conn.startArrow, conn.style.strokeWidth, conn.startSize);
+  const endInset = arrowInset(conn.endArrow, conn.style.strokeWidth, conn.endSize);
   const wps = conn.waypoints ?? [];
 
   if (conn.routing === 'curved') {
@@ -293,7 +353,7 @@ export function connectorGeometry(conn: ConnectorElement, lookup: Lookup, obstac
   const jumpStyle = conn.lineJumps && conn.lineJumps !== 'none' ? conn.lineJumps : 'arc';
   return {
     points,
-    path: polylinePath(drawn, conn.routing === 'straight' ? 0 : (conn.style.radius ?? 10), jumps, jumpStyle),
+    path: polylinePath(drawn, conn.routing === 'straight' ? 0 : (conn.style.radius ?? 10), jumps, jumpStyle, conn.jumpSize),
     start: points[0],
     end: points[n - 1],
     startDir,
@@ -306,13 +366,17 @@ export function connectorGeometry(conn: ConnectorElement, lookup: Lookup, obstac
 
 /** Label anchor: `labelT` along the path, offset perpendicular by `labelOffset`. */
 function labelPoint(conn: ConnectorElement, pts: Vec[]): Vec {
-  const t = conn.labelT ?? 0.5;
+  return labelAt(pts, conn.labelT ?? 0.5, conn.labelOffset);
+}
+
+/** Point `t` (0..1) along a path, pushed `offset` px perpendicular to it (main and extra labels). */
+export function labelAt(pts: Vec[], t: number, offset?: number): Vec {
   const p = pointAlongPolyline(pts, t);
-  if (!conn.labelOffset) return p;
+  if (!offset) return p;
   const q = pointAlongPolyline(pts, Math.min(1, t + 0.01));
   const r = pointAlongPolyline(pts, Math.max(0, t - 0.01));
   const dir = normalize(sub(q, r));
-  return { x: p.x - dir.y * conn.labelOffset, y: p.y + dir.x * conn.labelOffset };
+  return { x: p.x - dir.y * offset, y: p.y + dir.x * offset };
 }
 
 /** Crossing points per connector (line jumps): a connector jumps over those drawn beneath it. */
@@ -383,16 +447,35 @@ const shorten = (tip: Vec, dirIntoTip: Vec, by: number): Vec => ({ x: tip.x - di
 // Arrowheads
 // ---------------------------------------------------------------------------
 
-export const arrowSize = (strokeWidth: number) => 9 + strokeWidth * 2;
+/** Arrowhead length in px. `size` is draw.io's startSize/endSize (default 6). */
+export const arrowSize = (strokeWidth: number, size?: number) => (size ?? 6) * 1.5 + strokeWidth * 2;
 
-export function arrowInset(kind: ArrowHead, strokeWidth: number): number {
-  const s = arrowSize(strokeWidth);
+/** Heads with a closed outline, which can be drawn filled or hollow. */
+const FILLABLE = new Set<ArrowHead>([
+  'triangle', 'triangleOpen', 'diamond', 'diamondOpen', 'circle', 'circleOpen', 'box', 'boxOpen', 'async',
+  'classic', 'classicThin', 'blockThin', 'diamondThin', 'doubleBlock',
+]);
+const HOLLOW_BY_DEFAULT = new Set<ArrowHead>(['triangleOpen', 'diamondOpen', 'circleOpen', 'boxOpen']);
+
+export const arrowFillable = (kind: ArrowHead) => FILLABLE.has(kind);
+/** Whether a head is drawn filled, honoring the per-end override. */
+export const arrowFilled = (kind: ArrowHead, override?: boolean) => FILLABLE.has(kind) && (override ?? !HOLLOW_BY_DEFAULT.has(kind));
+
+export function arrowInset(kind: ArrowHead, strokeWidth: number, size?: number): number {
+  const s = arrowSize(strokeWidth, size);
   switch (kind) {
     case 'triangle':
     case 'triangleOpen':
+    case 'blockThin':
+    case 'async':
+    case 'circlePlus':
       return s;
+    case 'classic':
+    case 'classicThin':
+      return s * 0.7;
     case 'diamond':
     case 'diamondOpen':
+    case 'diamondThin':
       return s * 1.6;
     case 'circle':
     case 'circleOpen':
@@ -400,8 +483,10 @@ export function arrowInset(kind: ArrowHead, strokeWidth: number): number {
     case 'box':
     case 'boxOpen':
       return s * 0.7;
-    case 'async':
-      return s;
+    case 'halfCircle':
+      return s * 0.5;
+    case 'doubleBlock':
+      return s * 2;
     default:
       return 0;
   }
@@ -413,10 +498,18 @@ export interface ArrowPart {
   fill: 'solid' | 'paper' | 'none';
 }
 
-/** Builds arrowhead geometry at `tip`, with `dir` pointing into the tip. */
-export function arrowParts(kind: ArrowHead, tip: Vec, dir: Vec, strokeWidth: number): ArrowPart[] {
+/**
+ * Builds arrowhead geometry at `tip`, with `dir` pointing into the tip.
+ * `size` is draw.io's marker size (default 6); `fill` overrides filled/hollow for closed heads.
+ */
+export function arrowParts(kind: ArrowHead, tip: Vec, dir: Vec, strokeWidth: number, size?: number, fill?: boolean): ArrowPart[] {
+  const parts = arrowShape(kind, tip, dir, arrowSize(strokeWidth, size));
+  if (fill === undefined || !FILLABLE.has(kind)) return parts;
+  return parts.map((p) => (p.fill === 'paper' ? p : { ...p, fill: fill ? 'solid' : 'none' }));
+}
+
+function arrowShape(kind: ArrowHead, tip: Vec, dir: Vec, s: number): ArrowPart[] {
   if (kind === 'none') return [];
-  const s = arrowSize(strokeWidth);
   const n = { x: -dir.y, y: dir.x }; // perpendicular
   const at = (back: number, side: number): Vec => ({
     x: tip.x - dir.x * back + n.x * side,
@@ -425,23 +518,58 @@ export function arrowParts(kind: ArrowHead, tip: Vec, dir: Vec, strokeWidth: num
   const P = (v: Vec) => `${v.x},${v.y}`;
   const line = (p: Vec, q: Vec) => `M${P(p)} L${P(q)}`;
   const circle = (c: Vec, r: number) => `M${c.x - r},${c.y} a${r},${r} 0 1,0 ${r * 2},0 a${r},${r} 0 1,0 ${-r * 2},0`;
+  const tri = (back: number, half: number, from = 0) => `M${P(at(from, 0))} L${P(at(from + back, half))} L${P(at(from + back, -half))} Z`;
 
   switch (kind) {
     case 'arrow':
       return [{ d: `M${P(at(s, s * 0.5))} L${P(tip)} L${P(at(s, -s * 0.5))}`, fill: 'none' }];
+    case 'openThin':
+      return [{ d: `M${P(at(s, s * 0.3))} L${P(tip)} L${P(at(s, -s * 0.3))}`, fill: 'none' }];
     case 'triangle':
     case 'triangleOpen':
-      return [{ d: `M${P(tip)} L${P(at(s, s * 0.5))} L${P(at(s, -s * 0.5))} Z`, fill: kind === 'triangle' ? 'solid' : 'none' }];
-    case 'diamond':
-    case 'diamondOpen': {
-      const l = s * 1.6;
+      return [{ d: tri(s, s * 0.5), fill: kind === 'triangle' ? 'solid' : 'none' }];
+    case 'blockThin':
+      return [{ d: tri(s, s * 0.3), fill: 'solid' }];
+    case 'classic':
+    case 'classicThin': {
+      const half = kind === 'classic' ? s * 0.5 : s * 0.3;
+      return [{ d: `M${P(tip)} L${P(at(s, half))} L${P(at(s * 0.7, 0))} L${P(at(s, -half))} Z`, fill: 'solid' }];
+    }
+    case 'doubleBlock':
       return [
-        { d: `M${P(tip)} L${P(at(l / 2, s * 0.45))} L${P(at(l, 0))} L${P(at(l / 2, -s * 0.45))} Z`, fill: kind === 'diamond' ? 'solid' : 'none' },
+        { d: tri(s, s * 0.5), fill: 'solid' },
+        { d: tri(s, s * 0.5, s), fill: 'solid' },
+      ];
+    case 'diamond':
+    case 'diamondOpen':
+    case 'diamondThin': {
+      const l = s * 1.6;
+      const half = kind === 'diamondThin' ? s * 0.25 : s * 0.45;
+      return [
+        { d: `M${P(tip)} L${P(at(l / 2, half))} L${P(at(l, 0))} L${P(at(l / 2, -half))} Z`, fill: kind === 'diamondOpen' ? 'none' : 'solid' },
       ];
     }
     case 'circle':
     case 'circleOpen':
       return [{ d: circle(at(s * 0.4, 0), s * 0.4), fill: kind === 'circle' ? 'solid' : 'none' }];
+    case 'circlePlus': {
+      const r = s * 0.5;
+      const c = at(r, 0);
+      return [
+        { d: circle(c, r), fill: 'paper' },
+        { d: `${line(at(r, r), at(r, -r))} ${line(at(0, 0), at(2 * r, 0))}`, fill: 'none' },
+      ];
+    }
+    case 'halfCircle': {
+      // A socket: semicircle around the tip, open away from the line.
+      const r = s * 0.5;
+      const pts: Vec[] = [];
+      for (let i = 0; i <= 12; i++) {
+        const a = -Math.PI / 2 + (Math.PI * i) / 12;
+        pts.push(at(r * Math.cos(a), r * Math.sin(a)));
+      }
+      return [{ d: `M${pts.map(P).join(' L')}`, fill: 'none' }];
+    }
     case 'dash':
       return [{ d: line(at(s * 0.65, s * 0.5), at(s * 0.15, -s * 0.5)), fill: 'none' }];
     case 'cross': {
@@ -489,23 +617,39 @@ export function arrowParts(kind: ArrowHead, tip: Vec, dir: Vec, strokeWidth: num
 
 export const ARROW_LABELS: Record<ArrowHead, string> = {
   none: 'None',
-  arrow: 'Arrow',
-  triangle: 'Triangle',
-  triangleOpen: 'Open triangle',
+  arrow: 'Open',
+  openThin: 'Open thin',
+  triangle: 'Block',
+  triangleOpen: 'Open block',
+  blockThin: 'Block thin',
+  classic: 'Classic',
+  classicThin: 'Classic thin',
+  doubleBlock: 'Double block',
   diamond: 'Diamond',
   diamondOpen: 'Open diamond',
-  circle: 'Circle',
-  circleOpen: 'Open circle',
-  erOne: 'One',
-  erOnlyOne: 'Only one',
-  erMany: 'Many',
-  erOneMany: 'One or many',
-  erZeroMany: 'Zero or many',
-  erZeroOne: 'Zero or one',
+  diamondThin: 'Diamond thin',
+  circle: 'Oval',
+  circleOpen: 'Open oval',
+  circlePlus: 'Circle plus',
+  halfCircle: 'Half circle',
+  erOne: 'ER one',
+  erOnlyOne: 'ER mandatory one',
+  erMany: 'ER many',
+  erOneMany: 'ER one or many',
+  erZeroMany: 'ER zero or many',
+  erZeroOne: 'ER zero or one',
   dash: 'Dash',
   cross: 'Cross',
-  halfArrow: 'Half arrow',
+  halfArrow: 'Half arrow (open async)',
   async: 'Async',
   box: 'Box',
   boxOpen: 'Open box',
 };
+
+/** Picker order (draw.io's marker menu, roughly). */
+export const ARROW_ORDER: ArrowHead[] = [
+  'none', 'classic', 'classicThin', 'triangle', 'blockThin', 'arrow', 'openThin', 'doubleBlock',
+  'triangleOpen', 'async', 'halfArrow', 'dash', 'cross', 'circle', 'circleOpen', 'circlePlus',
+  'halfCircle', 'diamond', 'diamondThin', 'diamondOpen', 'box', 'boxOpen',
+  'erOne', 'erOnlyOne', 'erMany', 'erOneMany', 'erZeroOne', 'erZeroMany',
+];

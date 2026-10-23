@@ -187,7 +187,7 @@ function adoptContainers(els: DiagramElement[]) {
     const c = { x: el.x + el.w / 2, y: el.y + el.h / 2 };
     for (let i = s.doc.order.length - 1; i >= 0; i--) {
       const target = s.doc.elements[s.doc.order[i]] as ShapeElement;
-      if (isShape(target) && getShapeDef(target.kind).container && containsPoint(target, c)) {
+      if (isShape(target) && (target.container ?? getShapeDef(target.kind).container) && containsPoint(target, c)) {
         el.containerId = target.id;
         break;
       }

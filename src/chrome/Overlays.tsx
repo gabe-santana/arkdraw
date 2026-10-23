@@ -8,6 +8,7 @@ import { Dialog, DialogHeader } from '@/ui/Dialog';
 import { Button } from '@/ui/Button';
 import { Shortcut } from '@/ui/Kbd';
 import { ContextMenu, type MenuEntry, type MenuItemEntry } from '@/ui/Menu';
+import { interactionContextItems } from '@/interaction/menus';
 
 export function ConfirmDialog() {
   const req = useUi((s) => s.confirm);
@@ -79,6 +80,9 @@ export function ShortcutsDialog() {
     ['Select inside a group', 'Mod+Click'],
     ['Edit text', 'Enter'],
     ['Nudge', 'Shift+Arrow'],
+    ['Next / previous shape', 'Tab'],
+    ['Follow a connection', 'Alt+Arrow'],
+    ['Edit freehand points', 'Double-click'],
   ];
   return (
     <Dialog open={open} onClose={() => set({ shortcutsOpen: false })} className="w-[780px] max-w-[94vw]">
@@ -131,6 +135,8 @@ export function CanvasContextMenu() {
         e('edit.data'),
         e('edit.link'),
         e('edit.style'),
+        ...(ACTION_MAP['edit.mermaid']?.enabled?.() ? [e('edit.mermaid')] : []),
+        e('extras.explore'),
         { label: 'Style', items: [e('edit.copyStyle'), e('edit.pasteStyle'), e('edit.defaultStyle')] },
         ...(isConn ? [] : [e('edit.replaceShape')]),
         sep,
@@ -139,6 +145,7 @@ export function CanvasContextMenu() {
         { label: 'Order', items: [e('arrange.forward'), e('arrange.backward')] },
         e('arrange.group'),
         e('arrange.ungroup'),
+        ...interactionContextItems(e),
         { label: 'Rotate & flip', items: [e('arrange.rotate'), e('arrange.rotateCcw'), e('arrange.flipH'), e('arrange.flipV')] },
         ...(isConn ? [e('arrange.reverse'), e('arrange.clearWaypoints')] : []),
         ...(layers && layers.length > 1

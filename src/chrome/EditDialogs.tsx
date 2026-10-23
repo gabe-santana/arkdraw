@@ -16,6 +16,8 @@ import { revealElement } from '@/app/commands';
 import { Dialog, DialogHeader } from '@/ui/Dialog';
 import { Button } from '@/ui/Button';
 import { Segmented, Select, Switch } from '@/ui/controls';
+import { withMermaidSource } from '@/automation/mermaidRegen';
+import { applyDrawioStylePatch, diffDrawioStyle, formatDrawioStyle } from '@/extensibility/styleString';
 
 const input =
   'h-8 w-full rounded-lg bg-panel-2 px-2.5 text-[12.5px] text-fg outline-none ring-1 ring-transparent transition-shadow placeholder:text-subtle hover:ring-line focus:bg-panel focus:ring-2 focus:ring-accent/40';
@@ -173,23 +175,67 @@ export function EditStyleDialog() {
 }
 
 function EditStyleBody({ el, close }: { el: DiagramElement; close: () => void }) {
-  const [text, setText] = useState(styleToString(el.style));
+  // draw.io style strings by default (src/extensibility/styleString.ts); OpenDraw keys on request.
+  const [format, setFormat] = useState<'drawio' | 'opendraw'>(() => (localStorage.getItem('opendraw:styleFormat') === 'opendraw' ? 'opendraw' : 'drawio'));
+  const initial = (f: 'drawio' | 'opendraw') => (f === 'drawio' ? formatDrawioStyle(el) : styleToString(el.style));
+  const [text, setText] = useState(() => initial(format));
+  const [error, setError] = useState<string | null>(null);
+  const switchFormat = (f: 'drawio' | 'opendraw') => {
+    setFormat(f);
+    setText(initial(f));
+    setError(null);
+    try {
+      localStorage.setItem('opendraw:styleFormat', f);
+    } catch {
+      /* storage unavailable */
+    }
+  };
   const apply = () => {
     const s = useEditor.getState();
+    if (format === 'drawio') {
+      try {
+        const patch = diffDrawioStyle(el, text);
+        s.updateElements(Object.fromEntries(s.selection.map((id) => [id, applyDrawioStylePatch(s.doc.elements[id], patch, el.type)])));
+      } catch (e) {
+        setError(String((e as Error).message ?? e));
+        return;
+      }
+      close();
+      return;
+    }
     const style = stringToStyle(text, el.style);
     s.updateElements(Object.fromEntries(s.selection.map((id) => [id, { style: { ...s.doc.elements[id].style, ...style } }])));
     close();
   };
   return (
     <div onKeyDown={stop}>
-      <DialogHeader title="Edit style" subtitle="key=value pairs, one per line — applied to the whole selection" onClose={close} />
+      <DialogHeader
+        title="Edit style"
+        subtitle={format === 'drawio' ? 'draw.io style string (key=value;) — applied to the whole selection' : 'OpenDraw style keys, one per line — applied to the whole selection'}
+        onClose={close}
+      />
       <div className="px-5 pb-4">
+        <Segmented
+          className="mb-2.5 w-[220px]"
+          size="sm"
+          value={format}
+          onChange={switchFormat}
+          options={[
+            { value: 'drawio', label: 'draw.io' },
+            { value: 'opendraw', label: 'OpenDraw' },
+          ]}
+        />
         <textarea
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            setText(e.target.value);
+            setError(null);
+          }}
           spellCheck={false}
           className="scroll-thin h-[320px] w-full resize-none rounded-xl bg-panel-2 p-3 font-mono text-[12px] leading-relaxed text-fg outline-none ring-1 ring-line focus:ring-2 focus:ring-accent/40"
         />
+        {error && <p className="mt-2 text-[12px] text-danger">{error}</p>}
+        {format === 'drawio' && !error && <p className="mt-2 text-[11.5px] text-subtle">Keys OpenDraw doesn’t use are kept and written back on draw.io export.</p>}
       </div>
       <div className="flex justify-end gap-2 border-t border-line px-5 py-3">
         <Button onClick={close}>Cancel</Button>
@@ -449,7 +495,8 @@ function ImportBody({ close }: { close: () => void }) {
         const els = page.doc.order.map((oid) => page.doc.elements[oid]);
         const b = selectionBounds(page.doc, page.doc.order);
         const c = viewportCenter();
-        const clones = cloneElements(els, b ? { x: c.x - (b.x + b.w / 2), y: c.y - (b.y + b.h / 2) } : { x: 0, y: 0 });
+        // Mermaid keeps its source for "Edit Mermaid…" (src/automation/mermaidRegen.ts).
+        const clones = withMermaidSource(importer.id, text, cloneElements(els, b ? { x: c.x - (b.x + b.w / 2), y: c.y - (b.y + b.h / 2) } : { x: 0, y: 0 }));
         s.addElements(clones);
         requestAnimationFrame(() => useEditor.getState().zoomToFit(clones.map((e) => e.id)));
       }

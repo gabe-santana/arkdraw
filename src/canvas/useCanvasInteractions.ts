@@ -19,21 +19,22 @@ import { isConnector, isShape } from '@/model/types';
 import { createConnector, createShape } from '@/model/defaults';
 import {
   anchorPoint, center, containsPoint, dist, distToSegment, inflate, intersects, rectFromPoints, rotatePoint,
-  rotatedBounds, SIDES, SIDE_NORMALS, unionRects,
+  rotatedBounds, SIDE_NORMALS, unionRects,
 } from '@/lib/geometry';
 import { connectorGeometryInDoc, endpointPositions } from '@/lib/connectorGeometry';
-import { getShapeDef } from '@/shapes/registry';
 import {
-  cloneElements, containedShapes, elementBounds, groupMembers, isHidden, isLocked, shapeRect, useEditor, type Guide,
+  cloneElements, containedShapes, elementBounds, isHidden, isLocked, shapeRect, useEditor, type Guide,
 } from '@/store/editor';
 import { useUi } from '@/store/ui';
 import { buildSnapTargets, snapRect, snapValue, type SnapTargets } from './snapping';
 import { presetForTool } from './tools';
 import { clientToWorld } from './viewport';
 import { followLink } from './links';
+import { endpointFromPointMarker, resolveDrop, useEndpointDrag } from './connectorDrop';
+import { moveExtraLabel, openExtraLabelEditorAt } from './ExtraLabelEditor';
+import { canPick, finishFreehandStroke, handleDoubleClick, isContainerShape, keepsAspect, pickMembers, strokePoint } from '@/interaction/canvasHooks';
 
 const DRAG_THRESHOLD = 3;
-const ANCHOR_SNAP = 18;
 
 type Handle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
 
@@ -60,7 +61,7 @@ type Drag =
   | { type: 'endpoint'; connId: string; end: 'source' | 'target' }
   | { type: 'segment'; connId: string; index: number; base: Vec[]; origin: Vec; horizontal: boolean; mode: 'ortho' | 'insert' }
   | { type: 'waypoint'; connId: string; index: number }
-  | { type: 'label'; connId: string };
+  | { type: 'label'; connId: string; index?: number };
 
 function snapOptions(alt: boolean) {
   const { settings, camera } = useEditor.getState();
@@ -80,21 +81,9 @@ export function shapeAtPoint(doc: Doc, p: Vec, exclude: Set<string> = new Set(),
   return null;
 }
 
-/** Endpoint attached to `shape`, snapping to the nearest side anchor when close. */
-function attachTo(shape: ShapeElement, p: Vec): Endpoint {
-  const z = useEditor.getState().camera.z;
-  let best: AnchorSide | 'auto' = 'auto';
-  let bestD = ANCHOR_SNAP / z;
-  const c = center(shape);
-  for (const side of SIDES) {
-    const d = dist(rotatePoint(anchorPoint(shapeRect(shape), side), c, shape.rotation ?? 0), p);
-    if (d < bestD) {
-      bestD = d;
-      best = side;
-    }
-  }
-  return { elementId: shape.id, side: best, x: p.x, y: p.y };
-}
+/** Where a dragged connector end lands: connection point, exact outline point (Shift), another connector, or free. */
+const dropAt = (doc: Doc, p: Vec, shape: ShapeElement | null, exact: boolean, selfConn?: string) =>
+  resolveDrop(doc, p, shape, { z: useEditor.getState().camera.z, exact, selfConn });
 
 function snapTargetsExcluding(doc: Doc, exclude: Set<string>): SnapTargets {
   const rects: Rect[] = [];
@@ -214,7 +203,7 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
       }
 
       if (s.tool === 'freehand') {
-        drag.current = { type: 'freehand', points: [p] };
+        drag.current = { type: 'freehand', points: [strokePoint(p, e)] };
         setFreehand([p]);
         return;
       }
@@ -250,13 +239,15 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
       }
 
       const anchor = target.closest('[data-anchor]');
-      if (anchor || s.tool === 'connector') {
+      const pointStart = endpointFromPointMarker(target, s.doc);
+      if (anchor || pointStart || s.tool === 'connector') {
         const elId = anchor?.getAttribute('data-anchor-el') ?? elementIdAt(e.clientX, e.clientY);
         const shape = elId ? s.doc.elements[elId] : undefined;
         const side = anchor?.getAttribute('data-anchor') as AnchorSide | null;
-        const from: Endpoint = isShape(shape)
+        // Connection-point marker → fixed start; on a connector → start on that edge; else free.
+        const from: Endpoint = pointStart ?? (isShape(shape)
           ? { elementId: shape.id, side: side ?? 'auto', ...(side ? rotatePoint(anchorPoint(shapeRect(shape), side), center(shape), shape.rotation ?? 0) : p) }
-          : { x: p.x, y: p.y };
+          : dropAt(s.doc, p, null, false).ep);
         drag.current = { type: 'connect', from, origin: p, quick: null, moved: false };
         s.beginInteraction();
         useEditor.setState({ connectDraft: { from: { x: from.x, y: from.y }, to: p, targetId: null } });
@@ -330,7 +321,9 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
 
       if (target.closest('[data-label-handle]')) {
         s.beginInteraction();
-        drag.current = { type: 'label', connId: target.closest('[data-label-handle]')!.getAttribute('data-label-handle')! };
+        const lh = target.closest('[data-label-handle]')!;
+        const index = lh.getAttribute('data-label-index');
+        drag.current = { type: 'label', connId: lh.getAttribute('data-label-handle')!, index: index !== null ? Number(index) : undefined };
         return;
       }
 
@@ -346,7 +339,7 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
 
       // Alt+drag always starts a marquee (draw.io), even on top of a shape.
       if (el && !isLocked(s.doc, el) && !e.altKey) {
-        const ids = e.ctrlKey || e.metaKey ? [el.id] : groupMembers(s.doc, el.id);
+        const ids = e.ctrlKey || e.metaKey ? [el.id] : pickMembers(s.doc, el.id);
         const wasSelected = ids.every((id) => s.selection.includes(id));
         if (e.shiftKey) s.select(ids, true);
         else if (!wasSelected) s.select(ids);
@@ -401,7 +394,7 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
       case 'freehand': {
         const last = d.points[d.points.length - 1];
         if (dist(last, p) * s.camera.z < 2) return;
-        d.points.push(p);
+        d.points.push(strokePoint(p, e));
         setFreehand([...d.points]);
         return;
       }
@@ -409,13 +402,13 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
         const r = rectFromPoints(d.origin, p);
         const hits = s.doc.order.filter((id) => {
           const el = s.doc.elements[id];
-          if (isLocked(s.doc, el) || isHidden(s.doc, el)) return false;
+          if (isLocked(s.doc, el) || isHidden(s.doc, el) || !canPick(s.doc, id)) return false;
           const b = elementBounds(el, s.doc);
           // Shapes must be fully enclosed; connectors just touched.
           return isShape(el) ? r.x <= b.x && r.y <= b.y && r.x + r.w >= b.x + b.w && r.y + r.h >= b.y + b.h : intersects(r, b);
         });
         const withGroups = new Set(d.base);
-        for (const id of hits) for (const m of groupMembers(s.doc, id)) withGroups.add(m);
+        for (const id of hits) for (const m of pickMembers(s.doc, id)) withGroups.add(m);
         useEditor.setState({ marquee: r, selection: [...withGroups] });
         return;
       }
@@ -518,12 +511,9 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
         d.moved = true;
         const exclude = new Set<string>(d.from.elementId ? [d.from.elementId] : []);
         const target = shapeAtPoint(s.doc, p, exclude, 6 / s.camera.z);
-        let to = p;
-        if (target) {
-          const ep = attachTo(target, p);
-          if (ep.side && ep.side !== 'auto') to = rotatePoint(anchorPoint(shapeRect(target), ep.side), center(target), target.rotation ?? 0);
-        }
-        useEditor.setState({ connectDraft: { from: { x: d.from.x, y: d.from.y }, to, targetId: target?.id ?? null }, hoverId: target?.id ?? null });
+        const fromEdge = isConnector(s.doc.elements[d.from.elementId ?? '']) ? d.from.elementId : undefined;
+        const drop = dropAt(s.doc, p, target, e.shiftKey, fromEdge);
+        useEditor.setState({ connectDraft: { from: { x: d.from.x, y: d.from.y }, to: drop.preview, targetId: drop.targetId }, hoverId: target?.id ?? null });
         return;
       }
       case 'endpoint': {
@@ -532,9 +522,10 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
         const other = d.end === 'source' ? conn.target : conn.source;
         const exclude = new Set<string>(other.elementId ? [other.elementId] : []);
         const target = shapeAtPoint(s.doc, p, exclude, 6 / s.camera.z);
-        const ep: Endpoint = target ? attachTo(target, p) : { x: p.x, y: p.y };
+        const ep: Endpoint = dropAt(s.doc, p, target, e.shiftKey, d.connId).ep;
         s.updateElements({ [d.connId]: { [d.end]: ep } as Partial<ConnectorElement> });
         useEditor.setState({ hoverId: target?.id ?? null });
+        useEndpointDrag.setState({ active: true });
         return;
       }
       case 'waypoint': {
@@ -570,6 +561,7 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
       case 'label': {
         const conn = s.doc.elements[d.connId];
         if (!isConnector(conn)) return;
+        if (d.index !== undefined) return moveExtraLabel(conn, d.index, p);
         const g = connectorGeometryInDoc({ ...conn, labelT: 0.5, labelOffset: 0 }, s.doc.elements);
         const { t, offset } = projectOnPolyline(g.samples, p);
         s.updateElements({ [d.connId]: { labelT: t, labelOffset: Math.abs(offset) < 4 ? 0 : offset } });
@@ -592,7 +584,7 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
           return;
         case 'freehand': {
           setFreehand(null);
-          finishFreehand(d.points);
+          finishFreehandStroke(d.points);
           return;
         }
         case 'marquee':
@@ -602,7 +594,7 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
           if (!d.started) {
             // Plain click on an already-selected item narrows the selection to it.
             if (d.wasSelected && !e.shiftKey) {
-              const ids = e.ctrlKey || e.metaKey ? [d.clickedId] : groupMembers(s.doc, d.clickedId);
+              const ids = e.ctrlKey || e.metaKey ? [d.clickedId] : pickMembers(s.doc, d.clickedId);
               if (s.selection.length !== ids.length) s.select(ids);
             }
             return;
@@ -651,8 +643,9 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
             return;
           }
           const p = clientToWorld(e.clientX, e.clientY);
-          const target = draft.targetId ? (s.doc.elements[draft.targetId] as ShapeElement) : null;
-          const to: Endpoint = target ? attachTo(target, p) : { x: draft.to.x, y: draft.to.y };
+          const target = draft.targetId ? s.doc.elements[draft.targetId] : null;
+          const fromEdge = isConnector(s.doc.elements[d.from.elementId ?? '']) ? d.from.elementId : undefined;
+          const to: Endpoint = target ? dropAt(s.doc, p, isShape(target) ? target : null, e.shiftKey, fromEdge).ep : { x: draft.to.x, y: draft.to.y };
           const conn = createConnector(d.from, to);
           const pos = endpointPositions(conn, (id) => s.doc.elements[id]);
           conn.source = { ...conn.source, x: pos.a.point.x, y: pos.a.point.y };
@@ -675,6 +668,7 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
             s.updateElements({ [d.connId]: { [d.end]: { ...conn[d.end], x: end.x, y: end.y } } as Partial<ConnectorElement> });
           }
           useEditor.setState({ hoverId: null });
+          useEndpointDrag.setState({ active: false });
           s.endInteraction();
           return;
         }
@@ -697,10 +691,13 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
       s.updateElements({ [connId]: { waypoints: wps.length ? wps : undefined } });
       return;
     }
+    // Double-click an extra connector label edits it.
+    if (openExtraLabelEditorAt(e.clientX, e.clientY)) return;
     // Pointer capture retargets dblclick to the canvas, so hit-test the point instead.
     const elId = elementIdAt(e.clientX, e.clientY);
     const el = elId ? s.doc.elements[elId] : undefined;
     if (el && !isLocked(s.doc, el)) {
+      if (handleDoubleClick(el, clientToWorld(e.clientX, e.clientY))) return;
       // First double-click inside a selected group drills into it.
       if (el.groupIds.length && s.selection.length > 1 && s.selection.includes(el.id)) {
         s.select([el.id]);
@@ -726,7 +723,7 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
     }
     const s = useEditor.getState();
     const elId = elementIdAt(e.clientX, e.clientY);
-    if (elId && !s.selection.includes(elId)) s.select(groupMembers(s.doc, elId));
+    if (elId && !s.selection.includes(elId)) s.select(pickMembers(s.doc, elId));
     if (!elId) s.clearSelection();
     const w = clientToWorld(e.clientX, e.clientY);
     useUi.getState().set({ contextMenu: { x: e.clientX, y: e.clientY } });
@@ -781,7 +778,7 @@ function resizeTo(d: Extract<Drag, { type: 'resize' }>, pw: Vec, e: React.Pointe
   }
   let nw = Math.max(4, Math.abs(x2 - x1));
   let nh = Math.max(4, Math.abs(y2 - y1));
-  if (e.shiftKey && b.w && b.h) {
+  if ((e.shiftKey || keepsAspect(d.start.values())) && b.w && b.h) {
     const ratio = b.w / b.h;
     if (h === 'n' || h === 's') nw = nh * ratio;
     else if (h === 'e' || h === 'w') nh = nw / ratio;
@@ -841,29 +838,11 @@ function projectOnPolyline(pts: Vec[], p: Vec): { t: number; offset: number } {
   return { t: total ? best.along / total : 0.5, offset: best.offset };
 }
 
-function finishFreehand(points: Vec[]) {
-  if (points.length < 2) return;
-  const s = useEditor.getState();
-  const xs = points.map((p) => p.x);
-  const ys = points.map((p) => p.y);
-  const x = Math.min(...xs);
-  const y = Math.min(...ys);
-  const w = Math.max(4, Math.max(...xs) - x);
-  const h = Math.max(4, Math.max(...ys) - y);
-  // Thin out the stroke (keep every point ≥ 3px apart).
-  const kept: Vec[] = [points[0]];
-  for (const p of points.slice(1)) if (dist(kept[kept.length - 1], p) >= 3) kept.push(p);
-  if (kept[kept.length - 1] !== points[points.length - 1]) kept.push(points[points.length - 1]);
-  const el = createShape('freehand', { x, y, w, h }, { fill: 'none', strokeWidth: 2, stroke: '#1e293b' });
-  el.points = kept.map((p) => ({ x: (p.x - x) / w, y: (p.y - y) / h }));
-  s.addElements([el]);
-}
-
 /** Topmost container whose bounds contain `p`. */
 function findContainer(doc: Doc, p: Vec, exclude: Set<string>): ShapeElement | null {
   for (let i = doc.order.length - 1; i >= 0; i--) {
     const el = doc.elements[doc.order[i]];
-    if (isShape(el) && !exclude.has(el.id) && !el.collapsed && getShapeDef(el.kind).container && !isHidden(doc, el) && containsPoint(shapeRect(el), p)) return el;
+    if (isShape(el) && !exclude.has(el.id) && !el.collapsed && isContainerShape(el) && !isHidden(doc, el) && containsPoint(shapeRect(el), p)) return el;
   }
   return null;
 }

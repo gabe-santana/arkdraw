@@ -3,7 +3,9 @@
  * OpenDraw icon library builder.
  *
  * Downloads the official architecture icon packs from each cloud vendor (plus
- * Kubernetes and the Iconify "logos" set), keeps only SVGs, sanitizes and
+ * Kubernetes, the Iconify "logos" set and the permissively licensed generic UI
+ * icon sets Material Symbols, Font Awesome Free, Fluent UI System Icons and
+ * Bootstrap Icons), keeps only SVGs, sanitizes and
  * optimizes them with SVGO, and writes them to `public/icons/` together with
  * JSON manifests the app consumes:
  *
@@ -156,9 +158,51 @@ const CONFIG = {
         '- CC0 covers the collection\'s copyright only; the logos themselves are trademarks of their respective owners and their use is subject to each owner\'s brand guidelines.',
       ],
     },
+    // Generic UI icon sets (permissive licenses), fetched as Iconify JSON from the npm registry via jsDelivr.
+    material: {
+      name: 'Material Symbols',
+      page: 'https://github.com/google/material-design-icons',
+      iconify: [{ set: 'material-symbols', version: '1.2.96' }],
+      style: 'outline',
+      license: 'Apache-2.0 (Material Symbols by Google).',
+      terms: [
+        '- License: Apache License 2.0 — https://github.com/google/material-design-icons/blob/master/LICENSE (via the `@iconify-json/material-symbols` npm package).',
+        '- Only the "Outline" variant of each symbol is included (the filled variant when no outline exists).',
+      ],
+    },
+    fontawesome: {
+      name: 'Font Awesome Free',
+      page: 'https://fontawesome.com/',
+      iconify: [
+        { set: 'fa6-solid', version: '1.2.4' },
+        { set: 'fa6-regular', version: '1.2.4', suffix: 'Regular' },
+      ],
+      license: 'CC BY 4.0 (Font Awesome Free 6 icons by Fonticons, Inc.). Attribution required.',
+      terms: [
+        '- Attribution: "Font Awesome Free" by Fonticons, Inc. (https://fontawesome.com), icons licensed under CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/ and https://fontawesome.com/license/free (via the `@iconify-json/fa6-solid` and `@iconify-json/fa6-regular` npm packages).',
+        '- Only the Solid and Regular styles are included; the Brands set (trademarks) is not. The SVGs were recoloured from `currentColor` to a dark slate and optimized; no other changes.',
+      ],
+    },
+    fluent: {
+      name: 'Fluent UI System Icons',
+      page: 'https://github.com/microsoft/fluentui-system-icons',
+      iconify: [{ set: 'fluent', version: '1.2.60', keep: /-24-regular$/ }],
+      license: 'MIT (Fluent UI System Icons, Copyright (c) Microsoft Corporation).',
+      terms: [
+        '- License: MIT — https://github.com/microsoft/fluentui-system-icons/blob/main/LICENSE (via the `@iconify-json/fluent` npm package).',
+        '- Only the 24px "Regular" variants are included.',
+      ],
+    },
+    'bootstrap-icons': {
+      name: 'Bootstrap Icons',
+      page: 'https://icons.getbootstrap.com/',
+      iconify: [{ set: 'bi', version: '1.2.7' }],
+      license: 'MIT (Bootstrap Icons, Copyright (c) The Bootstrap Authors).',
+      terms: ['- License: MIT — https://github.com/twbs/icons/blob/main/LICENSE.md (via the `@iconify-json/bi` npm package).'],
+    },
   },
   // Output order of providers.json (priority order).
-  order: ['aws', 'azure', 'gcp', 'oci', 'alibaba', 'ibm', 'kubernetes', 'logos'],
+  order: ['aws', 'azure', 'gcp', 'oci', 'alibaba', 'ibm', 'kubernetes', 'logos', 'material', 'fontawesome', 'fluent', 'bootstrap-icons'],
 };
 // ============================================================================
 
@@ -1284,7 +1328,127 @@ async function buildLogos(_ctx, set) {
   };
 }
 
+// ----------------------------------------------------------------------------
+// Generic UI icon sets (Iconify JSON): Material Symbols, Font Awesome Free,
+// Fluent UI System Icons, Bootstrap Icons
+// ----------------------------------------------------------------------------
+const ICON_INK = '#1e293b'; // icons render through <image>, where currentColor would be plain black
+
+/** Keyword-based categories for sets that ship none (first match wins). */
+const UI_CATEGORIES = [
+  ['Arrows', /arrow|chevron|caret|direction|undo|redo|swap|expand|collapse|sort|reply|forward|(^|-)(up|down|left|right)(-|$)/],
+  ['Time & Calendar', /calendar|clock|time|alarm|hourglass|history|timer|stopwatch|schedule/],
+  ['Charts & Data', /chart|graph|(^|-)bar-|pie|data|trending|analytics|poll|database|table/],
+  ['Communication', /chat|mail|envelope|send|call|phone|comment|message|inbox|megaphone|bell|alert-urgent|notification|mention|translate|share/],
+  ['Files & Documents', /file|document|folder|clipboard|book|journal|note|page|paper|archive|receipt|attach|save|download|upload/],
+  ['Devices & Hardware', /laptop|desktop|tablet|device|keyboard|mouse|printer|server|cpu|memory|hdd|usb|battery|plug|tv|display|monitor|router|wifi|bluetooth|storage|drive|sd-card|motherboard|gpu|smartwatch|headset|cable|ethernet/],
+  ['Media', /play|pause|stop|music|video|camera|image|photo|film|record|volume|speaker|headphone|mic|movie|album|cast|slide/],
+  ['Editing & Text', /text|font|type|bold|italic|underline|strike|align|edit|pen|pencil|paint|brush|eraser|cut|copy|paste|highlight|list|format|paragraph|quote|code|braces|brackets|indent|spell/],
+  ['People', /person|people|user|account|contact|emoji|hand|face|guest|group|team|accessib/],
+  ['Commerce & Finance', /cart|bag|shop|store|money|cash|coin|currency|wallet|credit|card|bank|tag|gift|payment|dollar|euro|pound|yen|bitcoin|savings|ticket|wallet|percent/],
+  ['Maps & Travel', /map|location|pin|globe|earth|compass|airplane|plane|car|bus|train|vehicle|bicycle|bike|truck|ship|building|home|house|geo|signpost|navigation|route|road|gas|parking|hotel/],
+  ['Security', /lock|shield|key|password|fingerprint|secur|incognito|eye|privacy|badge|certificate/],
+  ['Weather & Nature', /cloud|sun|moon|rain|snow|weather|thunder|lightning|wind|tree|leaf|water|fire|drop|umbrella|tornado|star|flower|plant|bug|animal|paw/],
+  ['Status & Actions', /check|warning|error|info|question|exclamation|dismiss|(^|-)x(-|$)|add|plus|dash|minus|subtract|delete|trash|heart|bookmark|flag|search|filter|settings|gear|toggle|power|refresh|sync|link|pin|block|ban/],
+  ['Shapes & Layout', /square|circle|triangle|hexagon|diamond|grid|layout|border|layer|panel|window|app|column|row|box|frame|shape/],
+];
+const uiCategory = (name) => UI_CATEGORIES.find(([, re]) => re.test(name))?.[0] ?? 'General';
+
+/** Builds a standalone SVG for an Iconify icon (or alias) of `data`; null when unsupported. */
+function iconifySvg(data, key) {
+  let icon = data.icons[key];
+  const alias = data.aliases?.[key];
+  if (!icon && alias) {
+    if (alias.rotate || alias.hFlip || alias.vFlip || !data.icons[alias.parent]) return null;
+    icon = { ...data.icons[alias.parent], ...alias };
+  }
+  if (!icon || icon.hidden || icon.rotate) return null;
+  const w = icon.width ?? data.width ?? 16;
+  const h = icon.height ?? data.height ?? 16;
+  const left = icon.left ?? data.left ?? 0;
+  const top = icon.top ?? data.top ?? 0;
+  let body = icon.body.replace(/currentColor/g, ICON_INK);
+  const tf = [];
+  if (icon.hFlip) tf.push(`translate(${2 * left + w} 0) scale(-1 1)`);
+  if (icon.vFlip) tf.push(`translate(0 ${2 * top + h}) scale(1 -1)`);
+  if (tf.length) body = `<g transform="${tf.join(' ')}">${body}</g>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${left} ${top} ${w} ${h}">${body}</svg>`;
+}
+
+/** Icon names of a Material Symbols set: one per symbol, preferring the outline variant. */
+function materialPick(data) {
+  const all = new Set([...Object.keys(data.icons), ...Object.keys(data.aliases ?? {})]);
+  const SUFFIXES = ['outline-rounded', 'outline-sharp', 'rounded', 'sharp', 'outline'];
+  const isVariant = (n) => SUFFIXES.some((s) => n.endsWith(`-${s}`) && all.has(n.slice(0, -(s.length + 1))));
+  return [...all]
+    .filter((n) => !isVariant(n))
+    .map((base) => ({ base, key: all.has(`${base}-outline`) ? `${base}-outline` : base }));
+}
+
+async function buildIconify(ctx, set, id) {
+  const cfg = CONFIG.providers[id];
+  const versions = [];
+  for (const src of cfg.iconify) {
+    const url = (file) => `https://cdn.jsdelivr.net/npm/@iconify-json/${src.set}@${src.version}/${file}`;
+    const data = await ctx.json(url('icons.json'), `${src.set}-${src.version}-icons.json`);
+    let meta = {};
+    try {
+      meta = await ctx.json(url('metadata.json'), `${src.set}-${src.version}-metadata.json`);
+    } catch {
+      // metadata (categories) is optional
+    }
+    const catOf = new Map();
+    for (const [cat, names] of Object.entries(meta.categories ?? {})) for (const n of names) if (!catOf.has(n)) catOf.set(n, cat);
+    const picks =
+      cfg.style === 'outline'
+        ? materialPick(data)
+        : [...Object.keys(data.icons), ...Object.keys(data.aliases ?? {})]
+            .filter((k) => !src.keep || src.keep.test(k))
+            .map((key) => ({ base: src.keep ? key.replace(src.keep, '') : key, key }));
+    picks.sort((a, b) => a.base.localeCompare(b.base));
+    for (const { base, key } of picks) {
+      const svg = iconifySvg(data, key);
+      if (!svg) {
+        set.skipped++;
+        continue;
+      }
+      const fill = /-fill$/.test(base);
+      const stem = base.replace(/-fill$/, '');
+      const name = `${titleCase(stem)}${fill ? ' (filled)' : ''}${src.suffix ? ` (${src.suffix})` : ''}`;
+      const category = catOf.get(key) ?? catOf.get(base) ?? (catOf.size ? 'Other' : uiCategory(stem));
+      set.add({
+        category,
+        name,
+        slug: `${base}${src.suffix ? `-${src.suffix}` : ''}`,
+        svg,
+        keywords: [stem, src.suffix, fill ? 'filled solid' : '', cfg.name, 'icon ui glyph'],
+      });
+    }
+    versions.push(`@iconify-json/${src.set}@${src.version}`);
+  }
+  return { version: versions.join(', '), source: `${cfg.page} (via npm ${cfg.iconify.map((s) => `@iconify-json/${s.set}`).join(', ')})` };
+}
+
+/** Generated one-line descriptions for generic UI icon sets (keeps any hand-written entry). */
+function writeGeneratedDescriptions(outRoot, id, index) {
+  const cfg = CONFIG.providers[id];
+  if (!cfg.iconify) return;
+  const file = path.join(outRoot, id, 'descriptions.json');
+  const desc = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : {};
+  const out = {};
+  for (const icon of index.icons) {
+    out[icon.id] =
+      desc[icon.id] ??
+      `${icon.name}: a generic ${cfg.name} glyph (${icon.category.toLowerCase()}) for UI mockups, buttons, toolbars and diagram annotations.`;
+  }
+  fs.writeFileSync(file, `${JSON.stringify(out, null, 2)}\n`);
+}
+
 const BUILDERS = {
+  material: (ctx, set) => buildIconify(ctx, set, 'material'),
+  fontawesome: (ctx, set) => buildIconify(ctx, set, 'fontawesome'),
+  fluent: (ctx, set) => buildIconify(ctx, set, 'fluent'),
+  'bootstrap-icons': (ctx, set) => buildIconify(ctx, set, 'bootstrap-icons'),
   aws: buildAws,
   azure: buildAzure,
   gcp: buildGcp,
@@ -1382,6 +1546,7 @@ async function main() {
       const set = new IconSet(id);
       const meta = await BUILDERS[id](ctx, set);
       const index = set.write(opts.out, { name: cfg.name, license: cfg.license, ...meta });
+      writeGeneratedDescriptions(opts.out, id, index);
       log(`    ✓ ${index.icons.length} icons (${set.duplicates} duplicates dropped, ${set.skipped} skipped) in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
       results.push({ id, ok: true, count: index.icons.length });
     } catch (err) {

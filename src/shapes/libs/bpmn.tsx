@@ -11,7 +11,7 @@ import {
   FillOnly, Glyph, Line, Oval, TONE, arcD, clamp, circleD, f, ink, item, paper, pathOf, polar, regularPts, roundRectD, shape, solid,
   type Pt,
 } from './_kit2';
-import { renderPoolH, renderPoolV, topBandBox } from './containers';
+import { SWIM_PARAMS, renderPoolH, renderPoolV, swimHandles, topBandBox } from './containers';
 
 // ---------------------------------------------------------------------------
 // Markers (event triggers & gateway symbols), drawn around a centre point
@@ -566,14 +566,20 @@ const OTHER: ShapeDef[] = [
   shape('bpmn.pool', 'Pool', 'swimlane;html=1;horizontal=0;startSize=30;container=1;collapsible=0;whiteSpace=wrap;', (ctx) => renderPoolH(ctx), {
     container: true,
     textPlacement: 'custom',
+    params: SWIM_PARAMS(30),
+    handles: swimHandles('H'),
   }),
   shape('bpmn.poolV', 'Pool (vertical)', 'swimlane;html=1;startSize=30;container=1;collapsible=0;whiteSpace=wrap;', (ctx) => renderPoolV(ctx), {
     container: true,
     textBox: topBandBox,
+    params: SWIM_PARAMS(30),
+    handles: swimHandles('V'),
   }),
   shape('bpmn.lane', 'Lane', 'swimlane;html=1;horizontal=0;swimlaneLine=1;startSize=30;container=1;collapsible=0;whiteSpace=wrap;', (ctx) => renderPoolH(ctx, { tint: 0.03 }), {
     container: true,
     textPlacement: 'custom',
+    params: SWIM_PARAMS(30),
+    handles: swimHandles('H'),
   }),
   shape('bpmn.group', 'Group', 'rounded=1;arcSize=10;dashed=1;dashPattern=8 3 1 3;fillColor=none;container=1;verticalAlign=top;html=1;whiteSpace=wrap;', renderGroup, {
     container: true,

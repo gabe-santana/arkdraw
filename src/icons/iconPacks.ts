@@ -1,5 +1,6 @@
 /**
- * Vendor icon packs (AWS, Azure, GCP, OCI, Alibaba, IBM, Kubernetes, logos).
+ * Vendor icon packs (AWS, Azure, GCP, OCI, Alibaba, IBM, Kubernetes, logos) and
+ * generic UI icon sets (Material Symbols, Font Awesome Free, Fluent UI, Bootstrap Icons).
  * Produced by `npm run icons:fetch` into public/icons and bundled with the app,
  * so they work offline. Manifests are fetched lazily, one provider at a time.
  */

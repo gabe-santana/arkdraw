@@ -38,6 +38,8 @@ const parsePoints = (pts: string) =>
     .reduce<[number, number][]>((acc, v, i, arr) => (i % 2 === 0 ? [...acc, [v, arr[i + 1]]] : acc), []);
 
 let currentFill = 'hachure';
+/** Wobble for the current roughen() pass (style.sketchRoughness). */
+let currentRoughness = 1.15;
 
 function roughPrimitive(tag: string, p: Props, seed: number, key: string): ReactNode {
   const stroke = (p.stroke as string) ?? 'none';
@@ -45,7 +47,7 @@ function roughPrimitive(tag: string, p: Props, seed: number, key: string): React
   const strokeWidth = num(p.strokeWidth, 1);
   const options = {
     seed,
-    roughness: 1.15,
+    roughness: currentRoughness,
     bowing: 0.9,
     stroke: stroke === 'none' || stroke === 'transparent' ? 'none' : stroke,
     strokeWidth,
@@ -102,8 +104,9 @@ function roughPrimitive(tag: string, p: Props, seed: number, key: string): React
 const PRIMITIVES = new Set(['path', 'rect', 'ellipse', 'circle', 'line', 'polyline', 'polygon']);
 
 /** Converts every primitive in `node` to its hand-drawn equivalent. */
-export function roughen(node: ReactNode, seed: number, depth = 0, fillStyle?: string): ReactNode {
+export function roughen(node: ReactNode, seed: number, depth = 0, fillStyle?: string, roughness?: number): ReactNode {
   if (fillStyle) currentFill = fillStyle;
+  if (depth === 0) currentRoughness = roughness ?? 1.15;
   if (depth > 12 || node === null || node === undefined || typeof node === 'boolean') return node;
   if (typeof node === 'string' || typeof node === 'number') return node;
   if (Array.isArray(node)) return node.map((n, i) => roughenKeyed(n, seed + i * 7, depth, String(i)));
@@ -133,6 +136,6 @@ export function roughen(node: ReactNode, seed: number, depth = 0, fillStyle?: st
 }
 
 function roughenKeyed(node: ReactNode, seed: number, depth: number, key: string): ReactNode {
-  const out = roughen(node, seed, depth);
+  const out = roughen(node, seed, depth, undefined, currentRoughness);
   return isValidElement(out) && out.key == null ? cloneElement(out, { key }) : out;
 }

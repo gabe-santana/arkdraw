@@ -8,13 +8,14 @@
  * gesture becomes a single undo step.
  */
 import { create } from 'zustand';
-import type { ConnectorElement, DiagramElement, Doc, ElementStyle, Layer, Page, PageSettings, Rect, ShapeElement, Vec } from '@/model/types';
+import type { ConnectorElement, DiagramElement, Doc, DocumentMeta, ElementStyle, Layer, Page, PageSettings, Rect, ShapeElement, Vec } from '@/model/types';
 import { isConnector, isShape } from '@/model/types';
 import { uid } from '@/lib/id';
 import { rememberConnectorStyle } from '@/model/defaults';
 import { clamp, rotatedBounds, unionRects } from '@/lib/geometry';
 import { connectorGeometryInDoc } from '@/lib/connectorGeometry';
 import { boundsOfPoints } from '@/lib/geometry';
+import { effectiveSettings, pageGridPatch } from '@/styling/pageGrid';
 
 export interface Camera {
   x: number;
@@ -42,6 +43,10 @@ export interface Settings {
   adaptColors: boolean;
   /** Show connection points / quick-connect arrows on hover. */
   connectionPoints: boolean;
+  /** Grid dot color (absent = theme default). Per page via src/styling/pageGrid.ts. */
+  gridColor?: string;
+  /** View → Scrollbars: overlay scrollbars on the canvas. */
+  scrollbars?: boolean;
 }
 
 /** `select` | `hand` | `connector` | `shape:<preset id>` */
@@ -109,6 +114,8 @@ export interface EditorState {
   /** Layer new elements go into (null = the page's first layer). */
   activeLayerId: string | null;
   pageHistory: Record<string, PageHistory>;
+  /** File properties (File → Properties); replaced whenever a document is loaded. */
+  docMeta: DocumentMeta;
   /** View filter: when non-empty, only shapes carrying one of these tags are shown. */
   tagFilter: string[];
   /** Brief visual feedback after group / ungroup (cleared automatically). */
@@ -170,7 +177,7 @@ export interface EditorState {
   // --- pages
   /** Pages with the live doc merged in (for saving/exporting). */
   allPages: () => Page[];
-  loadPages: (pages: Page[], file: { path: string | null; name: string }) => void;
+  loadPages: (pages: Page[], file: { path: string | null; name: string; meta?: DocumentMeta }) => void;
   addPage: (name?: string, doc?: Doc) => void;
   duplicatePage: (id: string) => void;
   deletePage: (id: string) => void;
@@ -183,6 +190,8 @@ export interface EditorState {
   ensureLayers: () => Layer[];
   addLayer: (name?: string) => void;
   renameLayer: (id: string, name: string) => void;
+  /** Merges a patch into a layer (e.g. its Edit Data properties) as one undo step. */
+  updateLayer: (id: string, patch: Partial<Omit<Layer, 'id'>>) => void;
   setLayerVisible: (id: string, visible: boolean) => void;
   setLayerLocked: (id: string, locked: boolean) => void;
   deleteLayer: (id: string) => void;
@@ -293,6 +302,7 @@ export const isLocked = (doc: Doc, el: DiagramElement | undefined): boolean => !
 /** True if the element is hidden (layer hidden or inside a collapsed container). */
 export function isHidden(doc: Doc, el: DiagramElement | undefined): boolean {
   if (!el) return true;
+  if (el.hidden) return true;
   if (!layerOf(doc, el).visible) return true;
   let parentId = el.type === 'shape' ? el.containerId : undefined;
   let guard = 0;
@@ -318,7 +328,7 @@ export function renderOrder(doc: Doc): string[] {
 
 export const newPage = (name: string, doc: Doc = EMPTY_DOC): Page => ({ id: uid(), name, doc, settings: { ...DEFAULT_PAGE_SETTINGS } });
 
-const pagesMeta = (pages: Page[]) => JSON.stringify(pages.map((p) => [p.id, p.name, p.settings]));
+const pagesMeta = (pages: Page[]) => JSON.stringify(pages.map((p) => [p.id, p.name, p.settings, p.data]));
 
 const FIRST_PAGE = newPage('Page 1');
 
@@ -376,6 +386,7 @@ export const useEditor = create<EditorState>((set, get) => {
     activePageId: FIRST_PAGE.id,
     activeLayerId: null,
     pageHistory: {},
+    docMeta: {},
     tagFilter: [],
     flash: null,
 
@@ -441,11 +452,15 @@ export const useEditor = create<EditorState>((set, get) => {
     updateSettings: (patch) => {
       const settings = { ...get().settings, ...patch };
       try {
-        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+        // Persist the global defaults (not the active page's grid overrides).
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...loadSettings(), ...patch }));
       } catch {
         /* storage unavailable */
       }
       set({ settings });
+      // Grid & snap are per page as well (src/styling/pageGrid.ts).
+      const pagePatch = pageGridPatch(patch, settings);
+      if (pagePatch) get().updatePageSettings(pagePatch);
     },
 
     // --- selection ----------------------------------------------------------
@@ -460,7 +475,7 @@ export const useEditor = create<EditorState>((set, get) => {
     },
     selectAll: () => {
       const { doc } = get();
-      set({ selection: doc.order.filter((id) => !isLocked(doc, doc.elements[id]) && !isHidden(doc, doc.elements[id])) });
+      set({ selection: doc.order.filter((id) => !isLocked(doc, doc.elements[id]) && !isHidden(doc, doc.elements[id]) && doc.elements[id].behavior?.selectable !== false) });
     },
     clearSelection: () => set({ selection: [], editingId: null }),
     setEditing: (id) => set({ editingId: id }),
@@ -749,8 +764,10 @@ export const useEditor = create<EditorState>((set, get) => {
         pages: list,
         activePageId: first.id,
         doc: first.doc,
+        settings: effectiveSettings(loadSettings(), first.settings),
         activeLayerId: null,
         pageHistory: {},
+        docMeta: file.meta ?? {},
         past: [],
         future: [],
         selection: [],
@@ -776,7 +793,7 @@ export const useEditor = create<EditorState>((set, get) => {
       if (!src) return;
       const clones = cloneElements(src.doc.order.map((oid) => src.doc.elements[oid]), { x: 0, y: 0 });
       const doc: Doc = { elements: Object.fromEntries(clones.map((e) => [e.id, e])), order: clones.map((e) => e.id), layers: src.doc.layers };
-      const copy: Page = { id: uid(), name: `${src.name} copy`, doc, settings: { ...src.settings } };
+      const copy: Page = { id: uid(), name: `${src.name} copy`, doc, settings: { ...src.settings }, ...(src.data ? { data: { ...src.data } } : {}) };
       const idx = pages.indexOf(src);
       set({ pages: [...pages.slice(0, idx + 1), copy, ...pages.slice(idx + 1)] });
       get().switchPage(copy.id);
@@ -788,7 +805,7 @@ export const useEditor = create<EditorState>((set, get) => {
       const rest = pages.filter((p) => p.id !== id);
       if (get().activePageId === id) {
         const next = rest[Math.max(0, idx - 1)];
-        set({ pages: rest, activePageId: next.id, doc: next.doc, past: [], future: [], selection: [], activeLayerId: null });
+        set({ pages: rest, activePageId: next.id, doc: next.doc, past: [], future: [], selection: [], activeLayerId: null, settings: effectiveSettings(loadSettings(), next.settings) });
       } else set({ pages: rest });
     },
     renamePage: (id, name) => set({ pages: get().pages.map((p) => (p.id === id ? { ...p, name } : p)) }),
@@ -811,6 +828,7 @@ export const useEditor = create<EditorState>((set, get) => {
         pageHistory: history,
         activePageId: id,
         doc: target.doc,
+        settings: effectiveSettings(loadSettings(), target.settings),
         past: restored?.past ?? [],
         future: restored?.future ?? [],
         camera: restored?.camera ?? s.camera,
@@ -841,6 +859,10 @@ export const useEditor = create<EditorState>((set, get) => {
     renameLayer: (id, name) => {
       const layers = get().ensureLayers();
       commit({ ...get().doc, layers: layers.map((l) => (l.id === id ? { ...l, name } : l)) });
+    },
+    updateLayer: (id, patch) => {
+      const layers = get().ensureLayers();
+      commit({ ...get().doc, layers: layers.map((l) => (l.id === id ? { ...l, ...patch } : l)) });
     },
     setLayerVisible: (id, visible) => {
       const layers = get().ensureLayers();

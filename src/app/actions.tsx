@@ -29,7 +29,18 @@ import {
   removeFromGroup, reverseConnectors, rotateSelection, selectByType, selectGroupOrChildren, setDefaultStyleFromSelection,
   toggleFullscreen, toggleTextStyle, stepFontSize, pickReplacement, zoomToPage,
 } from './commands';
-import { printDiagram } from './print';
+import { AUTOMATION_ACTIONS } from '@/automation/actions';
+import { openAutomationDialog } from '@/automation/ui';
+import { RemoveFormatting } from 'lucide-react';
+import { clearFormatting } from '@/text/clearFormatting';
+import { AppWindow, FileCog, RefreshCw } from 'lucide-react';
+import { isTauri } from '@/lib/platform';
+import { openNewWindow } from '@/desktop/windows';
+import { checkForUpdates } from '@/desktop/updater';
+import { showConfigFile } from '@/desktop/startup';
+import { STYLING_ACTIONS } from '@/styling/actions';
+import { INTERACTION_ACTIONS } from '@/interaction/actions';
+import { CONNECTOR_ACTIONS } from '@/panels/connectorActions';
 
 export type ActionGroup = 'File' | 'Edit' | 'View' | 'Arrange' | 'Tools' | 'Help' | 'AI' | 'Layout';
 
@@ -84,6 +95,7 @@ const tool = (id: string, label: string, icon: ReactNode, keys: string[]): Actio
 export const ACTIONS: Action[] = [
   // --- File -----------------------------------------------------------------
   { id: 'file.new', label: 'New diagram', group: 'File', icon: <FilePlus />, shortcuts: ['Mod+N'], run: newDocument },
+  { id: 'file.newWindow', label: 'New window', group: 'File', icon: <AppWindow />, shortcuts: ['Mod+Shift+N'], run: () => void openNewWindow(), enabled: isTauri, hidden: !isTauri(), keywords: 'second editor instance' },
   { id: 'file.templates', label: 'New from template…', group: 'File', icon: <LayoutTemplate />, run: () => ui().set({ templatesOpen: true }), keywords: 'gallery examples' },
   { id: 'file.open', label: 'Open…', group: 'File', icon: <FolderOpen />, shortcuts: ['Mod+O'], run: openDocument, keywords: 'import drawio vsdx gliffy' },
   {
@@ -106,7 +118,7 @@ export const ACTIONS: Action[] = [
     keywords: 'png svg pdf drawio gif jpeg webp html vsdx image',
   },
   { id: 'file.revisions', label: 'Revision history…', group: 'File', icon: <History />, shortcuts: ['Mod+Alt+Shift+H'], run: () => ui().set({ revisionsOpen: true }), keywords: 'versions restore backup' },
-  { id: 'file.print', label: 'Print…', group: 'File', icon: <Printer />, shortcuts: ['Mod+P'], run: () => void printDiagram() },
+  { id: 'file.print', label: 'Print…', group: 'File', icon: <Printer />, shortcuts: ['Mod+P'], run: () => openAutomationDialog({ kind: 'print' }), keywords: 'paper pages scale fit sheets' },
 
   // --- Edit -----------------------------------------------------------------
   { id: 'edit.undo', label: 'Undo', group: 'Edit', icon: <Undo2 />, shortcuts: ['Mod+Z'], run: () => ed().undo(), enabled: () => ed().past.length > 0 },
@@ -138,6 +150,7 @@ export const ACTIONS: Action[] = [
   { id: 'format.underline', label: 'Underline', group: 'Edit', icon: <Underline />, shortcuts: ['Mod+U'], run: () => toggleTextStyle('underline'), enabled: hasText, keywords: 'text font' },
   { id: 'format.fontBigger', label: 'Increase font size', group: 'Edit', shortcuts: ['Mod+Shift+.'], run: () => stepFontSize(1), enabled: hasText, keywords: 'text larger grow' },
   { id: 'format.fontSmaller', label: 'Decrease font size', group: 'Edit', shortcuts: ['Mod+Shift+,'], run: () => stepFontSize(-1), enabled: hasText, keywords: 'text smaller shrink' },
+  { id: 'format.clear', label: 'Clear formatting', group: 'Edit', icon: <RemoveFormatting />, run: clearFormatting, enabled: hasText, keywords: 'text reset plain remove style' },
   { id: 'edit.replaceShape', label: 'Replace shape…', group: 'Edit', icon: <Replace />, run: pickReplacement, enabled: () => ed().selection.some((id) => isShape(ed().doc.elements[id])), keywords: 'turn into change convert swap kind' },
   { id: 'edit.lock', label: 'Lock / unlock', group: 'Edit', icon: <Lock />, shortcuts: ['Mod+L'], run: () => ed().toggleLock(), enabled: hasSelection },
   { id: 'edit.find', label: 'Find & replace…', group: 'Edit', icon: <Search />, shortcuts: ['Mod+F'], run: () => ui().set({ findOpen: true }) },
@@ -199,6 +212,7 @@ export const ACTIONS: Action[] = [
   { id: 'view.connectionPoints', label: 'Connection points', group: 'View', run: () => ed().updateSettings({ connectionPoints: !ed().settings.connectionPoints }), checked: () => ed().settings.connectionPoints },
   { id: 'view.guides', label: 'Guides', group: 'View', run: () => ed().updateSettings({ guides: !ed().settings.guides }), checked: () => ed().settings.guides },
   { id: 'view.rulers', label: 'Rulers', group: 'View', icon: <Ruler />, shortcuts: ['Mod+Shift+R'], run: () => ui().set({ rulers: !ui().rulers }), checked: () => ui().rulers },
+  ...STYLING_ACTIONS,
   {
     id: 'view.pageView',
     label: 'Page view',
@@ -329,9 +343,37 @@ export const ACTIONS: Action[] = [
 
   // --- Help -----------------------------------------------------------------
   { id: 'help.shortcuts', label: 'Keyboard shortcuts', group: 'Help', icon: <Keyboard />, shortcuts: ['Mod+/'], run: () => ui().set({ shortcutsOpen: true }) },
+  { id: 'help.checkUpdates', label: 'Check for updates…', group: 'Help', icon: <RefreshCw />, run: () => void checkForUpdates(), enabled: isTauri, hidden: !isTauri(), keywords: 'update upgrade version release' },
+  { id: 'extras.configFile', label: 'Show desktop config file (config.json)', group: 'Help', icon: <FileCog />, run: () => void showConfigFile(), enabled: isTauri, hidden: !isTauri(), keywords: 'config.json plugins spell check language settings' },
+
+  // --- Editing & interaction (src/interaction) --------------------------------
+  ...INTERACTION_ACTIONS,
+  // --- Connectors (src/panels/connectorActions.tsx) ---------------------------
+  ...CONNECTOR_ACTIONS,
 ];
 
+// Data, storage, import/export and automation commands (src/automation/actions.tsx).
+ACTIONS.push(...AUTOMATION_ACTIONS);
+
 export const ACTION_MAP: Record<string, Action> = Object.fromEntries(ACTIONS.map((a) => [a.id, a]));
+
+/** Bumped whenever actions are added/removed at runtime (palette re-indexes). */
+export let actionsVersion = 0;
+
+/** Adds (or replaces) an action at runtime — extensions and plugins. Returns a remover. */
+export function registerAction(action: Action): () => void {
+  const i = ACTIONS.findIndex((a) => a.id === action.id);
+  if (i >= 0) ACTIONS.splice(i, 1, action);
+  else ACTIONS.push(action);
+  ACTION_MAP[action.id] = action;
+  actionsVersion++;
+  return () => {
+    const j = ACTIONS.indexOf(action);
+    if (j >= 0) ACTIONS.splice(j, 1);
+    if (ACTION_MAP[action.id] === action) delete ACTION_MAP[action.id];
+    actionsVersion++;
+  };
+}
 
 export function runAction(id: string) {
   const a = ACTION_MAP[id];

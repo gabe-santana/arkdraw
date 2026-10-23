@@ -25,7 +25,7 @@ export function LeftPanel() {
   const tab = useUi((s) => s.leftTab);
   const set = useUi((s) => s.set);
   return (
-    <aside className="animate-slide-up pointer-events-auto flex h-full w-[264px] flex-col overflow-hidden rounded-2xl bg-panel shadow-panel">
+    <aside aria-label="Shapes panel" className="animate-slide-up pointer-events-auto flex h-full w-[264px] flex-col overflow-hidden rounded-2xl bg-panel shadow-panel">
       <div className="p-2 pb-1.5">
         <Segmented<LeftTab>
           value={tab}
@@ -306,6 +306,10 @@ const PROVIDER_ACCENT: Record<string, string> = {
   ibm: '#0f62fe',
   kubernetes: '#326ce5',
   logos: '#8b5cf6',
+  material: '#1a73e8',
+  fontawesome: '#538dd7',
+  fluent: '#0f6cbd',
+  'bootstrap-icons': '#7952b3',
 };
 
 function IconsTab() {
@@ -363,7 +367,7 @@ function IconsTab() {
   return (
     <>
       <div className="px-2 pb-2">
-        <SearchInput value={query} onChange={setQuery} placeholder="Search 4,000+ icons" />
+        <SearchInput value={query} onChange={setQuery} placeholder={`Search ${Math.max(4, Math.floor((providers ?? []).reduce((n, p) => n + p.count, 0) / 1000))},000+ icons`} />
       </div>
       {!query && (
         <div className="no-scrollbar flex gap-1 overflow-x-auto px-2 pb-2 [mask-image:linear-gradient(to_right,transparent,black_10px,black_calc(100%-18px),transparent)]">

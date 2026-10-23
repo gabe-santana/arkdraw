@@ -7,10 +7,15 @@ import type { Page } from '@/model/types';
 import { saveTarget } from './saveTarget';
 import { isDirtyState, newPage, useEditor } from '@/store/editor';
 import { useUi } from '@/store/ui';
-import { FILE_EXTENSION, FileFormatError, parsePages, serializePages } from '@/io/fileFormat';
+import { FILE_EXTENSION, FileFormatError, parseMeta, parsePages, serializePages } from '@/io/fileFormat';
+import type { DocumentMeta } from '@/model/types';
+import { commitSavedMeta, metaForSave } from '@/automation/fileProperties';
 import { importDrawioPages } from '@/io/drawio';
 import { IMPORTERS, importerFor } from '@/io/import';
-import { addRecentFile, baseName, pickAndOpenFile, readFile, saveFile, type OpenedFile } from '@/io/native';
+import { addRecentFile, baseName, pickAndOpenAnyFile, pickOpenPath, readAnyFile, saveFile, type OpenedFile } from '@/io/native';
+import { isTauri } from '@/lib/platform';
+import { askOpenWhere, openNewWindow, windowScopedKey } from '@/desktop/windows';
+import { backupsEnabled } from '@/desktop/config';
 
 const FILTERS = [{ name: 'OpenDraw Diagram', extensions: [FILE_EXTENSION] }];
 
@@ -61,12 +66,12 @@ export async function newDocument() {
 type IncomingFile = OpenedFile | { name: string; bytes: Uint8Array; path: null };
 
 /** Turns any supported file into pages. `native` = an OpenDraw file (keeps its path). */
-async function pagesFromFile(f: IncomingFile): Promise<{ pages: Page[]; native: boolean; warnings?: string[] }> {
+async function pagesFromFile(f: IncomingFile): Promise<{ pages: Page[]; native: boolean; warnings?: string[]; meta?: DocumentMeta }> {
   const lower = f.name.toLowerCase();
   const ext = lower.split('.').pop() ?? '';
   const text = 'contents' in f ? f.contents : null;
   const asText = () => text ?? new TextDecoder().decode((f as { bytes: Uint8Array }).bytes);
-  if (ext === FILE_EXTENSION) return { pages: parsePages(asText()), native: true };
+  if (ext === FILE_EXTENSION) return { pages: parsePages(asText()), native: true, meta: parseMeta(asText()) };
   const importer = importerFor(lower);
   if (importer) {
     const res = await importer.run('bytes' in f ? f.bytes : asText(), f.name);
@@ -76,16 +81,17 @@ async function pagesFromFile(f: IncomingFile): Promise<{ pages: Page[]; native: 
   if (ext === 'drawio' || ext === 'xml' || body.trimStart().startsWith('<')) {
     return { pages: (await importDrawioPages(body)).map((p) => newPage(p.name, p.doc)), native: false };
   }
-  return { pages: parsePages(body), native: true };
+  return { pages: parsePages(body), native: true, meta: parseMeta(body) };
 }
 
 export async function loadOpenedFile(f: IncomingFile) {
   const ui = useUi.getState();
   try {
-    const { pages, native, warnings } = await pagesFromFile(f);
+    const { pages, native, warnings, meta } = await pagesFromFile(f);
     const s = useEditor.getState();
     if (native) {
-      s.loadPages(pages, { path: f.path, name: f.name });
+      s.loadPages(pages, { path: f.path, name: f.name, meta });
+      void import('@/storage/recent').then((r) => r.noteCurrentDocument());
       if (f.path) addRecentFile(f.path).catch(() => {});
     } else {
       // Imported files become a new, unsaved OpenDraw document.
@@ -102,9 +108,15 @@ export async function loadOpenedFile(f: IncomingFile) {
 }
 
 export async function openDocument() {
-  if (!(await confirmDiscard())) return;
   try {
-    const f = await pickAndOpenFile(openFilters());
+    // Desktop: pick first, so unsaved changes can offer "Open in new window" (openPath).
+    if (isTauri()) {
+      const path = await pickOpenPath(openFilters());
+      if (path) await openPath(path);
+      return;
+    }
+    if (!(await confirmDiscard())) return;
+    const f = await pickAndOpenAnyFile(openFilters());
     if (f) await loadOpenedFile(f);
   } catch (e) {
     useUi.getState().toast(String((e as Error).message ?? e), 'error');
@@ -112,9 +124,15 @@ export async function openDocument() {
 }
 
 export async function openPath(path: string) {
+  if (isTauri() && isDirty()) {
+    const where = await askOpenWhere(path, useEditor.getState().file.name);
+    if (where === 'cancel') return;
+    if (where === 'window') return openNewWindow(path);
+  }
   if (!(await confirmDiscard())) return;
   try {
-    await loadOpenedFile(await readFile(path));
+    // .vsdx / .png arrive as bytes (src/io/native.ts readAnyFile).
+    await loadOpenedFile(await readAnyFile(path));
   } catch (e) {
     useUi.getState().toast(String(e), 'error');
   }
@@ -127,8 +145,19 @@ export async function saveDocument(saveAs = false): Promise<boolean> {
     target();
     return true;
   }
+  // Web: a document opened from / saved to the browser library saves back there (src/storage/library.ts).
+  if (!saveAs) {
+    const { docOrigin } = await import('@/storage/origin');
+    if (docOrigin()?.kind === 'library') {
+      const { saveCurrentToLibrary } = await import('@/storage/library');
+      const entry = await saveCurrentToLibrary();
+      if (entry) useUi.getState().toast('Saved to browser', 'success');
+      return !!entry;
+    }
+  }
   const s = useEditor.getState();
-  const contents = serializePages(s.allPages());
+  const meta = metaForSave();
+  const contents = serializePages(s.allPages(), meta);
   const name = s.file.name.endsWith(`.${FILE_EXTENSION}`) ? s.file.name : `${s.file.name}.${FILE_EXTENSION}`;
   try {
     const res = await saveFile(contents, {
@@ -136,9 +165,13 @@ export async function saveDocument(saveAs = false): Promise<boolean> {
       defaultName: name,
       filters: FILTERS,
       mime: 'application/json',
+      backup: backupsEnabled(),
+      document: saveAs ? 'saveAs' : 'save',
     });
     if (!res) return false;
+    commitSavedMeta(meta);
     useEditor.getState().markSaved(res.path, res.path ? baseName(res.path) : res.name);
+    void import('@/storage/recent').then((r) => r.noteCurrentDocument());
     if (res.path) addRecentFile(res.path).catch(() => {});
     useUi.getState().toast('Saved', 'success');
     clearRecovery();
@@ -154,7 +187,8 @@ export async function saveDocument(saveAs = false): Promise<boolean> {
 // Crash recovery
 // ---------------------------------------------------------------------------
 
-const RECOVERY_KEY = 'opendraw:recovery';
+// Per window (desktop File → New window), so windows don't overwrite each other's draft.
+const RECOVERY_KEY = windowScopedKey('opendraw:recovery');
 
 export function startRecovery() {
   let timer = 0;
@@ -165,7 +199,7 @@ export function startRecovery() {
       if (!isDirty()) return clearRecovery();
       const cur = useEditor.getState();
       try {
-        localStorage.setItem(RECOVERY_KEY, JSON.stringify({ name: cur.file.name, path: cur.file.path, data: serializePages(cur.allPages()) }));
+        localStorage.setItem(RECOVERY_KEY, JSON.stringify({ name: cur.file.name, path: cur.file.path, data: serializePages(cur.allPages(), cur.docMeta) }));
       } catch {
         /* quota exceeded — ignore */
       }
@@ -189,7 +223,7 @@ export function restoreRecovery(): boolean {
     const { name, path, data } = JSON.parse(raw) as { name: string; path: string | null; data: string };
     const pages = parsePages(data);
     if (!pages.some((p) => p.doc.order.length)) return false;
-    useEditor.getState().loadPages(pages, { path, name });
+    useEditor.getState().loadPages(pages, { path, name, meta: parseMeta(data) });
     markUnsaved();
     return true;
   } catch {

@@ -37,6 +37,8 @@ import { viewportCenter } from '@/canvas/viewport';
 import { visualBounds } from '@/io/export/svg';
 import { isShape } from '@/model/types';
 import { CATEGORIES, TEMPLATES, searchTemplates, type Template, type TemplateCategory } from '@/templates';
+import { USER_CATEGORY, isUserTemplate, useUserTemplates } from '@/storage/userTemplates';
+import { UserCategoryIcon, UserTemplateTools, UserTemplatesRail } from '@/automation/TemplateTools';
 import { cachedThumb, previewPages, thumbnail, type Thumb } from '@/templates/thumbnails';
 import { Dialog, DialogHeader } from '@/ui/Dialog';
 import { Button } from '@/ui/Button';
@@ -178,7 +180,7 @@ function ThumbView({ t, pageIndex = 0, large = false, enabled }: { t: Template; 
 function loadCategory(): CategoryFilter {
   try {
     const v = localStorage.getItem(LAST_KEY);
-    return v && (v === 'all' || (CATEGORIES as readonly string[]).includes(v)) ? (v as CategoryFilter) : 'all';
+    return v && (v === 'all' || [...CATEGORIES, USER_CATEGORY].includes(v)) ? (v as CategoryFilter) : 'all';
   } catch {
     return 'all';
   }
@@ -206,7 +208,10 @@ function Gallery({ close }: { close: () => void }) {
     }
   }, [category]);
 
-  const matches = useMemo(() => searchTemplates(TEMPLATES, query), [query]);
+  // "My templates" (src/storage/userTemplates.ts) come first.
+  const userTemplates = useUserTemplates((s) => s.templates);
+  const allTemplates = useMemo(() => [...userTemplates, ...TEMPLATES], [userTemplates]);
+  const matches = useMemo(() => searchTemplates(allTemplates, query), [allTemplates, query]);
   const counts = useMemo(() => {
     const m = new Map<string, number>();
     for (const t of matches) m.set(t.category, (m.get(t.category) ?? 0) + 1);
@@ -216,7 +221,7 @@ function Gallery({ close }: { close: () => void }) {
   const focused = visible.find((t) => t.id === focusId) ?? visible[0];
   const sections = useMemo(() => {
     if (category !== 'all' || query) return [{ title: query ? `Results for “${query}”` : category, items: visible }];
-    return CATEGORIES.map((c) => ({ title: c, items: visible.filter((t) => t.category === c) })).filter((s) => s.items.length);
+    return [USER_CATEGORY, ...CATEGORIES].map((c) => ({ title: c, items: visible.filter((t) => t.category === c) })).filter((s) => s.items.length);
   }, [category, query, visible]);
 
   const focus = (t: Template | undefined) => {
@@ -280,6 +285,7 @@ function Gallery({ close }: { close: () => void }) {
           <SearchInput value={query} onChange={setQuery} placeholder="Search templates" autoFocus className="mb-2" />
           <RailItem active={category === 'all'} icon={LayoutGrid} label="All templates" count={matches.length} onClick={() => setCategory('all')} />
           <div className="mx-2 my-1.5 h-px bg-line" />
+          <UserTemplatesRail active={(category as string) === USER_CATEGORY} count={counts.get(USER_CATEGORY) ?? 0} onClick={() => setCategory(USER_CATEGORY as CategoryFilter)} />
           {CATEGORIES.map((c) => (
             <RailItem key={c} active={category === c} icon={CATEGORY_ICONS[c]} label={c} count={counts.get(c) ?? 0} onClick={() => setCategory(c)} />
           ))}
@@ -395,7 +401,7 @@ function Preview({ t, pageIndex, setPageIndex, close }: { t: Template; pageIndex
     const els = Object.values(page.doc.elements);
     return { shapes: els.filter(isShape).length, links: els.length - els.filter(isShape).length };
   }, [pages, pageIndex]);
-  const Icon = CATEGORY_ICONS[t.category];
+  const Icon = CATEGORY_ICONS[t.category] ?? UserCategoryIcon;
   return (
     <div key={t.id} className="animate-fade flex min-h-0 flex-1 flex-col p-4">
       <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl bg-white shadow-[0_1px_3px_rgb(15_23_42/0.08)] ring-1 ring-line">
@@ -454,6 +460,7 @@ function Preview({ t, pageIndex, setPageIndex, close }: { t: Template; pageIndex
         >
           Insert into current diagram
         </Button>
+        {isUserTemplate(t) && <UserTemplateTools t={t} />}
       </div>
     </div>
   );

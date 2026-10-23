@@ -7,6 +7,8 @@ import { Copy, Pencil, Plus, Trash } from 'lucide-react';
 import { useEditor } from '@/store/editor';
 import { cn } from '@/lib/cn';
 import { ContextMenu, type MenuEntry } from '@/ui/Menu';
+import { Database } from 'lucide-react';
+import { openAutomationDialog } from '@/automation/ui';
 import { Tooltip } from '@/ui/Tooltip';
 
 export function PageTabs() {
@@ -21,6 +23,7 @@ export function PageTabs() {
   const items = (id: string): MenuEntry[] => [
     { label: 'Rename', icon: <Pencil />, onSelect: () => setRenaming(id) },
     { label: 'Duplicate', icon: <Copy />, onSelect: () => s().duplicatePage(id) },
+    { label: 'Edit data…', icon: <Database />, onSelect: () => openAutomationDialog({ kind: 'data', target: { type: 'page', id } }) },
     { type: 'separator' },
     { label: 'Delete', icon: <Trash />, danger: true, disabled: pages.length <= 1, onSelect: () => s().deletePage(id) },
   ];

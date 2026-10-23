@@ -1,7 +1,8 @@
 import type { ElementStyle, Rect } from '@/model/types';
-import { FONT_STACKS } from '@/model/defaults';
+import { fontStack } from '@/text/fonts';
 import { baselineOffset, lineHeight, measureText, wrapText } from '@/lib/text';
 import { needsRich, RichTextBlock } from './RichText';
+import { flipAnchor, isRtl } from '@/text/direction';
 
 interface TextLinesProps {
   lines: string[];
@@ -19,15 +20,18 @@ export function TextLines({ lines, x, y, anchor, style, bold }: TextLinesProps) 
   const lh = lineHeight(style.fontSize);
   const base = baselineOffset(style.fontSize);
   const deco = [style.underline && 'underline', style.strike && 'line-through'].filter(Boolean).join(' ') || undefined;
+  // RTL swaps which side `start`/`end` anchor to; flip so alignment stays visual.
+  const rtl = !!style.textDirection && isRtl(style, lines.join(' '));
   return (
     <text
-      fontFamily={FONT_STACKS[style.fontFamily]}
+      direction={rtl ? 'rtl' : undefined}
+      fontFamily={fontStack(style.fontFamily)}
       fontSize={style.fontSize}
       fontWeight={(bold ?? style.bold) ? 700 : 400}
       fontStyle={style.italic ? 'italic' : undefined}
       fill={style.textColor}
       fillOpacity={style.textOpacity}
-      textAnchor={anchor}
+      textAnchor={rtl ? flipAnchor(anchor) : anchor}
       textDecoration={deco}
       xmlSpace="preserve"
     >
@@ -60,10 +64,11 @@ export function TextBlock({ box, text, style, wrap = true }: { box: Rect; text: 
         ? [box.x + box.w, 'end' as const]
         : [box.x + box.w / 2, 'middle' as const];
   let bg = null;
-  if (style.labelBackground && style.labelBackground !== 'none') {
+  const hasBg = !!style.labelBackground && style.labelBackground !== 'none';
+  if (hasBg || style.labelBorderColor) {
     const w = Math.max(...lines.map((l) => measureText(l, style)));
     const left = anchor === 'start' ? x : anchor === 'end' ? x - w : x - w / 2;
-    bg = <rect x={left - 4} y={y - 2} width={w + 8} height={total + 4} rx={3} fill={style.labelBackground} />;
+    bg = <rect x={left - 4} y={y - 2} width={w + 8} height={total + 4} rx={3} fill={hasBg ? style.labelBackground : 'none'} stroke={style.labelBorderColor} />;
   }
   return (
     <>

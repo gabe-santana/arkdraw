@@ -242,6 +242,8 @@ Multi-stage: `node:22-alpine` builds (`npm ci`, `npm run build:web`), then
   from the built `index.html` by `scripts/web/csp.mjs`, so it can't drift);
   `connect-src` allows `https:` (for `?url=` and AI providers) and
   `localhost` (Ollama); `img-src` allows remote images used by image shapes;
+  `style-src` / `font-src` allow `fonts.googleapis.com` / `fonts.gstatic.com`
+  for Google Fonts picked in Text → Font (only requested when a diagram uses one);
   `frame-ancestors` from `FRAME_ANCESTORS`.
 - `/healthz` for health checks (also used by the image's `HEALTHCHECK`).
 

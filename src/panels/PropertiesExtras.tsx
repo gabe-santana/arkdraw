@@ -1,21 +1,23 @@
 /**
  * draw.io-parity property sections: transform, effects, extended text,
- * connector routing/shape/jumps, data & links, and page settings.
+ * data & links, and page settings.
  */
 import {
-  FlipHorizontal2, FlipVertical2, Image as ImageIcon, Link2, RotateCw, Strikethrough, Underline, X, Database, Spline,
+  FlipHorizontal2, FlipVertical2, Image as ImageIcon, Link2, RotateCw, Strikethrough, Underline, X, Database,
 } from 'lucide-react';
 import type {
-  ConnectorElement, ConnectorShape, DiagramElement, ElementStyle, GradientDirection, LabelPosition, LineJumps, PaperSize, Routing, ShapeElement,
+  DiagramElement, ElementStyle, GradientDirection, PaperSize, ShapeElement,
 } from '@/model/types';
 import { PALETTE } from '@/model/defaults';
 import { useEditor } from '@/store/editor';
 import { useUi } from '@/store/ui';
 import { cn } from '@/lib/cn';
 import { PAPER_SIZES } from '@/canvas/paper';
-import { clearWaypoints, flipSelection, rotateSelection } from '@/app/commands';
+import { flipSelection, rotateSelection } from '@/app/commands';
 import { ColorField, NumberField, Segmented, Select, Slider, Switch } from '@/ui/controls';
 import { Row, Section, begin, common, end } from './sections';
+import { DiagramLanguageRow, LabelBoxControls, LabelPositionRow } from './TextSection';
+import { BackgroundUrlButton, SketchRoughnessRow } from './StyleSection';
 
 const ed = () => useEditor.getState();
 const setStyle = (els: DiagramElement[], patch: Partial<ElementStyle>) => ed().updateStyle(els.map((e) => e.id), patch);
@@ -108,6 +110,7 @@ export function EffectsSection({ els }: { els: ShapeElement[] }) {
           />
         </Row>
       )}
+      {!!st('sketch') && <SketchRoughnessRow els={els} />}
       <Switch label="Glass" checked={!!st('glass')} onChange={(glass) => setStyle(els, { glass: glass || undefined })} />
     </Section>
   );
@@ -138,19 +141,7 @@ export function TextExtras({ els }: { els: DiagramElement[] }) {
         <Switch label="Math" checked={!!st('math')} onChange={(math) => setStyle(els, { math: math || undefined })} />
       </div>
       {shapes && (
-        <Row label="Position">
-          <Select<LabelPosition>
-            value={(st('labelPosition') as LabelPosition | null) ?? 'inside'}
-            onChange={(labelPosition) => setStyle(els, { labelPosition: labelPosition === 'inside' ? undefined : labelPosition })}
-            options={[
-              { value: 'inside', label: 'Inside' },
-              { value: 'top', label: 'Top' },
-              { value: 'bottom', label: 'Bottom' },
-              { value: 'left', label: 'Left' },
-              { value: 'right', label: 'Right' },
-            ]}
-          />
-        </Row>
+        <LabelPositionRow els={els} />
       )}
       {shapes && (
         <div className="grid grid-cols-2 gap-1.5">
@@ -164,64 +155,12 @@ export function TextExtras({ els }: { els: DiagramElement[] }) {
       <Row label="Highlight">
         <ColorField label="Label background" value={(st('labelBackground') as string | null) ?? 'none'} onChange={(c) => setStyle(els, { labelBackground: c === 'none' ? undefined : c })} swatches={PALETTE.fills} allowNone />
       </Row>
+      <LabelBoxControls els={els} shapes={shapes} />
     </Section>
   );
 }
 
 // ---------------------------------------------------------------------------
-
-const ROUTINGS: Array<{ value: Routing; label: string }> = [
-  { value: 'orthogonal', label: 'Orthogonal (auto)' },
-  { value: 'straight', label: 'Straight' },
-  { value: 'curved', label: 'Curved' },
-  { value: 'elbow-h', label: 'Elbow (horizontal)' },
-  { value: 'elbow-v', label: 'Elbow (vertical)' },
-  { value: 'entity', label: 'Entity relation' },
-  { value: 'isometric', label: 'Isometric' },
-];
-
-export function ConnectorExtras({ connectors }: { connectors: ConnectorElement[] }) {
-  const update = (patch: Partial<ConnectorElement>) => ed().updateElements(Object.fromEntries(connectors.map((c) => [c.id, patch])));
-  const routing = common(connectors.map((c) => c.routing));
-  const shape = common(connectors.map((c) => c.connectorShape ?? 'line'));
-  const jumps = common(connectors.map((c) => c.lineJumps ?? 'none'));
-  const hasWaypoints = connectors.some((c) => c.waypoints?.length);
-  return (
-    <Section title="Route">
-      <Row label="Style">
-        <Select<Routing> value={routing} onChange={(r) => update({ routing: r, waypoints: undefined })} options={ROUTINGS} />
-      </Row>
-      <Row label="Shape">
-        <Select<ConnectorShape>
-          value={shape as ConnectorShape | null}
-          onChange={(connectorShape) => update({ connectorShape: connectorShape === 'line' ? undefined : connectorShape })}
-          options={[
-            { value: 'line', label: 'Line' },
-            { value: 'pipe', label: 'Pipe / wire' },
-            { value: 'arrow', label: 'Block arrow' },
-          ]}
-        />
-      </Row>
-      <Row label="Jumps">
-        <Select<LineJumps>
-          value={jumps as LineJumps | null}
-          onChange={(lineJumps) => update({ lineJumps: lineJumps === 'none' ? undefined : lineJumps })}
-          options={[
-            { value: 'none', label: 'None' },
-            { value: 'arc', label: 'Arc' },
-            { value: 'gap', label: 'Gap' },
-            { value: 'sharp', label: 'Sharp' },
-          ]}
-        />
-      </Row>
-      {hasWaypoints && (
-        <button onClick={clearWaypoints} className="flex h-7 w-full items-center justify-center gap-1.5 rounded-md text-[12px] text-muted hover:bg-hover hover:text-fg">
-          <Spline className="size-3.5" /> Clear waypoints
-        </button>
-      )}
-    </Section>
-  );
-}
 
 // ---------------------------------------------------------------------------
 
@@ -307,6 +246,7 @@ export function PageSection() {
           <button onClick={pickBackgroundImage} className="flex h-7 flex-1 items-center justify-center gap-1.5 rounded-md bg-panel-2 text-[12px] text-muted hover:text-fg">
             <ImageIcon className="size-3.5" /> {st.backgroundImage ? 'Replace' : 'Choose…'}
           </button>
+          <BackgroundUrlButton />
           {st.backgroundImage && (
             <button onClick={() => update({ backgroundImage: undefined })} className="flex size-7 items-center justify-center rounded-md bg-panel-2 text-muted hover:text-danger" aria-label="Remove image">
               <X className="size-3.5" />
@@ -314,6 +254,7 @@ export function PageSection() {
           )}
         </div>
       </Row>
+      <DiagramLanguageRow />
       <Switch label="Page view" checked={st.pageView} onChange={(pageView) => update({ pageView })} />
       {st.pageView && (
         <>
