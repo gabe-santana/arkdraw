@@ -29,3 +29,6 @@ public/icons/*
 !public/icons/*/
 public/icons/*/*
 !public/icons/*/descriptions.json
+
+# Local working notes (not published)
+docs/PARITY.md
