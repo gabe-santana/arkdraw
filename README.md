@@ -30,6 +30,12 @@
   <a href="docs/web.md"><b>Docs</b></a>
 </p>
 
+<p align="center">
+  <img src="docs/media/architectures.gif" alt="A slideshow of diagrams made in OpenDraw: AWS serverless, AWS three-tier, Azure web app, Google Cloud data pipeline, Kubernetes, C4, BPMN and an ER diagram" width="100%">
+  <br>
+  <sub>Every diagram above was built in OpenDraw from its template gallery and exported with its own PNG exporter.</sub>
+</p>
+
 <!--
   HERO: real capture of the app goes here (docs/media/hero.gif, < 5 MB, ~1100 px wide).
   Shot list: build a small cloud architecture from the Icons tab (search "vnet", then the typo "lamda"),
@@ -66,12 +72,61 @@
     </td>
     <td valign="top">
       <h3>Official cloud icons</h3>
-      AWS, Azure, Google Cloud, Oracle, Alibaba, IBM and Kubernetes packs plus ~2,000 tech logos, with fuzzy search that forgives typos and maps services across clouds.
+      AWS, Azure, Google Cloud, Oracle, Alibaba, IBM and Kubernetes packs, ~2,000 tech logos and the Material, Font Awesome, Fluent and Bootstrap icon sets: 14,000+ icons with fuzzy search that forgives typos and maps services across clouds.
     </td>
     <td valign="top">
       <h3>AI, bring your own key</h3>
       Optional. Generate or edit diagrams with Anthropic, OpenAI, Gemini, a local Ollama model, or any OpenAI-compatible endpoint. Desktop keys live in the OS keychain.
     </td>
+  </tr>
+</table>
+
+## Architectures built in OpenDraw
+
+Real diagrams, made in the app and exported with its PNG exporter. Open any of them from **File → New from template…** and make it yours.
+
+### Cloud
+
+<table>
+  <tr>
+    <td width="50%"><a href="docs/media/gallery/aws-serverless.png"><img src="docs/media/gallery/aws-serverless.png" alt="Serverless order API on AWS: API Gateway, Lambda, EventBridge, SQS, Step Functions, DynamoDB, S3 and SNS"></a><p align="center"><sub><b>AWS serverless</b>: event-driven order API</sub></p></td>
+    <td width="50%"><a href="docs/media/gallery/aws-3-tier.png"><img src="docs/media/gallery/aws-3-tier.png" alt="AWS three-tier web application: Route 53, CloudFront, ALB, EC2 web servers, Aurora and ElastiCache in a VPC"></a><p align="center"><sub><b>AWS three-tier</b>: VPC, subnets, load balancer, Aurora</sub></p></td>
+  </tr>
+  <tr>
+    <td><a href="docs/media/gallery/azure-web-app.png"><img src="docs/media/gallery/azure-web-app.png" alt="Azure web application: Front Door, App Service, API Management, Functions, Service Bus, Cosmos DB, SQL Database"></a><p align="center"><sub><b>Azure</b>: PaaS web app with async processing</sub></p></td>
+    <td><a href="docs/media/gallery/gcp-data-pipeline.png"><img src="docs/media/gallery/gcp-data-pipeline.png" alt="Google Cloud streaming analytics: Pub/Sub, Dataflow, BigQuery and Looker"></a><p align="center"><sub><b>Google Cloud</b>: streaming analytics pipeline</sub></p></td>
+  </tr>
+  <tr>
+    <td><a href="docs/media/gallery/kubernetes-app.png"><img src="docs/media/gallery/kubernetes-app.png" alt="Kubernetes application: control plane, ingress, service, deployment, pods, StatefulSet and PVC"></a><p align="center"><sub><b>Kubernetes</b>: control plane and workloads</sub></p></td>
+    <td><a href="docs/media/gallery/aws-data-lake.png"><img src="docs/media/gallery/aws-data-lake.png" alt="AWS data lake: ingest, S3 lake zones, Glue, Athena and QuickSight"></a><p align="center"><sub><b>AWS data lake</b>: ingest, lake zones, analytics</sub></p></td>
+  </tr>
+</table>
+
+### Software and networks
+
+<table>
+  <tr>
+    <td width="33%"><a href="docs/media/gallery/c4-container.png"><img src="docs/media/gallery/c4-container.png" alt="C4 container diagram of an internet banking system"></a><p align="center"><sub><b>C4 model</b>: containers</sub></p></td>
+    <td width="33%"><a href="docs/media/gallery/uml-sequence.png"><img src="docs/media/gallery/uml-sequence.png" alt="UML sequence diagram"></a><p align="center"><sub><b>UML</b>: sequence</sub></p></td>
+    <td width="33%"><a href="docs/media/gallery/network-dmz.png"><img src="docs/media/gallery/network-dmz.png" alt="Network diagram with a DMZ and segmented zones"></a><p align="center"><sub><b>Network</b>: DMZ and segmentation</sub></p></td>
+  </tr>
+  <tr>
+    <td><a href="docs/media/gallery/erd-ecommerce.png"><img src="docs/media/gallery/erd-ecommerce.png" alt="Entity-relationship diagram for an e-commerce store"></a><p align="center"><sub><b>ERD</b>: e-commerce schema</sub></p></td>
+    <td><a href="docs/media/gallery/bpmn-approval.png"><img src="docs/media/gallery/bpmn-approval.png" alt="BPMN approval process with pool and lanes"></a><p align="center"><sub><b>BPMN</b>: approval process</sub></p></td>
+    <td><a href="docs/media/gallery/flowchart-order.png"><img src="docs/media/gallery/flowchart-order.png" alt="Order fulfillment flowchart"></a><p align="center"><sub><b>Flowchart</b>: order fulfillment</sub></p></td>
+  </tr>
+</table>
+
+### Planning and product
+
+<table>
+  <tr>
+    <td width="33%"><a href="docs/media/gallery/mindmap-project.png"><img src="docs/media/gallery/mindmap-project.png" alt="Project planning mind map"></a><p align="center"><sub><b>Mind map</b></sub></p></td>
+    <td width="33%"><a href="docs/media/gallery/org-chart-company.png"><img src="docs/media/gallery/org-chart-company.png" alt="Company org chart"></a><p align="center"><sub><b>Org chart</b></sub></p></td>
+    <td width="33%"><a href="docs/media/gallery/swimlane-onboarding.png"><img src="docs/media/gallery/swimlane-onboarding.png" alt="Swimlane onboarding process"></a><p align="center"><sub><b>Swimlanes</b></sub></p></td>
+  </tr>
+  <tr>
+    <td colspan="3"><a href="docs/media/gallery/wireframe-dashboard.png"><img src="docs/media/gallery/wireframe-dashboard.png" alt="Admin dashboard wireframe"></a><p align="center"><sub><b>Wireframe</b>: admin dashboard</sub></p></td>
   </tr>
 </table>
 
@@ -174,9 +229,9 @@ Bundles are written to `src-tauri/target/release/bundle/` (the universal macOS b
 
 | OS | Formats | Config |
 | --- | --- | --- |
-| Windows | MSI (WiX) and NSIS `.exe` (per-user install, WebView2 bootstrapper) | `src-tauri/tauri.windows.conf.json` |
+| Windows | MSI (WiX), NSIS `.exe` (per-user install, WebView2 bootstrapper) and a portable `.zip` | `src-tauri/tauri.windows.conf.json` |
 | macOS | `.app` and `.dmg` (universal in CI, macOS 11+) | `src-tauri/tauri.macos.conf.json` |
-| Linux | AppImage and `.deb` | `src-tauri/tauri.linux.conf.json` |
+| Linux | AppImage, `.deb`, `.rpm` and a snap | `src-tauri/tauri.linux.conf.json`, `snap/snapcraft.yaml` |
 
 **Releases are driven by tags.** Pushing a tag that matches `v*` runs `.github/workflows/release.yml`, which builds on Windows, macOS (universal) and Ubuntu 22.04, runs `icons:fetch` (a vendor download failure doesn't block the release), and attaches the installers to a **draft** GitHub release named `OpenDraw <tag>`.
 
@@ -185,7 +240,7 @@ Bundles are written to `src-tauri/target/release/bundle/` (the universal macOS b
 git tag v0.1.0 && git push origin v0.1.0
 ```
 
-The workflow doesn't configure code signing or notarisation, so installers are unsigned unless you add the Tauri signing secrets.
+The workflow doesn't configure code signing or notarisation, so installers are unsigned unless you add the Tauri signing secrets. Auto-update, the updater signing key and the packaging matrix are covered in [docs/release.md](docs/release.md).
 
 </details>
 
