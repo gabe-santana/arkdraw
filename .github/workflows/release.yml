@@ -1,5 +1,7 @@
-# Builds signed-ready installers for Windows (MSI/NSIS), macOS (universal DMG/.app)
-# and Linux (AppImage/deb) on every version tag, and attaches them to a draft release.
+# Builds installers for Windows (MSI/NSIS + portable .zip), macOS (universal DMG/.app)
+# and Linux (AppImage/deb/rpm + snap) on every version tag, and attaches them to a
+# draft release. With the TAURI_SIGNING_PRIVATE_KEY secret set it also signs the
+# updater artifacts and uploads latest.json for the in-app updater (docs/release.md).
 name: Release
 
 on:
@@ -51,13 +53,65 @@ jobs:
       - run: npm run icons:fetch
         continue-on-error: true
 
+      # Updater artifacts (.sig files + latest.json) need the signing key; without
+      # it the release still builds, just without auto-update support.
+      - name: Updater signing
+        id: updater
+        shell: bash
+        env:
+          KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          if [ -n "$KEY" ]; then
+            echo "args=--config src-tauri/tauri.updater.conf.json" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::TAURI_SIGNING_PRIVATE_KEY is not set: building without updater artifacts"
+          fi
+
       - uses: tauri-apps/tauri-action@v0
+        id: tauri
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: OpenDraw ${{ github.ref_name }}
           releaseBody: See the changelog for details.
           releaseDraft: true
           prerelease: false
-          args: ${{ matrix.args }}
+          # latest.json (merged across the three platform jobs) for the updater endpoint
+          # https://github.com/gabe-santana/opendraw/releases/latest/download/latest.json
+          includeUpdaterJson: true
+          args: ${{ matrix.args }} ${{ steps.updater.outputs.args }}
+
+      # Portable Windows build: the bare executable in a zip (needs the WebView2
+      # runtime, which ships with Windows 10 1803+ and 11). No installer, no
+      # file associations, no auto-update.
+      - name: Windows portable zip
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $version = (Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json).version
+          $dir = "OpenDraw-$version-portable"
+          New-Item -ItemType Directory -Force $dir | Out-Null
+          Copy-Item src-tauri/target/release/opendraw.exe "$dir/OpenDraw.exe"
+          Copy-Item LICENSE "$dir/LICENSE.txt"
+          Compress-Archive -Path "$dir/*" -DestinationPath "OpenDraw_${version}_x64-portable.zip" -Force
+          gh release upload "${{ github.ref_name }}" "OpenDraw_${version}_x64-portable.zip" --clobber
+
+  # Snap (Tauri's bundler has no snap target): built from snap/snapcraft.yaml,
+  # which repackages the .deb. Best effort, so a snap problem never blocks a release.
+  snap:
+    needs: build
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snapcore/action-build@v1
+        id: snap
+      - name: Attach snap to the draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.ref_name }}" "${{ steps.snap.outputs.snap }}" --clobber

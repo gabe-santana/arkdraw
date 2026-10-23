@@ -2,9 +2,11 @@
  * Arrows: draw.io-style block arrows (single, double, chevrons, U-turn, bent,
  * curved, callouts, quad, striped, circular).
  */
-import type { Rect } from '@/model/types';
+import type { Rect, Vec } from '@/model/types';
 import { Body } from '../kit';
-import type { ShapeDef, ShapeLibrary } from '../types';
+import { handle, param, pn } from '../params';
+import { ARROW_PARAMS, arrowHandle, doubleArrowPts, singleArrowPts } from '../paramGeometry';
+import type { ParamHandle, ParamValues, ShapeDef, ShapeLibrary } from '../types';
 import { TONE, arcD, f, item, pathOf, polar, shape, type Pt } from './_kit2';
 
 type Dir = 'right' | 'left' | 'up' | 'down';
@@ -32,27 +34,38 @@ function orientedBox(dir: Dir, w: number, h: number, box: (W: number, H: number)
   return { x: b.y, y: h - b.x - b.w, w: b.h, h: b.w };
 }
 
+/** Canonical-frame point → oriented bounds (see `oriented`). */
+function orientPt(dir: Dir, w: number, h: number, p: Vec): Vec {
+  if (dir === 'right') return p;
+  if (dir === 'left') return { x: w - p.x, y: p.y };
+  if (dir === 'down') return { x: p.y, y: p.x };
+  return { x: p.y, y: h - p.x };
+}
+
+/** Oriented bounds point → canonical frame (inverse of `orientPt`). */
+function unorientPt(dir: Dir, w: number, h: number, p: Vec): Vec {
+  if (dir === 'right') return p;
+  if (dir === 'left') return { x: w - p.x, y: p.y };
+  if (dir === 'down') return { x: p.y, y: p.x };
+  return { x: h - p.y, y: p.x };
+}
+
+/** Canonical frame size (right-pointing) for the oriented bounds. */
+const frameOf = (dir: Dir, w: number, h: number): [number, number] => (dir === 'up' || dir === 'down' ? [h, w] : [w, h]);
+
 const headLen = (W: number, H: number) => Math.min(W * 0.4, H * 0.8);
 
-const single = (W: number, H: number): Pt[] => {
-  const hl = headLen(W, H);
-  return [[0, H * 0.25], [W - hl, H * 0.25], [W - hl, 0], [W, H / 2], [W - hl, H], [W - hl, H * 0.75], [0, H * 0.75]];
-};
+const single = (W: number, H: number, p?: ParamValues): Pt[] => singleArrowPts(W, H, p ?? { arrowWidth: 0.5, arrowSize: 0.4 });
 
-const double = (W: number, H: number): Pt[] => {
-  const hl = Math.min(W * 0.3, H * 0.8);
-  return [
-    [0, H / 2], [hl, 0], [hl, H * 0.25], [W - hl, H * 0.25], [W - hl, 0], [W, H / 2],
-    [W - hl, H], [W - hl, H * 0.75], [hl, H * 0.75], [hl, H],
-  ];
-};
+const double = (W: number, H: number, p?: ParamValues): Pt[] => doubleArrowPts(W, H, p ?? { arrowWidth: 0.5, arrowSize: 0.3 });
 
 const notched = (W: number, H: number): Pt[] => {
   return [...single(W, H), [Math.min(H * 0.3, W * 0.15), H / 2]];
 };
 
-const chevron = (W: number, H: number): Pt[] => {
-  const s = Math.min(W * 0.35, H * 0.5);
+/** draw.io `step`: `size` = notch depth as a fraction of the (canonical) width. */
+const chevron = (W: number, H: number, p?: ParamValues): Pt[] => {
+  const s = W * (p ? pn(p, 'size') : 0.25);
   return [[0, 0], [W - s, 0], [W, H / 2], [W - s, H], [0, H], [s, H / 2]];
 };
 
@@ -61,23 +74,51 @@ const pentagon = (W: number, H: number): Pt[] => {
   return [[0, 0], [W - s, 0], [W, H / 2], [W - s, H], [0, H]];
 };
 
-const shaftBox = (W: number, H: number): Rect => ({ x: 6, y: H * 0.25, w: Math.max(1, W - headLen(W, H) - 8), h: H * 0.5 });
+const shaftBox = (W: number, H: number, p?: ParamValues): Rect => {
+  const at = (H * (1 - (p ? pn(p, 'arrowWidth') : 0.5))) / 2;
+  const hl = W * (p ? pn(p, 'arrowSize') : 0.4);
+  return { x: 6, y: at, w: Math.max(1, W - hl - 8), h: Math.max(1, H - at * 2) };
+};
 
-function polyArrow(kind: string, label: string, dir: Dir, gen: (W: number, H: number) => Pt[], drawio: string, box: (W: number, H: number) => Rect): ShapeDef {
-  return shape(kind, label, drawio, ({ w, h, style }) => <Body d={pathOf(oriented(dir, w, h, gen))} s={style} />, {
-    textBox: (w, h) => orientedBox(dir, w, h, box),
+function polyArrow(
+  kind: string, label: string, dir: Dir, gen: (W: number, H: number, p?: ParamValues) => Pt[], drawio: string,
+  box: (W: number, H: number, p?: ParamValues) => Rect, extra: Partial<ShapeDef> = {},
+): ShapeDef {
+  return shape(kind, label, drawio, ({ w, h, style, params }) => <Body d={pathOf(oriented(dir, w, h, (W, H) => gen(W, H, params)))} s={style} />, {
+    textBox: (w, h, p) => orientedBox(dir, w, h, (W, H) => box(W, H, p)),
+    ...extra,
   });
 }
+
+/** Block-arrow params + the shared head/shaft handle, in the oriented frame. */
+const arrowExtra = (dir: Dir, width: number, size: number, maxSize = 1): Partial<ShapeDef> => ({
+  params: ARROW_PARAMS(width, size, maxSize),
+  handles: ({ w, h, p }) => {
+    const [W, H] = frameOf(dir, w, h);
+    return [arrowHandle(W, H, p, (q) => orientPt(dir, w, h, q), (q) => unorientPt(dir, w, h, q))];
+  },
+});
+
+/** Chevron notch param + handle at the notch, in the oriented frame. */
+const chevronExtra = (dir: Dir): Partial<ShapeDef> => ({
+  params: [param.pct('size', 'Notch', 0.25, { max: 0.5, fixedSizeOf: dir === 'up' || dir === 'down' ? 'h' : 'w' })],
+  handles: ({ w, h, p }): ParamHandle[] => {
+    const [W, H] = frameOf(dir, w, h);
+    const at = orientPt(dir, w, h, { x: W * pn(p, 'size'), y: H / 2 });
+    return [handle(at.x, at.y, (pt) => ({ params: { size: unorientPt(dir, w, h, pt).x / W } }))];
+  },
+});
 
 const DIR_STYLE: Record<Dir, string> = { right: '', left: 'flipH=1;', up: 'direction=north;', down: 'direction=south;' };
 
 const singles = (['right', 'left', 'up', 'down'] as const).map((d) =>
-  polyArrow(`arrows.${d}`, `Arrow ${d}`, d, single, `shape=singleArrow;arrowWidth=0.5;arrowSize=0.4;whiteSpace=wrap;${DIR_STYLE[d]}`, shaftBox),
+  polyArrow(`arrows.${d}`, `Arrow ${d}`, d, single, `shape=singleArrow;arrowWidth=0.5;arrowSize=0.4;whiteSpace=wrap;${DIR_STYLE[d]}`, shaftBox, arrowExtra(d, 0.5, 0.4)),
 );
 
-const doubleBox = (W: number, H: number): Rect => {
-  const hl = Math.min(W * 0.3, H * 0.8);
-  return { x: hl, y: H * 0.25, w: Math.max(1, W - hl * 2), h: H * 0.5 };
+const doubleBox = (W: number, H: number, p?: ParamValues): Rect => {
+  const hl = Math.min(W / 2, W * (p ? pn(p, 'arrowSize') : 0.3));
+  const at = (H * (1 - (p ? pn(p, 'arrowWidth') : 0.5))) / 2;
+  return { x: hl, y: at, w: Math.max(1, W - hl * 2), h: Math.max(1, H - at * 2) };
 };
 
 // ----- Curved & composite arrows ---------------------------------------------
@@ -204,17 +245,19 @@ function stripedD(w: number, h: number) {
   );
 }
 
+function chevronBox(W: number, H: number, p?: ParamValues): Rect {
+  const s = W * (p ? pn(p, 'size') : 0.25);
+  return { x: s + 2, y: 4, w: Math.max(1, W - s * 2 - 4), h: H - 8 };
+}
+
 export const shapes: ShapeDef[] = [
   ...singles,
-  polyArrow('arrows.doubleH', 'Double arrow', 'right', double, 'shape=doubleArrow;arrowWidth=0.5;arrowSize=0.3;whiteSpace=wrap;', doubleBox),
-  polyArrow('arrows.doubleV', 'Double arrow vertical', 'up', double, 'shape=doubleArrow;direction=south;arrowWidth=0.5;arrowSize=0.3;whiteSpace=wrap;', doubleBox),
+  polyArrow('arrows.doubleH', 'Double arrow', 'right', double, 'shape=doubleArrow;arrowWidth=0.5;arrowSize=0.3;whiteSpace=wrap;', doubleBox, arrowExtra('right', 0.5, 0.3, 0.5)),
+  polyArrow('arrows.doubleV', 'Double arrow vertical', 'up', double, 'shape=doubleArrow;direction=south;arrowWidth=0.5;arrowSize=0.3;whiteSpace=wrap;', doubleBox, arrowExtra('up', 0.5, 0.3, 0.5)),
   polyArrow('arrows.notched', 'Notched arrow', 'right', notched, 'shape=mxgraph.arrows2.notchedArrow;dy1=0.25;dx1=40;notch=20;whiteSpace=wrap;', (W, H) => ({
     x: Math.min(H * 0.3, W * 0.15) + 4, y: H * 0.25, w: Math.max(1, W - headLen(W, H) - Math.min(H * 0.3, W * 0.15) - 8), h: H * 0.5,
   })),
-  polyArrow('arrows.chevron', 'Chevron', 'right', chevron, 'shape=step;perimeter=stepPerimeter;fixedSize=1;size=20;whiteSpace=wrap;', (W, H) => {
-    const s = Math.min(W * 0.35, H * 0.5);
-    return { x: s + 2, y: 4, w: Math.max(1, W - s * 2 - 4), h: H - 8 };
-  }),
+  polyArrow('arrows.chevron', 'Chevron', 'right', chevron, 'shape=step;perimeter=stepPerimeter;fixedSize=1;size=20;whiteSpace=wrap;', chevronBox, chevronExtra('right')),
   polyArrow('arrows.pentagon', 'Pentagon arrow', 'right', pentagon, 'shape=mxgraph.arrows2.arrow;dy=0;dx=20;notch=0;whiteSpace=wrap;', (W, H) => {
     const s = Math.min(W * 0.35, H * 0.5);
     return { x: 8, y: 4, w: Math.max(1, W - s - 10), h: H - 8 };
@@ -260,10 +303,7 @@ export const shapes: ShapeDef[] = [
   shape('arrows.quad', 'Quad arrow', 'shape=mxgraph.arrows2.quadArrow;dy=10;arrowHead=10;whiteSpace=wrap;', ({ w, h, style }) => <Body d={pathOf(quadPts(w, h))} s={style} />, {
     textBox: (w, h) => ({ x: w * 0.3, y: h * 0.42, w: w * 0.4, h: h * 0.16 }),
   }),
-  polyArrow('arrows.chevronDown', 'Chevron down', 'down', chevron, 'shape=step;perimeter=stepPerimeter;fixedSize=1;size=20;direction=south;whiteSpace=wrap;', (W, H) => {
-    const s = Math.min(W * 0.35, H * 0.5);
-    return { x: s + 2, y: 4, w: Math.max(1, W - s * 2 - 4), h: H - 8 };
-  }),
+  polyArrow('arrows.chevronDown', 'Chevron down', 'down', chevron, 'shape=step;perimeter=stepPerimeter;fixedSize=1;size=20;direction=south;whiteSpace=wrap;', chevronBox, chevronExtra('down')),
 ];
 
 const tone = { fill: TONE.blue.fill, stroke: TONE.blue.stroke };

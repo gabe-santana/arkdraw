@@ -10,6 +10,7 @@ import type { DiagramElement, Doc } from '@/model/types';
 import { uid } from '@/lib/id';
 import { selectionBounds } from '@/store/editor';
 import { importDrawio } from '@/io/drawio';
+import { parseStencilLibrary } from '@/stencils/library';
 
 export interface UserLibraryItem {
   id: string;
@@ -53,7 +54,8 @@ export const useUserLibraries = create<LibState>((set, get) => {
   const persist = (libraries: UserLibrary[]) => {
     set({ libraries });
     try {
-      localStorage.setItem(KEY, JSON.stringify(libraries));
+      // Plugin-provided libraries (id `plugin:…`) are re-registered on activation, never stored.
+      localStorage.setItem(KEY, JSON.stringify(libraries.filter((l) => !l.id.startsWith('plugin:'))));
     } catch {
       /* quota exceeded */
     }
@@ -107,6 +109,9 @@ export function serializeLibrary(lib: UserLibrary): string {
 export async function parseLibrary(text: string, fileName: string): Promise<{ name: string; items: UserLibraryItem[] }> {
   const name = fileName.replace(/\.[^.]+$/, '');
   const trimmed = text.trim();
+  // Stencil sets (<shapes>) and OpenDraw shape configs (JSON) — see src/stencils/library.ts.
+  const stencils = parseStencilLibrary(trimmed, name);
+  if (stencils) return stencils;
   if (trimmed.startsWith('{')) {
     const data = JSON.parse(trimmed);
     if (data?.format !== 'opendraw-library' || !Array.isArray(data.items)) throw new Error('Not an OpenDraw library.');
@@ -129,4 +134,16 @@ export async function parseLibrary(text: string, fileName: string): Promise<{ na
     }
   }
   return { name, items };
+}
+
+/** Adds or replaces a library without persisting it (plugin libraries use ids starting with `plugin:`). */
+export function upsertLibrary(lib: UserLibrary) {
+  const libs = useUserLibraries.getState().libraries;
+  const i = libs.findIndex((l) => l.id === lib.id);
+  useUserLibraries.setState({ libraries: i >= 0 ? libs.map((l, j) => (j === i ? lib : l)) : [...libs, lib] });
+}
+
+/** Removes a library added with `upsertLibrary`. */
+export function dropLibrary(id: string) {
+  useUserLibraries.setState({ libraries: useUserLibraries.getState().libraries.filter((l) => l.id !== id) });
 }

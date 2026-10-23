@@ -24,9 +24,13 @@ export type StrokeStyle = 'solid' | 'dashed' | 'dotted';
 export type TextAlign = 'left' | 'center' | 'right';
 export type VerticalAlign = 'top' | 'middle' | 'bottom';
 export type FontKey = 'sans' | 'serif' | 'mono' | 'hand';
+/** A built-in font key, or any font name (Google Font or installed system font); see src/text/fonts.ts. */
+export type FontFamily = FontKey | (string & {});
+/** Writing direction of a label (draw.io textDirection). */
+export type TextDirection = 'ltr' | 'rtl' | 'auto';
 export type GradientDirection = 'south' | 'north' | 'east' | 'west' | 'radial';
 /** Where a shape's label sits relative to the shape. */
-export type LabelPosition = 'inside' | 'top' | 'bottom' | 'left' | 'right';
+export type LabelPosition = 'inside' | 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
 export interface ElementStyle {
   /** Fill color, or `'none'` for transparent. */
@@ -39,7 +43,7 @@ export interface ElementStyle {
   /** Corner radius for shapes that support rounding. */
   radius: number;
   shadow: boolean;
-  fontFamily: FontKey;
+  fontFamily: FontFamily;
   fontSize: number;
   bold: boolean;
   italic: boolean;
@@ -63,6 +67,19 @@ export interface ElementStyle {
   sketch?: boolean;
   /** Fill pattern in sketch mode. */
   sketchFill?: 'hachure' | 'solid' | 'zigzag' | 'cross-hatch' | 'dots' | 'dashed' | 'zigzag-line';
+  /** Sketch wobble (Rough.js roughness, default 1.15; draw.io `jiggle`). */
+  sketchRoughness?: number;
+  /** Drop-shadow options (absent = the built-in soft shadow); see src/styling/shadow.tsx. */
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
+  /** 0..1 */
+  shadowOpacity?: number;
+  /** User-defined dark-mode colors, used instead of auto-adapting when "Adapt diagram colors" is on. */
+  darkFill?: string;
+  darkStroke?: string;
+  darkText?: string;
   /** Glossy highlight overlay. */
   glass?: boolean;
   labelPosition?: LabelPosition;
@@ -74,6 +91,15 @@ export interface ElementStyle {
   verticalText?: boolean;
   /** Label background (e.g. highlight), or none. */
   labelBackground?: string;
+  /** Border drawn around the label box (draw.io labelBorderColor). */
+  labelBorderColor?: string;
+  /** Extra per-side label padding (px), added to `spacing` (draw.io spacingTop/Right/Bottom/Left). */
+  spacingTop?: number;
+  spacingRight?: number;
+  spacingBottom?: number;
+  spacingLeft?: number;
+  /** Writing direction (absent = left-to-right). */
+  textDirection?: TextDirection;
   /** Render %property% placeholders in the label. */
   placeholders?: boolean;
   /** Formatted text: Markdown subset (bold, italic, lists, headings, links, code). */
@@ -90,6 +116,8 @@ export interface Behavior {
   deletable?: boolean;
   editable?: boolean;
   connectable?: boolean;
+  /** `false`: clicks and rubber bands pass through (select via the Layers panel). */
+  selectable?: boolean;
 }
 
 interface ElementBase {
@@ -114,6 +142,8 @@ interface ElementBase {
   behavior?: Behavior;
   /** Review comments (threads). */
   comments?: Comment[];
+  /** Hidden on its own (draw.io `visible="0"`), e.g. by a custom link action. */
+  hidden?: boolean;
 }
 
 export interface Comment {
@@ -146,6 +176,26 @@ export interface TableData {
   cells: string[][];
   /** Style the first row as a header. */
   header?: boolean;
+  /** Per-cell styling, keyed `"row,col"` (see src/interaction/table.ts). */
+  cellStyles?: Record<string, TableCellStyle>;
+  /** Merged ranges; the top-left cell holds the text. */
+  merges?: TableMerge[];
+}
+
+export interface TableCellStyle {
+  fill?: string;
+  textColor?: string;
+  bold?: boolean;
+  italic?: boolean;
+  textAlign?: TextAlign;
+}
+
+export interface TableMerge {
+  r: number;
+  c: number;
+  /** Row / column span (≥ 1). */
+  rs: number;
+  cs: number;
 }
 
 export interface ImageCrop {
@@ -172,6 +222,10 @@ export interface ShapeElement extends ElementBase {
   containerId?: string;
   /** Collapsed containers hide their children. */
   collapsed?: boolean;
+  /** Container override: `true` makes any shape a container, `false` opts a container kind out. */
+  container?: boolean;
+  /** Constrain proportions when resizing (draw.io `aspect=fixed`). */
+  lockAspect?: boolean;
   /** For `kind: 'icon' | 'image'`: icon pack path or data/http URL. */
   icon?: string;
   /** Image crop (image shapes). */
@@ -180,6 +234,12 @@ export interface ShapeElement extends ElementBase {
   points?: Vec[];
   table?: TableData;
   animation?: ShapeAnimation;
+  /** Parametric geometry values (corner size, arrow width, header size…); see `ShapeDef.params`. */
+  params?: Record<string, number | string>;
+  /** Custom connection points (fractions of the unrotated box); replaces the shape's defaults. */
+  connectionPoints?: Vec[];
+  /** For `kind: 'stencil'`: mxGraph stencil XML (see src/stencils). */
+  stencil?: string;
 }
 
 export type AnchorSide = 'top' | 'right' | 'bottom' | 'left';
@@ -189,13 +249,30 @@ export interface Endpoint {
   elementId?: string;
   /** Which side of the attached shape. `auto` picks the side facing the other end. */
   side?: AnchorSide | 'auto';
+  /** Fixed connection point as a fraction of the shape's unrotated box (draw.io exitX/exitY, entryX/entryY). Wins over `side`. */
+  fixed?: Vec;
+  /** Extra offset in px from the fixed point (draw.io exitDx/exitDy, entryDx/entryDy). */
+  fixedOffset?: Vec;
+  /** When `elementId` is another connector: the fraction (0..1) along its path. */
+  edgeT?: number;
   /** World position; authoritative for free endpoints, a cache for attached ones. */
   x: number;
   y: number;
 }
 
 export type Routing = 'orthogonal' | 'straight' | 'curved' | 'elbow-h' | 'elbow-v' | 'entity' | 'isometric';
-export type ConnectorShape = 'line' | 'pipe' | 'arrow';
+/** line, pipe (wire with a fill), arrow (simple block arrow), link (double line), flexArrow (sizable arrow band), wire (pipe with a dashed core), filledEdge (thick filled band). */
+export type ConnectorShape = 'line' | 'pipe' | 'arrow' | 'link' | 'flexArrow' | 'wire' | 'filledEdge';
+
+/** An additional connector label (draw.io child edge label). */
+export interface ConnectorLabel {
+  id: string;
+  text: string;
+  /** Position along the path, 0..1. */
+  t: number;
+  /** Perpendicular offset in px. */
+  offset?: number;
+}
 export type LineJumps = 'none' | 'arc' | 'gap' | 'sharp';
 
 export type ArrowHead =
@@ -218,7 +295,15 @@ export type ArrowHead =
   | 'halfArrow'
   | 'box'
   | 'boxOpen'
-  | 'async';
+  | 'async'
+  | 'classic'
+  | 'classicThin'
+  | 'blockThin'
+  | 'openThin'
+  | 'diamondThin'
+  | 'halfCircle'
+  | 'circlePlus'
+  | 'doubleBlock';
 
 export interface ConnectorElement extends ElementBase {
   type: 'connector';
@@ -235,6 +320,22 @@ export interface ConnectorElement extends ElementBase {
   connectorShape?: ConnectorShape;
   lineJumps?: LineJumps;
   animation?: ConnectorAnimation;
+  /** Line-jump size in px (draw.io jumpSize, default 6). */
+  jumpSize?: number;
+  /** Arrowhead sizes (draw.io startSize/endSize, default 6). */
+  startSize?: number;
+  endSize?: number;
+  /** Filled/hollow override for the arrowheads (draw.io startFill/endFill); absent = the head's default. */
+  startFill?: boolean;
+  endFill?: boolean;
+  /** Body width of wide connector shapes (link, flexArrow, filledEdge — draw.io `width`). */
+  bandWidth?: number;
+  /** Head width of flex arrows (draw.io startWidth/endWidth). */
+  headWidth?: number;
+  /** Gap kept between the attached shapes and the connector ends (draw.io perimeterSpacing). */
+  perimeterSpacing?: number;
+  /** Labels beyond the main one (draw.io child edge labels). */
+  labels?: ConnectorLabel[];
 }
 
 export type DiagramElement = ShapeElement | ConnectorElement;
@@ -244,6 +345,8 @@ export interface Layer {
   name: string;
   visible: boolean;
   locked: boolean;
+  /** Custom key/value metadata (Edit Data on layers). */
+  data?: Record<string, string>;
 }
 
 export interface Doc {
@@ -254,7 +357,10 @@ export interface Doc {
   layers?: Layer[];
 }
 
-export type PaperSize = 'A3' | 'A4' | 'A5' | 'Letter' | 'Legal' | 'Tabloid' | '16:9' | '16:10' | '4:3' | 'Custom';
+export type PaperSize =
+  | 'A0' | 'A1' | 'A2' | 'A3' | 'A4' | 'A5' | 'A6' | 'B4' | 'B5'
+  | 'Letter' | 'Legal' | 'Tabloid' | 'Ledger' | 'Executive'
+  | '16:9' | '16:10' | '4:3' | 'Custom';
 
 export interface PageSettings {
   /** Canvas/page background color, or null for the theme canvas. */
@@ -269,6 +375,13 @@ export interface PageSettings {
   pageView: boolean;
   /** Drop shadow on every shape. */
   shadow?: boolean;
+  /** Diagram language: labels show their `label_<lang>` translation from element data when present. */
+  language?: string;
+  /** Per-page grid & snap (absent = the global setting); see src/styling/pageGrid.ts. */
+  grid?: boolean;
+  gridSize?: number;
+  snap?: boolean;
+  gridColor?: string;
 }
 
 export interface Page {
@@ -276,6 +389,20 @@ export interface Page {
   name: string;
   doc: Doc;
   settings: PageSettings;
+  /** Custom key/value metadata (Edit Data on pages). */
+  data?: Record<string, string>;
+}
+
+/** File-level properties (File → Properties), stored in the `.opendraw` file. */
+export interface DocumentMeta {
+  title?: string;
+  author?: string;
+  description?: string;
+  /** ISO timestamps. */
+  created?: string;
+  modified?: string;
+  /** Document-level key/value data (placeholders fall back to it). */
+  data?: Record<string, string>;
 }
 
 export const isShape = (el: DiagramElement | undefined): el is ShapeElement => el?.type === 'shape';

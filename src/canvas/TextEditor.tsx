@@ -6,14 +6,25 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { ElementStyle, Rect, ShapeElement } from '@/model/types';
 import { isConnector, isShape } from '@/model/types';
-import { FONT_STACKS } from '@/model/defaults';
 import { compartmentHeight, getShapeDef, textBoxOf, c4Layout } from '@/shapes/registry';
 import { connectorGeometryInDoc } from '@/lib/connectorGeometry';
 import { lineHeight, LINE_HEIGHT, wrapText } from '@/lib/text';
 import { useEditor } from '@/store/editor';
 import { cn } from '@/lib/cn';
 import { matchesCombo } from '@/app/useShortcuts';
+import { spellCheckEnabled, spellCheckLanguage } from '@/desktop/config';
 import { stepFontSize, toggleTextStyle } from '@/app/commands';
+import { fontStack } from '@/text/fonts';
+import { shapeLabelBox } from '@/text/labelLayout';
+import { domToRich, richToEditorHtml } from '@/text/richDom';
+import type { BaseStyle } from '@/text/richFormat';
+import { needsRich, richSize } from '@/text/RichTextBlock';
+import { editsTranslation } from '@/text/translations';
+import { FormatBar, runShortcut } from '@/text/FormatBar';
+
+/** Formatting the WYSIWYG editor's runs are relative to. */
+const baseOf = (s: ElementStyle): BaseStyle => ({ bold: s.bold, italic: s.italic, underline: !!s.underline, strike: !!s.strike, size: s.fontSize, color: s.textColor });
+import { handleUmlEnter } from './umlEnter';
 
 /** Text typed while a shape was merely selected — seeds the editor. */
 let seed: string | null = null;
@@ -32,6 +43,9 @@ const FORMAT_KEYS: Array<[string, () => void]> = [
 function editBox(el: ShapeElement): { box: Rect; style: ElementStyle } {
   const def = getShapeDef(el.kind);
   const placement = def.textPlacement ?? 'inside';
+  // Same box as the renderer (label position, spacing).
+  const labelled = placement !== 'custom' ? shapeLabelBox(el) : null;
+  if (labelled) return labelled;
   if (placement === 'below') {
     return { box: { x: el.x - 60, y: el.y + el.h + 6, w: el.w + 120, h: lineHeight(el.style.fontSize) }, style: { ...el.style, verticalAlign: 'top', textAlign: 'center' } };
   }
@@ -42,7 +56,7 @@ function editBox(el: ShapeElement): { box: Rect; style: ElementStyle } {
       style: compartments ? { ...el.style, textAlign: 'left', verticalAlign: 'top' } : el.style,
     };
   }
-  const b = textBoxOf(def, el.w, el.h);
+  const b = textBoxOf(def, el.w, el.h, el.params);
   return { box: { ...b, x: b.x + el.x, y: b.y + el.y }, style: el.style };
 }
 
@@ -52,15 +66,26 @@ export function TextEditor() {
   const elements = useEditor((s) => s.doc.elements);
   const camera = useEditor((s) => s.camera);
   const adapt = useEditor((s) => s.settings.adaptColors);
+  const lang = useEditor((s) => s.pages.find((p) => p.id === s.activePageId)?.settings.language);
   const ref = useRef<HTMLDivElement>(null);
   const committed = useRef(false);
+  /** Formatted labels get a WYSIWYG editor; this is its content as first serialized. */
+  const initialRich = useRef<string | null>(null);
+  const rich = !!el?.style.richText;
+  // With a diagram language set, an existing translation is edited in place.
+  const translationKey = el ? editsTranslation(el, lang) : null;
 
   // Initialize content & focus once per editing session.
   useLayoutEffect(() => {
     const node = ref.current;
     if (!node || !el) return;
     committed.current = false;
-    node.innerText = seed ?? el.text;
+    const source = translationKey ? (el.data?.[translationKey] ?? '') : el.text;
+    initialRich.current = null;
+    if (rich && seed === null) {
+      node.innerHTML = richToEditorHtml(source, baseOf(el.style), camera.z);
+      initialRich.current = domToRich(node, baseOf(el.style)).replace(/\n$/, '');
+    } else node.innerText = seed ?? source;
     node.focus();
     const range = document.createRange();
     range.selectNodeContents(node);
@@ -82,11 +107,18 @@ export function TextEditor() {
   const commit = () => {
     if (committed.current) return;
     committed.current = true;
-    const text = (ref.current?.innerText ?? '').replace(/\n$/, '');
+    const node = ref.current;
+    const text = ((rich && node ? domToRich(node, baseOf(el.style)) : node?.innerText) ?? '').replace(/\n$/, '');
     const s = useEditor.getState();
     s.setEditing(null);
     const cur = s.doc.elements[editingId];
     if (!cur) return;
+    // Unchanged WYSIWYG content: keep the stored text byte-for-byte.
+    if (rich && initialRich.current !== null && text === initialRich.current) return;
+    if (translationKey) {
+      if (text !== cur.data?.[translationKey]) s.updateElements({ [cur.id]: { data: { ...cur.data, [translationKey]: text } } });
+      return;
+    }
     if (isShape(cur) && cur.kind === 'text' && !text.trim()) {
       s.deleteElements([cur.id]);
       return;
@@ -113,6 +145,8 @@ export function TextEditor() {
 
   const z = camera.z;
   const justify = style.verticalAlign === 'top' ? 'flex-start' : style.verticalAlign === 'bottom' ? 'flex-end' : 'center';
+  // Labels above the shape grow upwards from their anchor line.
+  const growsUp = box.h === 0 && style.verticalAlign === 'bottom';
 
   return (
     <div
@@ -127,17 +161,49 @@ export function TextEditor() {
         flexDirection: 'column',
         justifyContent: justify,
         pointerEvents: 'auto',
+        transform: growsUp ? 'translateY(-100%)' : undefined,
       }}
       onPointerDown={(e) => e.stopPropagation()}
     >
+      {rich && <FormatBar editor={ref} baseSize={style.fontSize} zoom={z} />}
       <div
         ref={ref}
-        contentEditable="plaintext-only"
+        contentEditable={rich ? 'true' : 'plaintext-only'}
         suppressContentEditableWarning
-        spellCheck
-        onBlur={commit}
+        spellCheck={spellCheckEnabled()}
+        lang={spellCheckLanguage()}
+        dir={style.textDirection}
+        onBlur={(e) => {
+          // Focus moving into the format bar (link field) keeps the session open.
+          const next = e.relatedTarget as HTMLElement | null;
+          if (next?.closest('[data-format-bar]')) {
+            next.addEventListener('blur', (ev) => {
+              const to = (ev as FocusEvent).relatedTarget as HTMLElement | null;
+              if (!to || (!to.closest('[data-format-bar]') && to !== ref.current)) commit();
+            }, { once: true });
+            return;
+          }
+          commit();
+        }}
+        onPaste={(e) => {
+          if (!rich) return;
+          // Paste as plain text; formatting comes from the format bar.
+          e.preventDefault();
+          document.execCommand('insertText', false, e.clipboardData.getData('text/plain'));
+        }}
         onKeyDown={(e) => {
           e.stopPropagation();
+          if (rich && e.key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            e.preventDefault();
+            document.execCommand('insertLineBreak');
+            return;
+          }
+          // With a text selection in a formatted label, Ctrl+B/I/U and size steps format just that run.
+          if (rich && runShortcut(e.nativeEvent, ref.current, style.fontSize, z)) {
+            e.preventDefault();
+            return;
+          }
+          if (isShape(el) && handleUmlEnter(e, ref.current, el.kind)) return;
           if (e.key === 'Escape' || (e.key === 'Enter' && (e.ctrlKey || e.metaKey))) {
             e.preventDefault();
             ref.current?.blur();
@@ -150,7 +216,7 @@ export function TextEditor() {
           }
         }}
         style={{
-          fontFamily: FONT_STACKS[style.fontFamily],
+          fontFamily: fontStack(style.fontFamily),
           fontSize: style.fontSize * z,
           fontWeight: style.bold ? 700 : 400,
           fontStyle: style.italic ? 'italic' : 'normal',
@@ -181,7 +247,8 @@ function grownHeight(el: ShapeElement, text: string): number {
     return c4Layout(text, el.w - 24, el.style).height + pad;
   }
   if (!def.autoGrow) return 0;
-  const box = textBoxOf(def, el.w, el.h);
+  const box = textBoxOf(def, el.w, el.h, el.params);
+  if (needsRich(text, el.style)) return richSize(text, box.w, el.style).h + (el.h - box.h);
   const lines = wrapText(text, box.w, el.style).length;
   return lines * lineHeight(el.style.fontSize) + (el.h - box.h);
 }

@@ -16,12 +16,16 @@ import {
 } from 'lucide-react';
 import type { Rect } from '@/model/types';
 import { IconImage } from './IconImage';
-import { TextBlock } from './TextLines';
+import { freehandGeometry } from '@/interaction/freehandPath';
+import { renderTable } from '@/interaction/tableRender';
 import {
   Body, C4Text, Compartments, Cylinder, Detail, HorizontalCylinder, RoundRect, cloudPath, cylRy, fillOf, iconTile, inset, rr,
   strokeAttrs,
 } from './kit';
-import type { ShapeDef, ShapeLibrary } from './types';
+import type { ParamValues, ShapeDef, ShapeLibrary } from './types';
+import { handle, param, pn, ps, radiusHandle, withParams } from './params';
+import { ARROW_PARAMS, documentD, singleArrowD, singleArrowHandle } from './paramGeometry';
+import { STENCIL_SHAPE } from '@/stencils/shape';
 
 export { strokeAttrs, splitSections, compartmentHeight, c4Layout, C4Text } from './kit';
 
@@ -32,6 +36,7 @@ const defs: ShapeDef[] = [
     label: 'Rectangle',
     rounded: true,
     render: ({ w, h, style }) => <RoundRect w={w} h={h} s={style} />,
+    handles: ({ w, h, style, px }) => [radiusHandle(w, h, style.radius, px)],
     drawio: 'rounded=0;whiteSpace=wrap;',
   },
   {
@@ -60,38 +65,46 @@ const defs: ShapeDef[] = [
   {
     kind: 'hexagon',
     label: 'Hexagon',
-    render: ({ w, h, style }) => {
-      const i = Math.min(w * 0.25, h * 0.5);
+    params: [param.pct('size', 'Size', 0.25, { max: 0.5, fixedSizeOf: 'w' })],
+    render: ({ w, h, style, params }) => {
+      const i = w * pn(params, 'size');
       return <Body d={`M${i},0 H${w - i} L${w},${h / 2} L${w - i},${h} H${i} L0,${h / 2} Z`} s={style} />;
     },
-    textBox: (w, h) => inset(w, h, Math.min(w * 0.18, h * 0.4), 6),
+    handles: ({ w, p }) => [handle(w * pn(p, 'size'), 0, (pt) => ({ params: { size: pt.x / w } }))],
+    textBox: (w, h, p) => inset(w, h, Math.min(w * pn(p, 'size') * 0.72, w * 0.4), 6),
     drawio: 'shape=hexagon;perimeter=hexagonPerimeter2;size=0.25;whiteSpace=wrap;',
   },
   {
     kind: 'parallelogram',
     label: 'Parallelogram',
-    render: ({ w, h, style }) => {
-      const o = Math.min(w * 0.2, h * 0.6);
+    params: [param.pct('size', 'Skew', 0.2, { max: 0.95, fixedSizeOf: 'w' })],
+    render: ({ w, h, style, params }) => {
+      const o = w * pn(params, 'size');
       return <Body d={`M${o},0 H${w} L${w - o},${h} H0 Z`} s={style} />;
     },
-    textBox: (w, h) => inset(w, h, Math.min(w * 0.2, h * 0.6) + 4, 6),
+    handles: ({ w, p }) => [handle(w * pn(p, 'size'), 0, (pt) => ({ params: { size: pt.x / w } }))],
+    textBox: (w, h, p) => inset(w, h, Math.min(w * pn(p, 'size') + 4, w * 0.45), 6),
     drawio: 'shape=parallelogram;perimeter=parallelogramPerimeter;whiteSpace=wrap;',
   },
   {
     kind: 'trapezoid',
     label: 'Trapezoid',
-    render: ({ w, h, style }) => {
-      const o = Math.min(w * 0.2, h * 0.6);
+    params: [param.pct('size', 'Skew', 0.2, { max: 0.5, fixedSizeOf: 'w' })],
+    render: ({ w, h, style, params }) => {
+      const o = w * pn(params, 'size');
       return <Body d={`M${o},0 H${w - o} L${w},${h} H0 Z`} s={style} />;
     },
-    textBox: (w, h) => inset(w, h, Math.min(w * 0.2, h * 0.6), 6),
+    handles: ({ w, p }) => [handle(w * pn(p, 'size'), 0, (pt) => ({ params: { size: pt.x / w } }))],
+    textBox: (w, h, p) => inset(w, h, Math.min(w * pn(p, 'size'), w * 0.45), 6),
     drawio: 'shape=trapezoid;perimeter=trapezoidPerimeter;whiteSpace=wrap;',
   },
   {
     kind: 'cylinder',
     label: 'Cylinder',
+    params: [param.px('size', 'Depth', 15, { max: 500 })],
     render: Cylinder,
-    textBox: (w, h) => ({ x: 6, y: cylRy(w, h) * 2 + 2, w: w - 12, h: h - cylRy(w, h) * 3 - 4 }),
+    handles: ({ w, h, p }) => [handle(w / 2, cylRy(w, h, p.size), (pt) => ({ params: { size: Math.round(Math.min(pt.y, h / 2)) } }))],
+    textBox: (w, h, p) => ({ x: 6, y: cylRy(w, h, p?.size) * 2 + 2, w: w - 12, h: Math.max(1, h - cylRy(w, h, p?.size) * 3 - 4) }),
     drawio: 'shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=15;whiteSpace=wrap;',
   },
   {
@@ -105,27 +118,49 @@ const defs: ShapeDef[] = [
     kind: 'callout',
     label: 'Callout',
     rounded: true,
-    render: ({ w, h, style }) => {
-      const bh = h * 0.78;
+    // draw.io callout: `size` = pointer height (px), `position` / `base` = where the
+    // pointer leaves the body (fraction / px), `position2` = tip x (fraction).
+    params: [
+      param.px('size', 'Pointer', 18, { drawioDefault: 30 }),
+      param.pct('position', 'Base at', 0.22, { drawioDefault: 0.5 }),
+      param.px('base', 'Base', 18, { drawioDefault: 20 }),
+      param.pct('position2', 'Tip at', 0.2, { drawioDefault: 0.5 }),
+    ],
+    render: ({ w, h, style, params }) => {
+      const bh = Math.max(0, h - Math.min(h, pn(params, 'size')));
       const r = rr(w, bh, style.radius);
+      const dx = w * pn(params, 'position');
+      const dx2 = w * pn(params, 'position2');
+      const bx = Math.min(w - r, dx + pn(params, 'base'));
       return (
         <Body
-          d={`M${r},0 H${w - r} Q${w},0 ${w},${r} V${bh - r} Q${w},${bh} ${w - r},${bh} H${w * 0.38} L${w * 0.2},${h} L${w * 0.22},${bh} H${r} Q0,${bh} 0,${bh - r} V${r} Q0,0 ${r},0 Z`}
+          d={`M${r},0 H${w - r} Q${w},0 ${w},${r} V${bh - r} Q${w},${bh} ${w - r},${bh} H${bx} L${dx2},${h} L${Math.max(r, Math.min(dx, bx))},${bh} H${r} Q0,${bh} 0,${bh - r} V${r} Q0,0 ${r},0 Z`}
           s={style}
         />
       );
     },
-    textBox: (w, h) => inset(w, h * 0.78, 8),
+    handles: ({ w, h, p }) => {
+      const s = Math.min(h, pn(p, 'size'));
+      const dx = w * pn(p, 'position');
+      return [
+        handle(dx, h - s, (pt) => ({ params: { size: Math.round(h - pt.y), position: pt.x / w } }), 'size'),
+        handle(Math.min(w, dx + pn(p, 'base')), h - s, (pt) => ({ params: { base: Math.round(Math.max(0, pt.x - dx)) } })),
+        handle(w * pn(p, 'position2'), h, (pt) => ({ params: { position2: pt.x / w } })),
+      ];
+    },
+    textBox: (w, h, p) => inset(w, Math.max(1, h - Math.min(h, pn(p, 'size'))), 8),
     drawio: 'shape=callout;perimeter=calloutPerimeter;whiteSpace=wrap;',
   },
   {
     kind: 'blockArrow',
     label: 'Block arrow',
-    render: ({ w, h, style }) => {
-      const hl = Math.min(w * 0.4, h * 0.8);
-      return <Body d={`M0,${h * 0.25} H${w - hl} V0 L${w},${h / 2} L${w - hl},${h} V${h * 0.75} H0 Z`} s={style} />;
+    params: ARROW_PARAMS(0.5, 0.4),
+    render: ({ w, h, style, params }) => <Body d={singleArrowD(w, h, params)} s={style} />,
+    handles: ({ w, h, p }) => [singleArrowHandle(w, h, p)],
+    textBox: (w, h, p) => {
+      const at = (h * (1 - pn(p, 'arrowWidth'))) / 2;
+      return { x: 6, y: at, w: Math.max(1, w - w * pn(p, 'arrowSize') - 8), h: Math.max(1, h - at * 2) };
     },
-    textBox: (w, h) => ({ x: 6, y: h * 0.25, w: w - Math.min(w * 0.4, h * 0.8), h: h * 0.5 }),
     drawio: 'shape=singleArrow;arrowWidth=0.5;arrowSize=0.4;whiteSpace=wrap;',
   },
   {
@@ -158,13 +193,21 @@ const defs: ShapeDef[] = [
     label: 'Container',
     rounded: true,
     container: true,
-    render: ({ w, h, style }) => (
-      <>
-        <RoundRect w={w} h={h} s={style} />
-        <Detail d={`M0,${Math.min(36, h)} H${w}`} s={{ ...style, strokeStyle: 'solid', strokeWidth: Math.max(1, style.strokeWidth * 0.75) }} />
-      </>
-    ),
-    textBox: (w) => ({ x: 14, y: 0, w: Math.max(1, w - 28), h: 36 }),
+    params: [param.px('startSize', 'Header', 36, { drawioDefault: 23 }), param.color('swimlaneFillColor', 'Header fill')],
+    render: ({ w, h, style, params }) => {
+      const b = Math.min(h, pn(params, 'startSize'));
+      const head = ps(params, 'swimlaneFillColor');
+      const r = Math.min(rr(w, h, style.radius), b);
+      return (
+        <>
+          <RoundRect w={w} h={h} s={style} />
+          {head && <path d={`M0,${b} V${r} Q0,0 ${r},0 H${w - r} Q${w},0 ${w},${r} V${b} Z`} fill={head} stroke="none" />}
+          <Detail d={`M0,${b} H${w}`} s={{ ...style, strokeStyle: 'solid', strokeWidth: Math.max(1, style.strokeWidth * 0.75) }} />
+        </>
+      );
+    },
+    handles: ({ w, h, p }) => [handle(w / 2, Math.min(h, pn(p, 'startSize')), (pt) => ({ params: { startSize: Math.round(Math.min(h, pt.y)) } }))],
+    textBox: (w, h, p) => ({ x: 14, y: 0, w: Math.max(1, w - 28), h: Math.max(1, Math.min(h, pn(p, 'startSize'))) }),
     drawio: 'swimlane;startSize=36;rounded=1;arcSize=6;container=1;collapsible=0;',
   },
 
@@ -179,18 +222,18 @@ const defs: ShapeDef[] = [
   {
     kind: 'flow.document',
     label: 'Document',
-    render: ({ w, h, style }) => {
-      const a = h * 0.1;
-      return <Body d={`M0,0 H${w} V${h - a} Q${w * 0.75},${h - a * 2.5} ${w / 2},${h - a} T0,${h - a} Z`} s={style} />;
-    },
-    textBox: (w, h) => ({ x: 8, y: 6, w: w - 16, h: h * 0.82 - 8 }),
+    params: [param.pct('size', 'Wave', 0.2, { max: 0.6, drawioDefault: 0.3 })],
+    render: ({ w, h, style, params }) => <Body d={documentD(w, h, pn(params, 'size'))} s={style} />,
+    handles: ({ w, h, p }) => [handle(w * 0.75, h - h * pn(p, 'size'), (pt) => ({ params: { size: (h - pt.y) / h } }))],
+    textBox: (w, h, p) => ({ x: 8, y: 6, w: w - 16, h: Math.max(1, h * (1 - pn(p, 'size') * 0.9) - 8) }),
     drawio: 'shape=document;boundedLbl=1;whiteSpace=wrap;',
   },
   {
     kind: 'flow.predefined',
     label: 'Predefined process',
-    render: ({ w, h, style }) => {
-      const x = Math.min(14, w * 0.1);
+    params: [param.pct('size', 'Bars', 0.1, { max: 0.5, fixedSizeOf: 'w' })],
+    render: ({ w, h, style, params }) => {
+      const x = w * pn(params, 'size');
       return (
         <>
           <RoundRect w={w} h={h} s={style} r={0} />
@@ -198,15 +241,17 @@ const defs: ShapeDef[] = [
         </>
       );
     },
-    textBox: (w, h) => inset(w, h, Math.min(14, w * 0.1) + 6, 6),
+    handles: ({ w, p }) => [handle(w * pn(p, 'size'), 0, (pt) => ({ params: { size: pt.x / w } }))],
+    textBox: (w, h, p) => inset(w, h, Math.min(w * 0.45, w * pn(p, 'size') + 6), 6),
     drawio: 'shape=process;backgroundOutline=1;whiteSpace=wrap;',
   },
   {
     kind: 'flow.internalStorage',
     label: 'Internal storage',
-    render: ({ w, h, style }) => {
-      const x = Math.min(14, w * 0.12);
-      const y = Math.min(14, h * 0.18);
+    params: [param.px('dx', 'Left', 14, { drawioDefault: 20 }), param.px('dy', 'Top', 14, { drawioDefault: 20 })],
+    render: ({ w, h, style, params }) => {
+      const x = Math.min(w, pn(params, 'dx'));
+      const y = Math.min(h, pn(params, 'dy'));
       return (
         <>
           <RoundRect w={w} h={h} s={style} r={0} />
@@ -214,7 +259,12 @@ const defs: ShapeDef[] = [
         </>
       );
     },
-    textBox: (w, h) => ({ x: Math.min(14, w * 0.12) + 4, y: Math.min(14, h * 0.18) + 2, w: w - Math.min(14, w * 0.12) - 8, h: h - Math.min(14, h * 0.18) - 4 }),
+    handles: ({ w, h, p }) => [handle(Math.min(w, pn(p, 'dx')), Math.min(h, pn(p, 'dy')), (pt) => ({ params: { dx: Math.round(pt.x), dy: Math.round(pt.y) } }), 'dx')],
+    textBox: (w, h, p) => {
+      const x = Math.min(w, pn(p, 'dx'));
+      const y = Math.min(h, pn(p, 'dy'));
+      return { x: x + 4, y: y + 2, w: Math.max(1, w - x - 8), h: Math.max(1, h - y - 4) };
+    },
     drawio: 'shape=internalStorage;backgroundOutline=1;whiteSpace=wrap;',
   },
   {
@@ -275,9 +325,10 @@ const defs: ShapeDef[] = [
   {
     kind: 'uml.package',
     label: 'Package',
-    render: ({ w, h, style }) => {
-      const tw = Math.min(w * 0.4, 90);
-      const th = Math.min(22, h * 0.3);
+    params: [param.px('tabWidth', 'Tab width', 80, { drawioDefault: 60 }), param.px('tabHeight', 'Tab height', 22, { drawioDefault: 20 })],
+    render: ({ w, h, style, params }) => {
+      const tw = Math.min(w, pn(params, 'tabWidth'));
+      const th = Math.min(h, pn(params, 'tabHeight'));
       return (
         <>
           <Body d={`M0,${th} V0 H${tw} V${th} Z`} s={style} />
@@ -285,7 +336,13 @@ const defs: ShapeDef[] = [
         </>
       );
     },
-    textBox: (w, h) => ({ x: 8, y: Math.min(22, h * 0.3) + 4, w: w - 16, h: h - Math.min(22, h * 0.3) - 8 }),
+    handles: ({ w, h, p }) => [
+      handle(Math.min(w, pn(p, 'tabWidth')), Math.min(h, pn(p, 'tabHeight')), (pt) => ({ params: { tabWidth: Math.round(pt.x), tabHeight: Math.round(pt.y) } }), 'tabWidth'),
+    ],
+    textBox: (w, h, p) => {
+      const th = Math.min(h, pn(p, 'tabHeight'));
+      return { x: 8, y: th + 4, w: w - 16, h: Math.max(1, h - th - 8) };
+    },
     drawio: 'shape=folder;tabWidth=80;tabHeight=22;tabPosition=left;whiteSpace=wrap;',
   },
   {
@@ -307,8 +364,9 @@ const defs: ShapeDef[] = [
   {
     kind: 'uml.note',
     label: 'Note',
-    render: ({ w, h, style }) => {
-      const f = Math.min(16, w * 0.25, h * 0.25);
+    params: [param.px('size', 'Fold', 16, { drawioDefault: 30 })],
+    render: ({ w, h, style, params }) => {
+      const f = Math.min(pn(params, 'size'), w, h);
       return (
         <>
           <Body d={`M0,0 H${w - f} L${w},${f} V${h} H0 Z`} s={style} />
@@ -316,6 +374,7 @@ const defs: ShapeDef[] = [
         </>
       );
     },
+    handles: ({ w, h, p }) => [handle(w - Math.min(pn(p, 'size'), w, h), 0, (pt) => ({ params: { size: Math.round(w - pt.x) } }))],
     textBox: (w, h) => inset(w, h, 10),
     drawio: 'shape=note;size=16;whiteSpace=wrap;',
   },
@@ -343,8 +402,9 @@ const defs: ShapeDef[] = [
   {
     kind: 'uml.node',
     label: 'Node',
-    render: ({ w, h, style }) => {
-      const d = Math.min(14, w * 0.12, h * 0.12);
+    params: [param.px('size', 'Depth', 14, { drawioDefault: 20 })],
+    render: ({ w, h, style, params }) => {
+      const d = Math.min(pn(params, 'size'), w, h);
       return (
         <>
           <Body d={`M0,${d} H${w - d} V${h} H0 Z`} s={style} />
@@ -354,9 +414,13 @@ const defs: ShapeDef[] = [
         </>
       );
     },
-    textBox: (w, h) => {
-      const d = Math.min(14, w * 0.12, h * 0.12);
-      return { x: 6, y: d + 4, w: w - d - 12, h: h - d - 8 };
+    handles: ({ w, h, p }) => {
+      const d = Math.min(pn(p, 'size'), w, h);
+      return [handle(w - d, d, (pt) => ({ params: { size: Math.round(Math.max(0, (w - pt.x + pt.y) / 2)) } }))];
+    },
+    textBox: (w, h, p) => {
+      const d = Math.min(pn(p, 'size'), w, h);
+      return { x: 6, y: d + 4, w: Math.max(1, w - d - 12), h: Math.max(1, h - d - 8) };
     },
     drawio: 'shape=cube;size=14;flipH=1;whiteSpace=wrap;',
   },
@@ -364,8 +428,9 @@ const defs: ShapeDef[] = [
     kind: 'uml.lifeline',
     label: 'Lifeline',
     rounded: true,
-    render: ({ w, h, style }) => {
-      const hh = Math.min(40, h);
+    params: [param.px('size', 'Header', 40)],
+    render: ({ w, h, style, params }) => {
+      const hh = Math.min(pn(params, 'size'), h);
       return (
         <>
           <Detail d={`M${w / 2},${hh} V${h}`} s={{ ...style, strokeStyle: 'dashed' }} />
@@ -373,23 +438,30 @@ const defs: ShapeDef[] = [
         </>
       );
     },
-    textBox: (w, h) => ({ x: 6, y: 0, w: w - 12, h: Math.min(40, h) }),
+    handles: ({ w, h, p }) => [handle(w * 0.75, Math.min(pn(p, 'size'), h), (pt) => ({ params: { size: Math.round(Math.min(h, pt.y)) } }))],
+    textBox: (w, h, p) => ({ x: 6, y: 0, w: w - 12, h: Math.max(1, Math.min(pn(p, 'size'), h)) }),
     drawio: 'shape=umlLifeline;perimeter=lifelinePerimeter;size=40;whiteSpace=wrap;',
   },
   {
     kind: 'uml.frame',
     label: 'Fragment',
     container: true,
-    render: ({ w, h, style }) => {
-      const lw = Math.min(w * 0.4, 84);
+    params: [param.px('width', 'Tab width', 84, { drawioDefault: 60 }), param.px('height', 'Tab height', 24, { drawioDefault: 30 })],
+    render: ({ w, h, style, params }) => {
+      const lw = Math.min(w, pn(params, 'width'));
+      const th = Math.min(h, pn(params, 'height'));
+      const c = Math.min(8, lw, th / 3);
       return (
         <>
           <RoundRect w={w} h={h} s={style} r={0} />
-          <Body d={`M0,0 H${lw} V16 L${lw - 8},24 H0 Z`} s={{ ...style, fill: style.fill === 'none' ? '#ffffff' : style.fill }} />
+          <Body d={`M0,0 H${lw} V${th - c} L${lw - c},${th} H0 Z`} s={{ ...style, fill: style.fill === 'none' ? '#ffffff' : style.fill }} />
         </>
       );
     },
-    textBox: (w) => ({ x: 6, y: 0, w: Math.min(w * 0.4, 84) - 14, h: 24 }),
+    handles: ({ w, h, p }) => [
+      handle(Math.min(w, pn(p, 'width')), Math.min(h, pn(p, 'height')), (pt) => ({ params: { width: Math.round(pt.x), height: Math.round(pt.y) } }), 'width'),
+    ],
+    textBox: (w, h, p) => ({ x: 6, y: 0, w: Math.max(1, Math.min(w, pn(p, 'width')) - 14), h: Math.max(1, Math.min(h, pn(p, 'height'))) }),
     drawio: 'shape=umlFrame;width=84;height=24;whiteSpace=wrap;',
   },
 
@@ -464,11 +536,13 @@ const defs: ShapeDef[] = [
     kind: 'c4.database',
     label: 'C4 database',
     textPlacement: 'custom',
+    params: [param.px('size', 'Depth', 15, { max: 500 })],
+    handles: ({ w, h, p }) => [handle(w / 2, cylRy(w, h, p.size), (pt) => ({ params: { size: Math.round(Math.min(pt.y, h / 2)) } }))],
     render: (ctx) => (
       <>
         <Cylinder {...ctx} />
         <C4Text
-          box={{ x: 10, y: cylRy(ctx.w, ctx.h) * 2 + 2, w: ctx.w - 20, h: ctx.h - cylRy(ctx.w, ctx.h) * 3 - 4 }}
+          box={{ x: 10, y: cylRy(ctx.w, ctx.h, ctx.params?.size) * 2 + 2, w: ctx.w - 20, h: ctx.h - cylRy(ctx.w, ctx.h, ctx.params?.size) * 3 - 4 }}
           text={ctx.text}
           style={ctx.style}
         />
@@ -569,17 +643,16 @@ defs.push(
     label: 'Freehand',
     boxHit: true,
     render: ({ w, h, points, style }) => {
-      if (!points || points.length < 2) return null;
-      const P = points.map((p) => ({ x: p.x * w, y: p.y * h }));
-      // Quadratic smoothing through midpoints.
-      let d = `M${P[0].x},${P[0].y}`;
-      for (let i = 1; i < P.length - 1; i++) {
-        const mx = (P[i].x + P[i + 1].x) / 2;
-        const my = (P[i].y + P[i + 1].y) / 2;
-        d += ` Q${P[i].x},${P[i].y} ${mx},${my}`;
-      }
-      d += ` L${P[P.length - 1].x},${P[P.length - 1].y}`;
-      return <path d={d} fill={fillOf(style)} fillOpacity={style.fillOpacity} {...strokeAttrs(style)} strokeLinecap="round" />;
+      // Catmull-Rom smoothing; pen strokes with pressure become a filled variable-width outline.
+      const g = freehandGeometry(points, w, h, style.strokeWidth);
+      if (!g) return null;
+      if (!g.outline) return <path d={g.path} fill={fillOf(style)} fillOpacity={style.fillOpacity} {...strokeAttrs(style)} strokeLinecap="round" strokeLinejoin="round" />;
+      return (
+        <>
+          {style.fill !== 'none' && <path d={g.path} fill={fillOf(style)} fillOpacity={style.fillOpacity} stroke="none" />}
+          <path d={g.outline} fill={style.stroke === 'none' ? 'none' : style.stroke} fillOpacity={style.strokeOpacity} />
+        </>
+      );
     },
     drawio: 'shape=mxgraph.basic.rect;fillColor=none;',
   },
@@ -587,42 +660,8 @@ defs.push(
     kind: 'table',
     label: 'Table',
     textPlacement: 'custom',
-    render: ({ w, h, table, style }) => {
-      if (!table) return <RoundRect w={w} h={h} s={style} />;
-      const tw = table.cols.reduce((a, b) => a + b, 0) || 1;
-      const th = table.rows.reduce((a, b) => a + b, 0) || 1;
-      const sx = w / tw;
-      const sy = h / th;
-      const xs = [0];
-      for (const c of table.cols) xs.push(xs[xs.length - 1] + c * sx);
-      const ys = [0];
-      for (const r of table.rows) ys.push(ys[ys.length - 1] + r * sy);
-      const line = { ...style, strokeStyle: 'solid' as const };
-      return (
-        <>
-          <RoundRect w={w} h={h} s={style} r={Math.min(style.radius, 6)} />
-          {table.header && <rect x={0} y={0} width={w} height={ys[1]} fill={style.stroke} fillOpacity={0.08} />}
-          {xs.slice(1, -1).map((x, i) => (
-            <Detail key={`c${i}`} d={`M${x},0 V${h}`} s={line} />
-          ))}
-          {ys.slice(1, -1).map((y, i) => (
-            <Detail key={`r${i}`} d={`M0,${y} H${w}`} s={line} />
-          ))}
-          {table.cells.map((row, r) =>
-            row.map((cell, c) =>
-              cell ? (
-                <TextBlock
-                  key={`${r}-${c}`}
-                  box={{ x: xs[c] + 6, y: ys[r] + 2, w: Math.max(1, xs[c + 1] - xs[c] - 12), h: Math.max(1, ys[r + 1] - ys[r] - 4) }}
-                  text={cell}
-                  style={table.header && r === 0 ? { ...style, bold: true } : style}
-                />
-              ) : null,
-            ),
-          )}
-        </>
-      );
-    },
+    // Per-cell styles and merged cells: src/interaction/tableRender.tsx.
+    render: renderTable,
     drawio: 'shape=table;startSize=0;container=1;collapsible=0;childLayout=tableLayout;',
   },
 );
@@ -661,6 +700,9 @@ for (const [kind, label, Icon, stencil] of NETWORK) {
   });
 }
 
+// Custom shapes from mxGraph stencil XML (src/stencils).
+defs.push(STENCIL_SHAPE);
+
 // Auto-discovered library modules (src/shapes/libs/*.tsx).
 const LIB_MODULES = import.meta.glob<{ shapes?: ShapeDef[]; libraries?: ShapeLibrary[] }>('./libs/*.tsx', { eager: true });
 export const EXTRA_LIBRARIES: ShapeLibrary[] = [];
@@ -670,15 +712,15 @@ for (const path of Object.keys(LIB_MODULES).sort()) {
   if (mod.libraries) EXTRA_LIBRARIES.push(...mod.libraries);
 }
 
-export const SHAPES: Record<string, ShapeDef> = Object.fromEntries(defs.map((d) => [d.kind, d]));
+export const SHAPES: Record<string, ShapeDef> = Object.fromEntries(defs.map((d) => [d.kind, withParams(d)]));
 
 export function getShapeDef(kind: string): ShapeDef {
   return SHAPES[kind] ?? SHAPES.rectangle;
 }
 
 /** Default text box: the bounds inset by 8px. */
-export function textBoxOf(def: ShapeDef, w: number, h: number): Rect {
-  return def.textBox ? def.textBox(w, h) : inset(w, h, 8, 6);
+export function textBoxOf(def: ShapeDef, w: number, h: number, params?: ParamValues): Rect {
+  return def.textBox ? def.textBox(w, h, params) : inset(w, h, 8, 6);
 }
 
 export { IconImage };

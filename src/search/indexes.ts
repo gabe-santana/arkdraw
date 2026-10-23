@@ -36,7 +36,14 @@ const PROVIDER_NAMES: Record<string, string> = {
   ibm: 'ibm cloud',
   kubernetes: 'kubernetes k8s',
   logos: 'logo brand tech',
+  material: 'material google symbols ui icon',
+  fontawesome: 'font awesome fa ui icon',
+  fluent: 'fluent microsoft ui icon',
+  'bootstrap-icons': 'bootstrap bi ui icon',
 };
+
+/** Generic UI glyph sets rank just below vendor icons and logos on near-ties. */
+const GENERIC_UI_PACKS = new Set(['material', 'fontawesome', 'fluent', 'bootstrap-icons']);
 
 let iconIndex: { key: string; index: SearchIndex<{ provider: string; icon: IconEntry }> } | null = null;
 
@@ -59,7 +66,7 @@ export function searchIconPacks(packs: IconPack[], query: string, limit = 240): 
   // On near-ties, the vendor's official icon beats a brand logo of the same service.
   return iconIndex.index
     .search(query, limit)
-    .map((r) => ({ item: r.item, score: r.score - (r.item.provider === 'logos' ? 0.05 : 0) }))
+    .map((r) => ({ item: r.item, score: r.score - (r.item.provider === 'logos' ? 0.05 : GENERIC_UI_PACKS.has(r.item.provider) ? 0.08 : 0) }))
     .sort((a, b) => b.score - a.score)
     .map((r) => r.item);
 }

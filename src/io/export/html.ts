@@ -5,6 +5,7 @@
  * navigation (`page:<id>` links switch pages). No network access needed.
  */
 import type { DiagramElement, Page } from '@/model/types';
+import { base64Encode, utf8Encode } from '@/io/import/_shared';
 import { docLayers, fontFaceCss, inlineIcons, loadExportFonts, renderSvg, type Appearance, type SvgExportOptions } from './svg';
 
 export interface HtmlPageInput {
@@ -19,6 +20,8 @@ export interface HtmlExportOptions {
   embedFonts?: boolean;
   /** Index into `pages` shown first. */
   initialPage?: number;
+  /** `.opendraw` JSON embedded so the file can be reopened for editing (src/io/import/html.ts). */
+  diagramJson?: string;
 }
 
 const escHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -84,7 +87,8 @@ ${sections.join('\n')}
 <div class="tip" id="tip" role="tooltip" hidden></div>
 <script type="application/json" id="od-pages">${scriptJson(meta)}</script>
 <script>${VIEWER_JS}</script>
-</body>
+${opts.diagramJson ? `<script type="application/vnd.opendraw+json" id="opendraw-diagram">${base64Encode(utf8Encode(opts.diagramJson))}</script>
+` : ''}</body>
 </html>
 `;
 }

@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissions for the main OpenDraw window",
-  "windows": ["main"],
+  "description": "Permissions for every OpenDraw editor window (main + File → New window)",
+  "windows": ["main", "editor-*"],
   "permissions": [
     "core:default",
     "core:window:allow-start-dragging",
@@ -16,6 +16,7 @@
     "dialog:default",
     "opener:default",
     "core:window:allow-set-fullscreen",
-    "core:window:allow-is-fullscreen"
+    "core:window:allow-is-fullscreen",
+    "updater:default"
   ]
 }

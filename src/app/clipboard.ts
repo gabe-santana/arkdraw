@@ -11,6 +11,7 @@ import { isImageUrl } from '@/lib/images';
 import { insertImageFile, insertImageUrl } from './commands';
 import { presetForTool } from '@/canvas/tools';
 import { lineHeight, measureText, wrapText } from '@/lib/text';
+import { hasDrawioXml, pasteDrawioXml, writeClipboard } from '@/automation/clipboardXml';
 
 const MARKER = 'application/x-opendraw';
 
@@ -19,7 +20,8 @@ export function copyToClipboard(cut: boolean) {
   const els = s.copySelection();
   if (!els.length) return;
   const payload = JSON.stringify({ type: MARKER, elements: els });
-  navigator.clipboard?.writeText(payload).catch(() => {});
+  // Our JSON as text, plus draw.io XML as HTML so the copy also pastes into draw.io.
+  void writeClipboard(payload, els);
   if (cut) s.deleteSelection();
 }
 
@@ -92,6 +94,8 @@ export async function pasteFromClipboard(text?: string, images: Blob[] = [], at?
     else s.paste(els, viewportCenter());
     return;
   }
+  // draw.io cells (mxGraphModel / mxfile XML).
+  if (data && (await pasteDrawioXml(data, (cells) => useEditor.getState().paste(cells, at ?? viewportCenter())))) return;
   const trimmed = data?.trim() ?? '';
   // Office apps put a rendered picture next to their text; the text is what people mean.
   if (!trimmed) {
@@ -130,7 +134,11 @@ export function installPasteHandler() {
     const t = e.target as HTMLElement;
     if (t?.closest?.('input, textarea, [contenteditable]')) return;
     e.preventDefault();
-    void pasteFromClipboard(e.clipboardData?.getData('text/plain') ?? '', clipboardImages(e.clipboardData), pasteTarget());
+    const plain = e.clipboardData?.getData('text/plain') ?? '';
+    const html = e.clipboardData?.getData('text/html') ?? '';
+    // draw.io puts its XML in the HTML flavour; our own JSON (text) still wins.
+    const text = !plain.includes(MARKER) && !hasDrawioXml(plain) && hasDrawioXml(html) ? html : plain;
+    void pasteFromClipboard(text, clipboardImages(e.clipboardData), pasteTarget());
   };
   const onMove = (e: PointerEvent) => {
     lastPointer = { x: e.clientX, y: e.clientY };

@@ -176,7 +176,7 @@ export function autosizeSelection() {
     if (!s.text) continue;
     const lines = s.text.split('\n');
     const textW = Math.max(...lines.map((l) => measureText(l, s.style)));
-    const box = textBoxOf(def, s.w, s.h);
+    const box = textBoxOf(def, s.w, s.h, s.params);
     const padX = s.w - box.w;
     const padY = s.h - box.h;
     const w = Math.ceil(textW + padX + 4);

@@ -34,6 +34,9 @@ import { resolvePageParam, urlWithoutSource, type LaunchParams } from '@/web/lau
 import { pagesFromContent, resolveSource } from '@/web/loadDiagram';
 import { PwaUpdatePrompt } from '@/web/PwaUpdatePrompt';
 import { ViewerScene } from './ViewerScene';
+import { useViewerActions } from '@/automation/viewerActions';
+import { isActionLink } from '@/automation/linkActions';
+import { placeholderLookup } from '@/automation/placeholders';
 import { useCameraState, useViewerGestures } from './useViewerCamera';
 import { classifyLink, editorUrl, fitCamera, toggleableLayers, visibleOrder, withLayerOverrides } from './model';
 
@@ -186,7 +189,15 @@ function DiagramViewer({ pages, name, launch, dark, onToggleTheme }: { pages: Pa
   const chrome = launch.toolbar;
 
   const page = pages[Math.min(pageIndex, pages.length - 1)];
-  const doc = useMemo(() => withLayerOverrides(page.doc, overrides[page.id] ?? {}), [page, overrides]);
+  // Custom link actions (data:action/json) override visibility per page.
+  const actions = useViewerActions(page.id, page.doc, {
+    scrollTo: (r) => {
+      userMoved.current = true;
+      cam.animateTo(fitCamera(r, size.w, size.h, insets, cam.ref.current.z));
+    },
+    open: (l) => follow(l),
+  });
+  const doc = useMemo(() => withLayerOverrides(actions.doc, overrides[page.id] ?? {}), [actions.doc, page.id, overrides]);
   const order = useMemo(() => visibleOrder(doc), [doc]);
   const bounds = useMemo(
     () => visualBounds(doc, order.map((id) => doc.elements[id])),
@@ -194,8 +205,8 @@ function DiagramViewer({ pages, name, launch, dark, onToggleTheme }: { pages: Pa
   );
   const layers = useMemo(() => toggleableLayers(doc), [doc]);
   const vars = useMemo(
-    () => ({ pageName: page.name, pageNumber: pageIndex + 1, pageCount: pages.length, fileName: name }),
-    [page.name, pageIndex, pages.length, name],
+    () => ({ pageName: page.name, pageNumber: pageIndex + 1, pageCount: pages.length, fileName: name, lookup: placeholderLookup(page.doc, page.data), language: page.settings.language }),
+    [page.name, page.doc, page.data, pageIndex, pages.length, name],
   );
 
   useEffect(() => {
@@ -261,11 +272,12 @@ function DiagramViewer({ pages, name, launch, dark, onToggleTheme }: { pages: Pa
 
   const follow = useCallback(
     (link: string) => {
+      if (actions.run(link)) return;
       const t = classifyLink(link, pages);
       if (t.kind === 'page') goTo(pages.findIndex((p) => p.id === t.pageId));
       else if (t.kind === 'external') window.open(t.url, '_blank', 'noopener,noreferrer');
     },
-    [pages, goTo],
+    [pages, goTo, actions.run],
   );
 
   const elementAt = useCallback(
@@ -330,6 +342,7 @@ function DiagramViewer({ pages, name, launch, dark, onToggleTheme }: { pages: Pa
           <SvgDefs />
           <g transform={`translate(${camera.x} ${camera.y}) scale(${camera.z})`}>
             <ViewerScene key={`${page.id}:${fontsVersion}`} doc={doc} order={order} settings={page.settings} bounds={bounds} vars={vars} labelBg={labelBg} />
+            {actions.overlay}
           </g>
         </svg>
       </div>
@@ -469,7 +482,9 @@ function HoverCard({ hover, pages }: { hover: Hover; pages: Page[] }) {
       ? `Go to “${pages.find((p) => p.id === target.pageId)?.name ?? 'page'}”`
       : target?.kind === 'external'
         ? target.url.replace(/^https?:\/\//, '').replace(/\/$/, '')
-        : el.link
+        : isActionLink(el.link)
+          ? 'Click to run action'
+          : el.link
           ? 'Unsupported link'
           : null;
   const W = 300;

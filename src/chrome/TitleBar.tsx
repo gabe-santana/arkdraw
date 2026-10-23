@@ -3,6 +3,7 @@
  * Windows & Linux get custom window controls. Empty areas drag the window,
  * and double-clicking them maximizes, like a native title bar.
  */
+import { TABLE_MENU_IDS } from '@/interaction/actions';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Copy, Minus, Redo2, Sparkles, Square, Undo2, X, FileDown, Sun, Moon, Clock, Trash } from 'lucide-react';
 import { useEditor, useIsDirty } from '@/store/editor';
@@ -10,6 +11,8 @@ import { useUi } from '@/store/ui';
 import { IS_MAC, isTauri } from '@/lib/platform';
 import { cn } from '@/lib/cn';
 import { ACTIONS, ACTION_MAP, runAction } from '@/app/actions';
+import { UI_MODE_ACTION_IDS } from '@/extensibility/actions';
+import { withMenuExtensions } from '@/extensibility/menus';
 import { useUi as useUiStore } from '@/store/ui';
 import { openPath } from '@/app/fileCommands';
 import { clearRecentFiles, getRecentFiles, windowControls, type RecentFile } from '@/io/native';
@@ -49,6 +52,7 @@ function buildMenu(label: string, recent: RecentFile[]): MenuEntry[] {
     case 'File':
       return [
         toEntry('file.new'),
+        ...(isTauri() ? [toEntry('file.newWindow')] : []),
         toEntry('file.templates'),
         toEntry('file.open'),
         {
@@ -62,14 +66,19 @@ function buildMenu(label: string, recent: RecentFile[]): MenuEntry[] {
           ],
         },
         toEntry('file.import'),
+        ...(isTauri() ? [] : [toEntry('file.openBrowser')]),
         sep,
         toEntry('file.save'),
         toEntry('file.saveAs'),
+        ...(isTauri() ? [] : [toEntry('file.saveBrowser')]),
+        toEntry('file.saveTemplate'),
         sep,
         toEntry('file.export'),
+        toEntry('file.embed'),
         toEntry('file.print'),
         sep,
         toEntry('file.revisions'),
+        toEntry('file.properties'),
       ];
     case 'Edit':
       return [
@@ -87,20 +96,23 @@ function buildMenu(label: string, recent: RecentFile[]): MenuEntry[] {
         sep,
         {
           label: 'Select',
-          items: ['edit.selectAll', 'edit.selectVertices', 'edit.selectEdges', 'edit.selectNone', 'edit.selectChildren', 'edit.selectParent', 'edit.selectSiblings'].map(toEntry),
+          items: ['edit.selectAll', 'edit.selectVertices', 'edit.selectEdges', 'edit.selectNone', 'edit.selectChildren', 'edit.selectParent', 'edit.selectSiblings', 'edit.selectDescendants'].map(toEntry),
         },
         sep,
         toEntry('edit.data'),
+        { label: 'Data', items: ['edit.pageData', 'edit.documentData', 'edit.revealHidden', 'edit.mermaid'].map(toEntry) },
         toEntry('edit.link'),
         toEntry('edit.tooltip'),
         toEntry('edit.style'),
+        toEntry('edit.editShape'),
         {
           label: 'Style',
           items: ['edit.copyStyle', 'edit.pasteStyle', 'edit.defaultStyle', 'edit.clearDefaultStyle'].map(toEntry),
         },
-        { label: 'Text', items: ['format.bold', 'format.italic', 'format.underline', 'format.fontBigger', 'format.fontSmaller'].map(toEntry) },
+        { label: 'Text', items: ['format.bold', 'format.italic', 'format.underline', 'format.fontBigger', 'format.fontSmaller', 'format.clear'].map(toEntry) },
         { label: 'Copy as', items: ['edit.copyImage', 'edit.copySvg'].map(toEntry) },
         toEntry('edit.replaceShape'),
+        toEntry('edit.editPoints'),
         sep,
         toEntry('edit.lock'),
       ];
@@ -120,6 +132,7 @@ function buildMenu(label: string, recent: RecentFile[]): MenuEntry[] {
         toEntry('view.guides'),
         toEntry('view.connectionPoints'),
         toEntry('view.rulers'),
+        toEntry('view.scrollbars'),
         toEntry('view.pageView'),
         { label: 'Units', items: units },
         sep,
@@ -144,6 +157,7 @@ function buildMenu(label: string, recent: RecentFile[]): MenuEntry[] {
         toEntry('arrange.group'),
         toEntry('arrange.ungroup'),
         toEntry('arrange.removeFromGroup'),
+        { label: 'Navigate', items: ['arrange.enterGroup', 'arrange.exitGroup', 'arrange.home'].map(toEntry) },
         sep,
         {
           label: 'Align',
@@ -156,11 +170,11 @@ function buildMenu(label: string, recent: RecentFile[]): MenuEntry[] {
         { label: 'Layout', items: ACTIONS.filter((a) => a.group === 'Layout').map((a) => toEntry(a.id)) },
         {
           label: 'Insert',
-          items: [toEntry('arrange.image'), toEntry('arrange.imageUrl'), toEntry('arrange.table'), toEntry('file.templates'), toEntry('file.import')],
+          items: [toEntry('arrange.image'), toEntry('arrange.imageUrl'), toEntry('arrange.table'), toEntry('arrange.insertShape'), toEntry('file.templates'), toEntry('file.import')],
         },
         {
           label: 'Table',
-          items: ['arrange.tableRow', 'arrange.tableCol', 'arrange.tableDelRow', 'arrange.tableDelCol'].map(toEntry),
+          items: [...TABLE_MENU_IDS, 'arrange.tableRow', 'arrange.tableCol', 'arrange.tableDelRow', 'arrange.tableDelCol'].map(toEntry),
         },
         sep,
         { label: 'Connector', items: ['arrange.connect', 'arrange.reverse', 'arrange.clearWaypoints'].map(toEntry) },
@@ -168,9 +182,9 @@ function buildMenu(label: string, recent: RecentFile[]): MenuEntry[] {
         toEntry('arrange.collapse'),
       ];
     case 'Extras':
-      return [toEntry('edit.diagram'), toEntry('edit.style'), sep, toEntry('ai.open'), toEntry('ai.settings'), sep, toEntry('extras.preferences')];
+      return [toEntry('edit.diagram'), toEntry('edit.style'), sep, toEntry('extras.theme'), toEntry('extras.sketch'), sep, toEntry('ai.open'), toEntry('ai.settings'), sep, { label: 'Appearance', items: UI_MODE_ACTION_IDS.map(toEntry) }, toEntry('extras.plugins'), { label: 'Tools', items: ['extras.explore', 'extras.anonymize', 'extras.replay', ...(ACTION_MAP['extras.dictate'].hidden ? [] : ['extras.dictate'])].map(toEntry) }, toEntry('extras.configuration'), toEntry('extras.preferences')];
     default:
-      return [toEntry('help.shortcuts'), toEntry('view.palette')];
+      return [toEntry('help.shortcuts'), toEntry('view.palette'), ...(isTauri() ? [sep, toEntry('help.checkUpdates'), toEntry('extras.configFile')] : [])];
   }
 }
 
@@ -233,7 +247,7 @@ export function TitleBar() {
           </button>
         ))}
       </nav>
-      {open && <MenuList key={open.label} items={buildMenu(open.label, recent)} onClose={close} x={open.x} y={open.y} />}
+      {open && <MenuList key={open.label} items={withMenuExtensions(open.label, buildMenu(open.label, recent), toEntry, { type: 'separator' } as MenuEntry, (id) => !!ACTION_MAP[id])} onClose={close} x={open.x} y={open.y} />}
 
       {/* Document name (centered) */}
       <div className="pointer-events-none absolute inset-x-0 flex justify-center" data-tauri-drag-region>

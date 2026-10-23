@@ -44,6 +44,7 @@ export function LayersPanel() {
   return (
     <aside
       ref={ref}
+      aria-label="Layers panel"
       className="animate-slide-up pointer-events-auto relative flex max-h-[55%] w-[268px] shrink-0 flex-col overflow-hidden rounded-2xl bg-panel shadow-panel"
       style={{ height: open ? height : undefined }}
     >
@@ -192,7 +193,7 @@ function LayerIcon({ el }: { el: DiagramElement }) {
   if (el.type === 'connector') return <Spline className={cls} />;
   if (el.kind === 'text') return <Type className={cls} />;
   if (el.kind === 'icon' && el.icon) return <img src={iconUrl(el.icon)} alt="" className="size-4 shrink-0 object-contain" />;
-  if (getShapeDef(el.kind).container) return <Boxes className={cls} />;
+  if (el.container ?? getShapeDef(el.kind).container) return <Boxes className={cls} />;
   return (
     <span className="flex size-4 shrink-0 items-center justify-center">
       <ShapePreview item={{ kind: el.kind, label: '', w: el.w, h: el.h, style: { ...el.style, strokeWidth: Math.max(el.style.strokeWidth, 2) } }} size={14} />

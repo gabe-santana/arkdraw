@@ -9,13 +9,23 @@
  */
 import type {
   Layer,
-  AnchorSide, ArrowHead, ConnectorElement, DiagramElement, Doc, ElementStyle, Endpoint, ShapeElement,
+  ConnectorElement, DiagramElement, Doc, ElementStyle, Endpoint, ShapeElement,
 } from '@/model/types';
 import { isConnector, isShape } from '@/model/types';
 import { createConnector, createShape, DEFAULT_STYLE } from '@/model/defaults';
 import { SHAPES, getShapeDef, splitSections } from '@/shapes/registry';
 import { uid } from '@/lib/id';
+import { exportShapeParams, importShapeParams } from './drawioParams';
 import { inlineIcons } from './export/svg';
+import { behaviorFromDrawio, behaviorToDrawio } from '@/interaction/behavior';
+import { labelPositionToDrawio, labelToDrawio, richLabelFromDrawio, textStyleFromDrawio, textStyleToDrawio } from '@/text/drawioText';
+import {
+  applyEdgeLabel, connectionPointsFromDrawio, connectionPointsToDrawio, connectorStyleFromDrawio, connectorStyleToDrawio, extraLabelCells, resolveEdgeEnds, shapeEndpointFromDrawio,
+} from './drawioConnectors';
+import { styleExtrasFromDrawio, styleExtrasToDrawio } from '@/styling/drawioStyle';
+import { stencilFromStyleValue, stencilStyleValue } from '@/stencils/codec';
+import { stencilPoints } from '@/stencils/parse';
+import { EXTRA_STYLE_KEY, mergeStyleExtras } from '@/extensibility/styleExtras';
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -40,32 +50,6 @@ const xmlEscape = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/\n/g, '&#10;');
 const htmlEscape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-const FONT_TO_DRAWIO: Record<ElementStyle['fontFamily'], string> = { sans: 'Helvetica', serif: 'Georgia', mono: 'Courier New', hand: 'Architects Daughter' };
-
-const ARROW_TO_DRAWIO: Record<ArrowHead, [string, 0 | 1]> = {
-  none: ['none', 0],
-  arrow: ['open', 0],
-  triangle: ['block', 1],
-  triangleOpen: ['block', 0],
-  diamond: ['diamond', 1],
-  diamondOpen: ['diamond', 0],
-  circle: ['oval', 1],
-  circleOpen: ['oval', 0],
-  erOne: ['ERone', 0],
-  erOnlyOne: ['ERmandOne', 0],
-  erMany: ['ERmany', 0],
-  erOneMany: ['ERoneToMany', 0],
-  erZeroMany: ['ERzeroToMany', 0],
-  erZeroOne: ['ERzeroToOne', 0],
-  dash: ['dash', 0],
-  cross: ['cross', 0],
-  halfArrow: ['openAsync', 0],
-  async: ['async', 1],
-  box: ['box', 1],
-  boxOpen: ['box', 0],
-};
-
-const SIDE_TO_XY: Record<AnchorSide, [number, number]> = { top: [0.5, 0], right: [1, 0.5], bottom: [0.5, 1], left: [0, 0.5] };
 
 /** draw.io only understands #rrggbb; split rgba() into color + opacity. */
 function hexAndAlpha(c: string): [string, number | null] {
@@ -87,8 +71,7 @@ function applyCommonStyle(m: StyleMap, s: ElementStyle, isEdge: boolean) {
   m.set('strokeWidth', String(s.strokeWidth));
   m.set('fontColor', s.textColor);
   m.set('fontSize', String(s.fontSize));
-  m.set('fontFamily', FONT_TO_DRAWIO[s.fontFamily]);
-  m.set('fontStyle', String((s.bold ? 1 : 0) | (s.italic ? 2 : 0)));
+  textStyleToDrawio(m, s);
   if (!isEdge) {
     if (!m.has('align')) m.set('align', s.textAlign);
     if (!m.has('verticalAlign')) m.set('verticalAlign', s.verticalAlign);
@@ -99,6 +82,7 @@ function applyCommonStyle(m: StyleMap, s: ElementStyle, isEdge: boolean) {
     if (s.strokeStyle === 'dotted') m.set('dashPattern', '1 3');
   }
   if (s.shadow) m.set('shadow', '1');
+  styleExtrasToDrawio(m, s, isEdge);
   m.set('html', '1');
 }
 
@@ -134,12 +118,14 @@ function c4Html(text: string): string {
 const plainHtml = (text: string) => htmlEscape(text).replace(/\n/g, '<br>');
 
 /** Wraps a cell in <UserObject> when it carries metadata (tooltip, link, custom data). */
-function withUserObject(el: DiagramElement, label: string, cell: string): string {
+function withUserObject(el: DiagramElement, label: string, mxCell: string): string {
+  // Element-level visibility (custom link actions) is draw.io's visible="0".
+  const cell = el.hidden ? mxCell.replace(/^(<mxCell id="[^"]*" value="[^"]*")/, '$1 visible="0"') : mxCell;
   const attrs: string[] = [];
   if (el.tooltip) attrs.push(`tooltip="${xmlEscape(el.tooltip)}"`);
   if (el.link) attrs.push(`link="${xmlEscape(el.link.startsWith('page:') ? `data:page/id,${el.link.slice(5)}` : el.link)}"`);
   if (el.tags?.length) attrs.push(`tags="${xmlEscape(el.tags.join(' '))}"`);
-  for (const [k, v] of Object.entries(el.data ?? {})) if (/^[A-Za-z_][\w.-]*$/.test(k) && k !== 'label' && k !== 'id') attrs.push(`${k}="${xmlEscape(v)}"`);
+  for (const [k, v] of Object.entries(el.data ?? {})) if (/^[A-Za-z_][\w.-]*$/.test(k) && k !== 'label' && k !== 'id' && k !== EXTRA_STYLE_KEY) attrs.push(`${k}="${xmlEscape(/^label_/.test(k) ? labelToDrawio(v, el.style) : v)}"`);
   if (!attrs.length) return cell;
   // Inside a UserObject the mxCell loses its id/value; the wrapper carries them.
   const inner = cell.replace(/^<mxCell id="[^"]*" value="[^"]*"/, '<mxCell');
@@ -163,7 +149,11 @@ function diagramXml(doc: Doc, title: string, iconHref: (p: string) => string): s
     emitted.add(el.id);
     const def = getShapeDef(el.kind);
     const m = parseStyle(def.drawio);
-    let value = plainHtml(el.text);
+    if (el.kind === 'stencil') {
+      if (el.stencil) m.set('shape', stencilStyleValue(el.stencil));
+      else m.delete('shape');
+    }
+    let value = labelToDrawio(el.text, el.style);
     if (el.kind === 'uml.class' || el.kind === 'erd.entity') {
       for (const k of ['swimlane', 'childLayout', 'fontStyle']) m.delete(k);
       m.set('verticalAlign', 'top');
@@ -201,6 +191,11 @@ function diagramXml(doc: Doc, title: string, iconHref: (p: string) => string): s
     if (el.style.sketch) m.set('sketch', '1');
     if (el.style.glass) m.set('glass', '1');
     if (el.collapsed) m.set('collapsible', '1');
+    behaviorToDrawio(m, el);
+    exportShapeParams(el, m);
+    labelPositionToDrawio(m, el.style);
+    if (el.connectionPoints) m.set('points', connectionPointsToDrawio(el.connectionPoints));
+    mergeStyleExtras(m, el);
     const ox = parent ? parent.x : 0;
     const oy = parent ? parent.y : 0;
     const cell =
@@ -221,38 +216,25 @@ function diagramXml(doc: Doc, title: string, iconHref: (p: string) => string): s
       m.set('edgeStyle', 'orthogonalEdgeStyle');
       m.set('curved', '1');
     }
-    const [endArrow, endFill] = ARROW_TO_DRAWIO[el.endArrow];
-    const [startArrow, startFill] = ARROW_TO_DRAWIO[el.startArrow];
-    m.set('endArrow', endArrow);
-    m.set('endFill', String(endFill));
-    m.set('startArrow', startArrow);
-    m.set('startFill', String(startFill));
-    for (const [end, prefix] of [['source', 'exit'], ['target', 'entry']] as const) {
-      const side = el[end].side;
-      if (el[end].elementId && side && side !== 'auto') {
-        const [x, y] = SIDE_TO_XY[side];
-        m.set(`${prefix}X`, String(x));
-        m.set(`${prefix}Y`, String(y));
-        m.set(`${prefix}Dx`, '0');
-        m.set(`${prefix}Dy`, '0');
-      }
-    }
+    // Heads (+ size/fill), fixed points, spacing, jumps and edge shape: src/io/drawioConnectors.ts.
+    connectorStyleToDrawio(el, m);
     if (el.animation?.kind === 'flow') m.set('flowAnimation', '1');
     if (el.routing === 'elbow-h' || el.routing === 'elbow-v') {
       m.set('edgeStyle', 'elbowEdgeStyle');
       m.set('elbow', el.routing === 'elbow-v' ? 'vertical' : 'horizontal');
     } else if (el.routing === 'entity') m.set('edgeStyle', 'entityRelationEdgeStyle');
     else if (el.routing === 'isometric') m.set('edgeStyle', 'isometricEdgeStyle');
-    if (el.lineJumps && el.lineJumps !== 'none') m.set('jumpStyle', el.lineJumps);
-    if (el.connectorShape === 'pipe') m.set('shape', 'pipe');
-    if (el.connectorShape === 'arrow') m.set('shape', 'flexArrow');
     applyCommonStyle(m, el.style, true);
-    const src = el.source.elementId && vertexIds.has(el.source.elementId) ? ` source="${el.source.elementId}"` : '';
-    const tgt = el.target.elementId && vertexIds.has(el.target.elementId) ? ` target="${el.target.elementId}"` : '';
+    behaviorToDrawio(m, el);
+    mergeStyleExtras(m, el);
+    // Ends may attach to shapes or (connect-to-edge) to other connectors.
+    const linkable = (id?: string) => !!id && (vertexIds.has(id) || isConnector(doc.elements[id]));
+    const src = linkable(el.source.elementId) ? ` source="${el.source.elementId}"` : '';
+    const tgt = linkable(el.target.elementId) ? ` target="${el.target.elementId}"` : '';
     const points = el.waypoints?.length
       ? `<Array as="points">${el.waypoints.map((p) => `<mxPoint x="${round(p.x)}" y="${round(p.y)}"/>`).join('')}</Array>`
       : '';
-    const label = plainHtml(el.text);
+    const label = labelToDrawio(el.text, el.style);
     const cell =
       `<mxCell id="${el.id}" value="${xmlEscape(label)}" style="${xmlEscape(styleString(m))}" edge="1" parent="${layerIdOf(el)}"${src}${tgt}>` +
       `<mxGeometry relative="1" as="geometry">` +
@@ -261,12 +243,17 @@ function diagramXml(doc: Doc, title: string, iconHref: (p: string) => string): s
       points +
       `</mxGeometry></mxCell>`;
     cells.push(withUserObject(el, label, cell));
+    cells.push(...extraLabelCells(el, xmlEscape, plainHtml));
   }
 
-  const layerCells = layers.map(
-    (l) =>
-      `<mxCell id="${xmlEscape(l.id)}" ${doc.layers ? `value="${xmlEscape(l.name)}" ` : ''}parent="0"${l.visible ? '' : ' visible="0"'}${l.locked ? ' style="locked=1;"' : ''}/>`,
-  );
+  const layerCells = layers.map((l) => {
+    const cell = `<mxCell id="${xmlEscape(l.id)}" ${doc.layers ? `value="${xmlEscape(l.name)}" ` : ''}parent="0"${l.visible ? '' : ' visible="0"'}${l.locked ? ' style="locked=1;"' : ''}/>`;
+    // Layer Edit Data: draw.io wraps the layer cell in an <object> carrying the properties.
+    const data = Object.entries(l.data ?? {}).filter(([k]) => /^[A-Za-z_][\w.-]*$/.test(k) && k !== 'label' && k !== 'id');
+    if (!data.length) return cell;
+    const attrs = data.map(([k, v]) => `${k}="${xmlEscape(v)}"`).join(' ');
+    return `<object label="${xmlEscape(l.name)}" id="${xmlEscape(l.id)}" ${attrs}>${cell.replace(/^<mxCell id="[^"]*" (value="[^"]*" )?/, '<mxCell ')}</object>`;
+  });
   return (
     `  <diagram id="${uid()}" name="${xmlEscape(title)}">\n` +
     `    <mxGraphModel grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" math="0" shadow="0">\n` +
@@ -346,30 +333,6 @@ const KIND_BY_DRAWIO: Map<string, string> = (() => {
   return m;
 })();
 
-const DRAWIO_TO_ARROW: Record<string, ArrowHead> = {
-  none: 'none',
-  open: 'arrow',
-  openThin: 'arrow',
-  classic: 'triangle',
-  classicThin: 'triangle',
-  block: 'triangle',
-  blockThin: 'triangle',
-  diamond: 'diamond',
-  diamondThin: 'diamond',
-  oval: 'circle',
-  ERone: 'erOne',
-  ERmandOne: 'erOnlyOne',
-  ERmany: 'erMany',
-  ERoneToMany: 'erOneMany',
-  ERzeroToMany: 'erZeroMany',
-  ERzeroToOne: 'erZeroOne',
-  dash: 'dash',
-  cross: 'cross',
-  openAsync: 'halfArrow',
-  async: 'async',
-  box: 'box',
-};
-
 async function inflate(b64: string): Promise<string> {
   const bytes = Uint8Array.from(atob(b64.trim()), (c) => c.charCodeAt(0));
   const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
@@ -395,7 +358,8 @@ function styleFromDrawio(m: StyleMap, isEdge: boolean, base: ElementStyle): Elem
   const fontFamily = (m.get('fontFamily') ?? '').toLowerCase();
   const align = m.get('align');
   const valign = m.get('verticalAlign');
-  return {
+  // Fonts, label position, spacing, direction, label colours: src/text/drawioText.ts.
+  return textStyleFromDrawio(m, {
     ...base,
     fill: isEdge ? 'none' : color(m.get('fillColor'), base.fill),
     stroke: color(m.get('strokeColor'), base.stroke),
@@ -411,18 +375,7 @@ function styleFromDrawio(m: StyleMap, isEdge: boolean, base: ElementStyle): Elem
     textColor: color(m.get('fontColor'), base.textColor),
     textAlign: align === 'left' || align === 'right' ? align : 'center',
     verticalAlign: valign === 'top' || valign === 'bottom' ? valign : 'middle',
-  };
-}
-
-function sideFromXY(x?: string, y?: string): AnchorSide | 'auto' {
-  if (x === undefined || y === undefined) return 'auto';
-  const fx = Number(x);
-  const fy = Number(y);
-  if (fy <= 0.01) return 'top';
-  if (fy >= 0.99) return 'bottom';
-  if (fx <= 0.01) return 'left';
-  if (fx >= 0.99) return 'right';
-  return 'auto';
+  });
 }
 
 /** Parses a .drawio / .xml file into an OpenDraw document (first page). */
@@ -498,6 +451,9 @@ function modelToDoc(model: Element): Doc {
     name: c.value || (i === 0 ? 'Background' : `Layer ${i + 1}`),
     visible: c.visible,
     locked: c.style.get('locked') === '1',
+    ...(Object.keys(c.attrs).some((k) => k !== 'label' && k !== 'id')
+      ? { data: Object.fromEntries(Object.entries(c.attrs).filter(([k]) => k !== 'label' && k !== 'id')) }
+      : {}),
   }));
   const layerFor = (c: Cell): string | undefined => {
     let p: Cell | undefined = c;
@@ -517,10 +473,12 @@ function modelToDoc(model: Element): Doc {
       if (k === 'tooltip') out.tooltip = v;
       else if (k === 'link') out.link = v.startsWith('data:page/id,') ? `page:${v.slice(13)}` : v;
       else if (k === 'tags') out.tags = v.split(/\s+/).filter(Boolean);
-      else data[k] = v;
+      // Translated labels (label_de, …) are HTML in html=1 cells.
+      else data[k] = /^label_/.test(k) && c.style.get('html') === '1' ? htmlToText(v) : v;
     }
     if (Object.keys(data).length) out.data = data;
     if (layers.length > 1) out.layerId = layerFor(c);
+    if (!c.visible) out.hidden = true;
     return out;
   };
   const byId = new Map(cells.map((c) => [c.id, c]));
@@ -565,6 +523,8 @@ function modelToDoc(model: Element): Doc {
       // draw.io's "data:mime,base64" → standard "data:mime;base64,base64".
       icon = img.startsWith('data:') && !img.includes(';base64') ? img.replace(/^data:([^,]+),/, 'data:$1;base64,') : img;
     }
+    const stencilXml = stencilFromStyleValue(c.style.get('shape'));
+    if (stencilXml) kind = 'stencil';
     const base = kind === 'text' ? { ...DEFAULT_STYLE, fill: 'none', stroke: 'none' } : DEFAULT_STYLE;
     const style = styleFromDrawio(c.style, false, base);
     if (kind === 'text') {
@@ -573,20 +533,32 @@ function modelToDoc(model: Element): Doc {
     }
     const el = createShape(kind, { x: pos.x, y: pos.y, w, h }, style, text(c));
     el.id = c.id;
+    const richLabel = getShapeDef(kind).textPlacement !== 'custom' ? richLabelFromDrawio(c.value, c.style.get('html') === '1', el.style) : null;
+    if (richLabel !== null) Object.assign(el, { text: richLabel, style: { ...el.style, richText: true } });
     if (icon) el.icon = icon;
+    const cps = connectionPointsFromDrawio(c.style.get('points'));
+    if (cps) el.connectionPoints = cps;
+    if (stencilXml) {
+      el.stencil = stencilXml;
+      el.connectionPoints ??= stencilPoints(stencilXml);
+    }
     // Group membership from draw.io "group" parents.
     const groups: string[] = [];
     let p = c.parent ? byId.get(c.parent) : undefined;
     while (p && p.vertex) {
       if (groupCells.has(p.id)) groups.push(p.id);
-      else if (!el.containerId && getShapeDef(KIND_BY_DRAWIO.get(p.style.get('shape') ?? [...p.style.keys()][0] ?? '') ?? '').container) el.containerId = p.id;
+      else if (!el.containerId && (getShapeDef(KIND_BY_DRAWIO.get(p.style.get('shape') ?? [...p.style.keys()][0] ?? '') ?? '').container || (p.style.get('container') === '1' && !/^table/.test(p.style.get('shape') ?? '')))) el.containerId = p.id;
       p = p.parent ? byId.get(p.parent) : undefined;
     }
     el.groupIds = groups;
-    if (c.style.has('swimlane') || c.style.get('container') === '1') {
+    if (c.style.has('swimlane')) {
       el.kind = 'container';
       el.style = { ...el.style, textAlign: 'left', bold: true };
+    } else if (c.style.get('container') === '1' && el.kind !== 'table' && !getShapeDef(el.kind).container) {
+      // Any shape can be a container in draw.io; keep the shape and flag it.
+      el.container = true;
     }
+    behaviorFromDrawio(c.style, el);
     Object.assign(el, meta(c));
     const rot = Number(c.style.get('rotation') ?? 0);
     if (rot) el.rotation = rot;
@@ -599,36 +571,45 @@ function modelToDoc(model: Element): Doc {
       if (dir === 'north' || dir === 'east' || dir === 'west' || dir === 'radial') el.style.gradientDirection = dir;
     }
     if (c.style.get('sketch') === '1') el.style.sketch = true;
+    Object.assign(el.style, styleExtrasFromDrawio(c.style, false));
     if (c.style.get('glass') === '1') el.style.glass = true;
+    importShapeParams(el, c.style, { parentStyle: c.parent ? byId.get(c.parent)?.style : undefined, childStyles: () => cells.filter((k) => k.parent === c.id).map((k) => k.style) });
     elements[el.id] = el;
     order.push(el.id);
   }
 
+  // Ends attached to other connectors are placed once every connector exists.
+  const edgeEnds: Array<{ connId: string; end: 'source' | 'target'; point: { x: number; y: number } | null }> = [];
   for (const c of cells) {
     if (!c.edge) continue;
     const m = c.style;
     const pointOf = (as: string) => {
       const pt = c.geo?.querySelector(`mxPoint[as="${as}"]`);
-      return pt ? { x: Number(pt.getAttribute('x') ?? 0), y: Number(pt.getAttribute('y') ?? 0) } : { x: 0, y: 0 };
+      return pt ? { x: Number(pt.getAttribute('x') ?? 0), y: Number(pt.getAttribute('y') ?? 0) } : null;
     };
-    const end = (id: string | undefined, as: string, px: string, py: string): Endpoint => {
+    const end = (id: string | undefined, as: string, prefix: 'exit' | 'entry'): Endpoint => {
       const p = pointOf(as);
-      if (id && isShape(elements[id])) return { elementId: id, side: sideFromXY(m.get(px), m.get(py)), x: p.x, y: p.y };
-      return p;
+      if (id && isShape(elements[id])) return shapeEndpointFromDrawio(m, prefix, id, p ?? { x: 0, y: 0 });
+      if (id && id !== c.id && byId.get(id)?.edge) {
+        edgeEnds.push({ connId: c.id, end: prefix === 'exit' ? 'source' : 'target', point: p });
+        return { elementId: id, edgeT: 0.5, x: p?.x ?? 0, y: p?.y ?? 0 };
+      }
+      return p ?? { x: 0, y: 0 };
     };
     const edgeStyle = m.get('edgeStyle');
-    const conn: ConnectorElement = createConnector(end(c.source, 'sourcePoint', 'exitX', 'exitY'), end(c.target, 'targetPoint', 'entryX', 'entryY'), {
+    const conn: ConnectorElement = createConnector(end(c.source, 'sourcePoint', 'exit'), end(c.target, 'targetPoint', 'entry'), {
       routing: m.get('curved') === '1' ? 'curved' : edgeStyle && edgeStyle !== 'none' ? 'orthogonal' : 'straight',
-      endArrow: DRAWIO_TO_ARROW[m.get('endArrow') ?? 'classic'] ?? 'triangle',
-      startArrow: DRAWIO_TO_ARROW[m.get('startArrow') ?? 'none'] ?? 'none',
       text: text(c),
     });
-    if (m.get('endFill') === '0' && conn.endArrow === 'triangle') conn.endArrow = 'triangleOpen';
-    if (m.get('endFill') === '0' && conn.endArrow === 'diamond') conn.endArrow = 'diamondOpen';
-    if (m.get('startFill') === '0' && conn.startArrow === 'diamond') conn.startArrow = 'diamondOpen';
+    // Heads (+ fill/size), edge shape, jumps and spacing: src/io/drawioConnectors.ts.
+    connectorStyleFromDrawio(m, conn);
     if (m.get('flowAnimation') === '1') conn.animation = { kind: 'flow', speed: 1 };
     conn.id = c.id;
     conn.style = styleFromDrawio(m, true, conn.style);
+    Object.assign(conn.style, styleExtrasFromDrawio(m, true));
+    const richEdgeLabel = richLabelFromDrawio(c.value, m.get('html') === '1', conn.style);
+    if (richEdgeLabel !== null) Object.assign(conn, { text: richEdgeLabel, style: { ...conn.style, richText: true } });
+    behaviorFromDrawio(m, conn);
     Object.assign(conn, meta(c));
     const pts = Array.from(c.geo?.querySelectorAll('Array[as="points"] > mxPoint') ?? []).map((pt) => ({
       x: Number(pt.getAttribute('x') ?? 0),
@@ -639,18 +620,38 @@ function modelToDoc(model: Element): Doc {
     if (es === 'elbowEdgeStyle') conn.routing = m.get('elbow') === 'vertical' ? 'elbow-v' : 'elbow-h';
     else if (es === 'entityRelationEdgeStyle') conn.routing = 'entity';
     else if (es === 'isometricEdgeStyle') conn.routing = 'isometric';
-    const jump = m.get('jumpStyle');
-    if (jump === 'arc' || jump === 'gap' || jump === 'sharp') conn.lineJumps = jump;
-    if (m.get('shape') === 'pipe') conn.connectorShape = 'pipe';
-    if (m.get('shape') === 'flexArrow' || m.get('shape') === 'arrow') conn.connectorShape = 'arrow';
     elements[conn.id] = conn;
     order.push(conn.id);
   }
+  resolveEdgeEnds(elements, edgeEnds);
 
+  // Child edge labels: the first fills an empty main label, the rest become extra labels.
   for (const lbl of edgeLabels) {
     const conn = elements[lbl.parent!];
-    if (isConnector(conn)) elements[conn.id] = { ...conn, text: [conn.text, text(lbl)].filter(Boolean).join('\n') };
+    if (isConnector(conn)) elements[conn.id] = applyEdgeLabel(conn, text(lbl), lbl.geo);
   }
 
   return layers.length > 1 ? { elements, order, layers } : { elements, order };
+}
+
+// ---------------------------------------------------------------------------
+// Single-element style strings (Edit Style; see src/extensibility/styleString.ts)
+// ---------------------------------------------------------------------------
+
+/** The draw.io style string the exporter writes for one element. */
+export function drawioStyleOf(el: DiagramElement): string {
+  const xml = diagramXml({ elements: { [el.id]: el }, order: [el.id] }, '', (p) => p);
+  const dom = new DOMParser().parseFromString(`<x>${xml}</x>`, 'text/xml');
+  return dom.querySelector('mxCell[vertex="1"], mxCell[edge="1"]')?.getAttribute('style') ?? '';
+}
+
+/** Reads a draw.io style string back the way the importer would, as an element shaped like `el`. */
+export function elementFromDrawioStyle(style: string, el: DiagramElement): DiagramElement | null {
+  const s = xmlEscape(style);
+  const cell = isShape(el)
+    ? `<mxCell id="x" value="" style="${s}" vertex="1" parent="1"><mxGeometry x="${round(el.x)}" y="${round(el.y)}" width="${round(el.w)}" height="${round(el.h)}" as="geometry"/></mxCell>`
+    : `<mxCell id="x" value="" style="${s}" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="0" y="0" as="sourcePoint"/><mxPoint x="1" y="1" as="targetPoint"/></mxGeometry></mxCell>`;
+  const dom = new DOMParser().parseFromString(`<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>${cell}</root></mxGraphModel>`, 'text/xml');
+  if (dom.querySelector('parsererror')) return null;
+  return modelToDoc(dom.documentElement).elements.x ?? null;
 }

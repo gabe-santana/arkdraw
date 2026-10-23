@@ -28,6 +28,10 @@ keyring = { version = "3.6", features = ["apple-native", "windows-native", "sync
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "http2"] }
 url = "2"
 
+# Auto-update from GitHub Releases (desktop only; see docs/release.md).
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-updater = "2"
+
 [profile.release]
 codegen-units = 1
 lto = true

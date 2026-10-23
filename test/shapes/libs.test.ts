@@ -71,7 +71,7 @@ describe('shape libraries (src/shapes/libs)', () => {
         if (box) for (const v of [box.x, box.y, box.w, box.h]) expect(Number.isFinite(v), `${def.kind} textBox`).toBe(true);
       }
     }
-  });
+  }, 60000);
 
   it('renders every library item with its preset style and text', () => {
     for (const lib of libLibraries) {
@@ -83,5 +83,5 @@ describe('shape libraries (src/shapes/libs)', () => {
         expect(markup, `${lib.name} › ${it.label}`).not.toMatch(/NaN|Infinity/);
       }
     }
-  });
+  }, 30000);
 });

@@ -183,10 +183,16 @@ export const cloudPath = (w: number, h: number) =>
   `C${w},${0.3 * h} ${0.8 * w},${0.1 * h} ${0.625 * w},${0.2 * h} ` +
   `C${0.5 * w},${0.05 * h} ${0.3 * w},${0.05 * h} ${0.25 * w},${0.25 * h} Z`;
 
-export const cylRy = (w: number, h: number) => Math.min(h * 0.15, w * 0.2, 16);
+/** Cap radius of a cylinder: the `size` param in px (draw.io cylinder3) when set, else proportional. */
+export const cylRy = (w: number, h: number, size?: number | string) =>
+  size === undefined || !Number.isFinite(Number(size)) ? Math.min(h * 0.15, w * 0.2, 16) : Math.max(0, Math.min(Number(size), h / 2));
 
-export function Cylinder({ w, h, style }: ShapeRenderContext) {
-  const ry = cylRy(w, h);
+/** Cap radius of a horizontal cylinder (see `cylRy`). */
+export const hCylRx = (w: number, h: number, size?: number | string) =>
+  size === undefined || !Number.isFinite(Number(size)) ? Math.min(w * 0.12, h * 0.2, 16) : Math.max(0, Math.min(Number(size), w / 2));
+
+export function Cylinder({ w, h, style, params }: ShapeRenderContext) {
+  const ry = cylRy(w, h, params?.size);
   return (
     <>
       <Body d={`M0,${ry} A${w / 2},${ry} 0 0 1 ${w},${ry} V${h - ry} A${w / 2},${ry} 0 0 1 0,${h - ry} Z`} s={style} />
@@ -195,8 +201,8 @@ export function Cylinder({ w, h, style }: ShapeRenderContext) {
   );
 }
 
-export function HorizontalCylinder({ w, h, style }: ShapeRenderContext) {
-  const rx = Math.min(w * 0.12, h * 0.2, 16);
+export function HorizontalCylinder({ w, h, style, params }: ShapeRenderContext) {
+  const rx = hCylRx(w, h, params?.size);
   return (
     <>
       <Body d={`M${rx},0 H${w - rx} A${rx},${h / 2} 0 0 1 ${w - rx},${h} H${rx} A${rx},${h / 2} 0 0 1 ${rx},0 Z`} s={style} />

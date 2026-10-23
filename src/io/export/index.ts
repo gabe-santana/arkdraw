@@ -14,6 +14,7 @@ import { exportSubset, inlineIcons, renderSvgStandalone, visualBounds, type Appe
 import { encodeCanvas, exportRaster, type RasterFormat } from './raster';
 import { embedDiagramInPng, embedDiagramInSvg, pdfEmbedProps } from './embed';
 import { encodeShareUrl } from './share';
+import { placeholderLookup } from '@/automation/placeholders';
 
 export type ExportFormat = 'png' | 'jpeg' | 'webp' | 'svg' | 'pdf' | 'html' | 'gif' | 'drawio' | 'vsdx' | 'url';
 export type PageScope = 'current' | 'all' | 'selection' | 'range';
@@ -196,7 +197,7 @@ export function svgOptionsFor(page: Page, src: ExportSource, s: ExportSettings):
     appearance: supports.appearance(s.format) ? s.appearance : 'light',
     embedFont: supports.fonts(s.format) ? s.embedFonts : true,
     pageShadow: !!page.settings.shadow,
-    labelVars: { pageName: page.name, pageNumber: index + 1, pageCount: src.pages.length, fileName: src.fileName },
+    labelVars: { pageName: page.name, pageNumber: index + 1, pageCount: src.pages.length, fileName: src.fileName, lookup: placeholderLookup(page.doc, page.data), language: page.settings.language },
   };
 }
 
@@ -291,7 +292,7 @@ export async function exportFiles(src: ExportSource, s: ExportSettings, ctl: Exp
       const activeIdx = Math.max(0, pages.findIndex((p) => p.id === src.activePageId));
       const html = await exportHtml(
         pages.map((page) => ({ page, svg: svgOptionsFor(page, src, s) })),
-        { title: base, appearance: s.appearance, embedFonts: s.embedFonts, initialPage: activeIdx },
+        { title: base, appearance: s.appearance, embedFonts: s.embedFonts, initialPage: activeIdx, diagramJson: serializePages(pages) },
       );
       progress(1);
       return [{ name: `${base}.html`, mime: info.mime, data: html }];

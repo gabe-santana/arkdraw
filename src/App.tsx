@@ -6,9 +6,13 @@ import { CommandPalette } from '@/chrome/CommandPalette';
 import { ExportDialog } from '@/chrome/ExportDialog';
 import { CanvasContextMenu, ConfirmDialog, ShortcutsDialog, Toasts } from '@/chrome/Overlays';
 import { EditDataDialog, EditDiagramDialog, EditStyleDialog, FindPanel, ImportDialog } from '@/chrome/EditDialogs';
+import { ConnectionPointsDialog } from '@/panels/ConnectionPointsDialog';
 import { PageTabs } from '@/chrome/PageTabs';
 import { TemplatesDialog } from '@/chrome/TemplatesDialog';
+import { AutomationHost } from '@/automation/AutomationHost';
 import { PwaUpdatePrompt } from '@/web/PwaUpdatePrompt';
+import { DesktopUpdatePrompt } from '@/desktop/UpdatePrompt';
+import { startDesktop } from '@/desktop/startup';
 import { Outline } from '@/chrome/Outline';
 import { Rulers } from '@/chrome/Rulers';
 import { CommentsPanel, PreferencesDialog, RevisionsDialog } from '@/chrome/Collaboration';
@@ -18,10 +22,12 @@ import { clientToWorld, isOverCanvas } from '@/canvas/viewport';
 import { LeftPanel } from '@/panels/LeftPanel';
 import { PropertiesPanel } from '@/panels/PropertiesPanel';
 import { LayersPanel } from '@/panels/LayersPanel';
+import { ExtensibilityHost } from '@/extensibility/Host';
 import { useEditor } from '@/store/editor';
 import { useUi } from '@/store/ui';
 import { cn } from '@/lib/cn';
 import { clearTextCache } from '@/lib/text';
+import { onWebFontLoaded } from '@/text/fonts';
 import { useShortcuts } from '@/app/useShortcuts';
 import { useTheme } from '@/app/useTheme';
 import { installPasteHandler } from '@/app/clipboard';
@@ -50,6 +56,7 @@ export default function App() {
 
   useEffect(() => {
     const offs: Array<() => void> = [installPasteHandler(), startRecovery(), startAutoRevisions()];
+    startDesktop(); // config.json, daily update check (desktop only)
 
     // Text is measured on canvas; re-measure once Inter has loaded.
     document.fonts?.ready.then(() => {
@@ -57,6 +64,8 @@ export default function App() {
       // Remount the canvas so text re-wraps with real metrics (the doc itself is untouched).
       setFontsVersion((n) => n + 1);
     });
+    // Google Fonts picked for labels load on demand; re-measure when one arrives.
+    offs.push(onWebFontLoaded(() => (clearTextCache(), setFontsVersion((n) => n + 1))));
 
     (async () => {
       const launch = await takeLaunchFile().catch(() => null);
@@ -109,10 +118,10 @@ export default function App() {
 
           {/* Floating panels */}
           <div className="pointer-events-none absolute inset-0 p-2.5">
-            <div className={cn('absolute bottom-2.5 left-2.5 top-2.5 transition-[transform,opacity] duration-300 ease-[cubic-bezier(.2,.9,.3,1)]', !leftOpen && '-translate-x-[110%] opacity-0')}>
+            <div data-od-panel="left" className={cn('absolute bottom-2.5 left-2.5 top-2.5 transition-[transform,opacity] duration-300 ease-[cubic-bezier(.2,.9,.3,1)]', !leftOpen && '-translate-x-[110%] opacity-0')}>
               {leftOpen && <LeftPanel />}
             </div>
-            <div className={cn('absolute bottom-2.5 right-2.5 top-2.5 flex flex-col gap-2 transition-[transform,opacity] duration-300 ease-[cubic-bezier(.2,.9,.3,1)]', !rightOpen && 'translate-x-[110%] opacity-0')}>
+            <div data-od-panel="right" className={cn('absolute bottom-2.5 right-2.5 top-2.5 flex flex-col gap-2 transition-[transform,opacity] duration-300 ease-[cubic-bezier(.2,.9,.3,1)]', !rightOpen && 'translate-x-[110%] opacity-0')}>
               {rightOpen && !aiOpen && (
                 <>
                   <PropertiesPanel />
@@ -121,7 +130,7 @@ export default function App() {
                 </>
               )}
             </div>
-            <div className="absolute bottom-3.5 left-1/2 -translate-x-1/2">
+            <div data-od-toolbar className="absolute bottom-3.5 left-1/2 -translate-x-1/2">
               <Toolbar />
             </div>
             <div className={cn('absolute bottom-3.5 flex flex-col items-end gap-2 transition-[right] duration-300', rightOpen || aiOpen ? (aiOpen ? 'right-[402px]' : 'right-[290px]') : 'right-3.5')}>
@@ -147,16 +156,20 @@ export default function App() {
       <ExportDialog />
       <ImportDialog />
       <EditDataDialog />
+      <ConnectionPointsDialog />
       <EditStyleDialog />
       <EditDiagramDialog />
       <RevisionsDialog />
       <PreferencesDialog />
+      <ExtensibilityHost />
       <ConfirmDialog />
       <ShortcutsDialog />
       <TemplatesDialog />
+      <AutomationHost />
       <CanvasContextMenu />
       <Toasts />
       <PwaUpdatePrompt />
+      <DesktopUpdatePrompt />
     </div>
   );
 }

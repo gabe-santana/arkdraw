@@ -14,6 +14,8 @@ import { sequenceDuration, useClock } from '@/animation/timeline';
 import { iconUrl } from '@/shapes/IconImage';
 import { ConnectorBody, LabelVarsContext, ShapeBody, SvgDefs, type AnimFrame } from './ElementBodies';
 import { paperSize } from './paper';
+import { editorPlaceholderLookup, editorPlaceholderSignature } from '@/automation/placeholders';
+import { useDarkElement } from '@/styling/darkColors';
 
 /** Build-sequence length while previewing; null when not playing. */
 const PlaybackContext = createContext<number | null>(null);
@@ -48,9 +50,12 @@ export function SceneLayer({ dark }: { dark: boolean }) {
   const fileName = useEditor((s) => s.file.name);
   const seq = useMemo(() => (doc ? sequenceDuration(doc) : 0), [doc]);
   const jumps = useMemo(() => computeJumps(order, elements), [order, elements]);
+  // Inherited %placeholder% values (containers, layer, page, document); the signature busts the memo when they change.
+  const placeholderSig = useEditor(editorPlaceholderSignature);
   const vars = useMemo(
-    () => ({ pageName: page?.name ?? 'Page 1', pageNumber: pageIndex + 1, pageCount, fileName: fileName.replace(/\.opendraw$/i, '') }),
-    [page?.name, pageIndex, pageCount, fileName],
+    () => ({ pageName: page?.name ?? 'Page 1', pageNumber: pageIndex + 1, pageCount, fileName: fileName.replace(/\.opendraw$/i, ''), lookup: editorPlaceholderLookup, language: page?.settings.language }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [page?.name, pageIndex, pageCount, fileName, placeholderSig, page?.settings.language],
   );
   const settings = page?.settings;
   const labelBg = settings?.background ?? (dark && !adapt ? '#0e0e11' : '#f7f7f9');
@@ -65,7 +70,7 @@ export function SceneLayer({ dark }: { dark: boolean }) {
               <g transform={`translate(${camera.x} ${camera.y}) scale(${camera.z})`}>
                 {settings && <PageBackdrop settings={settings} order={order} />}
                 {order.map((id) => (
-                  <ElementView key={id} id={id} labelBg={labelBg} />
+                  <ElementView key={id} id={id} labelBg={labelBg} darkAdapt={dark && adapt} />
                 ))}
               </g>
             </LabelVarsContext.Provider>
@@ -130,8 +135,8 @@ function useFrame(animated: boolean): AnimFrame | undefined {
   return active ? { t, seq: seq! } : undefined;
 }
 
-const ElementView = memo(function ElementView({ id, labelBg }: { id: string; labelBg: string }) {
-  const el = useEditor((s) => s.doc.elements[id]);
+const ElementView = memo(function ElementView({ id, labelBg, darkAdapt }: { id: string; labelBg: string; darkAdapt?: boolean }) {
+  const el = useDarkElement(useEditor((s) => s.doc.elements[id]), !!darkAdapt);
   const editing = useEditor((s) => s.editingId === id);
   if (!el) return null;
   if (el.type === 'shape') return <ShapeView el={el} editing={editing} />;
@@ -150,9 +155,11 @@ function ConnectorView({ el, editing, labelBg }: { el: ConnectorElement; editing
   const src = useEditor((s) => (el.source.elementId ? s.doc.elements[el.source.elementId] : undefined));
   const tgt = useEditor((s) => (el.target.elementId ? s.doc.elements[el.target.elementId] : undefined));
   const jumps = useContext(JumpsContext).get(el.id) ?? NO_JUMPS;
+  // Attached to another connector: its geometry depends on its own ends, so resolve against the whole doc.
+  const all = useEditor((s) => (src?.type === 'connector' || tgt?.type === 'connector' ? s.doc.elements : null));
   const lookup = useMemo(
-    () => (id: string) => (id === src?.id ? src : id === tgt?.id ? tgt : undefined),
-    [src, tgt],
+    () => (all ? (id: string) => all[id] : (id: string) => (id === src?.id ? src : id === tgt?.id ? tgt : undefined)),
+    [src, tgt, all],
   );
   // Nearby shapes to route around; shallow-compared so unrelated edits don't re-route.
   const obstacles = useEditor(

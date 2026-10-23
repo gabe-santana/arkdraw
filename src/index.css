@@ -304,3 +304,77 @@
     opacity: 0;
   }
 }
+
+/* ===========================================================================
+ * Editor UI modes (Extras → Appearance; src/extensibility/store.ts).
+ * <html data-ui-mode="minimal | sketch | compact">; Default has no attribute.
+ * Panels are tagged with data-od-panel="left|right", the toolbar with data-od-toolbar.
+ * ======================================================================== */
+
+/* Minimal: side panels tuck away to a sliver and slide in on hover/focus; smaller toolbar. */
+[data-ui-mode='minimal'] [data-od-panel] {
+  transition:
+    translate 260ms cubic-bezier(0.2, 0.9, 0.3, 1) 120ms,
+    opacity 200ms ease 120ms;
+}
+[data-ui-mode='minimal'] [data-od-panel='left']:not(.opacity-0) {
+  translate: calc(-100% + 14px) 0;
+  opacity: 0.6;
+}
+[data-ui-mode='minimal'] [data-od-panel='right']:not(.opacity-0) {
+  translate: calc(100% - 14px) 0;
+  opacity: 0.6;
+}
+[data-ui-mode='minimal'] [data-od-panel]:not(.opacity-0):is(:hover, :focus-within) {
+  translate: 0 0;
+  opacity: 1;
+  transition-delay: 0ms;
+}
+[data-ui-mode='minimal'] [data-od-toolbar] {
+  scale: 0.88;
+  transform-origin: bottom center;
+  opacity: 0.88;
+  transition: opacity 160ms ease;
+}
+[data-ui-mode='minimal'] [data-od-toolbar]:is(:hover, :focus-within) {
+  opacity: 1;
+}
+
+/* Compact: denser chrome. */
+[data-ui-mode='compact'] [data-od-panel] > *,
+[data-ui-mode='compact'] [data-od-toolbar] {
+  zoom: 0.9;
+}
+[data-ui-mode='compact'] header[data-tauri-drag-region] {
+  height: 38px;
+}
+
+/* Sketch: a quiet hand-drawn look — irregular panel corners, offset ink shadows, Caveat headings. */
+[data-ui-mode='sketch'] {
+  --canvas: #fbfaf5;
+  --sketch-ink: rgb(40 36 30 / 0.55);
+}
+[data-ui-mode='sketch'].dark {
+  --canvas: #111110;
+  --sketch-ink: rgb(236 232 220 / 0.4);
+}
+[data-ui-mode='sketch'] .shadow-panel {
+  border-radius: 18px 7px 16px 9px / 9px 16px 7px 18px;
+  box-shadow:
+    0 0 0 1.25px var(--sketch-ink),
+    3px 4px 0 -1px var(--line-strong);
+}
+[data-ui-mode='sketch'] .shadow-pop {
+  border-radius: 20px 8px 18px 10px / 10px 18px 8px 20px;
+  box-shadow:
+    0 0 0 1.25px var(--sketch-ink),
+    4px 5px 0 -1px var(--line-strong);
+}
+[data-ui-mode='sketch'] header nav button,
+[data-ui-mode='sketch'] [role='dialog'] h2 {
+  font-family: 'Caveat', cursive;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+/* ===================== end of editor UI modes ===================== */

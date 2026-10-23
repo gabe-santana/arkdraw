@@ -1,0 +1,52 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`stencil renderer > produces stable primitives (snapshot) 1`] = `
+[
+  {
+    "d": "M0,0 L200,0 Q200,100 100,100 C50,100 0,80 0,50 Z",
+    "fill": "#ffffff",
+    "linejoin": "round",
+    "stroke": "#111111",
+    "strokeWidth": 2,
+    "type": "path",
+  },
+  {
+    "d": "M20,20 A20,10 0 0 1 60,20",
+    "dash": "2 2",
+    "fill": "none",
+    "linejoin": "round",
+    "stroke": "#ff0000",
+    "strokeWidth": 1,
+    "type": "path",
+  },
+  {
+    "d": "M130,20 H170 A10,10 0 0 1 180,30 V50 A10,10 0 0 1 170,60 H130 A10,10 0 0 1 120,50 V30 A10,10 0 0 1 130,20 Z",
+    "fill": "#ffffff",
+    "stroke": "none",
+    "strokeWidth": 0,
+    "type": "path",
+  },
+  {
+    "d": "M80,70 A10,10 0 1 0 100,70 A10,10 0 1 0 80,70 Z",
+    "fill": "#ffffff",
+    "linejoin": "round",
+    "stroke": "#111111",
+    "strokeWidth": 2,
+    "type": "path",
+  },
+  {
+    "anchor": "middle",
+    "baseline": "hanging",
+    "bold": false,
+    "color": "#0f172a",
+    "italic": false,
+    "rotation": 0,
+    "size": 20,
+    "str": "Hi",
+    "type": "text",
+    "underline": false,
+    "x": 100,
+    "y": 10,
+  },
+]
+`;

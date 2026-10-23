@@ -13,6 +13,7 @@ import { getShapeDef } from '@/shapes/registry';
 import { connectorGeometryInDoc } from '@/lib/connectorGeometry';
 import { boundsOfPoints, unionRects } from '@/lib/geometry';
 import { effectiveReveal } from '@/animation/timeline';
+import { loadWebFonts, webFontCss } from '@/text/exportFonts';
 
 export type Appearance = 'light' | 'dark' | 'auto';
 
@@ -116,7 +117,7 @@ function drawable(doc: Doc, els: DiagramElement[], hidden: 'omit' | 'hide' | 'sh
   const layers = docLayers(doc);
   const rank = new Map(layers.map((l, i) => [l.id, i]));
   return els
-    .filter((el) => !collapsedAway(doc, el) && (hidden !== 'omit' || layerOfElement(doc, el).visible))
+    .filter((el) => !el.hidden && !collapsedAway(doc, el) && (hidden !== 'omit' || layerOfElement(doc, el).visible))
     .map((el, i) => ({ el, i, r: rank.get(layerOfElement(doc, el).id) ?? 0 }))
     .sort((a, b) => a.r - b.r || a.i - b.i)
     .map((x) => x.el);
@@ -155,6 +156,7 @@ let caveatCss: string | null = null;
 
 /** Loads optional fonts needed by `els` so the (synchronous) renderer can embed them. */
 export async function loadExportFonts(els: DiagramElement[]): Promise<void> {
+  await loadWebFonts(els);
   if (caveatCss || !els.some((e) => e.style.fontFamily === 'hand')) return;
   try {
     const [r400, r700] = await Promise.all([
@@ -174,7 +176,8 @@ export function fontFaceCss(els: DiagramElement[]): string {
   if (!els.some((e) => e.text)) return '';
   let css = `@font-face{font-family:"Inter Variable";font-style:normal;font-weight:100 900;src:url(${interFontUrl}) format("woff2");}`;
   if (caveatCss && els.some((e) => e.text && e.style.fontFamily === 'hand')) css += caveatCss;
-  return css;
+  // Google Fonts (subset, inlined) — src/text/exportFonts.ts.
+  return css + webFontCss(els);
 }
 
 // ---------------------------------------------------------------------------

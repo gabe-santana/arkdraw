@@ -20,6 +20,7 @@ import type { FontKey } from '@/model/types';
 import { Dialog, DialogHeader } from '@/ui/Dialog';
 import { Button } from '@/ui/Button';
 import { Select } from '@/ui/controls';
+import { PrefsAutomationSection } from '@/automation/autosave';
 
 const ago = (t: number) => {
   const s = Math.round((Date.now() - t) / 1000);
@@ -310,6 +311,7 @@ function PrefsBody({ close }: { close: () => void }) {
             </div>
           )}
         </label>
+        <PrefsAutomationSection />
         <div className="flex justify-end">
           <Button variant="primary" onClick={close}>
             Done

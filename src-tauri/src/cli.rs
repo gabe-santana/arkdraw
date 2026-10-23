@@ -161,6 +161,11 @@ pub fn parse_args<I: IntoIterator<Item = String>>(args: I) -> Result<Parsed, Str
                 let q: f64 = number("--quality", &value("--quality")?)?;
                 job.quality = Some(q.clamp(1.0, 100.0));
             }
+            // Desktop flags (config.rs) are accepted and ignored by exports.
+            "--enable-plugins" => {}
+            "--config" => {
+                value("--config")?;
+            }
             other if other.starts_with('-') && other.len() > 1 => {
                 return Err(format!("unknown option {other}"));
             }
@@ -336,6 +341,7 @@ mod tests {
         assert!(parse_args(args("--export a.opendraw --page 2 --all-pages")).is_err());
         assert!(parse_args(args("--export a.opendraw --scale x")).is_err());
         assert!(parse_args(args("--export a.opendraw --bogus")).is_err());
+        assert!(parse_args(args("--export a.opendraw --enable-plugins --config c.json")).is_ok());
         assert_eq!(
             parse_args(args("--export a.opendraw --help")),
             Ok(Parsed::Help)

@@ -84,6 +84,15 @@ export function setUserDefaultStyle(style: Partial<ElementStyle> | null) {
   } catch {
     /* storage unavailable */
   }
+  for (const fn of defaultListeners) fn();
+}
+
+const defaultListeners = new Set<() => void>();
+/** The user's default style ({} when none) and change subscription (Format panel presets). */
+export const getUserDefaultStyle = (): Partial<ElementStyle> => userDefault;
+export function onUserDefaultStyleChange(fn: () => void): () => void {
+  defaultListeners.add(fn);
+  return () => defaultListeners.delete(fn);
 }
 
 export function createShape(

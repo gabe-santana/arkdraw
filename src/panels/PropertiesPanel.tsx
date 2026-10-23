@@ -2,16 +2,16 @@ import type { ReactNode } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import {
   Bold, BringToFront, ChevronsDown, ChevronsUp, CornerDownRight, Group, Italic, Lock, LockOpen, Minus,
-  MoveVertical, Play, Pause, SendToBack, TextAlignCenter, TextAlignEnd, TextAlignStart, Ungroup, ArrowUpToLine,
+  Play, Pause, SendToBack, TextAlignCenter, TextAlignEnd, TextAlignStart, Ungroup, ArrowUpToLine,
   ArrowDownToLine, FoldVertical, ListOrdered, Sparkles,
 } from 'lucide-react';
 import type {
-  ArrowHead, ConnectorAnimation, ConnectorElement, DiagramElement, ElementStyle, FontKey, ShapeAnimation, ShapeElement,
+  ConnectorAnimation, ConnectorElement, DiagramElement, ElementStyle, FontFamily, ShapeAnimation, ShapeElement,
 } from '@/model/types';
 import { isConnector, isShape } from '@/model/types';
-import { FONT_LABELS, PALETTE } from '@/model/defaults';
+import { PALETTE } from '@/model/defaults';
+import { FontPicker, TranslationsSection } from './TextSection';
 import { getShapeDef } from '@/shapes/registry';
-import { ARROW_LABELS, arrowParts } from '@/lib/connectorGeometry';
 import { useEditor } from '@/store/editor';
 import { useUi } from '@/store/ui';
 import { cn } from '@/lib/cn';
@@ -21,8 +21,13 @@ import { ColorField, NumberField, Segmented, Select, Slider, Switch } from '@/ui
 import { IconButton } from '@/ui/Button';
 import { Row, Section, begin, common, end } from './sections';
 import { UNIT_PER_PX } from '@/canvas/paper';
-import { ConnectorExtras, DataSection, EffectsSection, PageSection, TextExtras, TransformSection } from './PropertiesExtras';
+import { ConnectorLabelsSection, ConnectorRouteSection, ConnectorSection } from './ConnectorSection';
+import { ConnectionPointsSection } from './ConnectionPointsDialog';
+import { DataSection, EffectsSection, PageSection, TextExtras, TransformSection } from './PropertiesExtras';
 import { ImageSection } from './ImageSection';
+import { ArrangeExtras, AspectLockToggle, BehaviorSection, FreehandSection, TableSection, sizePatch } from './BehaviorSection';
+import { ShapeParamsSection } from './ShapeParamsSection';
+import { DarkColorsSection, GridExtras, ShadowOptions, StylePresetsSection } from './StyleSection';
 
 export function PropertiesPanel() {
   const selected = useEditor(useShallow((s) => s.selection.map((id) => s.doc.elements[id]).filter(Boolean)));
@@ -30,26 +35,35 @@ export function PropertiesPanel() {
   const connectors = selected.filter(isConnector);
 
   return (
-    <aside className="animate-slide-up pointer-events-auto flex min-h-0 max-h-full w-[268px] flex-col overflow-hidden rounded-2xl bg-panel shadow-panel">
+    <aside aria-label="Format panel" className="animate-slide-up pointer-events-auto flex min-h-0 max-h-full w-[268px] flex-col overflow-hidden rounded-2xl bg-panel shadow-panel">
       <Header selected={selected} />
       <div className="scroll-thin flex-1 overflow-y-auto pb-2">
         {!selected.length && <PageSection />}
         {!selected.length && <CanvasSettings />}
         {shapes.length === 1 && <Geometry shape={shapes[0]} />}
+        {selected.length === 1 && shapes[0]?.table && <TableSection el={shapes[0]} />}
+        {selected.length === 1 && shapes[0]?.kind === 'freehand' && <FreehandSection el={shapes[0]} />}
         {selected.length === 1 && shapes[0]?.kind === 'image' && <ImageSection el={shapes[0]} />}
         {shapes.length > 0 && <TransformSection els={shapes} />}
+        {shapes.length > 0 && <ShapeParamsSection els={shapes} />}
         {selected.length > 1 && <Arrange multi={shapes.length} />}
-        {connectors.length > 0 && <ConnectorProps connectors={connectors} />}
-        {connectors.length > 0 && <ConnectorExtras connectors={connectors} />}
+        {connectors.length > 0 && <ConnectorSection connectors={connectors} />}
+        {connectors.length > 0 && <ConnectorRouteSection connectors={connectors} />}
+        {connectors.length === 1 && !shapes.length && <ConnectorLabelsSection conn={connectors[0]} />}
+        {shapes.length === 1 && !connectors.length && <ConnectionPointsSection shape={shapes[0]} />}
+        {selected.length > 0 && <StylePresetsSection els={selected} />}
         {shapes.length > 0 && <FillStroke els={shapes} />}
         {connectors.length > 0 && !shapes.length && <StrokeOnly els={connectors} />}
         {shapes.length > 0 && <EffectsSection els={shapes} />}
         {selected.length > 0 && <TextProps els={selected} />}
         {selected.length > 0 && <TextExtras els={selected} />}
         {selected.length > 0 && <Appearance els={selected} />}
+        {selected.length > 0 && <DarkColorsSection els={selected} />}
         {selected.length === 1 && <DataSection el={selected[0]} />}
+        {selected.length === 1 && <TranslationsSection el={selected[0]} />}
         {selected.length > 0 && <AnimationProps els={selected} />}
         {selected.length === 1 && <Arrange multi={0} />}
+        {selected.length > 0 && <BehaviorSection key={selected.map((e) => e.id).join()} els={selected} />}
       </div>
     </aside>
   );
@@ -113,6 +127,7 @@ function CanvasSettings() {
         <Row label="Grid size">
           <NumberField label="#" value={settings.gridSize} min={2} max={100} onChange={(v) => update({ gridSize: Math.round(v) })} suffix="px" />
         </Row>
+        <GridExtras />
       </Section>
       <Section title="Tips">
         <ul className="space-y-1.5 text-[12px] leading-relaxed text-muted">
@@ -140,13 +155,13 @@ function Geometry({ shape }: { shape: ShapeElement }) {
       step={units === 'px' ? 1 : units === 'pt' ? 0.5 : 0.01}
       precision={precision}
       suffix={suffix}
-      onChange={(v) => update({ [key]: v / k })}
+      onChange={(v) => update(sizePatch(shape, key, v / k))}
       onScrubStart={begin}
       onCommit={end}
     />
   );
   return (
-    <Section title="Position">
+    <Section title="Position" action={<AspectLockToggle shape={shape} />}>
       <div className="grid grid-cols-2 gap-1.5">
         {field('X', 'x')}
         {field('Y', 'y')}
@@ -170,6 +185,7 @@ function FillStroke({ els }: { els: ShapeElement[] }) {
       <Section title="Fill">
         <ColorField label="Fill color" value={st('fill') as string | null} onChange={(fill) => set({ fill })} swatches={PALETTE.fills} allowNone />
         <Switch label="Drop shadow" checked={!!st('shadow')} onChange={(shadow) => set({ shadow })} />
+        {!!st('shadow') && <ShadowOptions els={els} />}
       </Section>
       <StrokeGroup els={els} rounded={rounded} />
     </>
@@ -214,11 +230,7 @@ function TextProps({ els }: { els: DiagramElement[] }) {
   return (
     <Section title="Text">
       <div className="grid grid-cols-[1fr_76px] gap-1.5">
-        <Select<FontKey>
-          value={st('fontFamily') as FontKey | null}
-          onChange={(fontFamily) => set({ fontFamily })}
-          options={(Object.keys(FONT_LABELS) as FontKey[]).map((k) => ({ value: k, label: FONT_LABELS[k] }))}
-        />
+        <FontPicker value={st('fontFamily') as FontFamily | null} onChange={(fontFamily) => set({ fontFamily })} />
         <NumberField label="Aa" value={st('fontSize') as number | null} min={6} max={200} onChange={(fontSize) => set({ fontSize })} onScrubStart={begin} onCommit={end} />
       </div>
       <div className="flex items-center gap-1.5">
@@ -279,46 +291,6 @@ function Appearance({ els }: { els: DiagramElement[] }) {
   return (
     <Section title="Opacity" action={<span className="text-[11.5px] tabular-nums text-muted">{Math.round(opacity * 100)}%</span>}>
       <Slider value={Math.round(opacity * 100)} min={5} max={100} onChange={(v) => set({ opacity: v / 100 })} onStart={begin} onCommit={end} />
-    </Section>
-  );
-}
-
-const ARROW_OPTIONS: ArrowHead[] = ['none', 'arrow', 'triangle', 'triangleOpen', 'diamond', 'diamondOpen', 'circle', 'circleOpen', 'erOne', 'erOnlyOne', 'erMany', 'erOneMany', 'erZeroMany', 'erZeroOne'];
-
-function ArrowGlyph({ kind, flip }: { kind: ArrowHead; flip?: boolean }) {
-  const parts = arrowParts(kind, { x: 26, y: 7 }, { x: 1, y: 0 }, 1.25);
-  return (
-    <svg width="30" height="14" viewBox="0 0 30 14" style={flip ? { transform: 'scaleX(-1)' } : undefined}>
-      <line x1="2" y1="7" x2="26" y2="7" stroke="currentColor" strokeWidth="1.25" />
-      {parts.map((p, i) => (
-        <path key={i} d={p.d} fill={p.fill === 'solid' ? 'currentColor' : p.fill === 'paper' ? 'var(--panel)' : 'none'} stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
-      ))}
-    </svg>
-  );
-}
-
-function ConnectorProps({ connectors }: { connectors: ConnectorElement[] }) {
-  const update = (patch: Partial<ConnectorElement>) =>
-    useEditor.getState().updateElements(Object.fromEntries(connectors.map((c) => [c.id, patch])));
-  const start = common(connectors.map((c) => c.startArrow));
-  const endA = common(connectors.map((c) => c.endArrow));
-  const arrowOpts = (flip: boolean) => ARROW_OPTIONS.map((a) => ({ value: a, label: ARROW_LABELS[a], icon: <ArrowGlyph kind={a} flip={flip} /> }));
-  return (
-    <Section title="Connector">
-      <Row label="Start">
-        <Select value={start} onChange={(startArrow) => update({ startArrow })} options={arrowOpts(true)} renderValue={(v) => (v ? <span className="flex items-center gap-2"><ArrowGlyph kind={v} flip />{ARROW_LABELS[v]}</span> : 'Mixed')} />
-      </Row>
-      <Row label="End">
-        <Select value={endA} onChange={(endArrow) => update({ endArrow })} options={arrowOpts(false)} renderValue={(v) => (v ? <span className="flex items-center gap-2"><ArrowGlyph kind={v} />{ARROW_LABELS[v]}</span> : 'Mixed')} />
-      </Row>
-      <button
-        onClick={() =>
-          useEditor.getState().updateElements(Object.fromEntries(connectors.map((c) => [c.id, { source: c.target, target: c.source }])))
-        }
-        className="flex h-7 w-full items-center justify-center gap-1.5 rounded-md text-[12px] text-muted hover:bg-hover hover:text-fg"
-      >
-        <MoveVertical className="size-3.5 rotate-90" /> Swap direction
-      </button>
     </Section>
   );
 }
@@ -438,6 +410,7 @@ function Arrange({ multi }: { multi: number }) {
           {locked ? <Lock /> : <LockOpen />}
         </IconButton>
       </div>
+      <ArrangeExtras />
     </Section>
   );
 }

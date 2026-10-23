@@ -3,7 +3,7 @@ import { CornerDownLeft, Search } from 'lucide-react';
 import { useUi } from '@/store/ui';
 import { useEditor } from '@/store/editor';
 import { cn } from '@/lib/cn';
-import { ACTIONS } from '@/app/actions';
+import { ACTIONS, actionsVersion } from '@/app/actions';
 import { createShape } from '@/model/defaults';
 import { SearchIndex } from '@/search/engine';
 import { searchShapes } from '@/search/indexes';
@@ -26,7 +26,11 @@ interface Item {
 }
 
 let actionIndex: SearchIndex<(typeof ACTIONS)[number]> | null = null;
+let indexedVersion = -1;
 const searchActions = (q: string) => {
+  // Re-index when plugins/extensions register actions at runtime.
+  if (indexedVersion !== actionsVersion) actionIndex = null;
+  indexedVersion = actionsVersion;
   actionIndex ??= new SearchIndex(
     ACTIONS.filter((a) => !a.hidden),
     (a) => [

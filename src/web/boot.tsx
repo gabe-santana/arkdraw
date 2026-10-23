@@ -13,6 +13,7 @@ import { resolveSource } from './loadDiagram';
 import { draftHasContent, putBackRecoveryDraft, shieldRecoveryDraft, takeRecoveryDraft } from './recovery';
 import { initEmbedMode } from './embed';
 import { registerPwa } from './pwa';
+import { applyLaunchOptions } from '@/automation/urlParams';
 
 const Viewer = lazy(() => import('@/viewer/Viewer'));
 
@@ -33,6 +34,8 @@ export function bootWeb(root: Root, editor: ReactNode, href = location.href): La
 
   // Session-only theme override (not persisted to the user's preference).
   if (launch.theme) useUi.setState({ theme: launch.theme });
+  // draw.io-style editor options: lang, libs, clibs, grid, math, ui.
+  applyLaunchOptions(launch);
 
   if (launch.mode === 'embed') {
     shieldRecoveryDraft();

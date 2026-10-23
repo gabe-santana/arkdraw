@@ -6,6 +6,8 @@ import { useMemo, useState } from 'react';
 import { ArrowDownToLine, Copy, Eye, EyeOff, Lock, LockOpen, MoreHorizontal, MousePointer2, Pencil, Plus, Tag, Trash } from 'lucide-react';
 import type { Layer } from '@/model/types';
 import { ContextMenu, type MenuEntry } from '@/ui/Menu';
+import { Database } from 'lucide-react';
+import { openAutomationDialog } from '@/automation/ui';
 import { layersOf, useEditor } from '@/store/editor';
 import { cn } from '@/lib/cn';
 import { Tooltip } from '@/ui/Tooltip';
@@ -24,6 +26,7 @@ export function LayersManager() {
 
   const menuItems = (l: Layer): MenuEntry[] => [
     { label: 'Rename', icon: <Pencil />, onSelect: () => setRenaming(l.id) },
+    { label: 'Edit data…', icon: <Database />, onSelect: () => openAutomationDialog({ kind: 'data', target: { type: 'layer', id: l.id } }) },
     { label: 'Duplicate', icon: <Copy />, onSelect: () => s().duplicateLayer(l.id) },
     { label: 'Select all in layer', icon: <MousePointer2 />, onSelect: () => s().selectLayer(l.id), disabled: !counts.get(l.id) },
     { label: 'Move selection here', icon: <ArrowDownToLine />, onSelect: () => s().moveSelectionToLayer(l.id), disabled: !selection.length },
