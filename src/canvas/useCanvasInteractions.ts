@@ -1,0 +1,899 @@
+/**
+ * Pointer & wheel interaction state machine for the canvas.
+ *
+ * Gestures (draw.io parity):
+ * - pan: Space-drag, middle/right-drag, hand tool, wheel; Ctrl/⌘+wheel or pinch zooms
+ * - select: click, Shift-click, marquee (Alt+drag starts a marquee even on a shape)
+ * - move: smart guides + grid snap (Alt disables snapping), Ctrl/⌘-drag clones,
+ *   container re-parenting
+ * - resize: 8 handles (Shift keeps ratio, Alt from center), works on rotated shapes
+ * - rotate: rotation handle (Shift snaps to 15°)
+ * - connectors: drag from anchor dots or blue quick-connect arrows; click an arrow
+ *   to clone & connect; drag endpoints to re-attach; drag segments/waypoints to
+ *   reshape (double-click a waypoint removes it); drag the label along the path
+ * - Ctrl/⌘-click follows links; double-click blank canvas opens the shape picker
+ */
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
+import type { AnchorSide, ConnectorElement, DiagramElement, Doc, Endpoint, Rect, ShapeElement, Vec } from '@/model/types';
+import { isConnector, isShape } from '@/model/types';
+import { createConnector, createShape } from '@/model/defaults';
+import {
+  anchorPoint, center, containsPoint, dist, distToSegment, inflate, intersects, rectFromPoints, rotatePoint,
+  rotatedBounds, SIDES, SIDE_NORMALS, unionRects,
+} from '@/lib/geometry';
+import { connectorGeometryInDoc, endpointPositions } from '@/lib/connectorGeometry';
+import { getShapeDef } from '@/shapes/registry';
+import {
+  cloneElements, containedShapes, elementBounds, groupMembers, isHidden, isLocked, shapeRect, useEditor, type Guide,
+} from '@/store/editor';
+import { useUi } from '@/store/ui';
+import { buildSnapTargets, snapRect, snapValue, type SnapTargets } from './snapping';
+import { presetForTool } from './tools';
+import { clientToWorld } from './viewport';
+import { followLink } from './links';
+
+const DRAG_THRESHOLD = 3;
+const ANCHOR_SNAP = 18;
+
+type Handle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
+
+type Drag =
+  | { type: 'pan'; client: Vec; cam: { x: number; y: number } }
+  | { type: 'marquee'; origin: Vec; base: string[] }
+  | {
+      type: 'move';
+      origin: Vec;
+      clickedId: string;
+      started: boolean;
+      wasSelected: boolean;
+      clone: boolean;
+      ids: string[];
+      start: Map<string, DiagramElement>;
+      bounds: Rect;
+      targets: SnapTargets;
+    }
+  | { type: 'resize'; handle: Handle; start: Map<string, ShapeElement>; bounds: Rect; targets: SnapTargets; single: ShapeElement | null }
+  | { type: 'rotate'; id: string; start: number; center: Vec; startAngle: number }
+  | { type: 'create'; origin: Vec; id: string | null; tool: string; targets: SnapTargets }
+  | { type: 'freehand'; points: Vec[] }
+  | { type: 'connect'; from: Endpoint; origin: Vec; quick: { side: AnchorSide; shapeId: string } | null; moved: boolean }
+  | { type: 'endpoint'; connId: string; end: 'source' | 'target' }
+  | { type: 'segment'; connId: string; index: number; base: Vec[]; origin: Vec; horizontal: boolean; mode: 'ortho' | 'insert' }
+  | { type: 'waypoint'; connId: string; index: number }
+  | { type: 'label'; connId: string };
+
+function snapOptions(alt: boolean) {
+  const { settings, camera } = useEditor.getState();
+  if (alt) return { guides: false, grid: null, threshold: 0 };
+  return { guides: settings.guides, grid: settings.snap ? settings.gridSize : null, threshold: 6 / camera.z };
+}
+
+/** Topmost visible, unlocked shape under a world point, skipping `exclude`. */
+export function shapeAtPoint(doc: Doc, p: Vec, exclude: Set<string> = new Set(), slop = 0): ShapeElement | null {
+  for (let i = doc.order.length - 1; i >= 0; i--) {
+    const el = doc.elements[doc.order[i]];
+    if (!isShape(el) || exclude.has(el.id) || isLocked(doc, el) || isHidden(doc, el)) continue;
+    if (el.behavior?.connectable === false) continue;
+    const local = rotatePoint(p, center(el), -(el.rotation ?? 0));
+    if (containsPoint(inflate(shapeRect(el), slop), local)) return el;
+  }
+  return null;
+}
+
+/** Endpoint attached to `shape`, snapping to the nearest side anchor when close. */
+function attachTo(shape: ShapeElement, p: Vec): Endpoint {
+  const z = useEditor.getState().camera.z;
+  let best: AnchorSide | 'auto' = 'auto';
+  let bestD = ANCHOR_SNAP / z;
+  const c = center(shape);
+  for (const side of SIDES) {
+    const d = dist(rotatePoint(anchorPoint(shapeRect(shape), side), c, shape.rotation ?? 0), p);
+    if (d < bestD) {
+      bestD = d;
+      best = side;
+    }
+  }
+  return { elementId: shape.id, side: best, x: p.x, y: p.y };
+}
+
+function snapTargetsExcluding(doc: Doc, exclude: Set<string>): SnapTargets {
+  const rects: Rect[] = [];
+  for (const id of doc.order) {
+    const el = doc.elements[id];
+    if (isShape(el) && !exclude.has(id) && !isHidden(doc, el)) rects.push(rotatedBounds(el));
+  }
+  return buildSnapTargets(rects);
+}
+
+/** Topmost diagram element under a client point (ignores overlay chrome). */
+function elementIdAt(x: number, y: number): string | null {
+  for (const node of document.elementsFromPoint(x, y)) {
+    const id = node.closest('[data-el]')?.getAttribute('data-el');
+    if (id) return id;
+  }
+  return null;
+}
+
+const attr = (target: Element, name: string) => target.closest(`[${name}]`)?.getAttribute(name) ?? null;
+
+/** Clones `shape` one step away in `side` and connects the two (draw.io blue arrows). */
+export function cloneAndConnect(shapeId: string, side: AnchorSide) {
+  const s = useEditor.getState();
+  const src = s.doc.elements[shapeId];
+  if (!isShape(src)) return;
+  const gap = 60;
+  const n = SIDE_NORMALS[side];
+  const [clone] = cloneElements([src], { x: n.x * (src.w + gap), y: n.y * (src.h + gap) }) as ShapeElement[];
+  clone.text = src.kind === 'text' ? src.text : '';
+  clone.groupIds = [];
+  const opposite = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' }[side] as AnchorSide;
+  const conn = createConnector({ elementId: src.id, side, x: 0, y: 0 }, { elementId: clone.id, side: opposite, x: 0, y: 0 });
+  s.beginInteraction();
+  s.addElements([clone, conn]);
+  s.select([clone.id]);
+  s.endInteraction();
+}
+
+export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
+  const drag = useRef<Drag | null>(null);
+  const spaceDown = useRef(false);
+  const [panning, setPanning] = useState(false);
+  const [spaceHeld, setSpaceHeld] = useState(false);
+  const [freehand, setFreehand] = useState<Vec[] | null>(null);
+
+  // --- wheel: pan, Ctrl/⌘ (and trackpad pinch) zooms around the cursor -----
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const s = useEditor.getState();
+      const scale = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
+      if (e.ctrlKey || e.metaKey) {
+        const r = el.getBoundingClientRect();
+        const factor = Math.min(1.25, Math.max(0.8, Math.exp(-e.deltaY * scale * 0.008)));
+        s.zoomAt({ x: e.clientX - r.left, y: e.clientY - r.top }, s.camera.z * factor);
+      } else {
+        const dx = e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX;
+        const dy = e.shiftKey && !e.deltaX ? 0 : e.deltaY;
+        s.panBy(-dx * scale, -dy * scale);
+      }
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [ref]);
+
+  // --- space-to-pan ----------------------------------------------------------
+  useEffect(() => {
+    const typing = (e: KeyboardEvent) => (e.target as HTMLElement)?.closest?.('input, textarea, [contenteditable]');
+    const down = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && !typing(e) && !e.repeat) {
+        spaceDown.current = true;
+        setSpaceHeld(true);
+        e.preventDefault();
+      }
+    };
+    const up = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        spaceDown.current = false;
+        setSpaceHeld(false);
+      }
+    };
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
+    return () => {
+      window.removeEventListener('keydown', down);
+      window.removeEventListener('keyup', up);
+    };
+  }, []);
+
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      const s = useEditor.getState();
+      const ui = useUi.getState();
+      if (ui.contextMenu || ui.shapePicker) ui.set({ contextMenu: null, shapePicker: null });
+      const target = e.target as Element;
+      if (target.closest('[data-text-editor]')) return;
+      // Commit any in-progress text edit (the editor's blur also handles this).
+      if (s.editingId) (document.activeElement as HTMLElement | null)?.blur();
+      const p = clientToWorld(e.clientX, e.clientY);
+
+      // Right button: pan on drag (context menu fires separately on release without movement).
+      if (e.button === 2) {
+        rightDragged = false;
+        ref.current?.setPointerCapture(e.pointerId);
+        drag.current = { type: 'pan', client: { x: e.clientX, y: e.clientY }, cam: { x: s.camera.x, y: s.camera.y } };
+        return;
+      }
+      ref.current?.setPointerCapture(e.pointerId);
+
+      if (e.button === 1 || spaceDown.current || s.tool === 'hand') {
+        drag.current = { type: 'pan', client: { x: e.clientX, y: e.clientY }, cam: { x: s.camera.x, y: s.camera.y } };
+        setPanning(true);
+        return;
+      }
+
+      if (s.tool === 'freehand') {
+        drag.current = { type: 'freehand', points: [p] };
+        setFreehand([p]);
+        return;
+      }
+
+      const preset = presetForTool(s.tool);
+      if (preset) {
+        const o = snapOptions(e.altKey);
+        drag.current = {
+          type: 'create',
+          origin: { x: snapValue(p.x, 'x', { xs: [], ys: [] }, o, [p.y, p.y]).v, y: snapValue(p.y, 'y', { xs: [], ys: [] }, o, [p.x, p.x]).v },
+          id: null,
+          tool: s.tool,
+          targets: snapTargetsExcluding(s.doc, new Set()),
+        };
+        return;
+      }
+
+      // Collapse/expand toggle on containers.
+      const collapse = attr(target, 'data-collapse');
+      if (collapse) {
+        s.toggleCollapse(collapse);
+        return;
+      }
+
+      // Quick-connect arrows: click clones & connects, drag draws a connector.
+      const quickSide = attr(target, 'data-quick') as AnchorSide | null;
+      const quickEl = attr(target, 'data-quick-el');
+      if (quickSide && quickEl) {
+        const shape = s.doc.elements[quickEl] as ShapeElement;
+        const from: Endpoint = { elementId: quickEl, side: quickSide, ...rotatePoint(anchorPoint(shapeRect(shape), quickSide), center(shape), shape.rotation ?? 0) };
+        drag.current = { type: 'connect', from, origin: p, quick: { side: quickSide, shapeId: quickEl }, moved: false };
+        return;
+      }
+
+      const anchor = target.closest('[data-anchor]');
+      if (anchor || s.tool === 'connector') {
+        const elId = anchor?.getAttribute('data-anchor-el') ?? elementIdAt(e.clientX, e.clientY);
+        const shape = elId ? s.doc.elements[elId] : undefined;
+        const side = anchor?.getAttribute('data-anchor') as AnchorSide | null;
+        const from: Endpoint = isShape(shape)
+          ? { elementId: shape.id, side: side ?? 'auto', ...(side ? rotatePoint(anchorPoint(shapeRect(shape), side), center(shape), shape.rotation ?? 0) : p) }
+          : { x: p.x, y: p.y };
+        drag.current = { type: 'connect', from, origin: p, quick: null, moved: false };
+        s.beginInteraction();
+        useEditor.setState({ connectDraft: { from: { x: from.x, y: from.y }, to: p, targetId: null } });
+        return;
+      }
+
+      if (attr(target, 'data-rotate')) {
+        const id = s.selection[0];
+        const el = s.doc.elements[id];
+        if (isShape(el)) {
+          s.beginInteraction();
+          const c = center(el);
+          drag.current = { type: 'rotate', id, start: el.rotation ?? 0, center: c, startAngle: Math.atan2(p.y - c.y, p.x - c.x) };
+        }
+        return;
+      }
+
+      const handle = attr(target, 'data-handle') as Handle | null;
+      if (handle) {
+        const shapes = s.selection.map((id) => s.doc.elements[id]).filter(isShape).filter((el) => !isLocked(s.doc, el) && el.behavior?.resizable !== false);
+        if (shapes.length) {
+          s.beginInteraction();
+          const single = shapes.length === 1 && shapes[0].rotation ? shapes[0] : null;
+          drag.current = {
+            type: 'resize',
+            handle,
+            start: new Map(shapes.map((sh) => [sh.id, sh])),
+            bounds: single ? shapeRect(single) : unionRects(shapes.map((sh) => rotatedBounds(sh)))!,
+            targets: snapTargetsExcluding(s.doc, new Set(shapes.map((sh) => sh.id))),
+            single,
+          };
+        }
+        return;
+      }
+
+      const endpoint = target.closest('[data-endpoint]');
+      if (endpoint) {
+        s.beginInteraction();
+        drag.current = { type: 'endpoint', connId: endpoint.getAttribute('data-endpoint-el')!, end: endpoint.getAttribute('data-endpoint') as 'source' | 'target' };
+        return;
+      }
+
+      const waypoint = target.closest('[data-waypoint]');
+      if (waypoint) {
+        s.beginInteraction();
+        drag.current = { type: 'waypoint', connId: waypoint.getAttribute('data-conn')!, index: Number(waypoint.getAttribute('data-waypoint')) };
+        return;
+      }
+
+      const segment = target.closest('[data-segment]');
+      if (segment) {
+        const connId = segment.getAttribute('data-conn')!;
+        const conn = s.doc.elements[connId] as ConnectorElement;
+        const g = connectorGeometryInDoc(conn, s.doc.elements);
+        const index = Number(segment.getAttribute('data-segment'));
+        s.beginInteraction();
+        if (conn.routing === 'straight' || conn.routing === 'curved') {
+          // Insert a new waypoint between the existing points.
+          const wps = conn.waypoints ?? [];
+          const next = [...wps];
+          next.splice(index, 0, p);
+          s.updateElements({ [connId]: { waypoints: next } });
+          drag.current = { type: 'waypoint', connId, index };
+        } else {
+          const a = g.points[index];
+          const b = g.points[index + 1];
+          drag.current = { type: 'segment', connId, index, base: g.points, origin: p, horizontal: Math.abs(a.y - b.y) < 0.5, mode: 'ortho' };
+        }
+        return;
+      }
+
+      if (target.closest('[data-label-handle]')) {
+        s.beginInteraction();
+        drag.current = { type: 'label', connId: target.closest('[data-label-handle]')!.getAttribute('data-label-handle')! };
+        return;
+      }
+
+      const elId = target.closest('[data-el]')?.getAttribute('data-el') ?? null;
+      const el = elId ? s.doc.elements[elId] : undefined;
+
+      // Ctrl/⌘-click on a linked element follows the link.
+      if (el?.link && (e.ctrlKey || e.metaKey) && !e.shiftKey) {
+        followLink(el.link);
+        drag.current = null;
+        return;
+      }
+
+      // Alt+drag always starts a marquee (draw.io), even on top of a shape.
+      if (el && !isLocked(s.doc, el) && !e.altKey) {
+        const ids = e.ctrlKey || e.metaKey ? [el.id] : groupMembers(s.doc, el.id);
+        const wasSelected = ids.every((id) => s.selection.includes(id));
+        if (e.shiftKey) s.select(ids, true);
+        else if (!wasSelected) s.select(ids);
+        drag.current = {
+          type: 'move',
+          origin: p,
+          clickedId: el.id,
+          started: false,
+          wasSelected,
+          clone: e.ctrlKey || e.metaKey,
+          ids: [],
+          start: new Map(),
+          bounds: { x: 0, y: 0, w: 0, h: 0 },
+          targets: { xs: [], ys: [] },
+        };
+        return;
+      }
+
+      // Empty canvas (or Alt): marquee.
+      const base = e.shiftKey ? s.selection : [];
+      if (!e.shiftKey) s.clearSelection();
+      drag.current = { type: 'marquee', origin: p, base };
+    },
+    [ref],
+  );
+
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
+    const d = drag.current;
+    const s = useEditor.getState();
+    const p = clientToWorld(e.clientX, e.clientY);
+
+    if (!d) {
+      // Hover: reveal anchor dots / quick-connect arrows on the shape under the cursor.
+      if (s.tool === 'select' || s.tool === 'connector') {
+        const t = e.target as Element;
+        const id = attr(t, 'data-anchor-el') ?? attr(t, 'data-quick-el') ?? t.closest('[data-el]')?.getAttribute('data-el') ?? null;
+        const hover = id && isShape(s.doc.elements[id]) ? id : null;
+        if (hover !== s.hoverId) useEditor.setState({ hoverId: hover });
+      }
+      return;
+    }
+
+    switch (d.type) {
+      case 'pan': {
+        if (Math.hypot(e.clientX - d.client.x, e.clientY - d.client.y) > 3) {
+          rightDragged = true;
+          setPanning(true);
+        }
+        s.setCamera({ ...s.camera, x: d.cam.x + e.clientX - d.client.x, y: d.cam.y + e.clientY - d.client.y });
+        return;
+      }
+      case 'freehand': {
+        const last = d.points[d.points.length - 1];
+        if (dist(last, p) * s.camera.z < 2) return;
+        d.points.push(p);
+        setFreehand([...d.points]);
+        return;
+      }
+      case 'marquee': {
+        const r = rectFromPoints(d.origin, p);
+        const hits = s.doc.order.filter((id) => {
+          const el = s.doc.elements[id];
+          if (isLocked(s.doc, el) || isHidden(s.doc, el)) return false;
+          const b = elementBounds(el, s.doc);
+          // Shapes must be fully enclosed; connectors just touched.
+          return isShape(el) ? r.x <= b.x && r.y <= b.y && r.x + r.w >= b.x + b.w && r.y + r.h >= b.y + b.h : intersects(r, b);
+        });
+        const withGroups = new Set(d.base);
+        for (const id of hits) for (const m of groupMembers(s.doc, id)) withGroups.add(m);
+        useEditor.setState({ marquee: r, selection: [...withGroups] });
+        return;
+      }
+      case 'move': {
+        if (!d.started) {
+          if (dist(d.origin, p) * s.camera.z < DRAG_THRESHOLD) return;
+          d.started = true;
+          s.beginInteraction();
+          let sel = s.selection.filter((id) => !isLocked(s.doc, s.doc.elements[id]) && s.doc.elements[id]?.behavior?.movable !== false);
+          if (d.clone) {
+            // Ctrl/⌘-drag duplicates, leaving the originals in place.
+            const inside = containedShapes(s.doc, sel);
+            const originals = s.doc.order.filter((id) => sel.includes(id) || inside.includes(id));
+            const clones = cloneElements(originals.map((id) => s.doc.elements[id]), { x: 0, y: 0 });
+            s.addElements(clones);
+            sel = useEditor.getState().selection;
+          }
+          const doc = useEditor.getState().doc;
+          const ids = [...new Set([...sel, ...containedShapes(doc, sel)])];
+          d.ids = ids;
+          d.start = new Map(ids.map((id) => [id, doc.elements[id]]));
+          const shapes = sel.map((id) => doc.elements[id]).filter(isShape);
+          d.bounds = unionRects(shapes.map((sh) => rotatedBounds(sh))) ?? { x: p.x, y: p.y, w: 0, h: 0 };
+          d.targets = snapTargetsExcluding(doc, new Set(ids));
+        }
+        let dx = p.x - d.origin.x;
+        let dy = p.y - d.origin.y;
+        if (e.shiftKey) {
+          // Constrain to the dominant axis.
+          if (Math.abs(dx) > Math.abs(dy)) dy = 0;
+          else dx = 0;
+        }
+        let guides: Guide[] = [];
+        if (d.bounds.w || d.bounds.h) {
+          const snap = snapRect({ ...d.bounds, x: d.bounds.x + dx, y: d.bounds.y + dy }, d.targets, snapOptions(e.altKey));
+          dx += snap.dx;
+          dy += snap.dy;
+          guides = snap.guides;
+        }
+        const patches: Record<string, Partial<DiagramElement>> = {};
+        for (const [id, el] of d.start) {
+          if (isShape(el)) patches[id] = { x: el.x + dx, y: el.y + dy };
+          else if (isConnector(el)) {
+            patches[id] = {
+              source: el.source.elementId ? el.source : { ...el.source, x: el.source.x + dx, y: el.source.y + dy },
+              target: el.target.elementId ? el.target : { ...el.target, x: el.target.x + dx, y: el.target.y + dy },
+              waypoints: el.waypoints?.map((w) => ({ x: w.x + dx, y: w.y + dy })),
+            } as Partial<ConnectorElement>;
+          }
+        }
+        s.updateElements(patches);
+        const doc = useEditor.getState().doc;
+        const moved = { ...d.bounds, x: d.bounds.x + dx, y: d.bounds.y + dy };
+        const drop = findContainer(doc, { x: moved.x + moved.w / 2, y: moved.y + moved.h / 2 }, new Set(d.ids));
+        useEditor.setState({ guides, dropTargetId: drop?.id ?? null });
+        return;
+      }
+      case 'rotate': {
+        let deg = d.start + ((Math.atan2(p.y - d.center.y, p.x - d.center.x) - d.startAngle) * 180) / Math.PI;
+        deg = ((deg % 360) + 360) % 360;
+        if (e.shiftKey) deg = Math.round(deg / 15) * 15;
+        else if (Math.abs(deg - Math.round(deg / 90) * 90) < 3) deg = Math.round(deg / 90) * 90; // gentle snap to right angles
+        s.updateElements({ [d.id]: { rotation: deg % 360 || undefined } });
+        return;
+      }
+      case 'resize': {
+        resizeTo(d, p, e);
+        return;
+      }
+      case 'create': {
+        const o = snapOptions(e.altKey);
+        const end = {
+          x: snapValue(p.x, 'x', d.targets, o, [d.origin.y, p.y]).v,
+          y: snapValue(p.y, 'y', d.targets, o, [d.origin.x, p.x]).v,
+        };
+        if (!d.id && dist(d.origin, p) * s.camera.z < DRAG_THRESHOLD) return;
+        let r = rectFromPoints(d.origin, end);
+        if (e.shiftKey) {
+          const m = Math.max(r.w, r.h);
+          r = { x: end.x < d.origin.x ? d.origin.x - m : d.origin.x, y: end.y < d.origin.y ? d.origin.y - m : d.origin.y, w: m, h: m };
+        }
+        r = { ...r, w: Math.max(r.w, 8), h: Math.max(r.h, 8) };
+        if (!d.id) {
+          const preset = presetForTool(d.tool)!;
+          s.beginInteraction();
+          const el = createShape(preset.kind, r, preset.style, preset.text ?? '');
+          d.id = el.id;
+          s.addElements([el]);
+        } else {
+          s.updateElements({ [d.id]: r });
+        }
+        return;
+      }
+      case 'connect': {
+        if (!d.moved && dist(d.origin, p) * s.camera.z < DRAG_THRESHOLD) return;
+        if (!d.moved && d.quick) {
+          s.beginInteraction();
+          useEditor.setState({ connectDraft: { from: { x: d.from.x, y: d.from.y }, to: p, targetId: null } });
+        }
+        d.moved = true;
+        const exclude = new Set<string>(d.from.elementId ? [d.from.elementId] : []);
+        const target = shapeAtPoint(s.doc, p, exclude, 6 / s.camera.z);
+        let to = p;
+        if (target) {
+          const ep = attachTo(target, p);
+          if (ep.side && ep.side !== 'auto') to = rotatePoint(anchorPoint(shapeRect(target), ep.side), center(target), target.rotation ?? 0);
+        }
+        useEditor.setState({ connectDraft: { from: { x: d.from.x, y: d.from.y }, to, targetId: target?.id ?? null }, hoverId: target?.id ?? null });
+        return;
+      }
+      case 'endpoint': {
+        const conn = s.doc.elements[d.connId];
+        if (!isConnector(conn)) return;
+        const other = d.end === 'source' ? conn.target : conn.source;
+        const exclude = new Set<string>(other.elementId ? [other.elementId] : []);
+        const target = shapeAtPoint(s.doc, p, exclude, 6 / s.camera.z);
+        const ep: Endpoint = target ? attachTo(target, p) : { x: p.x, y: p.y };
+        s.updateElements({ [d.connId]: { [d.end]: ep } as Partial<ConnectorElement> });
+        useEditor.setState({ hoverId: target?.id ?? null });
+        return;
+      }
+      case 'waypoint': {
+        const conn = s.doc.elements[d.connId];
+        if (!isConnector(conn)) return;
+        const o = snapOptions(e.altKey);
+        const q = { x: o.grid ? Math.round(p.x / o.grid) * o.grid : p.x, y: o.grid ? Math.round(p.y / o.grid) * o.grid : p.y };
+        const wps = [...(conn.waypoints ?? [])];
+        wps[d.index] = q;
+        s.updateElements({ [d.connId]: { waypoints: wps } });
+        return;
+      }
+      case 'segment': {
+        const o = snapOptions(e.altKey);
+        const pts = d.base.map((v) => ({ ...v }));
+        const a = pts[d.index];
+        const b = pts[d.index + 1];
+        if (d.horizontal) {
+          let y = a.y + (p.y - d.origin.y);
+          if (o.grid) y = Math.round(y / o.grid) * o.grid;
+          a.y = y;
+          b.y = y;
+        } else {
+          let x = a.x + (p.x - d.origin.x);
+          if (o.grid) x = Math.round(x / o.grid) * o.grid;
+          a.x = x;
+          b.x = x;
+        }
+        // Interior points become manual waypoints (the router re-adds stubs).
+        s.updateElements({ [d.connId]: { waypoints: pts.slice(1, -1) } });
+        return;
+      }
+      case 'label': {
+        const conn = s.doc.elements[d.connId];
+        if (!isConnector(conn)) return;
+        const g = connectorGeometryInDoc({ ...conn, labelT: 0.5, labelOffset: 0 }, s.doc.elements);
+        const { t, offset } = projectOnPolyline(g.samples, p);
+        s.updateElements({ [d.connId]: { labelT: t, labelOffset: Math.abs(offset) < 4 ? 0 : offset } });
+        return;
+      }
+    }
+  }, []);
+
+  const onPointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      const d = drag.current;
+      drag.current = null;
+      setPanning(false);
+      ref.current?.releasePointerCapture?.(e.pointerId);
+      if (!d) return;
+      const s = useEditor.getState();
+
+      switch (d.type) {
+        case 'pan':
+          return;
+        case 'freehand': {
+          setFreehand(null);
+          finishFreehand(d.points);
+          return;
+        }
+        case 'marquee':
+          useEditor.setState({ marquee: null });
+          return;
+        case 'move': {
+          if (!d.started) {
+            // Plain click on an already-selected item narrows the selection to it.
+            if (d.wasSelected && !e.shiftKey) {
+              const ids = e.ctrlKey || e.metaKey ? [d.clickedId] : groupMembers(s.doc, d.clickedId);
+              if (s.selection.length !== ids.length) s.select(ids);
+            }
+            return;
+          }
+          reparent(d.ids, s.dropTargetId);
+          useEditor.setState({ guides: [], dropTargetId: null });
+          s.endInteraction();
+          return;
+        }
+        case 'resize':
+        case 'rotate':
+        case 'waypoint':
+        case 'segment':
+        case 'label':
+          useEditor.setState({ guides: [] });
+          s.endInteraction();
+          return;
+        case 'create': {
+          let id = d.id;
+          if (!id) {
+            s.beginInteraction();
+            const preset = presetForTool(d.tool)!;
+            const el = createShape(preset.kind, { x: d.origin.x - preset.w / 2, y: d.origin.y - preset.h / 2, w: preset.w, h: preset.h }, preset.style, preset.text ?? '');
+            s.addElements([el]);
+            id = el.id;
+          }
+          const doc = useEditor.getState().doc;
+          reparent([id], findContainer(doc, center(doc.elements[id] as ShapeElement), new Set([id]))?.id ?? null);
+          s.endInteraction();
+          s.setTool('select');
+          s.select([id]);
+          const kind = (useEditor.getState().doc.elements[id] as ShapeElement).kind;
+          if (kind === 'text' || kind === 'sticky') s.setEditing(id);
+          return;
+        }
+        case 'connect': {
+          // A click (no drag) on a quick-connect arrow clones & connects.
+          if (d.quick && !d.moved) {
+            cloneAndConnect(d.quick.shapeId, d.quick.side);
+            return;
+          }
+          const draft = s.connectDraft;
+          useEditor.setState({ connectDraft: null });
+          if (!draft || (dist(draft.from, draft.to) * s.camera.z < 8 && !draft.targetId)) {
+            s.endInteraction();
+            return;
+          }
+          const p = clientToWorld(e.clientX, e.clientY);
+          const target = draft.targetId ? (s.doc.elements[draft.targetId] as ShapeElement) : null;
+          const to: Endpoint = target ? attachTo(target, p) : { x: draft.to.x, y: draft.to.y };
+          const conn = createConnector(d.from, to);
+          const pos = endpointPositions(conn, (id) => s.doc.elements[id]);
+          conn.source = { ...conn.source, x: pos.a.point.x, y: pos.a.point.y };
+          conn.target = { ...conn.target, x: pos.b.point.x, y: pos.b.point.y };
+          s.addElements([conn]);
+          s.endInteraction();
+          if (s.tool === 'connector') s.setTool('select');
+          // Dropped on blank canvas: offer the shape picker to complete the connection (draw.io).
+          if (!target) {
+            useUi.getState().set({ shapePicker: { clientX: e.clientX, clientY: e.clientY, worldX: p.x, worldY: p.y, connectFrom: conn.id } });
+          }
+          return;
+        }
+        case 'endpoint': {
+          // Bake the current position so the endpoint stays put if later detached.
+          const conn = s.doc.elements[d.connId];
+          if (isConnector(conn)) {
+            const pos = endpointPositions(conn, (id) => s.doc.elements[id]);
+            const end = d.end === 'source' ? pos.a.point : pos.b.point;
+            s.updateElements({ [d.connId]: { [d.end]: { ...conn[d.end], x: end.x, y: end.y } } as Partial<ConnectorElement> });
+          }
+          useEditor.setState({ hoverId: null });
+          s.endInteraction();
+          return;
+        }
+      }
+    },
+    [ref],
+  );
+
+  const onDoubleClick = useCallback((e: React.MouseEvent) => {
+    const s = useEditor.getState();
+    const target = e.target as Element;
+    if (target.closest('[data-text-editor]')) return;
+    // Double-click a waypoint removes it.
+    const wp = target.closest('[data-waypoint]');
+    if (wp) {
+      const connId = wp.getAttribute('data-conn')!;
+      const conn = s.doc.elements[connId] as ConnectorElement;
+      const idx = Number(wp.getAttribute('data-waypoint'));
+      const wps = (conn.waypoints ?? []).filter((_, i) => i !== idx);
+      s.updateElements({ [connId]: { waypoints: wps.length ? wps : undefined } });
+      return;
+    }
+    // Pointer capture retargets dblclick to the canvas, so hit-test the point instead.
+    const elId = elementIdAt(e.clientX, e.clientY);
+    const el = elId ? s.doc.elements[elId] : undefined;
+    if (el && !isLocked(s.doc, el)) {
+      // First double-click inside a selected group drills into it.
+      if (el.groupIds.length && s.selection.length > 1 && s.selection.includes(el.id)) {
+        s.select([el.id]);
+        return;
+      }
+      if (el.behavior?.editable === false) return;
+      s.select([el.id]);
+      s.setEditing(el.id);
+      return;
+    }
+    if (!el) {
+      const p = clientToWorld(e.clientX, e.clientY);
+      useUi.getState().set({ shapePicker: { clientX: e.clientX, clientY: e.clientY, worldX: p.x, worldY: p.y } });
+    }
+  }, []);
+
+  const onContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    // A right-drag pans; only a still right-click opens the menu.
+    if (rightDragged) {
+      rightDragged = false;
+      return;
+    }
+    const s = useEditor.getState();
+    const elId = elementIdAt(e.clientX, e.clientY);
+    if (elId && !s.selection.includes(elId)) s.select(groupMembers(s.doc, elId));
+    if (!elId) s.clearSelection();
+    const w = clientToWorld(e.clientX, e.clientY);
+    useUi.getState().set({ contextMenu: { x: e.clientX, y: e.clientY } });
+    lastContextWorld = w;
+  }, []);
+
+  return { onPointerDown, onPointerMove, onPointerUp, onDoubleClick, onContextMenu, panning, spaceHeld, freehand };
+}
+
+/** World point of the last context menu (for "Paste here"). */
+export let lastContextWorld: Vec | null = null;
+let rightDragged = false;
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function resizeTo(d: Extract<Drag, { type: 'resize' }>, pw: Vec, e: React.PointerEvent) {
+  const s = useEditor.getState();
+  const o = snapOptions(false);
+  // Rotated single shape: work in its local frame.
+  const rot = d.single?.rotation ?? 0;
+  const c0 = d.single ? center(d.single) : null;
+  const p = d.single && c0 ? rotatePoint(pw, c0, -rot) : pw;
+  const b = d.bounds;
+  let x1 = b.x, y1 = b.y, x2 = b.x + b.w, y2 = b.y + b.h;
+  const guides: Guide[] = [];
+  const h = d.handle;
+  const snapX = (v: number) => {
+    if (d.single) return o.grid ? Math.round(v / o.grid) * o.grid : v;
+    const r = snapValue(v, 'x', d.targets, o, [y1, y2]);
+    if (r.guide) guides.push(r.guide);
+    return r.v;
+  };
+  const snapY = (v: number) => {
+    if (d.single) return o.grid ? Math.round(v / o.grid) * o.grid : v;
+    const r = snapValue(v, 'y', d.targets, o, [x1, x2]);
+    if (r.guide) guides.push(r.guide);
+    return r.v;
+  };
+  if (h.includes('w')) x1 = snapX(p.x);
+  if (h.includes('e')) x2 = snapX(p.x);
+  if (h.includes('n')) y1 = snapY(p.y);
+  if (h.includes('s')) y2 = snapY(p.y);
+  if (e.altKey) {
+    const cx = b.x + b.w / 2;
+    const cy = b.y + b.h / 2;
+    if (h.includes('w')) x2 = cx + (cx - x1);
+    if (h.includes('e')) x1 = cx - (x2 - cx);
+    if (h.includes('n')) y2 = cy + (cy - y1);
+    if (h.includes('s')) y1 = cy - (y2 - cy);
+  }
+  let nw = Math.max(4, Math.abs(x2 - x1));
+  let nh = Math.max(4, Math.abs(y2 - y1));
+  if (e.shiftKey && b.w && b.h) {
+    const ratio = b.w / b.h;
+    if (h === 'n' || h === 's') nw = nh * ratio;
+    else if (h === 'e' || h === 'w') nh = nw / ratio;
+    else if (nw / nh > ratio) nh = nw / ratio;
+    else nw = nh * ratio;
+    if (h.includes('w')) x1 = x2 - nw;
+    if (h.includes('n')) y1 = y2 - nh;
+  }
+  const nb = { x: Math.min(x1, x2), y: Math.min(y1, y2), w: nw, h: nh };
+  if (d.single && c0) {
+    // Keep the opposite edge fixed in world space: the new local box's center
+    // moved, so rotate its offset back into world coordinates.
+    const localCenter = { x: nb.x + nb.w / 2, y: nb.y + nb.h / 2 };
+    const worldCenter = rotatePoint(localCenter, c0, rot);
+    s.updateElements({ [d.single.id]: { x: worldCenter.x - nb.w / 2, y: worldCenter.y - nb.h / 2, w: nb.w, h: nb.h } });
+    useEditor.setState({ guides: [] });
+    return;
+  }
+  const sx = b.w ? nb.w / b.w : 1;
+  const sy = b.h ? nb.h / b.h : 1;
+  const patches: Record<string, Partial<ShapeElement>> = {};
+  for (const [id, el] of d.start) {
+    patches[id] = {
+      x: nb.x + (el.x - b.x) * sx,
+      y: nb.y + (el.y - b.y) * sy,
+      w: Math.max(4, el.w * sx),
+      h: Math.max(4, el.h * sy),
+    };
+  }
+  s.updateElements(patches);
+  useEditor.setState({ guides });
+}
+
+/** Closest point on a polyline: fraction along its length and signed perpendicular offset. */
+function projectOnPolyline(pts: Vec[], p: Vec): { t: number; offset: number } {
+  let total = 0;
+  const lens: number[] = [];
+  for (let i = 1; i < pts.length; i++) {
+    lens.push(dist(pts[i - 1], pts[i]));
+    total += lens[i - 1];
+  }
+  let best = { d: Infinity, along: 0, offset: 0 };
+  let acc = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1];
+    const b = pts[i];
+    const l = lens[i - 1] || 1;
+    const t = Math.max(0, Math.min(1, ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / (l * l)));
+    const q = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+    const dd = distToSegment(p, a, b);
+    if (dd < best.d) {
+      const cross = ((b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x)) / l;
+      best = { d: dd, along: acc + t * l, offset: dist(q, p) * Math.sign(cross) };
+    }
+    acc += l;
+  }
+  return { t: total ? best.along / total : 0.5, offset: best.offset };
+}
+
+function finishFreehand(points: Vec[]) {
+  if (points.length < 2) return;
+  const s = useEditor.getState();
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
+  const x = Math.min(...xs);
+  const y = Math.min(...ys);
+  const w = Math.max(4, Math.max(...xs) - x);
+  const h = Math.max(4, Math.max(...ys) - y);
+  // Thin out the stroke (keep every point ≥ 3px apart).
+  const kept: Vec[] = [points[0]];
+  for (const p of points.slice(1)) if (dist(kept[kept.length - 1], p) >= 3) kept.push(p);
+  if (kept[kept.length - 1] !== points[points.length - 1]) kept.push(points[points.length - 1]);
+  const el = createShape('freehand', { x, y, w, h }, { fill: 'none', strokeWidth: 2, stroke: '#1e293b' });
+  el.points = kept.map((p) => ({ x: (p.x - x) / w, y: (p.y - y) / h }));
+  s.addElements([el]);
+}
+
+/** Topmost container whose bounds contain `p`. */
+function findContainer(doc: Doc, p: Vec, exclude: Set<string>): ShapeElement | null {
+  for (let i = doc.order.length - 1; i >= 0; i--) {
+    const el = doc.elements[doc.order[i]];
+    if (isShape(el) && !exclude.has(el.id) && !el.collapsed && getShapeDef(el.kind).container && !isHidden(doc, el) && containsPoint(shapeRect(el), p)) return el;
+  }
+  return null;
+}
+
+/**
+ * After a move, moved top-level shapes join the container they were dropped
+ * into (or leave theirs), and are lifted above it in z-order.
+ */
+function reparent(ids: string[], containerId: string | null) {
+  const s = useEditor.getState();
+  const doc = s.doc;
+  const idSet = new Set(ids);
+  const patches: Record<string, Partial<ShapeElement>> = {};
+  let order = doc.order;
+  for (const id of ids) {
+    const el = doc.elements[id];
+    // Shapes that moved because their container moved keep their parent.
+    if (!isShape(el) || (el.containerId && idSet.has(el.containerId))) continue;
+    if (el.id === containerId) continue;
+    const next = containerId ?? undefined;
+    if (el.containerId !== next) patches[id] = { containerId: next };
+    if (next) {
+      const ci = order.indexOf(next);
+      const si = order.indexOf(id);
+      if (si < ci) {
+        order = order.filter((o) => o !== id);
+        order.splice(order.indexOf(next) + 1, 0, id);
+      }
+    }
+  }
+  if (Object.keys(patches).length) s.updateElements(patches);
+  if (order !== doc.order) s.setDoc({ ...useEditor.getState().doc, order });
+}

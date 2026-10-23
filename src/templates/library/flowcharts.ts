@@ -1,0 +1,155 @@
+import type { DiagramSpec } from '@/ai/generate/spec';
+import { specPage } from '../kit';
+import type { Template } from '../types';
+
+const login: DiagramSpec = {
+  type: 'flowchart',
+  direction: 'TB',
+  nodes: [
+    { id: 'start', kind: 'flow.terminator', text: 'Start' },
+    { id: 'open', kind: 'rectangle', text: 'Open sign-in page' },
+    { id: 'creds', kind: 'parallelogram', text: 'Enter email & password' },
+    { id: 'valid', kind: 'diamond', text: 'Credentials valid?' },
+    { id: 'mfa', kind: 'diamond', text: '2FA enabled?' },
+    { id: 'code', kind: 'parallelogram', text: 'Enter 2FA code' },
+    { id: 'tries', kind: 'diamond', text: 'Attempts < 5?' },
+    { id: 'lock', kind: 'rectangle', text: 'Lock account & notify user' },
+    { id: 'session', kind: 'rectangle', text: 'Create session' },
+    { id: 'end', kind: 'flow.terminator', text: 'Show dashboard' },
+  ],
+  edges: [
+    { from: 'start', to: 'open' },
+    { from: 'open', to: 'creds' },
+    { from: 'creds', to: 'valid' },
+    { from: 'valid', to: 'mfa', label: 'Yes' },
+    { from: 'valid', to: 'tries', label: 'No' },
+    { from: 'tries', to: 'creds', label: 'Yes' },
+    { from: 'tries', to: 'lock', label: 'No' },
+    { from: 'mfa', to: 'code', label: 'Yes' },
+    { from: 'mfa', to: 'session', label: 'No' },
+    { from: 'code', to: 'session' },
+    { from: 'session', to: 'end' },
+  ],
+};
+
+const order: DiagramSpec = {
+  type: 'flowchart',
+  direction: 'LR',
+  nodes: [
+    { id: 'recv', kind: 'flow.terminator', text: 'Order received' },
+    { id: 'stock', kind: 'diamond', text: 'In stock?' },
+    { id: 'pay', kind: 'rectangle', text: 'Capture payment' },
+    { id: 'paid', kind: 'diamond', text: 'Payment OK?' },
+    { id: 'pick', kind: 'rectangle', text: 'Pick & pack' },
+    { id: 'label', kind: 'flow.document', text: 'Shipping label' },
+    { id: 'ship', kind: 'rectangle', text: 'Hand over to carrier' },
+    { id: 'done', kind: 'flow.terminator', text: 'Delivered' },
+    { id: 'back', kind: 'flow.delay', text: 'Backorder (wait)' },
+    { id: 'inv', kind: 'cylinder', text: 'Inventory DB' },
+    { id: 'cancel', kind: 'flow.terminator', text: 'Cancel & notify', style: { fill: '#fee2e2', stroke: '#dc2626' } },
+  ],
+  edges: [
+    { from: 'recv', to: 'stock' },
+    { from: 'stock', to: 'pay', label: 'Yes' },
+    { from: 'stock', to: 'back', label: 'No' },
+    { from: 'back', to: 'pay', label: 'Restocked' },
+    { from: 'stock', to: 'inv', dashed: true, endArrow: 'none' },
+    { from: 'pay', to: 'paid' },
+    { from: 'paid', to: 'pick', label: 'Yes' },
+    { from: 'paid', to: 'cancel', label: 'No' },
+    { from: 'pick', to: 'label' },
+    { from: 'label', to: 'ship' },
+    { from: 'ship', to: 'done' },
+  ],
+};
+
+const troubleshoot: DiagramSpec = {
+  type: 'flowchart',
+  direction: 'TB',
+  nodes: [
+    { id: 's', kind: 'flow.terminator', text: 'Lamp doesn’t work' },
+    { id: 'plug', kind: 'diamond', text: 'Lamp plugged in?' },
+    { id: 'plugin', kind: 'rectangle', text: 'Plug in lamp' },
+    { id: 'bulb', kind: 'diamond', text: 'Bulb burned out?' },
+    { id: 'replace', kind: 'rectangle', text: 'Replace bulb' },
+    { id: 'outlet', kind: 'diamond', text: 'Outlet has power?' },
+    { id: 'breaker', kind: 'rectangle', text: 'Reset breaker' },
+    { id: 'repair', kind: 'rectangle', text: 'Repair or buy new lamp', style: { fill: '#fee2e2', stroke: '#dc2626' } },
+    { id: 'ok', kind: 'flow.terminator', text: 'Lamp works' },
+  ],
+  edges: [
+    { from: 's', to: 'plug' },
+    { from: 'plug', to: 'plugin', label: 'No' },
+    { from: 'plug', to: 'bulb', label: 'Yes' },
+    { from: 'bulb', to: 'replace', label: 'Yes' },
+    { from: 'bulb', to: 'outlet', label: 'No' },
+    { from: 'outlet', to: 'breaker', label: 'No' },
+    { from: 'outlet', to: 'repair', label: 'Yes' },
+    { from: 'plugin', to: 'ok' },
+    { from: 'replace', to: 'ok' },
+    { from: 'breaker', to: 'ok' },
+  ],
+};
+
+const algorithm: DiagramSpec = {
+  type: 'flowchart',
+  direction: 'TB',
+  nodes: [
+    { id: 'start', kind: 'flow.terminator', text: 'Start' },
+    { id: 'in', kind: 'parallelogram', text: 'Read list A[0..n-1]' },
+    { id: 'init', kind: 'hexagon', text: 'i ← 0, max ← A[0]' },
+    { id: 'loop', kind: 'diamond', text: 'i < n ?' },
+    { id: 'cmp', kind: 'diamond', text: 'A[i] > max ?' },
+    { id: 'set', kind: 'rectangle', text: 'max ← A[i]' },
+    { id: 'inc', kind: 'rectangle', text: 'i ← i + 1' },
+    { id: 'out', kind: 'parallelogram', text: 'Print max' },
+    { id: 'end', kind: 'flow.terminator', text: 'End' },
+  ],
+  edges: [
+    { from: 'start', to: 'in' },
+    { from: 'in', to: 'init' },
+    { from: 'init', to: 'loop' },
+    { from: 'loop', to: 'cmp', label: 'Yes' },
+    { from: 'loop', to: 'out', label: 'No' },
+    { from: 'cmp', to: 'set', label: 'Yes' },
+    { from: 'cmp', to: 'inc', label: 'No' },
+    { from: 'set', to: 'inc' },
+    { from: 'inc', to: 'loop' },
+    { from: 'out', to: 'end' },
+  ],
+};
+
+export const FLOWCHART_TEMPLATES: Template[] = [
+  {
+    id: 'flowchart-login',
+    name: 'Sign-in flow',
+    category: 'Flowcharts',
+    description: 'Authentication flowchart with validation, retry limit, 2FA and account lockout.',
+    keywords: ['flowchart', 'login', 'auth', 'decision', 'process'],
+    build: () => specPage('Sign-in flow', 'Sign-in flow', 'User authentication with 2FA and lockout', login),
+  },
+  {
+    id: 'flowchart-order',
+    name: 'Order fulfillment',
+    category: 'Flowcharts',
+    description: 'Left-to-right order process with stock check, payment, backorders and shipping.',
+    keywords: ['flowchart', 'order', 'ecommerce', 'process', 'shipping', 'fulfillment'],
+    build: () => specPage('Order fulfillment', 'Order fulfillment', 'From order received to delivery', order),
+  },
+  {
+    id: 'flowchart-troubleshooting',
+    name: 'Troubleshooting tree',
+    category: 'Flowcharts',
+    description: 'Yes/no decision tree that walks through diagnosing a problem step by step.',
+    keywords: ['decision tree', 'troubleshooting', 'support', 'yes no', 'diagnosis'],
+    build: () => specPage('Troubleshooting', 'Troubleshooting guide', 'Classic yes / no decision tree', troubleshoot),
+  },
+  {
+    id: 'flowchart-algorithm',
+    name: 'Algorithm flowchart',
+    category: 'Flowcharts',
+    description: 'Programming flowchart with input/output, a loop and a nested condition.',
+    keywords: ['algorithm', 'loop', 'programming', 'pseudo code', 'flowchart', 'computer science'],
+    build: () => specPage('Algorithm', 'Find the maximum', 'Loop with a nested condition', algorithm),
+  },
+];

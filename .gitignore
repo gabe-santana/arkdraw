@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+*.local
+
+# Tauri / Rust
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+node_modules
+
+# Local Claude Code settings
+.claude/settings.local.json
+
+# Vendor icon packs are fetched with `npm run icons:fetch` (not MIT — see public/icons/LICENSES.md)
+# Their one-line descriptions are ours and tracked (shown in hover cards).
+public/icons/*
+!public/icons/LICENSES.md
+!public/icons/*/
+public/icons/*/*
+!public/icons/*/descriptions.json
