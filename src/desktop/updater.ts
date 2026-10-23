@@ -8,6 +8,7 @@
  */
 import { create } from 'zustand';
 import type { Update } from '@tauri-apps/plugin-updater';
+import { t } from '@/i18n';
 import { isTauri } from '@/lib/platform';
 import { useUi } from '@/store/ui';
 
@@ -68,7 +69,7 @@ function writeLastCheck(t: number) {
 export async function checkForUpdates({ quiet = false } = {}): Promise<string | null> {
   const toast = useUi.getState().toast;
   if (!isTauri()) {
-    if (!quiet) toast('Updates are installed automatically in the web version.', 'info');
+    if (!quiet) toast(t('desktop.update.webAuto'), 'info');
     return null;
   }
   const st = useUpdater.getState();
@@ -80,7 +81,7 @@ export async function checkForUpdates({ quiet = false } = {}): Promise<string | 
     writeLastCheck(Date.now());
     if (!update) {
       useUpdater.setState({ status: 'idle' });
-      if (!quiet) toast('OpenDraw is up to date.', 'success');
+      if (!quiet) toast(t('desktop.update.upToDate'), 'success');
       return null;
     }
     void pending?.close().catch(() => {});
@@ -90,7 +91,7 @@ export async function checkForUpdates({ quiet = false } = {}): Promise<string | 
   } catch (e) {
     const message = String((e as Error)?.message ?? e);
     useUpdater.setState({ status: quiet ? 'idle' : 'error', error: message });
-    if (!quiet) toast(`Could not check for updates: ${message}`, 'error');
+    if (!quiet) toast(t('desktop.update.checkFailed', { error: message }), 'error');
     return null;
   }
 }
@@ -126,6 +127,6 @@ export async function installUpdate(): Promise<void> {
   } catch (e) {
     const message = String((e as Error)?.message ?? e);
     useUpdater.setState({ status: 'available', error: message });
-    useUi.getState().toast(`Update failed: ${message}`, 'error');
+    useUi.getState().toast(t('desktop.update.failed', { error: message }), 'error');
   }
 }

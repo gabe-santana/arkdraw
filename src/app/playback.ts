@@ -1,5 +1,6 @@
 import { useEditor } from '@/store/editor';
 import { useUi } from '@/store/ui';
+import { t } from '@/i18n';
 import { hasAnimation, startClock, stopClock } from '@/animation/timeline';
 
 /** Toggles the canvas animation preview (docs/specs/animation.md §4). */
@@ -11,7 +12,7 @@ export function togglePlayback() {
     return;
   }
   if (!hasAnimation(s.doc)) {
-    useUi.getState().toast('Nothing to animate yet. Select a connector and choose an animation in the properties panel.');
+    useUi.getState().toast(t('app.playback.nothing'));
     return;
   }
   stopClock(true);

@@ -7,6 +7,7 @@ import { createRoot } from 'react-dom/client';
 import { Check, LogOut } from 'lucide-react';
 import { useEditor, isDirtyState } from '@/store/editor';
 import { formatShortcut } from '@/lib/platform';
+import { useT } from '@/i18n';
 
 interface Props {
   save: (() => void) | null;
@@ -14,6 +15,7 @@ interface Props {
 }
 
 function EmbedBar({ save, exit }: Props) {
+  const t = useT();
   const dirty = useEditor(isDirtyState);
   return (
     <div className="pointer-events-auto flex items-center gap-1 rounded-xl bg-panel p-1 text-[12.5px] shadow-pop">
@@ -21,11 +23,11 @@ function EmbedBar({ save, exit }: Props) {
         <button
           type="button"
           onClick={save}
-          title={`Save (${formatShortcut('Mod+S').join(' ')})`}
+          title={t('web.embed.saveTitle', { shortcut: formatShortcut('Mod+S').join(' ') })}
           className="flex h-7 items-center gap-1.5 rounded-lg bg-accent px-3 font-medium text-accent-fg transition-colors hover:bg-accent-hover"
         >
           <Check size={14} />
-          {dirty ? 'Save' : 'Saved'}
+          {dirty ? t('common.save') : t('common.saved')}
         </button>
       )}
       {exit && (
@@ -35,7 +37,7 @@ function EmbedBar({ save, exit }: Props) {
           className="flex h-7 items-center gap-1.5 rounded-lg px-2.5 font-medium text-fg transition-colors hover:bg-hover"
         >
           <LogOut size={14} className="text-muted" />
-          Exit
+          {t('web.embed.exit')}
         </button>
       )}
     </div>

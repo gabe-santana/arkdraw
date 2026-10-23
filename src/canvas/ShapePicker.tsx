@@ -1,5 +1,5 @@
 /**
- * Quick shape picker (draw.io): opens on double-click on blank canvas or when a
+ * Quick shape picker: opens on double-click on blank canvas or when a
  * connector is dropped on empty space. Picking inserts the shape there — and
  * completes the dangling connector, if any.
  */
@@ -17,6 +17,7 @@ import { searchShapes } from '@/search/indexes';
 import { ShapePreview } from '@/panels/ShapePreview';
 import { cn } from '@/lib/cn';
 import { replaceShapes } from '@/app/commands';
+import { useT } from '@/i18n';
 
 const FAVORITES: Array<[string, string]> = [
   ['general', 'Text'],
@@ -45,6 +46,7 @@ export function ShapePicker() {
 }
 
 function PickerBody({ picker, close }: { picker: NonNullable<ReturnType<typeof useUi.getState>['shapePicker']>; close: () => void }) {
+  const t = useT();
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
@@ -121,7 +123,7 @@ function PickerBody({ picker, close }: { picker: NonNullable<ReturnType<typeof u
         onKey(e);
       }}
     >
-      <SearchInput value={query} onChange={(v) => { setQuery(v); setActive(0); }} onKeyDown={onKey} placeholder={picker.replaceIds ? 'Replace with…' : 'Insert shape…'} autoFocus />
+      <SearchInput value={query} onChange={(v) => { setQuery(v); setActive(0); }} onKeyDown={onKey} placeholder={picker.replaceIds ? t('canvas.picker.replaceWith') : t('canvas.picker.insertShape')} autoFocus />
       <div className="mt-2 grid grid-cols-6 gap-0.5">
         {items.map((item, i) => (
           <button
@@ -135,7 +137,7 @@ function PickerBody({ picker, close }: { picker: NonNullable<ReturnType<typeof u
           </button>
         ))}
       </div>
-      {!items.length && <div className="py-6 text-center text-[12px] text-muted">No shapes match.</div>}
+      {!items.length && <div className="py-6 text-center text-[12px] text-muted">{t('canvas.picker.noMatch')}</div>}
       <div className="mt-1.5 px-1 text-[11px] text-subtle">{items[active]?.label ?? ''}</div>
     </div>
   );

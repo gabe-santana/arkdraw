@@ -16,6 +16,7 @@ import { ParamHandles } from './ParamHandles';
 import { isLocked, shapeRect, useEditor } from '@/store/editor';
 import { isContainerShape } from '@/interaction/container';
 import { useInteraction } from '@/interaction/store';
+import { useT } from '@/i18n';
 
 const HANDLES = [
   ['nw', 0, 0, 'nwse-resize'],
@@ -202,9 +203,10 @@ export function OverlayLayer({ freehand }: { freehand?: Vec[] | null }) {
 
 /** A subtle "snap together" outline for group, a gentle release pulse for ungroup. */
 function FlashFeedback({ flash, px }: { flash: { kind: 'group' | 'ungroup'; rects: Array<{ x: number; y: number; w: number; h: number }>; count: number }; px: number }) {
+  const t = useT();
   const pad = 6 * px;
   const first = flash.rects[0];
-  const label = flash.kind === 'group' ? `Grouped · ${flash.count}` : `Ungrouped · ${flash.count}`;
+  const label = flash.kind === 'group' ? t('canvas.flash.grouped', { count: flash.count }) : t('canvas.flash.ungrouped', { count: flash.count });
   const lw = (label.length * 6.2 + 16) * px;
   return (
     <g pointerEvents="none">

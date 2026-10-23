@@ -1,5 +1,5 @@
 /**
- * draw.io interop for text & label styles: fonts (incl. Google Fonts via
+ * mxGraph interop for text & label styles: fonts (incl. Google Fonts via
  * fontSource), label position (labelPosition × verticalLabelPosition),
  * per-side spacing, text direction, label border/background colour,
  * underline/strike font-style bits, and `html=1` formatted labels.
@@ -17,7 +17,7 @@ export function fontToDrawio(f: FontFamily): string {
   return isFontKey(f) ? FONT_TO_DRAWIO[f] : cleanFontName(f) || 'Helvetica';
 }
 
-/** draw.io font name → built-in key where it is one of ours, else the name itself. */
+/** mxGraph font name → built-in key where it is one of ours, else the name itself. */
 export function fontFromDrawio(name: string | undefined): FontFamily {
   const raw = cleanFontName((name ?? '').split(',')[0]);
   const f = raw.toLowerCase();
@@ -30,14 +30,14 @@ export function fontFromDrawio(name: string | undefined): FontFamily {
 
 const base = (s: ElementStyle): BaseStyle => ({ bold: s.bold, italic: s.italic, underline: !!s.underline, strike: !!s.strike, size: s.fontSize, color: s.textColor });
 
-/** Label value for draw.io (always html=1). */
+/** Label value for mxGraph (always html=1). */
 export function labelToDrawio(text: string, s: ElementStyle): string {
   if (s.richText) return richToDrawioHtml(text, base(s));
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
 }
 
 /**
- * Formatted text for an `html=1` draw.io label, or null when the label has no
+ * Formatted text for an `html=1` mxGraph label, or null when the label has no
  * formatting worth keeping (the caller then uses its plain-text conversion).
  * Everything outside the whitelist is dropped, so this is also the sanitizer.
  */

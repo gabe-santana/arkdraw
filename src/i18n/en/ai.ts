@@ -1,0 +1,186 @@
+/** English UI strings — ai. Keys are globally unique: 'ai.<key>'. */
+export default {
+  // AiPanel — header and mode switch
+  'ai.panel.title': 'Assistant',
+  'ai.panel.modelSettings': 'Model settings',
+  'ai.panel.noModel': 'No model',
+  // Tab: generate a new diagram from a prompt
+  'ai.panel.modeCreate': 'Create',
+  // Tab: let the AI modify the diagram on the canvas
+  'ai.panel.modeEdit': 'Edit diagram',
+  'ai.panel.canvasEmpty': 'The canvas is empty',
+  'ai.panel.browserWarning': 'Browser preview: API keys stay in memory for this tab and requests go straight from the page.',
+
+  // AiPanel — setup / empty state
+  'ai.panel.connectTitle': 'Connect a model',
+  'ai.panel.connectBody': 'Use your own key for Anthropic, OpenAI or Gemini — or run fully offline with Ollama.',
+  'ai.panel.setUp': 'Set up AI',
+  'ai.panel.emptyEditTitle': 'What should change?',
+  'ai.panel.emptyGenerateTitle': 'What should we draw?',
+  'ai.panel.emptyEditSelection': 'Describe a change. “This” refers to the {count, plural, one {# selected item} other {# selected items}}.',
+  'ai.panel.emptyEdit': 'Describe a change to the current diagram.',
+  'ai.panel.emptyGenerate': 'Describe a system, process or schema. Cloud diagrams use real AWS, Azure and GCP icons.',
+
+  // AiPanel — example prompts (clickable chips that fill the prompt box)
+  'ai.example.generate1': 'AWS 3-tier web app',
+  'ai.example.generate2': 'C4 container diagram for an e-commerce',
+  'ai.example.generate3': 'ER diagram for a blog',
+  'ai.example.generate4': 'Flowchart for a password reset',
+  'ai.example.generate5': 'Sequence diagram of an OAuth login',
+  'ai.example.generate6': 'Azure event-driven pipeline',
+  'ai.example.edit1': 'Add a Redis cache in front of the database',
+  'ai.example.edit2': 'Label every connection',
+  'ai.example.edit3': 'Add a monitoring service connected to all servers',
+  'ai.example.edit4': 'Mark external systems as grey',
+
+  // AiPanel — composer
+  'ai.panel.placeholderEdit': 'e.g. Add a CDN in front of the load balancer',
+  'ai.panel.placeholderGenerate': 'e.g. Serverless image upload pipeline on AWS',
+  // {key} is ⌘ or Ctrl; ↵ is the Enter key
+  'ai.panel.sendHint': '{key} ↵ to send',
+  // Verb: stop the running request
+  'ai.panel.stop': 'Stop',
+  // Verb: send the prompt
+  'ai.panel.send': 'Send',
+
+  // AiPanel — run card
+  // Badge on a prompt that edited the existing diagram (noun)
+  'ai.run.editBadge': 'Edit',
+  'ai.run.starting': 'Starting…',
+  'ai.run.stopped': 'Stopped.',
+  'ai.run.tryAgain': 'Try again',
+
+  // AiPanel — result card
+  'ai.result.diagramReady': 'Diagram ready',
+  'ai.result.changesReady': 'Changes ready',
+  'ai.result.specStats': '{shapes, plural, one {# shape} other {# shapes}} · {connectors, plural, one {# connector} other {# connectors}}',
+  'ai.result.specStatsIcons': '{shapes, plural, one {# shape} other {# shapes}} · {connectors, plural, one {# connector} other {# connectors}} · {icons, plural, one {# icon} other {# icons}}',
+  'ai.result.editsFallback': 'Edits to the current diagram',
+  'ai.result.added': '+{count} added',
+  'ai.result.changed': '~{count} changed',
+  'ai.result.removed': '−{count} removed',
+  // Notes about things the app adjusted in the AI's output
+  'ai.result.adjustments': '{count, plural, one {# adjustment} other {# adjustments}}',
+  'ai.result.inserted': 'Inserted',
+  'ai.result.replaced': 'Replaced the diagram',
+  'ai.result.applied': 'Applied',
+  // {shortcut} is ⌘Z or CtrlZ
+  'ai.result.undoHint': '· {shortcut} to undo',
+  // Button: replace the whole canvas with the generated diagram
+  'ai.result.replaceDiagram': 'Replace diagram',
+  'ai.result.applyChanges': 'Apply changes',
+
+  // Progress steps (src/ai/generate/agent.ts)
+  'ai.step.planning': 'Planning the diagram',
+  'ai.step.working': 'Working',
+  'ai.step.searchingIcons': 'Searching icons “{query}”',
+  // {provider} is an icon set, e.g. aws, azure, gcp
+  'ai.step.searchingIconsIn': 'Searching icons “{query}” in {provider}',
+  'ai.step.matches': '{count, plural, =0 {no match} one {# match} other {# matches}}',
+  'ai.step.validating': 'Validating diagram',
+  'ai.step.nodesEdges': '{nodes, plural, one {# node} other {# nodes}} · {edges, plural, one {# edge} other {# edges}}',
+  'ai.step.fixingValidation': 'Fixing validation errors',
+  'ai.step.checkingChanges': 'Checking changes',
+  'ai.step.operations': '{count, plural, one {# operation} other {# operations}}',
+  'ai.step.fixingChanges': 'Fixing invalid changes',
+
+  // useAiReady — why the assistant can't run yet
+  'ai.ready.chooseModel': 'Choose a model to get started.',
+  'ai.ready.setEndpoint': 'Set the endpoint URL to get started.',
+  'ai.ready.addKey': 'Add your {provider} API key to get started.',
+
+  // Errors shown in the panel / settings (agent, transport, provider adapters)
+  'ai.error.nothingToEdit': 'Nothing to edit: the diagram is empty.',
+  'ai.error.cutOff': 'The response was cut off. Try a smaller diagram or a more capable model.',
+  'ai.error.noDiagram': 'The model did not produce a diagram. Try rephrasing, or choose a model with tool support.',
+  'ai.error.notFinished': 'The model did not finish the diagram. Try again or simplify the request.',
+  'ai.error.invalidUrl': 'Invalid URL: {url}',
+  'ai.error.addKey': 'Add your {provider} API key in AI settings.',
+  'ai.error.requestFailed': 'Request failed.',
+  'ai.error.unreachable': 'Could not reach {host}.',
+  'ai.error.unreachableOllama': 'Could not reach {host}. Is Ollama running?',
+  'ai.error.invalidResponse': 'The provider returned an invalid response.',
+  'ai.error.chooseModel': 'Choose a model in AI settings.',
+  'ai.error.customBaseUrl': 'Set a base URL for the custom endpoint in AI settings.',
+  'ai.error.unexpectedResponse': 'Unexpected response from {provider}.',
+  'ai.error.unexpectedEndpointResponse': 'Unexpected response from the model endpoint.',
+  'ai.error.declined': 'The model declined this request. Try rephrasing it.',
+  // {category} is a provider-defined refusal category, e.g. "cyber"
+  'ai.error.declinedCategory': 'The model declined this request ({category}). Try rephrasing it.',
+  'ai.error.declinedReason': 'The model declined this request: {reason}',
+  'ai.error.geminiBlocked': 'Gemini blocked the prompt ({reason}).',
+  'ai.error.geminiDeclined': 'Gemini declined this request. Try rephrasing it.',
+  // HTTP errors: {message} is one of the ai.http.* phrases, {detail} the provider's own error text
+  'ai.http.withDetail': '{message}: {detail}',
+  'ai.http.noDetail': '{message}.',
+  'ai.http.rejected': 'The API key was rejected',
+  'ai.http.notFound': 'Not found (check the model name and endpoint)',
+  'ai.http.rateLimited': 'Rate limited or out of credits',
+  'ai.http.overloaded': 'The provider is overloaded, try again shortly',
+  'ai.http.failed': 'Request failed ({status})',
+
+  // AiSettingsDialog
+  'ai.settings.title': 'AI settings',
+  'ai.settings.subtitle': 'Bring your own key. Diagrams are sent only to the provider you choose.',
+  'ai.settings.browserWarning': 'Browser preview: keys are kept in memory for this tab only and requests go directly from the page. Use the desktop app to store keys in the system keychain.',
+  // Section heading: the AI service (Anthropic, OpenAI…)
+  'ai.settings.provider': 'Provider',
+  'ai.settings.ollamaUrl': 'Ollama URL',
+  'ai.settings.baseUrl': 'Base URL',
+  'ai.settings.customHint': 'OpenRouter, Azure OpenAI (…/openai/v1), LM Studio, vLLM… Must speak the OpenAI Chat Completions API.',
+  // Label before the choice of HTTP authentication header style
+  'ai.settings.authHeader': 'Auth header',
+  'ai.settings.apiKey': 'API key',
+  'ai.settings.apiKeyOptional': 'API key (optional)',
+  'ai.settings.checking': 'Checking…',
+  'ai.settings.endpointChanged': 'The endpoint changed. Re-enter the key to use it with the new URL.',
+  'ai.settings.apiKeyPlaceholder': 'Paste your API key',
+  'ai.settings.hideKey': 'Hide key',
+  'ai.settings.showKey': 'Show key',
+  'ai.settings.saveKey': 'Save key',
+  // {url} is a website address, e.g. console.anthropic.com/settings/keys
+  'ai.settings.createKeyAt': 'Create a key at {url}',
+  'ai.settings.storedKeychain': 'Stored in the system keychain',
+  'ai.settings.keptInMemory': 'Kept in memory for this tab',
+  // Verb: replace the stored API key with a new one
+  'ai.settings.replace': 'Replace',
+  'ai.settings.deleteKey': 'Delete key',
+  // Field label: the AI model to use
+  'ai.settings.model': 'Model',
+  'ai.settings.modelPlaceholder': 'Model id',
+  // {model} is a model id, e.g. anthropic/claude-opus-5-5
+  'ai.settings.customModelPlaceholder': 'e.g. {model}',
+  'ai.settings.testConnection': 'Test connection',
+  'ai.settings.privacyKeychain': 'Keys are stored in your operating system’s keychain and used only by OpenDraw’s native layer — they never reach the web view.',
+  'ai.settings.privacy': 'Your diagram and prompt are sent only to the provider selected here; OpenDraw has no servers of its own.',
+  'ai.settings.privacyOllama': 'With Ollama everything stays on your machine and works offline.',
+  'ai.settings.privacyChooseOllama': 'Choose Ollama to keep everything on your machine.',
+  'ai.settings.keySaved': 'Key saved',
+  'ai.settings.noKeyNeeded': 'No key needed',
+  'ai.settings.showModels': 'Show models',
+  'ai.settings.connecting': 'Connecting…',
+  'ai.settings.connected': 'Connected',
+  'ai.settings.connectedModels': 'Connected · {count, plural, one {# model available} other {# models available}}',
+  'ai.settings.somethingWrong': 'Something went wrong.',
+  'ai.settings.setEndpointFirst': 'Set the endpoint URL first.',
+  // {example} is a URL
+  'ai.settings.enterFullUrl': 'Enter a full URL, e.g. {example}',
+
+  // Providers (brand names stay as they are; only these descriptions are translated)
+  'ai.provider.anthropic.tagline': 'Claude models',
+  'ai.provider.openai.tagline': 'GPT models',
+  'ai.provider.gemini.tagline': 'Gemini models',
+  'ai.provider.ollama.tagline': 'Local & offline',
+  'ai.provider.custom.tagline': 'OpenAI-compatible API',
+  // Provider choice for any self-configured, OpenAI-compatible server
+  'ai.provider.custom.name': 'Custom endpoint',
+  'ai.provider.custom.keyPlaceholder': 'Optional for local servers',
+
+  // Model hints in the model picker
+  'ai.model.hint.mostCapable': 'Most capable Opus · recommended',
+  'ai.model.hint.fastCapable': 'Fast and capable',
+  'ai.model.hint.fastest': 'Fastest, lowest cost',
+  'ai.model.hint.frontier': 'Frontier reasoning, premium price',
+  // "Tool calling" = the model's ability to call functions/tools
+  'ai.model.hint.goodTools': 'Good tool calling',
+} as const;

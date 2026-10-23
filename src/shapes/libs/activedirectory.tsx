@@ -17,7 +17,7 @@ import { tileShape } from './_badgeTile';
 type Icon = ComponentType<LucideProps>;
 type Tone = keyof typeof TONE;
 
-/** [name, label, glyph, badge, tone, draw.io stencil, keywords] */
+/** [name, label, glyph, badge, tone, mxGraph stencil, keywords] */
 const TILES: Array<[string, string, Icon, Icon | null, Tone, string, string]> = [
   ['dc', 'Domain controller', Server, KeyRound, 'blue', 'domain_controller', 'dc ntds ldap kerberos authentication server'],
   ['rodc', 'Read-only DC', Server, Eye, 'blue', 'domain_controller', 'rodc read only branch office'],

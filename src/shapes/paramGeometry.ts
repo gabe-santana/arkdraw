@@ -1,6 +1,6 @@
 /**
  * Parametric geometry shared by the registry and the library modules
- * (block arrows, document / tape waves), following draw.io's formulas so
+ * (block arrows, document / tape waves), following mxGraph's formulas so
  * parameter values round-trip through .drawio files unchanged.
  */
 import type { Vec } from '@/model/types';
@@ -13,7 +13,7 @@ const r2 = (v: number) => Math.round(v * 100) / 100;
 const pathD = (pts: readonly P[]) => pts.map((p, i) => `${i ? 'L' : 'M'}${r2(p[0])},${r2(p[1])}`).join(' ') + ' Z';
 
 // ---------------------------------------------------------------------------
-// Block arrows (draw.io singleArrow / doubleArrow)
+// Block arrows (mxGraph singleArrow / doubleArrow)
 // ---------------------------------------------------------------------------
 
 /** `arrowWidth`: shaft thickness as a fraction of the height; `arrowSize`: head length as a fraction of the width. */
@@ -41,7 +41,7 @@ export function doubleArrowPts(W: number, H: number, p: ParamValues | undefined)
 
 export const singleArrowD = (w: number, h: number, p: ParamValues | undefined) => pathD(singleArrowPts(w, h, p));
 
-/** One handle at the head/shaft corner drives both values (as in draw.io). */
+/** One handle at the head/shaft corner drives both values. */
 export function arrowHandle(W: number, H: number, p: ParamValues, map: (q: Vec) => Vec = (q) => q, unmap: (q: Vec) => Vec = (q) => q): ParamHandle {
   const hl = Math.min(W, W * pn(p, 'arrowSize'));
   const at = (H * (1 - pn(p, 'arrowWidth'))) / 2;
@@ -55,19 +55,19 @@ export function arrowHandle(W: number, H: number, p: ParamValues, map: (q: Vec) 
 export const singleArrowHandle = (w: number, h: number, p: ParamValues) => arrowHandle(w, h, p);
 
 // ---------------------------------------------------------------------------
-// Waves (draw.io document / tape)
+// Waves (mxGraph document / tape)
 // ---------------------------------------------------------------------------
 
 const FY = 1.4;
 
-/** draw.io `document`: `size` = wave height as a fraction of the height. */
+/** mxGraph `document`: `size` = wave height as a fraction of the height. */
 export function documentD(w: number, h: number, size: number) {
   const dy = h * size;
   const b = h - dy / 2;
   return `M0,0 H${r2(w)} V${r2(b)} Q${r2(w * 0.75)},${r2(h - dy * FY)} ${r2(w / 2)},${r2(b)} Q${r2(w / 4)},${r2(h - dy * (1 - FY))} 0,${r2(b)} Z`;
 }
 
-/** draw.io `tape`: wavy top and bottom; `size` = wave height as a fraction of the height. */
+/** mxGraph `tape`: wavy top and bottom; `size` = wave height as a fraction of the height. */
 export function tapeD(w: number, h: number, size: number) {
   const dy = h * size;
   const t = dy / 2;

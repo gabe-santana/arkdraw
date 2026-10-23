@@ -18,6 +18,7 @@ import { useUi } from '@/store/ui';
 import { getShapeDef } from '@/shapes/registry';
 import { canPick, exitGroup, pickMembers } from './groups';
 import { deleteActivePoint, stopEditPoints } from './pointEdit';
+import { t } from '@/i18n';
 import { clearSelectedCells, currentCell, selectedTable, startCellEdit } from './tableCells';
 import { useInteraction } from './store';
 
@@ -156,21 +157,23 @@ export function describeElement(doc: Doc, id: string): string {
   if (!el) return '';
   const text = (el.name || el.text || '').split('\n')[0].trim();
   if (isShape(el)) {
-    const kind = el.kind === 'icon' ? 'Icon' : getShapeDef(el.kind).label;
-    return text ? `${kind}: ${text}` : kind;
+    const kind = el.kind === 'icon' ? t('canvas.aria.icon') : getShapeDef(el.kind).label;
+    return text ? t('canvas.aria.labeled', { kind, text }) : kind;
   }
   const end = (eid?: string) => {
     const e = eid ? doc.elements[eid] : undefined;
-    return e ? (e.name || e.text || (isShape(e) ? getShapeDef(e.kind).label : '')).split('\n')[0] : 'nothing';
+    return e ? (e.name || e.text || (isShape(e) ? getShapeDef(e.kind).label : '')).split('\n')[0] : t('canvas.aria.nothing');
   };
-  return `Connector${text ? ` "${text}"` : ''} from ${end(el.source.elementId)} to ${end(el.target.elementId)}`;
+  const from = end(el.source.elementId);
+  const to = end(el.target.elementId);
+  return text ? t('canvas.aria.connectorNamedFromTo', { text, from, to }) : t('canvas.aria.connectorFromTo', { from, to });
 }
 
 /** Live-region text for the current selection. */
 export function describeSelection(doc: Doc, selection: string[]): string {
-  if (!selection.length) return 'Nothing selected';
-  if (selection.length === 1) return `Selected ${describeElement(doc, selection[0])}`;
-  return `Selected ${selection.length} elements`;
+  if (!selection.length) return t('canvas.aria.nothingSelected');
+  if (selection.length === 1) return t('canvas.aria.selectedOne', { description: describeElement(doc, selection[0]) });
+  return t('canvas.aria.selectedMany', { count: selection.length });
 }
 
 // ---------------------------------------------------------------------------

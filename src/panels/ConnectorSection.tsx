@@ -1,6 +1,6 @@
 /**
  * Format panel sections for connectors: style presets, arrowhead pickers
- * (all draw.io markers, with size and fill), routing / connector shape /
+ * (all mxGraph markers, with size and fill), routing / connector shape /
  * line jumps / spacing / sketch, and extra labels.
  */
 import { useState } from 'react';
@@ -13,8 +13,12 @@ import { clearWaypoints } from '@/app/commands';
 import { NumberField, Select, Switch } from '@/ui/controls';
 import { addExtraLabel, useExtraLabelEdit } from '@/canvas/ExtraLabelEditor';
 import { BAND_DEFAULTS } from '@/canvas/connectorShapes';
-import { CONNECTOR_PRESETS, applyConnectorPreset, type ConnectorPreset } from './connectorPresets';
+import { CONNECTOR_PRESETS, applyConnectorPreset, connectorPresetLabel, type ConnectorPreset } from './connectorPresets';
 import { Row, Section, begin, common, end } from './sections';
+import { tx, useT, type MessageKey } from '@/i18n';
+
+/** An arrowhead's display name ("Classic", "Open oval"…). */
+const arrowName = (a: ArrowHead) => tx(`panels.arrow.${a}`, ARROW_LABELS[a]);
 
 const ed = () => useEditor.getState();
 const updateAll = (connectors: ConnectorElement[], patch: Partial<ConnectorElement>) =>
@@ -39,6 +43,7 @@ export function ArrowGlyph({ kind, flip, fill, w = 30 }: { kind: ArrowHead; flip
 
 function ArrowPicker({ value, fill, flip, onPick }: { value: ArrowHead | null; fill?: boolean; flip?: boolean; onPick: (a: ArrowHead) => void }) {
   const [open, setOpen] = useState(false);
+  const t = useT();
   return (
     <div className="min-w-0">
       <button
@@ -47,7 +52,7 @@ function ArrowPicker({ value, fill, flip, onPick }: { value: ArrowHead | null; f
         className={cn('flex h-7 w-full items-center gap-2 rounded-md bg-panel-2 px-2 text-[12px] text-fg ring-1 ring-transparent transition-shadow hover:ring-line', open && 'ring-2 ring-accent/40')}
       >
         {value ? <ArrowGlyph kind={value} flip={flip} fill={fill} /> : null}
-        <span className="truncate">{value ? ARROW_LABELS[value] : 'Mixed'}</span>
+        <span className="truncate">{value ? arrowName(value) : t('panels.mixed')}</span>
       </button>
       {open && (
         <div role="listbox" className="mt-1 grid grid-cols-4 gap-0.5 rounded-lg bg-panel-2 p-1">
@@ -56,7 +61,7 @@ function ArrowPicker({ value, fill, flip, onPick }: { value: ArrowHead | null; f
               key={a}
               role="option"
               aria-selected={a === value}
-              title={ARROW_LABELS[a]}
+              title={arrowName(a)}
               onClick={() => {
                 onPick(a);
                 setOpen(false);
@@ -79,16 +84,17 @@ function ArrowEnd({ connectors, which }: { connectors: ConnectorElement[]; which
   const kind = common(connectors.map((c) => c[kindKey]));
   const size = common(connectors.map((c) => c[sizeKey] ?? 6));
   const filled = kind ? common(connectors.map((c) => arrowFilled(c[kindKey], c[fillKey]))) : null;
+  const t = useT();
   return (
     <>
-      <Row label={which === 'start' ? 'Start' : 'End'}>
+      <Row label={which === 'start' ? t('panels.connector.start') : t('panels.connector.end')}>
         <ArrowPicker value={kind} flip={which === 'start'} fill={filled ?? undefined} onPick={(a) => updateAll(connectors, { [kindKey]: a, [fillKey]: undefined })} />
       </Row>
       {kind && kind !== 'none' && (
         <div className="grid grid-cols-[64px_1fr_auto] items-center gap-2">
           <span />
           <NumberField
-            label="Sz"
+            label={t('panels.abbr.size')}
             value={size}
             min={1}
             max={40}
@@ -98,7 +104,7 @@ function ArrowEnd({ connectors, which }: { connectors: ConnectorElement[]; which
             onChange={(v) => updateAll(connectors, { [sizeKey]: v === 6 ? undefined : v })}
           />
           {arrowFillable(kind) ? (
-            <Switch label="Fill" checked={!!filled} onChange={(on) => updateAll(connectors, { [fillKey]: on === arrowFilled(kind) ? undefined : on })} />
+            <Switch label={t('panels.connector.arrowFill')} checked={!!filled} onChange={(on) => updateAll(connectors, { [fillKey]: on === arrowFilled(kind) ? undefined : on })} />
           ) : (
             <span />
           )}
@@ -139,13 +145,14 @@ function PresetGlyph({ p }: { p: ConnectorPreset }) {
 }
 
 function Presets({ connectors }: { connectors: ConnectorElement[] }) {
+  const t = useT();
   return (
     <div className="grid grid-cols-5 gap-0.5 rounded-lg bg-panel-2 p-0.5">
       {CONNECTOR_PRESETS.map((p) => (
         <button
           key={p.id}
-          title={p.label}
-          aria-label={`Style preset: ${p.label}`}
+          title={connectorPresetLabel(p)}
+          aria-label={t('panels.connector.presetAria', { name: connectorPresetLabel(p) })}
           onClick={() => applyConnectorPreset(connectors.map((c) => c.id), p)}
           className="flex h-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-panel hover:text-fg"
         >
@@ -158,8 +165,9 @@ function Presets({ connectors }: { connectors: ConnectorElement[] }) {
 
 /** Presets, arrowheads and direction. */
 export function ConnectorSection({ connectors }: { connectors: ConnectorElement[] }) {
+  const t = useT();
   return (
-    <Section title="Connector">
+    <Section title={t('common.connector')}>
       <Presets connectors={connectors} />
       <ArrowEnd connectors={connectors} which="start" />
       <ArrowEnd connectors={connectors} which="end" />
@@ -167,7 +175,7 @@ export function ConnectorSection({ connectors }: { connectors: ConnectorElement[
         onClick={() => ed().updateElements(Object.fromEntries(connectors.map((c) => [c.id, { source: c.target, target: c.source }])))}
         className="flex h-7 w-full items-center justify-center gap-1.5 rounded-md text-[12px] text-muted hover:bg-hover hover:text-fg"
       >
-        <MoveVertical className="size-3.5 rotate-90" /> Swap direction
+        <MoveVertical className="size-3.5 rotate-90" /> {t('panels.connector.swap')}
       </button>
     </Section>
   );
@@ -177,24 +185,24 @@ export function ConnectorSection({ connectors }: { connectors: ConnectorElement[
 // Route: routing, connector shape, jumps, spacing, sketch
 // ---------------------------------------------------------------------------
 
-const ROUTINGS: Array<{ value: Routing; label: string }> = [
-  { value: 'orthogonal', label: 'Orthogonal (auto)' },
-  { value: 'straight', label: 'Straight' },
-  { value: 'curved', label: 'Curved' },
-  { value: 'elbow-h', label: 'Elbow (horizontal)' },
-  { value: 'elbow-v', label: 'Elbow (vertical)' },
-  { value: 'entity', label: 'Entity relation' },
-  { value: 'isometric', label: 'Isometric' },
+const ROUTINGS: Array<{ value: Routing; labelKey: MessageKey }> = [
+  { value: 'orthogonal', labelKey: 'panels.route.orthogonal' },
+  { value: 'straight', labelKey: 'panels.route.straight' },
+  { value: 'curved', labelKey: 'panels.route.curved' },
+  { value: 'elbow-h', labelKey: 'panels.route.elbowH' },
+  { value: 'elbow-v', labelKey: 'panels.route.elbowV' },
+  { value: 'entity', labelKey: 'panels.route.entity' },
+  { value: 'isometric', labelKey: 'panels.route.isometric' },
 ];
 
-const SHAPES: Array<{ value: ConnectorShape; label: string }> = [
-  { value: 'line', label: 'Line' },
-  { value: 'link', label: 'Link (double line)' },
-  { value: 'arrow', label: 'Simple arrow' },
-  { value: 'flexArrow', label: 'Flex / wide arrow' },
-  { value: 'pipe', label: 'Pipe' },
-  { value: 'wire', label: 'Wire' },
-  { value: 'filledEdge', label: 'Filled edge' },
+const SHAPES: Array<{ value: ConnectorShape; labelKey: MessageKey }> = [
+  { value: 'line', labelKey: 'panels.connShape.line' },
+  { value: 'link', labelKey: 'panels.connShape.link' },
+  { value: 'arrow', labelKey: 'panels.connShape.arrow' },
+  { value: 'flexArrow', labelKey: 'panels.connShape.flexArrow' },
+  { value: 'pipe', labelKey: 'panels.connShape.pipe' },
+  { value: 'wire', labelKey: 'panels.connShape.wire' },
+  { value: 'filledEdge', labelKey: 'panels.connShape.filledEdge' },
 ];
 
 export function ConnectorRouteSection({ connectors }: { connectors: ConnectorElement[] }) {
@@ -208,39 +216,40 @@ export function ConnectorRouteSection({ connectors }: { connectors: ConnectorEle
   const headWidth = common(connectors.map((c) => c.headWidth ?? (c.bandWidth ?? BAND_DEFAULTS.flexArrow) * 2));
   const hasWaypoints = connectors.some((c) => c.waypoints?.length);
   const sketch = common(connectors.map((c) => !!c.style.sketch));
+  const t = useT();
   return (
-    <Section title="Route">
-      <Row label="Style">
-        <Select<Routing> value={routing} onChange={(r) => update({ routing: r, waypoints: undefined })} options={ROUTINGS} />
+    <Section title={t('panels.route.title')}>
+      <Row label={t('panels.route.style')}>
+        <Select<Routing> value={routing} onChange={(r) => update({ routing: r, waypoints: undefined })} options={ROUTINGS.map((o) => ({ value: o.value, label: t(o.labelKey) }))} />
       </Row>
-      <Row label="Shape">
-        <Select<ConnectorShape> value={shape} onChange={(connectorShape) => update({ connectorShape: connectorShape === 'line' ? undefined : connectorShape, bandWidth: undefined, headWidth: undefined })} options={SHAPES} />
+      <Row label={t('panels.route.shape')}>
+        <Select<ConnectorShape> value={shape} onChange={(connectorShape) => update({ connectorShape: connectorShape === 'line' ? undefined : connectorShape, bandWidth: undefined, headWidth: undefined })} options={SHAPES.map((o) => ({ value: o.value, label: t(o.labelKey) }))} />
       </Row>
       {banded && (
         <div className="grid grid-cols-[64px_1fr_1fr] items-center gap-2">
-          <span className="text-[12px] text-muted">Width</span>
-          <NumberField label="W" value={bandWidth} min={1} max={80} onScrubStart={begin} onCommit={end} onChange={(v) => update({ bandWidth: v })} suffix="px" />
+          <span className="min-w-0 truncate text-[12px] text-muted" title={t('common.width')}>{t('common.width')}</span>
+          <NumberField label={t('panels.abbr.width')} value={bandWidth} min={1} max={80} onScrubStart={begin} onCommit={end} onChange={(v) => update({ bandWidth: v })} suffix="px" />
           {shape === 'flexArrow' ? (
-            <NumberField label="H" value={headWidth} min={1} max={160} onScrubStart={begin} onCommit={end} onChange={(v) => update({ headWidth: v })} suffix="px" />
+            <NumberField label={t('panels.abbr.height')} value={headWidth} min={1} max={160} onScrubStart={begin} onCommit={end} onChange={(v) => update({ headWidth: v })} suffix="px" />
           ) : (
             <span />
           )}
         </div>
       )}
-      <Row label="Jumps">
+      <Row label={t('panels.route.jumps')}>
         <div className="grid grid-cols-[1fr_72px] gap-1.5">
           <Select<LineJumps>
             value={jumps as LineJumps | null}
             onChange={(lineJumps) => update({ lineJumps: lineJumps === 'none' ? undefined : lineJumps })}
             options={[
-              { value: 'none', label: 'None' },
-              { value: 'arc', label: 'Arc' },
-              { value: 'gap', label: 'Gap' },
-              { value: 'sharp', label: 'Sharp' },
+              { value: 'none', label: t('common.none') },
+              { value: 'arc', label: t('panels.jumps.arc') },
+              { value: 'gap', label: t('panels.jumps.gap') },
+              { value: 'sharp', label: t('panels.jumps.sharp') },
             ]}
           />
           <NumberField
-            label="Sz"
+            label={t('panels.abbr.size')}
             value={common(connectors.map((c) => c.jumpSize ?? 6))}
             min={2}
             max={40}
@@ -250,7 +259,7 @@ export function ConnectorRouteSection({ connectors }: { connectors: ConnectorEle
           />
         </div>
       </Row>
-      <Row label="Spacing">
+      <Row label={t('panels.route.spacing')}>
         <NumberField
           label="↔"
           value={common(connectors.map((c) => c.perimeterSpacing ?? 0))}
@@ -263,13 +272,13 @@ export function ConnectorRouteSection({ connectors }: { connectors: ConnectorEle
         />
       </Row>
       <Switch
-        label="Sketch (hand-drawn)"
+        label={t('panels.sketch')}
         checked={!!sketch}
         onChange={(on) => ed().updateStyle(connectors.map((c) => c.id), { sketch: on || undefined })}
       />
       {hasWaypoints && (
         <button onClick={clearWaypoints} className="flex h-7 w-full items-center justify-center gap-1.5 rounded-md text-[12px] text-muted hover:bg-hover hover:text-fg">
-          <Spline className="size-3.5" /> Clear waypoints
+          <Spline className="size-3.5" /> {t('panels.route.clearWaypoints')}
         </button>
       )}
     </Section>
@@ -283,22 +292,23 @@ export function ConnectorRouteSection({ connectors }: { connectors: ConnectorEle
 export function ConnectorLabelsSection({ conn }: { conn: ConnectorElement }) {
   const labels = conn.labels ?? [];
   const setLabels = (next: ConnectorElement['labels']) => ed().updateElements({ [conn.id]: { labels: next?.length ? next : undefined } });
+  const t = useT();
   return (
     <Section
-      title="Labels"
+      title={t('panels.connLabels.title')}
       action={
         <button onClick={() => addExtraLabel(conn.id)} className="flex h-6 items-center gap-1 rounded-md px-2 text-[11.5px] font-medium text-accent hover:bg-accent-soft">
-          <Plus className="size-3" /> Add
+          <Plus className="size-3" /> {t('common.add')}
         </button>
       }
     >
-      {!labels.length && <p className="text-[11px] leading-relaxed text-subtle">Extra labels along the connector. Drag the orange handle to move one; double-click it to edit.</p>}
+      {!labels.length && <p className="text-[11px] leading-relaxed text-subtle">{t('panels.connLabels.hint')}</p>}
       {labels.map((l, i) => (
         <div key={l.id ?? i} className="grid grid-cols-[1fr_78px_auto] items-center gap-1.5">
           <input
             key={`${l.id}-${l.text}`}
             defaultValue={l.text}
-            aria-label={`Label ${i + 1} text`}
+            aria-label={t('panels.connLabels.textAria', { n: i + 1 })}
             onKeyDown={(e) => {
               e.stopPropagation();
               if (e.key === 'Enter') e.currentTarget.blur();
@@ -321,8 +331,8 @@ export function ConnectorLabelsSection({ conn }: { conn: ConnectorElement }) {
             onChange={(v) => setLabels(labels.map((x, k) => (k === i ? { ...x, t: v / 100 } : x)))}
           />
           <button
-            title="Remove label"
-            aria-label="Remove label"
+            title={t('panels.connLabels.remove')}
+            aria-label={t('panels.connLabels.remove')}
             onClick={() => setLabels(labels.filter((_, k) => k !== i))}
             className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-hover hover:text-fg"
           >

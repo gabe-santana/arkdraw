@@ -1,7 +1,7 @@
 /**
  * Central action registry. Menus, the context menu, keyboard shortcuts and
  * the command palette are all generated from this list, so they never drift
- * apart. Shortcuts follow draw.io's where they exist.
+ * apart. Shortcuts follow mxGraph's where they exist.
  */
 import type { ReactNode } from 'react';
 import {
@@ -41,6 +41,7 @@ import { showConfigFile } from '@/desktop/startup';
 import { STYLING_ACTIONS } from '@/styling/actions';
 import { INTERACTION_ACTIONS } from '@/interaction/actions';
 import { CONNECTOR_ACTIONS } from '@/panels/connectorActions';
+import { columnInset, panelColumnOpen, resetDock, togglePanelColumn } from '@/chrome/Dock';
 
 export type ActionGroup = 'File' | 'Edit' | 'View' | 'Arrange' | 'Tools' | 'Help' | 'AI' | 'Layout';
 
@@ -76,8 +77,8 @@ const isTable = () => {
   return isShape(el) && !!el.table;
 };
 const panelInsets = () => ({
-  left: ui().leftOpen ? 300 : 40,
-  right: ui().rightOpen ? 300 : 40,
+  left: columnInset(ui(), 'left') ? columnInset(ui(), 'left') + 36 : 40,
+  right: columnInset(ui(), 'right') ? columnInset(ui(), 'right') + 32 : 40,
   top: 40,
   bottom: 96,
 });
@@ -232,10 +233,11 @@ export const ACTIONS: Action[] = [
     icon: <Layers3 />,
     shortcuts: ['Mod+Shift+L'],
     run: () => {
-      const show = !(ui().rightOpen && ui().layersOpen);
-      ui().set({ rightOpen: show || ui().rightOpen, layersOpen: show });
+      const show = !(panelColumnOpen('layers') && ui().layersOpen);
+      if (show && !panelColumnOpen('layers')) togglePanelColumn('layers');
+      ui().set({ layersOpen: show });
     },
-    checked: () => ui().rightOpen && ui().layersOpen,
+    checked: () => panelColumnOpen('layers') && ui().layersOpen,
   },
   {
     id: 'view.adapt',
@@ -245,8 +247,9 @@ export const ACTIONS: Action[] = [
     checked: () => ed().settings.adaptColors,
   },
   { id: 'view.comments', label: 'Comments', group: 'View', icon: <MessageSquare />, shortcuts: ['Mod+Alt+M'], run: () => ui().set({ commentsOpen: !ui().commentsOpen }), checked: () => ui().commentsOpen, keywords: 'review notes' },
-  { id: 'view.left', label: 'Shapes panel', group: 'View', icon: <PanelLeft />, shortcuts: ['Mod+Shift+K'], run: () => ui().set({ leftOpen: !ui().leftOpen }), checked: () => ui().leftOpen },
-  { id: 'view.right', label: 'Format panel', group: 'View', icon: <PanelRight />, shortcuts: ['Mod+Shift+P'], run: () => ui().set({ rightOpen: !ui().rightOpen }), checked: () => ui().rightOpen },
+  { id: 'view.left', label: 'Shapes panel', group: 'View', icon: <PanelLeft />, shortcuts: ['Mod+Shift+K'], run: () => togglePanelColumn('shapes'), checked: () => panelColumnOpen('shapes') },
+  { id: 'view.resetPanels', label: 'Reset panel layout', group: 'View', run: resetDock, keywords: 'dock panels arrange move default' },
+  { id: 'view.right', label: 'Format panel', group: 'View', icon: <PanelRight />, shortcuts: ['Mod+Shift+P'], run: () => togglePanelColumn('format'), checked: () => panelColumnOpen('format') },
   {
     id: 'view.focus',
     label: 'Focus mode',
@@ -311,6 +314,7 @@ export const ACTIONS: Action[] = [
   { id: 'arrange.tableDelCol', label: 'Delete table column', group: 'Arrange', run: () => editTable('delCol'), enabled: isTable },
   { id: 'arrange.image', label: 'Insert image…', group: 'Arrange', icon: <Image />, run: pickImage },
   { id: 'arrange.imageUrl', label: 'Insert image from URL…', group: 'Arrange', icon: <Link2 />, keywords: 'picture link url web', run: () => void import('./commands').then((m) => m.insertImageFromUrl()) },
+  { id: 'arrange.svgShapes', label: 'Insert SVG as shapes…', group: 'Arrange', icon: <Spline />, keywords: 'svg vector convert editable import paths icon logo', run: () => void import('./svgImport').then((m) => m.pickSvgAsShapes()) },
   { id: 'tree.child', label: 'Add child node', group: 'Arrange', icon: <Network />, shortcuts: ['Tab'], run: () => addTreeNode('child'), enabled: oneShape, keywords: 'mind map tree' },
   { id: 'tree.sibling', label: 'Add sibling node', group: 'Arrange', shortcuts: ['Mod+Enter'], run: () => addTreeNode('sibling'), enabled: oneShape, keywords: 'mind map tree' },
   { id: 'tree.siblingBefore', label: 'Add sibling before', group: 'Arrange', shortcuts: ['Mod+Shift+Enter'], run: () => addTreeNode('siblingBefore'), enabled: oneShape },

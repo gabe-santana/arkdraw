@@ -19,7 +19,9 @@ import { ACTION_MAP, runAction } from '@/app/actions';
 import { togglePlayback } from '@/app/playback';
 import { ColorField, NumberField, Segmented, Select, Slider, Switch } from '@/ui/controls';
 import { IconButton } from '@/ui/Button';
-import { Row, Section, begin, common, end } from './sections';
+import { Row, Section, begin, common, end, richText, segLabel } from './sections';
+import { useT } from '@/i18n';
+import { actionLabel } from '@/i18n/catalog';
 import { UNIT_PER_PX } from '@/canvas/paper';
 import { ConnectorLabelsSection, ConnectorRouteSection, ConnectorSection } from './ConnectorSection';
 import { ConnectionPointsSection } from './ConnectionPointsDialog';
@@ -33,9 +35,10 @@ export function PropertiesPanel() {
   const selected = useEditor(useShallow((s) => s.selection.map((id) => s.doc.elements[id]).filter(Boolean)));
   const shapes = selected.filter(isShape);
   const connectors = selected.filter(isConnector);
+  const t = useT();
 
   return (
-    <aside aria-label="Format panel" className="animate-slide-up pointer-events-auto flex min-h-0 max-h-full w-[268px] flex-col overflow-hidden rounded-2xl bg-panel shadow-panel">
+    <aside aria-label={t('panels.formatPanel')} className="animate-slide-up pointer-events-auto flex min-h-0 max-h-full w-full flex-col overflow-hidden rounded-2xl bg-panel shadow-panel">
       <Header selected={selected} />
       <div className="scroll-thin flex-1 overflow-y-auto pb-2">
         {!selected.length && <PageSection />}
@@ -74,17 +77,18 @@ export function PropertiesPanel() {
 // ---------------------------------------------------------------------------
 
 function Header({ selected }: { selected: DiagramElement[] }) {
-  let title = 'Canvas';
-  let sub = 'Nothing selected';
+  const t = useT();
+  let title = t('panels.header.canvas');
+  let sub = t('panels.header.nothingSelected');
   if (selected.length === 1) {
     const el = selected[0];
-    title = el.name || (isShape(el) ? (el.kind === 'icon' ? el.text || 'Icon' : getShapeDef(el.kind).label) : 'Connector');
-    sub = isShape(el) ? (el.kind === 'icon' ? (el.icon?.split('/')[0].toUpperCase() ?? 'Icon') : 'Shape') : 'Connector';
+    title = el.name || (isShape(el) ? (el.kind === 'icon' ? el.text || t('panels.header.icon') : getShapeDef(el.kind).label) : t('common.connector'));
+    sub = isShape(el) ? (el.kind === 'icon' ? (el.icon?.split('/')[0].toUpperCase() ?? t('panels.header.icon')) : t('common.shape')) : t('common.connector');
   } else if (selected.length > 1) {
-    title = `${selected.length} elements`;
+    title = t('panels.header.elements', { count: selected.length });
     const s = selected.filter(isShape).length;
     const c = selected.length - s;
-    sub = [s && `${s} shape${s > 1 ? 's' : ''}`, c && `${c} connector${c > 1 ? 's' : ''}`].filter(Boolean).join(' · ');
+    sub = [s && t('common.shapeCount', { count: s }), c && t('panels.header.connectorCount', { count: c })].filter(Boolean).join(' · ');
   }
   return (
     <div className="flex items-center gap-2 px-3 pb-2 pt-3">
@@ -106,36 +110,38 @@ function CanvasSettings() {
   const count = useEditor((s) => s.doc.order.length);
   const theme = useUi((s) => s.theme);
   const setUi = useUi((s) => s.set);
+  const t = useT();
   return (
     <>
-      <Section title="Theme">
+      <Section title={t('panels.canvas.theme')}>
         <Segmented
           value={theme}
-          onChange={(t) => setUi({ theme: t })}
+          onChange={(theme) => setUi({ theme })}
           options={[
-            { value: 'light', label: 'Light' },
-            { value: 'dark', label: 'Dark' },
-            { value: 'system', label: 'Auto' },
+            { value: 'light', label: segLabel(t('panels.canvas.themeLight')), title: t('panels.canvas.themeLight') },
+            { value: 'dark', label: segLabel(t('panels.canvas.themeDark')), title: t('panels.canvas.themeDark') },
+            { value: 'system', label: segLabel(t('common.auto')), title: t('common.auto') },
           ]}
         />
-        <Switch label="Adapt diagram colors in dark mode" checked={settings.adaptColors} onChange={(v) => update({ adaptColors: v })} />
+        <Switch label={t('panels.canvas.adaptColors')} checked={settings.adaptColors} onChange={(v) => update({ adaptColors: v })} />
       </Section>
-      <Section title="Canvas">
-        <Switch label="Show grid" checked={settings.grid} onChange={(v) => update({ grid: v })} />
-        <Switch label="Snap to grid" checked={settings.snap} onChange={(v) => update({ snap: v })} />
-        <Switch label="Smart guides" checked={settings.guides} onChange={(v) => update({ guides: v })} />
-        <Row label="Grid size">
+      <Section title={t('panels.canvas.title')}>
+        <Switch label={t('panels.canvas.showGrid')} checked={settings.grid} onChange={(v) => update({ grid: v })} />
+        <Switch label={t('panels.canvas.snapToGrid')} checked={settings.snap} onChange={(v) => update({ snap: v })} />
+        <Switch label={t('panels.canvas.smartGuides')} checked={settings.guides} onChange={(v) => update({ guides: v })} />
+        <Row label={t('panels.canvas.gridSize')}>
           <NumberField label="#" value={settings.gridSize} min={2} max={100} onChange={(v) => update({ gridSize: Math.round(v) })} suffix="px" />
         </Row>
         <GridExtras />
       </Section>
-      <Section title="Tips">
+      <Section title={t('panels.tips.title')}>
         <ul className="space-y-1.5 text-[12px] leading-relaxed text-muted">
-          <li>Hover a shape and drag from a <span className="text-accent">blue dot</span> to connect.</li>
-          <li>Hold <b className="text-fg">Ctrl</b> while dragging to duplicate.</li>
-          <li>Press <b className="text-fg">Ctrl K</b> for every command.</li>
+          <li>{richText(t('panels.tips.connect'), { dot: <span className="text-accent">{t('panels.tips.blueDot')}</span> })}</li>
+          {/* Key names are not translated. */}
+          <li>{richText(t('panels.tips.duplicate'), { key: <b className="text-fg">{'Ctrl'}</b> })}</li>
+          <li>{richText(t('panels.tips.palette'), { key: <b className="text-fg">{'Ctrl K'}</b> })}</li>
         </ul>
-        <div className="pt-1 text-[11px] text-subtle">{count} element{count === 1 ? '' : 's'} on canvas</div>
+        <div className="pt-1 text-[11px] text-subtle">{t('panels.canvas.elementCount', { count })}</div>
       </Section>
     </>
   );
@@ -143,6 +149,7 @@ function CanvasSettings() {
 
 function Geometry({ shape }: { shape: ShapeElement }) {
   const units = useUi((s) => s.units);
+  const t = useT();
   const k = UNIT_PER_PX[units];
   const precision = units === 'px' ? 0 : units === 'pt' ? 1 : 2;
   const suffix = units === 'px' ? undefined : units;
@@ -161,12 +168,12 @@ function Geometry({ shape }: { shape: ShapeElement }) {
     />
   );
   return (
-    <Section title="Position" action={<AspectLockToggle shape={shape} />}>
+    <Section title={t('common.position')} action={<AspectLockToggle shape={shape} />}>
       <div className="grid grid-cols-2 gap-1.5">
         {field('X', 'x')}
         {field('Y', 'y')}
-        {field('W', 'w', 4)}
-        {field('H', 'h', 4)}
+        {field(t('panels.abbr.width'), 'w', 4)}
+        {field(t('panels.abbr.height'), 'h', 4)}
       </div>
     </Section>
   );
@@ -180,11 +187,12 @@ function FillStroke({ els }: { els: ShapeElement[] }) {
   const set = useStyleSetter(els);
   const st = (k: keyof ElementStyle) => common(els.map((e) => e.style[k]));
   const rounded = els.some((e) => getShapeDef(e.kind).rounded);
+  const t = useT();
   return (
     <>
-      <Section title="Fill">
-        <ColorField label="Fill color" value={st('fill') as string | null} onChange={(fill) => set({ fill })} swatches={PALETTE.fills} allowNone />
-        <Switch label="Drop shadow" checked={!!st('shadow')} onChange={(shadow) => set({ shadow })} />
+      <Section title={t('panels.fill')}>
+        <ColorField label={t('panels.fillColor')} value={st('fill') as string | null} onChange={(fill) => set({ fill })} swatches={PALETTE.fills} allowNone />
+        <Switch label={t('panels.dropShadow')} checked={!!st('shadow')} onChange={(shadow) => set({ shadow })} />
         {!!st('shadow') && <ShadowOptions els={els} />}
       </Section>
       <StrokeGroup els={els} rounded={rounded} />
@@ -199,9 +207,10 @@ function StrokeOnly({ els }: { els: ConnectorElement[] }) {
 function StrokeGroup({ els, rounded }: { els: DiagramElement[]; rounded: boolean }) {
   const set = useStyleSetter(els);
   const st = (k: keyof ElementStyle) => common(els.map((e) => e.style[k]));
+  const t = useT();
   return (
-    <Section title="Stroke">
-      <ColorField label="Stroke color" value={st('stroke') as string | null} onChange={(stroke) => set({ stroke })} swatches={PALETTE.strokes} allowNone />
+    <Section title={t('panels.stroke')}>
+      <ColorField label={t('panels.strokeColor')} value={st('stroke') as string | null} onChange={(stroke) => set({ stroke })} swatches={PALETTE.strokes} allowNone />
       <div className="grid grid-cols-2 gap-1.5">
         <NumberField label={<Minus />} value={st('strokeWidth') as number | null} min={0} max={20} step={0.5} precision={1} onChange={(strokeWidth) => set({ strokeWidth })} onScrubStart={begin} onCommit={end} />
         {rounded ? (
@@ -215,9 +224,9 @@ function StrokeGroup({ els, rounded }: { els: DiagramElement[]; rounded: boolean
         value={st('strokeStyle') as ElementStyle['strokeStyle'] | null}
         onChange={(strokeStyle) => set({ strokeStyle })}
         options={[
-          { value: 'solid', label: <svg width="28" height="6"><line x1="1" y1="3" x2="27" y2="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>, title: 'Solid' },
-          { value: 'dashed', label: <svg width="28" height="6"><line x1="1" y1="3" x2="27" y2="3" stroke="currentColor" strokeWidth="2" strokeDasharray="6 4" /></svg>, title: 'Dashed' },
-          { value: 'dotted', label: <svg width="28" height="6"><line x1="2" y1="3" x2="27" y2="3" stroke="currentColor" strokeWidth="2.2" strokeDasharray="0 5" strokeLinecap="round" /></svg>, title: 'Dotted' },
+          { value: 'solid', label: <svg width="28" height="6"><line x1="1" y1="3" x2="27" y2="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>, title: t('panels.stroke.solid') },
+          { value: 'dashed', label: <svg width="28" height="6"><line x1="1" y1="3" x2="27" y2="3" stroke="currentColor" strokeWidth="2" strokeDasharray="6 4" /></svg>, title: t('panels.stroke.dashed') },
+          { value: 'dotted', label: <svg width="28" height="6"><line x1="2" y1="3" x2="27" y2="3" stroke="currentColor" strokeWidth="2.2" strokeDasharray="0 5" strokeLinecap="round" /></svg>, title: t('panels.stroke.dotted') },
         ]}
       />
     </Section>
@@ -227,18 +236,19 @@ function StrokeGroup({ els, rounded }: { els: DiagramElement[]; rounded: boolean
 function TextProps({ els }: { els: DiagramElement[] }) {
   const set = useStyleSetter(els);
   const st = (k: keyof ElementStyle) => common(els.map((e) => e.style[k]));
+  const t = useT();
   return (
-    <Section title="Text">
+    <Section title={t('common.text')}>
       <div className="grid grid-cols-[1fr_76px] gap-1.5">
         <FontPicker value={st('fontFamily') as FontFamily | null} onChange={(fontFamily) => set({ fontFamily })} />
         <NumberField label="Aa" value={st('fontSize') as number | null} min={6} max={200} onChange={(fontSize) => set({ fontSize })} onScrubStart={begin} onCommit={end} />
       </div>
       <div className="flex items-center gap-1.5">
         <div className="flex rounded-lg bg-panel-2 p-0.5">
-          <ToggleIcon active={!!st('bold')} label="Bold" onClick={() => set({ bold: !st('bold') })}>
+          <ToggleIcon active={!!st('bold')} label={t('panels.text.bold')} onClick={() => set({ bold: !st('bold') })}>
             <Bold />
           </ToggleIcon>
-          <ToggleIcon active={!!st('italic')} label="Italic" onClick={() => set({ italic: !st('italic') })}>
+          <ToggleIcon active={!!st('italic')} label={t('panels.text.italic')} onClick={() => set({ italic: !st('italic') })}>
             <Italic />
           </ToggleIcon>
         </div>
@@ -248,9 +258,9 @@ function TextProps({ els }: { els: DiagramElement[] }) {
           value={st('textAlign') as ElementStyle['textAlign'] | null}
           onChange={(textAlign) => set({ textAlign })}
           options={[
-            { value: 'left', label: <TextAlignStart />, title: 'Align left' },
-            { value: 'center', label: <TextAlignCenter />, title: 'Align center' },
-            { value: 'right', label: <TextAlignEnd />, title: 'Align right' },
+            { value: 'left', label: <TextAlignStart />, title: t('panels.alignLeft') },
+            { value: 'center', label: <TextAlignCenter />, title: t('panels.alignCenter') },
+            { value: 'right', label: <TextAlignEnd />, title: t('panels.alignRight') },
           ]}
         />
       </div>
@@ -260,13 +270,13 @@ function TextProps({ els }: { els: DiagramElement[] }) {
           value={st('verticalAlign') as ElementStyle['verticalAlign'] | null}
           onChange={(verticalAlign) => set({ verticalAlign })}
           options={[
-            { value: 'top', label: <ArrowUpToLine />, title: 'Top' },
-            { value: 'middle', label: <FoldVertical />, title: 'Middle' },
-            { value: 'bottom', label: <ArrowDownToLine />, title: 'Bottom' },
+            { value: 'top', label: <ArrowUpToLine />, title: t('panels.text.top') },
+            { value: 'middle', label: <FoldVertical />, title: t('panels.text.middle') },
+            { value: 'bottom', label: <ArrowDownToLine />, title: t('panels.text.bottom') },
           ]}
         />
       )}
-      <ColorField label="Text color" value={st('textColor') as string | null} onChange={(textColor) => set({ textColor })} swatches={PALETTE.strokes} />
+      <ColorField label={t('panels.text.color')} value={st('textColor') as string | null} onChange={(textColor) => set({ textColor })} swatches={PALETTE.strokes} />
     </Section>
   );
 }
@@ -288,8 +298,9 @@ function ToggleIcon({ active, label, onClick, children }: { active: boolean; lab
 function Appearance({ els }: { els: DiagramElement[] }) {
   const set = useStyleSetter(els);
   const opacity = common(els.map((e) => e.style.opacity)) ?? 1;
+  const t = useT();
   return (
-    <Section title="Opacity" action={<span className="text-[11.5px] tabular-nums text-muted">{Math.round(opacity * 100)}%</span>}>
+    <Section title={t('common.opacity')} action={<span className="text-[11.5px] tabular-nums text-muted">{Math.round(opacity * 100)}%</span>}>
       <Slider value={Math.round(opacity * 100)} min={5} max={100} onChange={(v) => set({ opacity: v / 100 })} onStart={begin} onCommit={end} />
     </Section>
   );
@@ -297,6 +308,7 @@ function Appearance({ els }: { els: DiagramElement[] }) {
 
 function AnimationProps({ els }: { els: DiagramElement[] }) {
   const playing = useEditor((s) => s.playing);
+  const t = useT();
   const conns = els.filter(isConnector);
   const shapes = els.filter(isShape);
   const s = useEditor.getState;
@@ -314,13 +326,13 @@ function AnimationProps({ els }: { els: DiagramElement[] }) {
 
   return (
     <Section
-      title="Animation"
+      title={t('panels.animation.title')}
       action={
         <button
           onClick={togglePlayback}
           className={cn('flex h-6 items-center gap-1 rounded-md px-2 text-[11.5px] font-medium transition-colors', playing ? 'bg-accent text-accent-fg' : 'text-accent hover:bg-accent-soft')}
         >
-          {playing ? <Pause className="size-3" /> : <Play className="size-3" />} {playing ? 'Pause' : 'Preview'}
+          {playing ? <Pause className="size-3" /> : <Play className="size-3" />} {playing ? t('panels.animation.pause') : t('panels.animation.preview')}
         </button>
       }
     >
@@ -329,10 +341,10 @@ function AnimationProps({ els }: { els: DiagramElement[] }) {
           value={connKind as ConnectorAnimation['kind'] | null}
           onChange={(kind) => setAnim({ kind }, conns)}
           options={[
-            { value: 'none', label: 'No animation' },
-            { value: 'flow', label: 'Flow (marching dashes)' },
-            { value: 'dots', label: 'Travelling dots' },
-            { value: 'pulse', label: 'Pulse' },
+            { value: 'none', label: t('panels.animation.none') },
+            { value: 'flow', label: t('panels.animation.flow') },
+            { value: 'dots', label: t('panels.animation.dots') },
+            { value: 'pulse', label: t('panels.animation.pulse') },
           ]}
         />
       )}
@@ -341,15 +353,15 @@ function AnimationProps({ els }: { els: DiagramElement[] }) {
           value={shapeKind as ShapeAnimation['kind'] | null}
           onChange={(kind) => setAnim({ kind }, shapes)}
           options={[
-            { value: 'none', label: 'No emphasis' },
-            { value: 'pulse', label: 'Pulse' },
-            { value: 'glow', label: 'Glow' },
-            { value: 'bounce', label: 'Bounce' },
+            { value: 'none', label: t('panels.animation.noEmphasis') },
+            { value: 'pulse', label: t('panels.animation.pulse') },
+            { value: 'glow', label: t('panels.animation.glow') },
+            { value: 'bounce', label: t('panels.animation.bounce') },
           ]}
         />
       )}
       {anyAnim && (
-        <Row label="Speed">
+        <Row label={t('panels.animation.speed')}>
           <div className="flex items-center gap-2">
             <Slider value={speed} min={0.25} max={4} step={0.25} onChange={(v) => setAnim({ speed: v }, els)} onStart={begin} onCommit={end} />
             <span className="w-8 text-right text-[11.5px] tabular-nums text-muted">{speed}×</span>
@@ -357,9 +369,9 @@ function AnimationProps({ els }: { els: DiagramElement[] }) {
         </Row>
       )}
       {conns.some((c) => c.animation && c.animation.kind !== 'none' && c.animation.kind !== 'pulse') && (
-        <Switch label="Reverse direction" checked={!!common(conns.map((c) => !!c.animation?.reverse))} onChange={(reverse) => setAnim({ reverse }, conns)} />
+        <Switch label={t('panels.animation.reverse')} checked={!!common(conns.map((c) => !!c.animation?.reverse))} onChange={(reverse) => setAnim({ reverse }, conns)} />
       )}
-      <Row label="Step">
+      <Row label={t('panels.animation.step')}>
         <NumberField
           label={<ListOrdered />}
           value={reveal}
@@ -373,18 +385,19 @@ function AnimationProps({ els }: { els: DiagramElement[] }) {
           onClick={() => s().updateElements(Object.fromEntries(s().selection.map((id, i) => [id, { reveal: i + 1 }])))}
           className="flex h-7 w-full items-center justify-center gap-1.5 rounded-md text-[12px] text-muted hover:bg-hover hover:text-fg"
         >
-          <Sparkles className="size-3.5" /> Reveal in selection order
+          <Sparkles className="size-3.5" /> {t('panels.animation.revealInOrder')}
         </button>
       )}
-      <p className="text-[11px] leading-relaxed text-subtle">Step 0 = always visible. Export as GIF from File → Export.</p>
+      <p className="text-[11px] leading-relaxed text-subtle">{t('panels.animation.hint')}</p>
     </Section>
   );
 }
 
 function Arrange({ multi }: { multi: number }) {
   const locked = useEditor((s) => s.selection.some((id) => s.doc.elements[id]?.locked));
+  const t = useT();
   return (
-    <Section title={multi ? 'Align' : 'Arrange'}>
+    <Section title={multi ? t('panels.arrange.align') : t('panels.arrange.title')}>
       {multi >= 2 && (
         <div className="grid grid-cols-6 gap-0.5 rounded-lg bg-panel-2 p-0.5">
           {(['align.left', 'align.hcenter', 'align.right', 'align.top', 'align.vcenter', 'align.bottom'] as const).map((id) => (
@@ -399,14 +412,14 @@ function Arrange({ multi }: { multi: number }) {
         </div>
       )}
       <div className="flex items-center gap-0.5">
-        <IconButton size="sm" label="Send to back" shortcut="Mod+Shift+[" onClick={() => runAction('arrange.back')}><SendToBack /></IconButton>
-        <IconButton size="sm" label="Send backward" shortcut="Mod+[" onClick={() => runAction('arrange.backward')}><ChevronsDown /></IconButton>
-        <IconButton size="sm" label="Bring forward" shortcut="Mod+]" onClick={() => runAction('arrange.forward')}><ChevronsUp /></IconButton>
-        <IconButton size="sm" label="Bring to front" shortcut="Mod+Shift+]" onClick={() => runAction('arrange.front')}><BringToFront /></IconButton>
+        <IconButton size="sm" label={t('panels.arrange.sendToBack')} shortcut="Mod+Shift+[" onClick={() => runAction('arrange.back')}><SendToBack /></IconButton>
+        <IconButton size="sm" label={t('panels.arrange.sendBackward')} shortcut="Mod+[" onClick={() => runAction('arrange.backward')}><ChevronsDown /></IconButton>
+        <IconButton size="sm" label={t('panels.arrange.bringForward')} shortcut="Mod+]" onClick={() => runAction('arrange.forward')}><ChevronsUp /></IconButton>
+        <IconButton size="sm" label={t('panels.arrange.bringToFront')} shortcut="Mod+Shift+]" onClick={() => runAction('arrange.front')}><BringToFront /></IconButton>
         <div className="mx-1 h-4 w-px bg-line" />
-        {multi >= 2 && <IconButton size="sm" label="Group" shortcut="Mod+G" onClick={() => runAction('arrange.group')}><Group /></IconButton>}
-        <IconButton size="sm" label="Ungroup" shortcut="Mod+Shift+U" onClick={() => runAction('arrange.ungroup')}><Ungroup /></IconButton>
-        <IconButton size="sm" label={locked ? 'Unlock' : 'Lock'} shortcut="Mod+L" active={locked} onClick={() => runAction('edit.lock')}>
+        {multi >= 2 && <IconButton size="sm" label={t('panels.arrange.group')} shortcut="Mod+G" onClick={() => runAction('arrange.group')}><Group /></IconButton>}
+        <IconButton size="sm" label={t('panels.arrange.ungroup')} shortcut="Mod+Shift+U" onClick={() => runAction('arrange.ungroup')}><Ungroup /></IconButton>
+        <IconButton size="sm" label={locked ? t('panels.unlock') : t('panels.lock')} shortcut="Mod+L" active={locked} onClick={() => runAction('edit.lock')}>
           {locked ? <Lock /> : <LockOpen />}
         </IconButton>
       </div>
@@ -417,8 +430,9 @@ function Arrange({ multi }: { multi: number }) {
 
 function ActionIcon({ id }: { id: string }) {
   const action = ACTION_MAP[id];
+  useT(); // re-render on language change
   return (
-    <IconButton size="sm" label={action.label} shortcut={action.shortcuts?.[0]} onClick={() => runAction(id)} className="w-full">
+    <IconButton size="sm" label={actionLabel(action)} shortcut={action.shortcuts?.[0]} onClick={() => runAction(id)} className="w-full">
       {action.icon}
     </IconButton>
   );

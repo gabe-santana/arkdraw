@@ -1,6 +1,6 @@
 /**
  * Parametric shapes: param resolution, handles, the Format-panel patch path,
- * draw.io round-trip and pools that grow with their lanes.
+ * mxGraph round-trip and pools that grow with their lanes.
  */
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createElement, Fragment } from 'react';
@@ -24,7 +24,7 @@ const shapeOf = (kind: string, params?: ShapeElement['params'], rect = { x: 0, y
 const docOf = (...els: ShapeElement[]): Doc => ({ elements: Object.fromEntries(els.map((e) => [e.id, e])), order: els.map((e) => e.id) });
 
 describe('param values', () => {
-  it('covers the draw.io parametric shapes', () => {
+  it('covers the mxGraph parametric shapes', () => {
     const kinds = new Set(PARAMETRIC.map((d) => d.kind));
     for (const k of [
       'hexagon', 'parallelogram', 'trapezoid', 'cylinder', 'callout', 'blockArrow', 'container', 'flow.document', 'flow.predefined',
@@ -115,7 +115,7 @@ describe('handles', () => {
   });
 });
 
-describe('draw.io round-trip', () => {
+describe('mxGraph round-trip', () => {
   it('exports and re-imports params', async () => {
     const els = [
       shapeOf('hexagon', { size: 0.35 }),
@@ -140,7 +140,7 @@ describe('draw.io round-trip', () => {
     }
   });
 
-  it('reads draw.io defaults and fixedSize values', async () => {
+  it('reads mxGraph defaults and fixedSize values', async () => {
     const xml = `<mxfile><diagram name="P"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>
       <mxCell id="a" value="" style="shape=hexagon;fixedSize=1;size=20;" vertex="1" parent="1"><mxGeometry x="0" y="0" width="100" height="60" as="geometry"/></mxCell>
       <mxCell id="b" value="" style="shape=callout;" vertex="1" parent="1"><mxGeometry x="0" y="0" width="100" height="80" as="geometry"/></mxCell>
@@ -150,7 +150,7 @@ describe('draw.io round-trip', () => {
     expect((doc.elements.b as ShapeElement).params).toMatchObject({ size: 30, position: 0.5, position2: 0.5, base: 20 });
   });
 
-  it('maps draw.io swimlanes to pools and lanes with header size and fill', async () => {
+  it('maps mxGraph swimlanes to pools and lanes with header size and fill', async () => {
     const xml = `<mxfile><diagram name="P"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>
       <mxCell id="pool" value="Pool" style="swimlane;horizontal=0;startSize=40;swimlaneFillColor=#fde68a;" vertex="1" parent="1"><mxGeometry x="0" y="0" width="400" height="200" as="geometry"/></mxCell>
       <mxCell id="lane" value="Lane" style="swimlane;horizontal=0;startSize=20;" vertex="1" parent="pool"><mxGeometry x="40" y="0" width="360" height="100" as="geometry"/></mxCell>

@@ -9,6 +9,7 @@ import { boxCorners, unionRects } from '@/lib/geometry';
 import { connectorGeometryInDoc } from '@/lib/connectorGeometry';
 import { elementBounds, isHidden, useEditor } from '@/store/editor';
 import { useUi } from '@/store/ui';
+import { useT } from '@/i18n';
 
 const W = 220;
 const H = 150;
@@ -20,6 +21,7 @@ export function Outline() {
 }
 
 function OutlineBody() {
+  const t = useT();
   const doc = useEditor((s) => s.doc);
   const camera = useEditor((s) => s.camera);
   const viewport = useEditor((s) => s.viewport);
@@ -45,8 +47,8 @@ function OutlineBody() {
   return (
     <div className="animate-slide-up pointer-events-auto overflow-hidden rounded-xl bg-panel shadow-panel">
       <div className="flex items-center justify-between px-2.5 pt-1.5">
-        <span className="text-[11px] font-medium text-muted">Outline</span>
-        <button onClick={() => set({ outlineOpen: false })} className="rounded p-0.5 text-subtle hover:bg-hover hover:text-fg" aria-label="Close outline">
+        <span className="text-[11px] font-medium text-muted">{t('chrome.outline.title')}</span>
+        <button onClick={() => set({ outlineOpen: false })} className="rounded p-0.5 text-subtle hover:bg-hover hover:text-fg" aria-label={t('chrome.outline.close')}>
           <X className="size-3.5" />
         </button>
       </div>

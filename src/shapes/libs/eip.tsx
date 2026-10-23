@@ -152,7 +152,7 @@ function eipRender(frame: Frame, draw: (k: Kit) => ReactNode[]) {
   };
 }
 
-/** [kind, label, frame, draw.io stencil, keywords, schematic] */
+/** [kind, label, frame, mxGraph stencil, keywords, schematic] */
 type Def = [string, string, Frame, string, string, (k: Kit) => ReactNode[]];
 
 const DEFS: Def[] = [

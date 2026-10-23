@@ -13,6 +13,7 @@ import { Button } from '@/ui/Button';
 import { Switch } from '@/ui/controls';
 import { useExt } from './store';
 import { addPlugin, removePlugin, setPluginEnabled, usePlugins, type PluginEntry, type PluginStatus } from './plugins';
+import { useT } from '@/i18n';
 
 export function PluginsDialog() {
   const open = useExt((s) => s.pluginsOpen);
@@ -28,19 +29,21 @@ const input =
   'h-8 w-full rounded-lg bg-panel-2 px-2.5 text-[12.5px] text-fg outline-none ring-1 ring-transparent transition-shadow placeholder:text-subtle hover:ring-line focus:bg-panel focus:ring-2 focus:ring-accent/40';
 
 function StatusChip({ status, enabled }: { status?: PluginStatus; enabled: boolean }) {
+  const t = useT();
   const st = status?.state ?? (enabled ? 'loading' : 'disabled');
   const [label, cls] =
     st === 'active'
-      ? ['Active', 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400']
+      ? [t('plugins.status.active'), 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400']
       : st === 'error'
-        ? ['Error', 'bg-danger/12 text-danger']
+        ? [t('common.error'), 'bg-danger/12 text-danger']
         : st === 'loading'
-          ? ['Loading…', 'bg-hover text-muted']
-          : ['Off', 'bg-hover text-subtle'];
+          ? [t('common.loading'), 'bg-hover text-muted']
+          : [t('common.off'), 'bg-hover text-subtle'];
   return <span className={cn('rounded-md px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide', cls)}>{label}</span>;
 }
 
 function PluginRow({ entry, status, activeNames }: { entry: PluginEntry; status?: PluginStatus; activeNames: string[] }) {
+  const t = useT();
   const title = activeNames.join(', ') || entry.name || entry.source.split(/[\\/]/).pop() || entry.source;
   return (
     <li className="rounded-xl px-3 py-2.5 ring-1 ring-line">
@@ -52,11 +55,11 @@ function PluginRow({ entry, status, activeNames }: { entry: PluginEntry; status?
             <StatusChip status={status} enabled={entry.enabled} />
           </div>
           <div className="truncate font-mono text-[11px] text-subtle" title={entry.source}>
-            {entry.code ? `${entry.source} (stored copy)` : entry.source}
+            {entry.code ? t('plugins.storedCopy', { source: entry.source }) : entry.source}
           </div>
         </div>
         <Switch checked={entry.enabled} onChange={(v) => void setPluginEnabled(entry.source, v)} />
-        <button className="rounded-lg p-1.5 text-subtle hover:bg-hover hover:text-danger" aria-label="Remove plugin" onClick={() => removePlugin(entry.source)}>
+        <button className="rounded-lg p-1.5 text-subtle hover:bg-hover hover:text-danger" aria-label={t('plugins.remove')} onClick={() => removePlugin(entry.source)}>
           <Trash className="size-3.5" />
         </button>
       </div>
@@ -66,6 +69,7 @@ function PluginRow({ entry, status, activeNames }: { entry: PluginEntry; status?
 }
 
 function PluginsBody({ close }: { close: () => void }) {
+  const t = useT();
   const entries = usePlugins((s) => s.entries);
   const status = usePlugins((s) => s.status);
   const active = usePlugins((s) => s.active);
@@ -93,14 +97,11 @@ function PluginsBody({ close }: { close: () => void }) {
 
   return (
     <div onKeyDown={(e) => e.stopPropagation()}>
-      <DialogHeader title="Plugins" subtitle="Extend OpenDraw with commands, shape libraries and file formats" onClose={close} />
+      <DialogHeader title={t('plugins.title')} subtitle={t('plugins.subtitle')} onClose={close} />
       <div className="scroll-thin max-h-[62vh] space-y-3 overflow-y-auto px-5 pb-4">
         <div className="flex items-start gap-2 rounded-xl bg-amber-500/10 px-3 py-2.5 text-[12px] leading-snug text-amber-800 dark:text-amber-300">
           <ShieldAlert className="mt-0.5 size-4 shrink-0" />
-          <span>
-            Plugins run inside OpenDraw with full access to the editor and your diagrams, like draw.io plugins. Only add plugins you trust. You’ll be asked to
-            confirm before one is enabled.
-          </span>
+          <span>{t('plugins.warning')}</span>
         </div>
 
         {entries.length ? (
@@ -117,12 +118,12 @@ function PluginsBody({ close }: { close: () => void }) {
             ))}
           </ul>
         ) : (
-          <p className="rounded-xl px-3 py-4 text-center text-[12.5px] text-subtle ring-1 ring-dashed ring-line">No plugins yet.</p>
+          <p className="rounded-xl px-3 py-4 text-center text-[12.5px] text-subtle ring-1 ring-dashed ring-line">{t('plugins.empty')}</p>
         )}
 
         {external.length > 0 && (
           <div>
-            <h3 className="mb-1 text-[11.5px] font-medium text-muted">Loaded by the app or its configuration</h3>
+            <h3 className="mb-1 text-[11.5px] font-medium text-muted">{t('plugins.external')}</h3>
             <ul className="space-y-0.5 text-[12.5px] text-fg">
               {external.map(([id, a]) => (
                 <li key={id} className="flex items-center gap-2 px-1">
@@ -137,14 +138,14 @@ function PluginsBody({ close }: { close: () => void }) {
 
         <div>
           <label className="mb-1.5 block text-[11.5px] font-medium text-muted" htmlFor="od-plugin-url">
-            Add plugin
+            {t('plugins.add')}
           </label>
           <div className="flex gap-1.5">
             <input
               id="od-plugin-url"
               className={cn(input, 'font-mono text-[12px]')}
               value={source}
-              placeholder={isTauri() ? 'https://…/plugin.js or C:\\path\\plugin.js' : 'https://…/plugin.js or /plugins/my-plugin.js'}
+              placeholder={isTauri() ? t('plugins.sourcePlaceholderDesktop') : t('plugins.sourcePlaceholderWeb')}
               onChange={(e) => setSource(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key !== 'Enter' || !source.trim()) return;
@@ -154,19 +155,19 @@ function PluginsBody({ close }: { close: () => void }) {
               }}
             />
             <Button disabled={busy || !source.trim()} icon={<Plus className="size-3.5" />} onClick={() => void add(source)}>
-              Add
+              {t('common.add')}
             </Button>
           </div>
           <div className="mt-2 flex items-center justify-between">
             <Button size="sm" variant="ghost" icon={<FileUp className="size-3.5" />} disabled={busy} onClick={() => void addFile()}>
-              Add from file…
+              {t('plugins.addFromFile')}
             </Button>
             <span className="text-[11.5px] text-subtle">API: docs/extensibility.md</span>
           </div>
         </div>
       </div>
       <div className="flex justify-end border-t border-line px-5 py-3">
-        <Button onClick={close}>Done</Button>
+        <Button onClick={close}>{t('common.done')}</Button>
       </div>
     </div>
   );

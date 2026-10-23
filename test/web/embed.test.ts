@@ -80,7 +80,7 @@ describe('embed mode', () => {
     expect(useEditor.getState().pages).toHaveLength(2);
   });
 
-  it('loads draw.io XML and blank documents', async () => {
+  it('loads mxGraph XML and blank documents', async () => {
     await start();
     send({ action: 'load', xml: DRAWIO });
     await tick();
@@ -161,7 +161,7 @@ describe('embed mode', () => {
     expect(posted.length).toBe(n);
   });
 
-  it('answers JSON strings with JSON strings (draw.io protocol)', async () => {
+  it('answers JSON strings with JSON strings (mxGraph protocol)', async () => {
     await start();
     send(JSON.stringify({ action: 'exit' }));
     await tick();

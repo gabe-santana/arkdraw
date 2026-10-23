@@ -26,7 +26,7 @@ export function handleDoubleClick(el: DiagramElement, p: Vec): boolean {
     startCellEdit(el.id, cell.r, cell.c);
     return true;
   }
-  // Double-clicking a member of the selected group enters it (draw.io).
+  // Double-clicking a member of the selected group enters it.
   if (el.groupIds.length && s.selection.includes(el.id) && pickMembers(s.doc, el.id).length > 1) {
     enterGroup(el.id);
     return true;

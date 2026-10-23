@@ -30,7 +30,7 @@ x,1,2`);
 });
 
 describe('CSV import', () => {
-  it('imports the draw.io org chart example', () => {
+  it('imports the mxGraph org chart example', () => {
     const res = importCsv(importer.example!);
     const d = res.pages[0].doc;
     const s = shapes(d);
@@ -40,7 +40,7 @@ describe('CSV import', () => {
     expect(tessa.style.fill).toBe('#dae8fc');
     expect(tessa.style.stroke).toBe('#6c8ebf');
     expect(tessa.style.radius).toBeGreaterThan(0);
-    expect(tessa.link).toBe('https://www.draw.io');
+    expect(tessa.link).toBe('https://www.mxGraph');
     expect(tessa.data).toEqual({ name: 'Tessa Miller', position: 'CFO', location: 'Office 1', email: 'me@example.com' });
     const cs = conns(d);
     // 3 "manages" (inverted) + 2 refs from Alison

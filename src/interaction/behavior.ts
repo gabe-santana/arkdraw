@@ -1,6 +1,6 @@
 /**
- * Per-element behaviour locks (draw.io's `movable=0`, `resizable=0`, …) and
- * their draw.io style mapping. Enforcement lives where each gesture happens
+ * Per-element behaviour locks (mxGraph's `movable=0`, `resizable=0`, …) and
+ * their mapping. Enforcement lives where each gesture happens
  * (canvas interactions, delete, text editing); this module only describes and
  * converts the flags.
  */
@@ -9,17 +9,30 @@ import { isShape } from '@/model/types';
 import { getShapeDef } from '@/shapes/registry';
 import { useEditor } from '@/store/editor';
 import { isContainerShape } from './container';
+import { t, type MessageKey } from '@/i18n';
 
 export type BehaviorKey = keyof Behavior;
 
+/** `label` / `hint` are translated on read (UI language at render time). */
+const flag = (key: BehaviorKey, labelKey: MessageKey, hintKey: MessageKey, shapeOnly?: true) => ({
+  key,
+  get label() {
+    return t(labelKey);
+  },
+  get hint() {
+    return t(hintKey);
+  },
+  ...(shapeOnly ? { shapeOnly } : {}),
+});
+
 export const BEHAVIOR_FLAGS: Array<{ key: BehaviorKey; label: string; hint: string; shapeOnly?: boolean }> = [
-  { key: 'movable', label: 'Movable', hint: 'Can be dragged or nudged' },
-  { key: 'resizable', label: 'Resizable', hint: 'Shows resize handles', shapeOnly: true },
-  { key: 'rotatable', label: 'Rotatable', hint: 'Shows the rotation handle', shapeOnly: true },
-  { key: 'deletable', label: 'Deletable', hint: 'Delete removes it' },
-  { key: 'editable', label: 'Editable', hint: 'Double-click edits the label' },
-  { key: 'connectable', label: 'Connectable', hint: 'Connectors can attach to it', shapeOnly: true },
-  { key: 'selectable', label: 'Selectable', hint: 'Clicks and rubber bands pick it' },
+  flag('movable', 'canvas.behavior.movable', 'canvas.behavior.movableHint'),
+  flag('resizable', 'canvas.behavior.resizable', 'canvas.behavior.resizableHint', true),
+  flag('rotatable', 'canvas.behavior.rotatable', 'canvas.behavior.rotatableHint', true),
+  flag('deletable', 'canvas.behavior.deletable', 'canvas.behavior.deletableHint'),
+  flag('editable', 'canvas.behavior.editable', 'canvas.behavior.editableHint'),
+  flag('connectable', 'canvas.behavior.connectable', 'canvas.behavior.connectableHint', true),
+  flag('selectable', 'canvas.behavior.selectable', 'canvas.behavior.selectableHint'),
 ];
 
 /** Effective value of a flag (absent = allowed). */
@@ -40,7 +53,7 @@ export function setBehavior(ids: string[], key: BehaviorKey, value: boolean) {
   s.updateElements(patches);
 }
 
-/** Behaviour keys that draw.io stores as `key=0` style entries. */
+/** Behaviour keys that mxGraph stores as `key=0` style entries. */
 const DRAWIO_KEYS: BehaviorKey[] = ['movable', 'resizable', 'rotatable', 'deletable', 'editable', 'connectable', 'selectable'];
 
 type StyleMap = Map<string, string>;
@@ -56,11 +69,11 @@ export function behaviorToDrawio(m: StyleMap, el: DiagramElement) {
   if (el.container === false && byKind) m.set('container', '0');
 }
 
-/** Reads draw.io behaviour keys back onto an imported element. */
+/** Reads mxGraph behaviour keys back onto an imported element. */
 export function behaviorFromDrawio(m: StyleMap, el: DiagramElement) {
   const behavior: Behavior = {};
   for (const key of DRAWIO_KEYS) if (m.get(key) === '0') behavior[key] = false;
-  // draw.io's `locked=1` cell style: the whole cell is frozen.
+  // mxGraph's `locked=1` cell style: the whole cell is frozen.
   if (m.get('locked') === '1') el.locked = true;
   if (Object.keys(behavior).length) el.behavior = { ...el.behavior, ...behavior };
   if (!isShape(el)) return;

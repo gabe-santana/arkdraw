@@ -16,6 +16,7 @@ import { cellKey, cellRect, cellsInRange, isCovered, rangeBounds } from './table
 import { commitCellText, selectCell, startCellEdit } from './tableCells';
 import { takeCellSeed } from './navigation';
 import { Camera } from './PointEditor';
+import { useT } from '@/i18n';
 
 const ACCENT = 'var(--selection)';
 
@@ -85,6 +86,7 @@ export function TableCellOverlay() {
 
 /** contentEditable box over the cell being edited. */
 export function TableCellEditor() {
+  const tr = useT();
   const editing = useInteraction((s) => s.editingCell);
   const el = useEditor((s) => (editing ? s.doc.elements[editing.id] : undefined));
   const camera = useEditor((s) => s.camera);
@@ -163,7 +165,7 @@ export function TableCellEditor() {
       <div
         ref={ref}
         role="textbox"
-        aria-label={`Cell row ${editing.r + 1}, column ${editing.c + 1}`}
+        aria-label={tr('canvas.table.cellLabel', { row: editing.r + 1, column: editing.c + 1 })}
         contentEditable="plaintext-only"
         suppressContentEditableWarning
         spellCheck

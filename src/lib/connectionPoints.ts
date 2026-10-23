@@ -1,5 +1,5 @@
 /**
- * Connection points and endpoint attachment (draw.io parity).
+ * Connection points and endpoint attachment ().
  *
  * - Every shape has a set of connection points, as fractions of its unrotated
  *   box: shape-defined (`ShapeDef.connectionPoints`), per-element overrides

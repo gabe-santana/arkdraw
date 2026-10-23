@@ -90,7 +90,7 @@ describe('HTML ↔ formatted text', () => {
     expect(html).not.toMatch(/<img|javascript/);
   });
 
-  it('imports draw.io html labels, dropping anything unsafe', () => {
+  it('imports mxGraph html labels, dropping anything unsafe', () => {
     const rich = htmlToRich('<div><b>Title</b></div><div>H<sub>2</sub>O <font color="#ff0000" style="font-size: 18px">hot</font></div><script>alert(1)</script><img src="x" onerror="alert(1)">', B);
     expect(rich).toBe('**Title**\nH<sub>2</sub>O <span style="color:#ff0000;font-size:18px">hot</span>');
   });
@@ -100,7 +100,7 @@ describe('HTML ↔ formatted text', () => {
     expect(rich.split('\n')).toEqual(['- a', '- b', '<table border="1"><tr><td>x</td><td>*y*</td></tr></table>', 'after']);
   });
 
-  it('writes draw.io html', () => {
+  it('writes mxGraph html', () => {
     expect(richToDrawioHtml('a **b**\n<span style="color:#dc2626">r</span>', B)).toBe('a <b>b</b><br><span style="color:#dc2626">r</span>');
   });
 });

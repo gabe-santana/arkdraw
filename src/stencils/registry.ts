@@ -27,7 +27,7 @@ export const onStencilsChanged = (cb: () => void) => {
   return () => void listeners.delete(cb);
 };
 
-/** Resolver for `include-shape` (case-insensitive, like draw.io's registry). */
+/** Resolver for `include-shape` (case-insensitive registry). */
 export function resolveStencil(name: string): Stencil | null {
   const xml = NAMED.get(name) ?? NAMED.get(name.toLowerCase()) ?? [...NAMED].find(([k]) => k.toLowerCase() === name.toLowerCase())?.[1];
   return tryParseStencil(xml);

@@ -32,7 +32,7 @@ function brainstorm() {
   b.title('Brainstorm — affinity map', 0, 0, 1000, 'How might we make onboarding delightful?');
   const groups: Array<[string, Tone, string, string[]]> = [
     ['Guidance', TONES.blue, '#bfdbfe', ['Interactive tour', 'Checklist widget', 'Sample project', 'Tips in empty states']],
-    ['Speed', TONES.green, '#bbf7d0', ['Sign in with Google', 'Skip optional steps', 'Import from draw.io']],
+    ['Speed', TONES.green, '#bbf7d0', ['Sign in with Google', 'Skip optional steps', 'Import existing diagrams']],
     ['Delight', TONES.pink, '#fbcfe8', ['Confetti on first diagram', 'Personal welcome email', 'Cute empty-state art', 'Achievements']],
     ['Support', TONES.amber, '#fde68a', ['Live chat in app', 'Video tutorials']],
   ];

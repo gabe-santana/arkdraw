@@ -24,7 +24,7 @@ const TIER: Record<Tier, Partial<ElementStyle>> = {
 };
 const BADGE: Record<Tier, string> = { server: TEAL, access: SLATE, data: TEAL, client: SLATE };
 
-/** [name, label, glyph, tier, badge, draw.io stencil, keywords] */
+/** [name, label, glyph, tier, badge, mxGraph stencil, keywords] */
 const TILES: Array<[string, string, Art, Tier, Art | undefined, string, string]> = [
   ['deliveryController', 'Delivery Controller', Server, 'server', Settings2, 'delivery_controller', 'ddc broker xendesktop site brokering'],
   ['storefront', 'StoreFront', Store, 'access', undefined, 'storefront_services', 'store app store portal web interface'],

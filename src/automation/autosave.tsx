@@ -16,6 +16,7 @@ import { isTauri } from '@/lib/platform';
 import { Switch } from '@/ui/controls';
 import { docOrigin, writeHandle } from '@/storage/origin';
 import { commitSavedMeta, metaForSave } from './fileProperties';
+import { t } from '@/i18n';
 
 const DELAY = 1500;
 
@@ -58,7 +59,7 @@ export async function autosaveNow(): Promise<boolean> {
     failedOnce = false;
     return true;
   } catch (e) {
-    if (!failedOnce) useUi.getState().toast(`Autosave failed: ${(e as Error)?.message ?? e}`, 'error');
+    if (!failedOnce) useUi.getState().toast(t('prefs.autosaveFailed', { error: (e as Error)?.message ?? String(e) }), 'error');
     failedOnce = true;
     return false;
   }
@@ -86,13 +87,13 @@ export function PrefsAutomationSection() {
   const update = usePreferences((p) => p.update);
   return (
     <div className="space-y-0.5">
-      <Switch label="Autosave changes to the open file" checked={autosave} onChange={(v) => update({ autosave: v })} />
-      <Switch label="Show the start screen on launch" checked={startScreen} onChange={(v) => update({ startScreen: v })} />
+      <Switch label={t('prefs.autosave')} checked={autosave} onChange={(v) => update({ autosave: v })} />
+      <Switch label={t('prefs.startScreen')} checked={startScreen} onChange={(v) => update({ startScreen: v })} />
       {autosave && (
         <p className="text-[11.5px] text-subtle">
           {isTauri()
-            ? 'Saved files are written about a second after each change (a .bkp keeps the previous version when backups are on).'
-            : 'Works for files opened or saved through the browser’s file picker, and for documents in the browser library.'}
+            ? t('prefs.autosaveDesktop')
+            : t('prefs.autosaveWeb')}
         </p>
       )}
     </div>

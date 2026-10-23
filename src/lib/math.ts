@@ -1,5 +1,5 @@
 /**
- * LaTeX → SVG via MathJax (draw.io's "Mathematical Typesetting").
+ * LaTeX → SVG via MathJax (mxGraph's "Mathematical Typesetting").
  *
  * MathJax is large, so it's loaded on first use. Rendering is synchronous
  * from the caller's point of view: `mathSvg()` returns a cached result or

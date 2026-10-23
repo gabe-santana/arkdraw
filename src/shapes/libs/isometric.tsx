@@ -2,7 +2,7 @@
  * Isometric: 30° projection blocks, devices and people. Faces are shaded from
  * the element fill (top lighter, left as-is, right darker) and outlined with
  * the stroke. Each scene declares its projected bounds and is scaled per axis
- * into the element box, so resizing stretches the drawing like draw.io's iso shapes.
+ * into the element box, so resizing stretches the drawing iso shapes.
  */
 import type { ReactNode } from 'react';
 import type { ElementStyle, Rect } from '@/model/types';

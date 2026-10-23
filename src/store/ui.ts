@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 
 export type LeftTab = 'shapes' | 'icons';
+/** Floating panels and where they're docked (src/chrome/Dock.tsx). */
+export type PanelId = 'shapes' | 'format' | 'layers';
+export type DockSide = 'left' | 'right';
+export type DockLayout = Record<DockSide, PanelId[]>;
 export type ThemeMode = 'system' | 'light' | 'dark';
 type UiUnits = 'px' | 'pt' | 'in' | 'mm' | 'm';
 
@@ -22,6 +26,10 @@ export interface ConfirmRequest {
 interface UiState {
   leftOpen: boolean;
   rightOpen: boolean;
+  /** Floating panel widths in px (user-resizable). */
+  leftWidth: number;
+  rightWidth: number;
+  dock: DockLayout;
   leftTab: LeftTab;
   /** Layers dock (right, under Format): expanded, and its height. */
   layersOpen: boolean;
@@ -68,7 +76,12 @@ function load<T>(key: string, fallback: T): T {
   }
 }
 
-const panels = load(PANELS_KEY, { leftOpen: true, rightOpen: true, leftTab: 'shapes' as LeftTab, layersOpen: true, layersHeight: 300 });
+const panels = load(PANELS_KEY, { leftOpen: true, rightOpen: true, leftTab: 'shapes' as LeftTab, layersOpen: true, layersHeight: 300, leftWidth: 264, rightWidth: 268, dock: { left: ['shapes'], right: ['format', 'layers'] } as DockLayout });
+// A saved layout must still contain each panel exactly once.
+{
+  const all = [...panels.dock.left, ...panels.dock.right];
+  if (all.length !== 3 || new Set(all).size !== 3) panels.dock = { left: ['shapes'], right: ['format', 'layers'] };
+}
 // Layers used to be a left tab.
 if ((panels.leftTab as string) === 'layers') panels.leftTab = 'shapes';
 
@@ -107,9 +120,9 @@ export const useUi = create<UiState>((set, get) => ({
       if ('theme' in patch) localStorage.setItem(THEME_KEY, JSON.stringify({ theme: s.theme }));
       if ('rulers' in patch) localStorage.setItem('opendraw:rulers', JSON.stringify({ rulers: s.rulers }));
       if ('units' in patch) localStorage.setItem('opendraw:units', JSON.stringify({ units: s.units }));
-      if ('leftOpen' in patch || 'rightOpen' in patch || 'leftTab' in patch || 'layersOpen' in patch || 'layersHeight' in patch) {
-        const { leftOpen, rightOpen, leftTab, layersOpen, layersHeight } = s;
-        localStorage.setItem(PANELS_KEY, JSON.stringify({ leftOpen, rightOpen, leftTab, layersOpen, layersHeight }));
+      if ('leftOpen' in patch || 'rightOpen' in patch || 'leftTab' in patch || 'layersOpen' in patch || 'layersHeight' in patch || 'leftWidth' in patch || 'rightWidth' in patch || 'dock' in patch) {
+        const { leftOpen, rightOpen, leftTab, layersOpen, layersHeight, leftWidth, rightWidth, dock } = s;
+        localStorage.setItem(PANELS_KEY, JSON.stringify({ leftOpen, rightOpen, leftTab, layersOpen, layersHeight, leftWidth, rightWidth, dock }));
       }
     } catch {
       /* storage unavailable */

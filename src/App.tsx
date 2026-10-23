@@ -19,9 +19,7 @@ import { CommentsPanel, PreferencesDialog, RevisionsDialog } from '@/chrome/Coll
 import { startAutoRevisions } from '@/app/revisions';
 import { insertImageFile } from '@/app/commands';
 import { clientToWorld, isOverCanvas } from '@/canvas/viewport';
-import { LeftPanel } from '@/panels/LeftPanel';
-import { PropertiesPanel } from '@/panels/PropertiesPanel';
-import { LayersPanel } from '@/panels/LayersPanel';
+import { columnInset, DockColumn, DockDragGhost } from '@/chrome/Dock';
 import { ExtensibilityHost } from '@/extensibility/Host';
 import { useEditor } from '@/store/editor';
 import { useUi } from '@/store/ui';
@@ -30,6 +28,7 @@ import { clearTextCache } from '@/lib/text';
 import { onWebFontLoaded } from '@/text/fonts';
 import { useShortcuts } from '@/app/useShortcuts';
 import { useTheme } from '@/app/useTheme';
+import { t, useLocale } from '@/i18n';
 import { installPasteHandler } from '@/app/clipboard';
 import { confirmDiscard, isDirty, loadOpenedFile, openPath, restoreRecovery, startRecovery } from '@/app/fileCommands';
 import { onOpenFileRequest, takeLaunchFile, windowControls } from '@/io/native';
@@ -37,7 +36,7 @@ import '@/app/cliExport'; // `opendraw --export …` (desktop CLI); no-op otherw
 
 const AiHost = lazy(() => import('@/chrome/AiHost'));
 
-/** Whether a dropped PNG/SVG carries a diagram (draw.io or OpenDraw "editable" image). */
+/** Whether a dropped PNG/SVG carries a diagram (mxGraph or OpenDraw "editable" image). */
 async function hasEmbeddedDiagram(bytes: Uint8Array, ext: string): Promise<boolean> {
   if (ext !== 'png' && ext !== 'svg') return false;
   const { IMPORTERS } = await import('@/io/import');
@@ -47,8 +46,8 @@ async function hasEmbeddedDiagram(bytes: Uint8Array, ext: string): Promise<boole
 
 export default function App() {
   const dark = useTheme();
-  const leftOpen = useUi((s) => s.leftOpen);
-  const rightOpen = useUi((s) => s.rightOpen);
+  const leftInset = useUi((s) => columnInset(s, 'left'));
+  const rightInset = useUi((s) => columnInset(s, 'right'));
   const aiOpen = useUi((s) => s.aiOpen);
   const aiSettingsOpen = useUi((s) => s.aiSettingsOpen);
   const [fontsVersion, setFontsVersion] = useState(0);
@@ -71,7 +70,7 @@ export default function App() {
       const launch = await takeLaunchFile().catch(() => null);
       if (launch) await openPath(launch);
       else if (restoreRecovery()) {
-        useUi.getState().toast('Restored your unsaved diagram', 'info');
+        useUi.getState().toast(t('app.restoredUnsaved'), 'info');
         requestAnimationFrame(() => useEditor.getState().zoomToFit());
       }
       // Reveal the (initially hidden) native window after the first paint.
@@ -91,8 +90,13 @@ export default function App() {
     windowControls.setTitle(`${dirty ? '• ' : ''}${name.replace(/\.opendraw$/i, '')} — OpenDraw`);
   }, [name, dirty]);
 
+  // Remount the UI tree when the language changes, so every string (incl. ones
+  // read outside React hooks) is re-rendered. Editor state lives in stores.
+  const locale = useLocale();
+
   return (
     <div
+      key={locale}
       className="flex h-full flex-col bg-app"
       onDragOver={(e) => e.dataTransfer.types.includes('Files') && e.preventDefault()}
       onDrop={async (e) => {
@@ -118,26 +122,17 @@ export default function App() {
 
           {/* Floating panels */}
           <div className="pointer-events-none absolute inset-0 p-2.5">
-            <div data-od-panel="left" className={cn('absolute bottom-2.5 left-2.5 top-2.5 transition-[transform,opacity] duration-300 ease-[cubic-bezier(.2,.9,.3,1)]', !leftOpen && '-translate-x-[110%] opacity-0')}>
-              {leftOpen && <LeftPanel />}
-            </div>
-            <div data-od-panel="right" className={cn('absolute bottom-2.5 right-2.5 top-2.5 flex flex-col gap-2 transition-[transform,opacity] duration-300 ease-[cubic-bezier(.2,.9,.3,1)]', !rightOpen && 'translate-x-[110%] opacity-0')}>
-              {rightOpen && !aiOpen && (
-                <>
-                  <PropertiesPanel />
-                  <div className="mt-auto" />
-                  <LayersPanel />
-                </>
-              )}
-            </div>
+            <DockColumn side="left" />
+            <DockColumn side="right" />
+            <DockDragGhost />
             <div data-od-toolbar className="absolute bottom-3.5 left-1/2 -translate-x-1/2">
               <Toolbar />
             </div>
-            <div className={cn('absolute bottom-3.5 flex flex-col items-end gap-2 transition-[right] duration-300', rightOpen || aiOpen ? (aiOpen ? 'right-[402px]' : 'right-[290px]') : 'right-3.5')}>
+            <div className={cn('absolute bottom-3.5 flex flex-col items-end gap-2 transition-[right] duration-300', aiOpen ? 'right-[402px]' : !rightInset && 'right-3.5')} style={rightInset && !aiOpen ? { right: rightInset + 22 } : undefined}>
               <Outline />
               <ZoomControls />
             </div>
-            <div className={cn('absolute bottom-3.5 transition-[left] duration-300', leftOpen ? 'left-[290px]' : 'left-3.5')}>
+            <div className={cn('absolute bottom-3.5 transition-[left] duration-300', !leftInset && 'left-3.5')} style={leftInset ? { left: leftInset + 26 } : undefined}>
               <PageTabs />
             </div>
             <FindPanel />

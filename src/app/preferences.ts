@@ -5,6 +5,7 @@
 import { create } from 'zustand';
 import type { FontKey } from '@/model/types';
 import { setDefaultFont } from '@/model/defaults';
+import { t } from '@/i18n';
 
 export interface Preferences {
   author: string;
@@ -53,4 +54,4 @@ export const usePreferences = create<Preferences & { update: (p: Partial<Prefere
 
 setDefaultFont(usePreferences.getState().defaultFont);
 
-export const authorName = () => usePreferences.getState().author || 'You';
+export const authorName = () => usePreferences.getState().author || t('common.you');

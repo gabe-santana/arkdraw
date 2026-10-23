@@ -9,9 +9,12 @@ import { Button } from '@/ui/Button';
 import { Shortcut } from '@/ui/Kbd';
 import { ContextMenu, type MenuEntry, type MenuItemEntry } from '@/ui/Menu';
 import { interactionContextItems } from '@/interaction/menus';
+import { useT } from '@/i18n';
+import { actionLabel, groupLabel } from '@/i18n/catalog';
 
 export function ConfirmDialog() {
   const req = useUi((s) => s.confirm);
+  const t = useT();
   return (
     <Dialog open={!!req} onClose={() => req?.resolve('cancel')} className="w-[420px]">
       {req && (
@@ -25,7 +28,7 @@ export function ConfirmDialog() {
               </Button>
             )}
             <div className="flex-1" />
-            <Button onClick={() => req.resolve('cancel')}>Cancel</Button>
+            <Button onClick={() => req.resolve('cancel')}>{t('common.cancel')}</Button>
             <Button variant="primary" autoFocus onClick={() => req.resolve('confirm')}>
               {req.confirmLabel}
             </Button>
@@ -62,6 +65,7 @@ export function Toasts() {
 
 export function ShortcutsDialog() {
   const open = useUi((s) => s.shortcutsOpen);
+  const t = useT();
   const set = useUi((s) => s.set);
   const groups = useMemo(() => {
     const map = new Map<string, typeof ACTIONS>();
@@ -73,34 +77,34 @@ export function ShortcutsDialog() {
     return [...map];
   }, []);
   const extras: Array<[string, string]> = [
-    ['Pan the canvas', 'Space'],
-    ['Zoom', 'Mod+Scroll'],
-    ['Duplicate while dragging', 'Alt+Drag'],
-    ['Keep proportions', 'Shift+Drag'],
-    ['Select inside a group', 'Mod+Click'],
-    ['Edit text', 'Enter'],
-    ['Nudge', 'Shift+Arrow'],
-    ['Next / previous shape', 'Tab'],
-    ['Follow a connection', 'Alt+Arrow'],
-    ['Edit freehand points', 'Double-click'],
+    [t('shortcuts.pan'), 'Space'],
+    [t('shortcuts.zoom'), 'Mod+Scroll'],
+    [t('shortcuts.duplicateDrag'), 'Alt+Drag'],
+    [t('shortcuts.keepProportions'), 'Shift+Drag'],
+    [t('shortcuts.selectInGroup'), 'Mod+Click'],
+    [t('shortcuts.editText'), 'Enter'],
+    [t('shortcuts.nudge'), 'Shift+Arrow'],
+    [t('shortcuts.nextShape'), 'Tab'],
+    [t('shortcuts.followConnection'), 'Alt+Arrow'],
+    [t('shortcuts.editFreehand'), t('shortcuts.doubleClick')],
   ];
   return (
     <Dialog open={open} onClose={() => set({ shortcutsOpen: false })} className="w-[780px] max-w-[94vw]">
-      <DialogHeader title="Keyboard shortcuts" onClose={() => set({ shortcutsOpen: false })} />
+      <DialogHeader title={t('shortcuts.title')} onClose={() => set({ shortcutsOpen: false })} />
       <div className="scroll-thin grid max-h-[66vh] grid-cols-2 gap-x-8 gap-y-5 overflow-y-auto px-5 pb-5">
         {groups.map(([group, actions]) => (
           <section key={group}>
-            <h3 className="mb-1.5 text-[11.5px] font-semibold uppercase tracking-wide text-subtle">{group}</h3>
+            <h3 className="mb-1.5 text-[11.5px] font-semibold uppercase tracking-wide text-subtle">{groupLabel(group)}</h3>
             {actions.map((a) => (
               <div key={a.id} className="flex h-8 items-center justify-between border-b border-line/60 text-[13px] text-fg last:border-0">
-                {a.label}
+                {actionLabel(a)}
                 <Shortcut combo={a.shortcuts![0]} />
               </div>
             ))}
           </section>
         ))}
         <section>
-          <h3 className="mb-1.5 text-[11.5px] font-semibold uppercase tracking-wide text-subtle">Canvas</h3>
+          <h3 className="mb-1.5 text-[11.5px] font-semibold uppercase tracking-wide text-subtle">{t('shortcuts.canvas')}</h3>
           {extras.map(([label, combo]) => (
             <div key={label} className="flex h-8 items-center justify-between border-b border-line/60 text-[13px] text-fg last:border-0">
               {label}
@@ -116,11 +120,12 @@ export function ShortcutsDialog() {
 export function CanvasContextMenu() {
   const menu = useUi((s) => s.contextMenu);
   const set = useUi((s) => s.set);
+  const t = useT();
   const hasSel = useEditor((s) => s.selection.length > 0);
   if (!menu) return null;
   const e = (id: string): MenuItemEntry => {
     const a = ACTION_MAP[id];
-    return { label: a.label, icon: a.icon, shortcut: a.shortcuts?.[0], onSelect: a.run, disabled: a.enabled ? !a.enabled() : false };
+    return { label: actionLabel(a), icon: a.icon, shortcut: a.shortcuts?.[0], onSelect: a.run, disabled: a.enabled ? !a.enabled() : false };
   };
   const sep: MenuEntry = { type: 'separator' };
   const isConn = useEditor.getState().selection.some((id) => useEditor.getState().doc.elements[id]?.type === 'connector');
@@ -137,26 +142,26 @@ export function CanvasContextMenu() {
         e('edit.style'),
         ...(ACTION_MAP['edit.mermaid']?.enabled?.() ? [e('edit.mermaid')] : []),
         e('extras.explore'),
-        { label: 'Style', items: [e('edit.copyStyle'), e('edit.pasteStyle'), e('edit.defaultStyle')] },
+        { label: t('menu.style'), items: [e('edit.copyStyle'), e('edit.pasteStyle'), e('edit.defaultStyle')] },
         ...(isConn ? [] : [e('edit.replaceShape')]),
         sep,
         e('arrange.front'),
         e('arrange.back'),
-        { label: 'Order', items: [e('arrange.forward'), e('arrange.backward')] },
+        { label: t('menu.order'), items: [e('arrange.forward'), e('arrange.backward')] },
         e('arrange.group'),
         e('arrange.ungroup'),
         ...interactionContextItems(e),
-        { label: 'Rotate & flip', items: [e('arrange.rotate'), e('arrange.rotateCcw'), e('arrange.flipH'), e('arrange.flipV')] },
+        { label: t('menu.rotateFlip'), items: [e('arrange.rotate'), e('arrange.rotateCcw'), e('arrange.flipH'), e('arrange.flipV')] },
         ...(isConn ? [e('arrange.reverse'), e('arrange.clearWaypoints')] : []),
         ...(layers && layers.length > 1
           ? [
               {
-                label: 'Move to layer',
+                label: t('menu.moveToLayer'),
                 items: layers.map((l) => ({ label: l.name, onSelect: () => useEditor.getState().moveSelectionToLayer(l.id) })),
               } as MenuEntry,
             ]
           : []),
-        { label: 'Copy as', items: [e('edit.copyImage'), e('edit.copySvg')] },
+        { label: t('menu.copyAs'), items: [e('edit.copyImage'), e('edit.copySvg')] },
         e('edit.lock'),
         sep,
         e('view.fitSelection'),

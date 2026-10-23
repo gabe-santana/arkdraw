@@ -98,7 +98,7 @@ function nearestSide(fx: number, fy: number): AnchorSide {
   return d.reduce((a, b) => (b[1] < a[1] ? b : a))[0];
 }
 
-/** Fixed connection point (draw.io exitX/exitY + exitDx/exitDy) → world point + outward direction. */
+/** Fixed connection point (mxGraph exitX/exitY + exitDx/exitDy) → world point + outward direction. */
 function fixedEnd(e: Endpoint, shape: ShapeElement, mode: EndMode): { point: Vec; dir: Vec } {
   const f = e.fixed!;
   const fx = shape.flipH ? 1 - f.x : f.x;
@@ -111,7 +111,7 @@ function fixedEnd(e: Endpoint, shape: ShapeElement, mode: EndMode): { point: Vec
   let side = nearestSide(fx, fy);
   if (mode === 'horizontal' && (side === 'top' || side === 'bottom')) side = fx >= 0.5 ? 'right' : 'left';
   const normal = rotateVec(SIDE_NORMALS[side], deg);
-  // Fixed points leave perpendicular to their side (like draw.io constraints).
+  // Fixed points leave perpendicular to their side.
   return { point, dir: mode === 'perimeter' ? normalize(normal) : snapToAxis(normal) };
 }
 
@@ -447,7 +447,7 @@ const shorten = (tip: Vec, dirIntoTip: Vec, by: number): Vec => ({ x: tip.x - di
 // Arrowheads
 // ---------------------------------------------------------------------------
 
-/** Arrowhead length in px. `size` is draw.io's startSize/endSize (default 6). */
+/** Arrowhead length in px. `size` is mxGraph's startSize/endSize (default 6). */
 export const arrowSize = (strokeWidth: number, size?: number) => (size ?? 6) * 1.5 + strokeWidth * 2;
 
 /** Heads with a closed outline, which can be drawn filled or hollow. */
@@ -500,7 +500,7 @@ export interface ArrowPart {
 
 /**
  * Builds arrowhead geometry at `tip`, with `dir` pointing into the tip.
- * `size` is draw.io's marker size (default 6); `fill` overrides filled/hollow for closed heads.
+ * `size` is mxGraph's marker size (default 6); `fill` overrides filled/hollow for closed heads.
  */
 export function arrowParts(kind: ArrowHead, tip: Vec, dir: Vec, strokeWidth: number, size?: number, fill?: boolean): ArrowPart[] {
   const parts = arrowShape(kind, tip, dir, arrowSize(strokeWidth, size));
@@ -646,7 +646,7 @@ export const ARROW_LABELS: Record<ArrowHead, string> = {
   boxOpen: 'Open box',
 };
 
-/** Picker order (draw.io's marker menu, roughly). */
+/** Picker order (mxGraph's marker menu, roughly). */
 export const ARROW_ORDER: ArrowHead[] = [
   'none', 'classic', 'classicThin', 'triangle', 'blockThin', 'arrow', 'openThin', 'doubleBlock',
   'triangleOpen', 'async', 'halfArrow', 'dash', 'cross', 'circle', 'circleOpen', 'circlePlus',

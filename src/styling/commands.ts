@@ -7,7 +7,8 @@ import { useEditor } from '@/store/editor';
 import { useUi } from '@/store/ui';
 import { promptText } from '@/ui/PromptDialog';
 import { presetPatches, type StylePreset } from './presets';
-import { DIAGRAM_THEMES, themePatches } from './themes';
+import { DIAGRAM_THEMES, themeLabel, themePatches } from './themes';
+import { t } from '@/i18n';
 
 const ed = () => useEditor.getState();
 
@@ -20,14 +21,14 @@ export function applyPreset(preset: Pick<StylePreset, 'fill' | 'stroke' | 'textC
 
 /** Recolors the selection, or the whole page when `scope` is 'page'. */
 export function applyTheme(themeId: string, scope: 'page' | 'selection' = 'page') {
-  const theme = DIAGRAM_THEMES.find((t) => t.id === themeId);
+  const theme = DIAGRAM_THEMES.find((th) => th.id === themeId);
   if (!theme) return;
   const s = ed();
   const ids = scope === 'selection' && s.selection.length ? s.selection : s.doc.order;
   const patches = themePatches(s.doc, theme, ids);
   if (!Object.keys(patches).length) return;
   s.updateElements(patches);
-  useUi.getState().toast(`Applied the ${theme.label} theme`, 'success');
+  useUi.getState().toast(t('styling.theme.applied', { theme: themeLabel(theme) }), 'success');
 }
 
 /** Every element on the page is sketched. */
@@ -65,12 +66,12 @@ export function isImageUrl(v: string): boolean {
 export async function backgroundImageFromUrl() {
   const page = ed().pages.find((p) => p.id === ed().activePageId);
   const url = await promptText({
-    title: 'Background image URL',
-    message: 'The image is drawn behind the diagram, from the page origin. Use an https:// or data: URL.',
+    title: t('styling.bgImage.title'),
+    message: t('styling.bgImage.message'),
     placeholder: 'https://example.com/floor-plan.png',
     defaultValue: page?.settings.backgroundImage && !page.settings.backgroundImage.startsWith('data:') ? page.settings.backgroundImage : '',
-    confirmLabel: 'Set background',
-    validate: (v) => (isImageUrl(v) ? null : 'Enter an http(s):// or data:image URL.'),
+    confirmLabel: t('styling.bgImage.confirm'),
+    validate: (v) => (isImageUrl(v) ? null : t('styling.bgImage.invalid')),
   });
   if (!url) return;
   const src = url.trim();
@@ -80,7 +81,7 @@ export async function backgroundImageFromUrl() {
   img.onload = () => update({ backgroundImage: src, paperW: img.naturalWidth || undefined, paperH: img.naturalHeight || undefined });
   img.onerror = () => {
     update({ backgroundImage: src });
-    useUi.getState().toast("Couldn't load that image — check the URL", 'error');
+    useUi.getState().toast(t('styling.bgImage.loadFailed'), 'error');
   };
   img.src = src;
 }

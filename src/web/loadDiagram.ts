@@ -1,6 +1,6 @@
 /**
  * Turns shared content (inline `#R` data, a fetched URL, a postMessage
- * payload) into pages. Accepts OpenDraw JSON, draw.io XML, and PNG/SVG/PDF
+ * payload) into pages. Accepts OpenDraw JSON, mxGraph XML, and PNG/SVG/PDF
  * exports that carry an embedded diagram.
  */
 import type { Page } from '@/model/types';
@@ -10,6 +10,7 @@ import { importEmbedded } from '@/io/import/embedded';
 import { newPage } from '@/store/editor';
 import { decodeShareHash } from './shareLink';
 import type { DiagramSource } from './launch';
+import { t } from '@/i18n';
 
 /** Largest diagram we'll download (bytes). */
 export const MAX_FETCH_BYTES = 30 * 1024 * 1024;
@@ -34,16 +35,16 @@ export async function pagesFromContent(content: string | Uint8Array, fileName?: 
     content = new TextDecoder().decode(content);
   }
   const text = content.replace(/^﻿/, '').trimStart();
-  if (!text) throw new Error('The diagram is empty.');
+  if (!text) throw new Error(t('web.load.empty'));
   if (text.startsWith('{')) return parsePages(text);
   if (text.startsWith('<')) {
-    // draw.io SVG exports carry the diagram in a `content` attribute.
+    // mxGraph SVG exports carry the diagram in a `content` attribute.
     if (/<svg[\s>]/i.test(text.slice(0, 4096)) && !/<mxfile|<mxGraphModel/i.test(text.slice(0, 512))) return fromEmbedded(text, fileName ?? 'diagram.svg');
     const pages = await importDrawioPages(text);
-    if (!pages.length) throw new Error('No diagram pages were found.');
+    if (!pages.length) throw new Error(t('web.load.noPages'));
     return pages.map((p) => newPage(p.name, p.doc));
   }
-  throw new Error('Unrecognized diagram format.');
+  throw new Error(t('web.load.unrecognized'));
 }
 
 /** "https://x/y/Network%20Map.drawio" → "Network Map". */
@@ -51,9 +52,9 @@ export function nameFromUrl(url: string): string {
   try {
     const last = new URL(url).pathname.split('/').filter(Boolean).pop() ?? '';
     const name = decodeURIComponent(last).replace(/(\.drawio)?\.(opendraw|drawio|xml|json|png|svg|pdf)$/i, '');
-    return name || 'Shared diagram';
+    return name || t('web.load.sharedDiagram');
   } catch {
-    return 'Shared diagram';
+    return t('web.load.sharedDiagram');
   }
 }
 
@@ -64,11 +65,11 @@ export async function fetchDiagram(url: string, signal?: AbortSignal): Promise<U
     res = await fetch(url, { signal, credentials: 'omit', redirect: 'follow', mode: 'cors' });
   } catch (e) {
     if ((e as Error).name === 'AbortError') throw e;
-    throw new Error('Could not download the diagram. The server may not allow cross-origin requests (CORS).');
+    throw new Error(t('web.load.cors'));
   }
-  if (!res.ok) throw new Error(`Could not download the diagram (HTTP ${res.status}).`);
+  if (!res.ok) throw new Error(t('web.load.http', { status: String(res.status) }));
   const declared = Number(res.headers.get('content-length') ?? 0);
-  if (declared > MAX_FETCH_BYTES) throw new Error('The diagram is too large to open.');
+  if (declared > MAX_FETCH_BYTES) throw new Error(t('web.load.tooLarge'));
   if (!res.body) return new Uint8Array(await res.arrayBuffer());
   const reader = res.body.getReader();
   const chunks: Uint8Array[] = [];
@@ -79,7 +80,7 @@ export async function fetchDiagram(url: string, signal?: AbortSignal): Promise<U
     total += value.length;
     if (total > MAX_FETCH_BYTES) {
       reader.cancel().catch(() => {});
-      throw new Error('The diagram is too large to open.');
+      throw new Error(t('web.load.tooLarge'));
     }
     chunks.push(value);
   }
@@ -96,7 +97,7 @@ export async function fetchDiagram(url: string, signal?: AbortSignal): Promise<U
 export async function resolveSource(source: DiagramSource, title?: string | null, signal?: AbortSignal): Promise<LoadedDiagram> {
   if (source.kind === 'inline') {
     const pages = await pagesFromContent(decodeShareHash(source.hash));
-    return { pages, name: title || 'Shared diagram' };
+    return { pages, name: title || t('web.load.sharedDiagram') };
   }
   const bytes = await fetchDiagram(source.url, signal);
   const name = nameFromUrl(source.url);

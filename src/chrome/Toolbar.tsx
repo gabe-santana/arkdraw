@@ -8,6 +8,8 @@ import { hasAnimation } from '@/animation/timeline';
 import { Tooltip } from '@/ui/Tooltip';
 import { ContextMenu, type MenuEntry } from '@/ui/Menu';
 import { ZOOM_PRESETS, zoomToPercent } from '@/app/commands';
+import { useT } from '@/i18n';
+import { actionLabel } from '@/i18n/catalog';
 
 const GROUPS = [
   ['tool.select', 'tool.hand'],
@@ -17,6 +19,7 @@ const GROUPS = [
 
 /** Floating tool dock with a sliding active indicator. */
 export function Toolbar() {
+  const t = useT();
   const tool = useEditor((s) => s.tool);
   const playing = useEditor((s) => s.playing);
   const animated = useEditor((s) => hasAnimation(s.doc));
@@ -29,7 +32,7 @@ export function Toolbar() {
   }, [tool]);
 
   return (
-    <div role="toolbar" aria-label="Tools" className="animate-slide-up pointer-events-auto relative flex items-center gap-0.5 rounded-2xl bg-panel p-1.5 shadow-pop" ref={ref}>
+    <div role="toolbar" aria-label={t('chrome.toolbar.label')} className="animate-slide-up pointer-events-auto relative flex items-center gap-0.5 rounded-2xl bg-panel p-1.5 shadow-pop" ref={ref}>
       {indicator && (
         <div
           className="absolute top-1.5 h-9 rounded-[10px] bg-accent shadow-[0_2px_8px_-2px_var(--accent)] transition-[left,width] duration-200 ease-[cubic-bezier(.3,1.25,.5,1)]"
@@ -43,11 +46,12 @@ export function Toolbar() {
             const a = ACTION_MAP[id];
             const active = a.checked?.() ?? false;
             const key = a.shortcuts?.[0];
+            const label = actionLabel(a);
             return (
-              <Tooltip key={id} label={a.label} shortcut={key} side="top">
+              <Tooltip key={id} label={label} shortcut={key} side="top">
                 <button
                   data-active={active}
-                  aria-label={a.label}
+                  aria-label={label}
                   aria-pressed={active}
                   onClick={a.run}
                   className={cn(
@@ -70,10 +74,10 @@ export function Toolbar() {
       {animated && (
         <>
           <div className="mx-1 h-6 w-px bg-line" />
-          <Tooltip label={playing ? 'Pause animation' : 'Play animation'} shortcut="Alt+P" side="top">
+          <Tooltip label={playing ? t('chrome.toolbar.pauseAnimation') : t('chrome.toolbar.playAnimation')} shortcut="Alt+P" side="top">
             <button
               onClick={togglePlayback}
-              aria-label="Play animation"
+              aria-label={t('chrome.toolbar.playAnimation')}
               className={cn(
                 'relative z-[1] flex size-9 items-center justify-center rounded-[10px] transition-colors [&_svg]:size-[17px]',
                 playing ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-hover hover:text-fg',
@@ -91,12 +95,13 @@ export function Toolbar() {
 
 /** Zoom pill: − / percentage (click for presets) / + / fit. */
 export function ZoomControls() {
+  const t = useT();
   const z = useEditor((s) => s.camera.z);
   const s = useEditor.getState;
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const action = (id: string): MenuEntry => {
     const a = ACTION_MAP[id];
-    return { label: a.label, shortcut: a.shortcuts?.[0], onSelect: a.run, disabled: a.enabled ? !a.enabled() : false };
+    return { label: actionLabel(a), shortcut: a.shortcuts?.[0], onSelect: a.run, disabled: a.enabled ? !a.enabled() : false };
   };
   const percent = Math.round(z * 100);
   const items: MenuEntry[] = [
@@ -110,11 +115,11 @@ export function ZoomControls() {
   ];
   return (
     <div className="animate-slide-up pointer-events-auto flex items-center rounded-xl bg-panel p-1 shadow-panel">
-      <button aria-label="Zoom out" onClick={() => s().zoomBy(0.8)} className="flex size-7 items-center justify-center rounded-lg text-muted hover:bg-hover hover:text-fg">
+      <button aria-label={t('chrome.zoom.out')} onClick={() => s().zoomBy(0.8)} className="flex size-7 items-center justify-center rounded-lg text-muted hover:bg-hover hover:text-fg">
         <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6h8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
       </button>
       <button
-        aria-label="Zoom options"
+        aria-label={t('chrome.zoom.options')}
         aria-haspopup="menu"
         onClick={(e) => {
           const r = e.currentTarget.getBoundingClientRect();
@@ -126,7 +131,7 @@ export function ZoomControls() {
         {percent}%
       </button>
       {menu && <ContextMenu x={menu.x} y={menu.y} above minWidth={200} items={items} onClose={() => setMenu(null)} />}
-      <button aria-label="Zoom in" onClick={() => s().zoomBy(1.25)} className="flex size-7 items-center justify-center rounded-lg text-muted hover:bg-hover hover:text-fg">
+      <button aria-label={t('chrome.zoom.in')} onClick={() => s().zoomBy(1.25)} className="flex size-7 items-center justify-center rounded-lg text-muted hover:bg-hover hover:text-fg">
         <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6h8M6 2v8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
       </button>
     </div>

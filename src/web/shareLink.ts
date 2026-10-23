@@ -4,7 +4,7 @@
  *   https://host/#R<base64url(deflate-raw(utf8(json)))>
  *
  * The fragment never reaches the server, so shared diagrams stay private to
- * whoever has the link. Decoding is lenient so draw.io `#R` links (standard
+ * whoever has the link. Decoding is lenient so mxGraph `#R` links (standard
  * base64, URI-encoded XML) open too.
  */
 import { deflateSync, Inflate, strFromU8, strToU8 } from 'fflate';
@@ -50,7 +50,7 @@ function inflateCapped(bytes: Uint8Array): Uint8Array {
   return out;
 }
 
-/** Compresses a diagram (OpenDraw JSON or draw.io XML) into a `#R…` URL fragment (leading `#` included). */
+/** Compresses a diagram (OpenDraw JSON or mxGraph XML) into a `#R…` URL fragment (leading `#` included). */
 export function encodeShareHash(json: string): string {
   return `#R${bytesToBase64Url(deflateSync(strToU8(json), { level: 9 }))}`;
 }
@@ -79,7 +79,7 @@ export function decodeShareHash(hash: string): string {
     if (e instanceof ShareLinkError) throw e;
     throw new ShareLinkError('This share link is damaged or incomplete.');
   }
-  // draw.io compresses encodeURIComponent(xml).
+  // mxGraph compresses encodeURIComponent(xml).
   if (/^%3C|^%7B/i.test(text)) {
     try {
       text = decodeURIComponent(text);

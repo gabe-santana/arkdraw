@@ -9,10 +9,11 @@ import {
   TriangleAlert, X, Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { t as tNow, useT } from '@/i18n';
 import { PROVIDERS, PROVIDER_META, type ModelInfo, type ProviderId } from '../providers';
 import { baseUrlFor, modelFor, providerConfig, updateAiSettings, useAiSettings, type CustomAuthStyle } from '../settings';
 import { deleteKey, isTauri, saveKey, testConnection } from '../transport';
-import { Btn, IconBtn, inputClass, ProviderMark, stopKeys } from './ui';
+import { Btn, IconBtn, inputClass, modelHint, ProviderMark, providerKeyPlaceholder, providerName, providerTagline, stopKeys } from './ui';
 import { notifyKeysChanged, useHasKey } from './useAiReady';
 
 export interface AiSettingsDialogProps {
@@ -22,7 +23,7 @@ export interface AiSettingsDialogProps {
 
 type TestState = { kind: 'idle' } | { kind: 'testing' } | { kind: 'ok'; models: number } | { kind: 'error'; message: string };
 
-const errMsg = (e: unknown) => (e instanceof Error ? e.message : typeof e === 'string' ? e : 'Something went wrong.');
+const errMsg = (e: unknown) => (e instanceof Error ? e.message : typeof e === 'string' ? e : tNow('ai.settings.somethingWrong'));
 
 export function AiSettingsDialog({ open, onClose }: AiSettingsDialogProps) {
   useEffect(() => {
@@ -55,6 +56,7 @@ export function AiSettingsDialog({ open, onClose }: AiSettingsDialogProps) {
 }
 
 function SettingsBody({ onClose }: { onClose: () => void }) {
+  const t = useT();
   const settings = useAiSettings();
   const provider = settings.provider;
   const meta = PROVIDER_META[provider];
@@ -108,7 +110,7 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
     const k = keyDraft.trim();
     if (!k) return;
     if (meta.needsBaseUrl && !baseUrl) {
-      setKeyError('Set the endpoint URL first.');
+      setKeyError(t('ai.settings.setEndpointFirst'));
       return;
     }
     setBusy(true);
@@ -148,7 +150,7 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
     try {
       if (v) new URL(v);
     } catch {
-      setKeyError('Enter a full URL, e.g. https://openrouter.ai/api/v1');
+      setKeyError(t('ai.settings.enterFullUrl', { example: 'https://openrouter.ai/api/v1' }));
       return;
     }
     setKeyError(null);
@@ -163,11 +165,11 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
   };
 
   const models = useMemo(() => {
-    const suggested = meta.models.map((m) => ({ id: m.id, label: m.label, hint: m.hint }));
+    const suggested = meta.models.map((m) => ({ id: m.id, label: m.label, hint: modelHint(m.id, m.hint) }));
     const seen = new Set(suggested.map((m) => m.id));
     const extra = (fetched[provider] ?? []).filter((m) => !seen.has(m.id)).map((m) => ({ id: m.id, label: m.label ?? m.id, hint: undefined }));
     return [...suggested, ...extra];
-  }, [meta, fetched, provider]);
+  }, [meta, fetched, provider, t]);
 
   const canTest = (!meta.needsKey || !!has) && (!meta.needsBaseUrl || !!baseUrl) && !endpointChanged;
 
@@ -178,10 +180,10 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
           <KeyRound className="size-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <h2 id="ai-settings-title" className="text-[14px] font-semibold leading-tight">AI settings</h2>
-          <p className="mt-0.5 text-[12px] text-muted">Bring your own key. Diagrams are sent only to the provider you choose.</p>
+          <h2 id="ai-settings-title" className="text-[14px] font-semibold leading-tight">{t('ai.settings.title')}</h2>
+          <p className="mt-0.5 text-[12px] text-muted">{t('ai.settings.subtitle')}</p>
         </div>
-        <IconBtn label="Close" size="sm" onClick={onClose}>
+        <IconBtn label={t('common.close')} size="sm" onClick={onClose}>
           <X />
         </IconBtn>
       </header>
@@ -190,13 +192,11 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
         {!isTauri() && (
           <div className="mb-4 flex gap-2 rounded-lg bg-[#f5a524]/12 px-3 py-2 text-[12px] text-fg ring-1 ring-[#f5a524]/30">
             <TriangleAlert className="mt-px size-3.5 shrink-0 text-[#d48806]" />
-            <span>
-              Browser preview: keys are kept in memory for this tab only and requests go directly from the page. Use the desktop app to store keys in the system keychain.
-            </span>
+            <span>{t('ai.settings.browserWarning')}</span>
           </div>
         )}
 
-        <SectionLabel>Provider</SectionLabel>
+        <SectionLabel>{t('ai.settings.provider')}</SectionLabel>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {PROVIDERS.map((p) => (
             <ProviderCard key={p.id} id={p.id} active={p.id === provider} onSelect={() => updateAiSettings({ provider: p.id })} />
@@ -205,7 +205,7 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
 
         <div key={provider} className="animate-slide-up mt-5 space-y-4">
           {meta.needsBaseUrl && (
-            <Field label={provider === 'ollama' ? 'Ollama URL' : 'Base URL'} hint={provider === 'custom' ? 'OpenRouter, Azure OpenAI (…/openai/v1), LM Studio, vLLM… Must speak the OpenAI Chat Completions API.' : undefined}>
+            <Field label={provider === 'ollama' ? t('ai.settings.ollamaUrl') : t('ai.settings.baseUrl')} hint={provider === 'custom' ? t('ai.settings.customHint') : undefined}>
               <input
                 value={urlDraft}
                 onChange={(e) => setUrlDraft(e.target.value)}
@@ -220,7 +220,7 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
               />
               {provider === 'custom' && (
                 <div className="mt-2 flex items-center gap-2 text-[12px] text-muted">
-                  <span>Auth header</span>
+                  <span>{t('ai.settings.authHeader')}</span>
                   <Segmented
                     value={settings.customAuth}
                     onChange={setAuthStyle}
@@ -234,16 +234,16 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
             </Field>
           )}
 
-          <Field label={meta.needsKey ? 'API key' : 'API key (optional)'}>
+          <Field label={meta.needsKey ? t('ai.settings.apiKey') : t('ai.settings.apiKeyOptional')}>
             {has === null ? (
               <div className="flex h-8 items-center gap-2 text-[12px] text-muted">
-                <LoaderCircle className="size-3.5 animate-spin" /> Checking…
+                <LoaderCircle className="size-3.5 animate-spin" /> {t('ai.settings.checking')}
               </div>
             ) : showKeyInput ? (
               <div className="space-y-1.5">
                 {endpointChanged && !replacing && (
                   <p className="flex items-center gap-1.5 text-[12px] text-[#d48806]">
-                    <TriangleAlert className="size-3.5" /> The endpoint changed. Re-enter the key to use it with the new URL.
+                    <TriangleAlert className="size-3.5" /> {t('ai.settings.endpointChanged')}
                   </p>
                 )}
                 <div className="flex gap-2">
@@ -258,7 +258,7 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
                         stopKeys(e);
                         if (e.key === 'Enter') void onSaveKey();
                       }}
-                      placeholder={meta.keyPlaceholder ?? 'Paste your API key'}
+                      placeholder={providerKeyPlaceholder(provider) ?? t('ai.settings.apiKeyPlaceholder')}
                       spellCheck={false}
                       autoComplete="off"
                       className={cn(inputClass, 'pr-8 font-mono text-[12px]')}
@@ -267,32 +267,32 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
                       type="button"
                       onClick={() => setShowKey((v) => !v)}
                       className="absolute right-1 top-1 rounded-md p-1 text-subtle hover:bg-hover hover:text-fg"
-                      aria-label={showKey ? 'Hide key' : 'Show key'}
-                      title={showKey ? 'Hide key' : 'Show key'}
+                      aria-label={showKey ? t('ai.settings.hideKey') : t('ai.settings.showKey')}
+                      title={showKey ? t('ai.settings.hideKey') : t('ai.settings.showKey')}
                     >
                       {showKey ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
                     </button>
                   </div>
                   <Btn variant="primary" onClick={onSaveKey} disabled={!keyDraft.trim()} loading={busy}>
-                    Save key
+                    {t('ai.settings.saveKey')}
                   </Btn>
                   {replacing && (
                     <Btn variant="ghost" onClick={() => setReplacing(false)}>
-                      Cancel
+                      {t('common.cancel')}
                     </Btn>
                   )}
                 </div>
-                {meta.keyHelpUrl && <p className="text-[11.5px] text-subtle">Create a key at {meta.keyHelpUrl.replace(/^https:\/\//, '')}</p>}
+                {meta.keyHelpUrl && <p className="text-[11.5px] text-subtle">{t('ai.settings.createKeyAt', { url: meta.keyHelpUrl.replace(/^https:\/\//, '') })}</p>}
               </div>
             ) : (
               <div className="flex h-9 items-center gap-2.5 rounded-lg bg-panel-2 px-3 ring-1 ring-line">
                 <Lock className="size-3.5 text-success" />
                 <span className="font-mono text-[12px] tracking-widest text-muted">••••••••••••</span>
-                <span className="flex-1 truncate text-[12px] text-muted">{isTauri() ? 'Stored in the system keychain' : 'Kept in memory for this tab'}</span>
+                <span className="flex-1 truncate text-[12px] text-muted">{isTauri() ? t('ai.settings.storedKeychain') : t('ai.settings.keptInMemory')}</span>
                 <Btn size="sm" variant="ghost" onClick={() => setReplacing(true)}>
-                  Replace
+                  {t('ai.settings.replace')}
                 </Btn>
-                <IconBtn label="Delete key" size="sm" onClick={onDeleteKey} disabled={busy} className="hover:text-danger">
+                <IconBtn label={t('ai.settings.deleteKey')} size="sm" onClick={onDeleteKey} disabled={busy} className="hover:text-danger">
                   <Trash />
                 </IconBtn>
               </div>
@@ -304,13 +304,13 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
             )}
           </Field>
 
-          <Field label="Model">
-            <ModelPicker value={modelFor(settings)} options={models} onChange={(m) => updateAiSettings({ models: { ...settings.models, [provider]: m } })} placeholder={provider === 'custom' ? 'e.g. anthropic/claude-opus-5-5' : 'Model id'} />
+          <Field label={t('ai.settings.model')}>
+            <ModelPicker value={modelFor(settings)} options={models} onChange={(m) => updateAiSettings({ models: { ...settings.models, [provider]: m } })} placeholder={provider === 'custom' ? t('ai.settings.customModelPlaceholder', { model: 'anthropic/claude-opus-5-5' }) : t('ai.settings.modelPlaceholder')} />
           </Field>
 
           <div className="flex items-center gap-3">
             <Btn onClick={runTest} disabled={!canTest} loading={test.kind === 'testing'} icon={<Zap />}>
-              Test connection
+              {t('ai.settings.testConnection')}
             </Btn>
             <TestStatus state={test} />
           </div>
@@ -319,16 +319,16 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
         <div className="mt-6 flex gap-2.5 rounded-lg bg-panel-2 px-3 py-2.5 text-[12px] leading-relaxed text-muted ring-1 ring-line">
           <ShieldCheck className="mt-0.5 size-4 shrink-0 text-success" />
           <p>
-            {isTauri() ? 'Keys are stored in your operating system’s keychain and used only by OpenDraw’s native layer — they never reach the web view. ' : ''}
-            Your diagram and prompt are sent only to the provider selected here; OpenDraw has no servers of its own.{' '}
-            {provider === 'ollama' ? 'With Ollama everything stays on your machine and works offline.' : 'Choose Ollama to keep everything on your machine.'}
+            {isTauri() ? `${t('ai.settings.privacyKeychain')} ` : ''}
+            {t('ai.settings.privacy')}{' '}
+            {provider === 'ollama' ? t('ai.settings.privacyOllama') : t('ai.settings.privacyChooseOllama')}
           </p>
         </div>
       </div>
 
       <footer className="flex items-center justify-end gap-2 border-t border-line bg-panel-2/60 px-5 py-3">
         <Btn variant="primary" onClick={onClose}>
-          Done
+          {t('common.done')}
         </Btn>
       </footer>
     </>
@@ -350,6 +350,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 }
 
 function ProviderCard({ id, active, onSelect }: { id: ProviderId; active: boolean; onSelect: () => void }) {
+  const t = useT();
   const meta = PROVIDER_META[id];
   const [has] = useHasKey(id);
   return (
@@ -364,11 +365,11 @@ function ProviderCard({ id, active, onSelect }: { id: ProviderId; active: boolea
     >
       <ProviderMark provider={id} size={28} />
       <span className="min-w-0">
-        <span className="block truncate text-[12.5px] font-medium text-fg">{meta.name}</span>
-        <span className="block truncate text-[11px] text-muted">{meta.tagline}</span>
+        <span className="block truncate text-[12.5px] font-medium text-fg">{providerName(id)}</span>
+        <span className="block truncate text-[11px] text-muted">{providerTagline(id)}</span>
       </span>
       {(has || (meta.local && !meta.needsKey)) && (
-        <span className="absolute right-2 top-2 size-1.5 rounded-full bg-success" title={has ? 'Key saved' : 'No key needed'} />
+        <span className="absolute right-2 top-2 size-1.5 rounded-full bg-success" title={has ? t('ai.settings.keySaved') : t('ai.settings.noKeyNeeded')} />
       )}
     </button>
   );
@@ -394,6 +395,7 @@ function Segmented<T extends string>({ value, onChange, options }: { value: T; o
 function ModelPicker({
   value, options, onChange, placeholder,
 }: { value: string; options: Array<{ id: string; label: string; hint?: string }>; onChange: (v: string) => void; placeholder: string }) {
+  const tr = useT();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value);
   const root = useRef<HTMLDivElement>(null);
@@ -437,7 +439,7 @@ function ModelPicker({
             tabIndex={-1}
             onClick={() => setOpen((o) => !o)}
             className="absolute right-1 top-1 rounded-md p-1 text-subtle hover:bg-hover hover:text-fg"
-            aria-label="Show models"
+            aria-label={tr('ai.settings.showModels')}
           >
             <ChevronDown className={cn('size-3.5 transition-transform', open && 'rotate-180')} />
           </button>
@@ -474,12 +476,13 @@ function ModelPicker({
 }
 
 function TestStatus({ state }: { state: TestState }) {
+  const t = useT();
   if (state.kind === 'idle') return null;
-  if (state.kind === 'testing') return <span className="text-[12px] text-muted">Connecting…</span>;
+  if (state.kind === 'testing') return <span className="text-[12px] text-muted">{t('ai.settings.connecting')}</span>;
   if (state.kind === 'ok')
     return (
       <span className="animate-fade flex items-center gap-1.5 text-[12px] text-success">
-        <CircleCheck className="size-3.5" /> Connected{state.models ? ` · ${state.models} models available` : ''}
+        <CircleCheck className="size-3.5" /> {state.models ? t('ai.settings.connectedModels', { count: state.models }) : t('ai.settings.connected')}
       </span>
     );
   return (

@@ -70,7 +70,7 @@ describe('editable HTML import', () => {
     expect(importerFor('x.html')?.id).toBe('html');
   });
 
-  it('reads draw.io data-mxgraph HTML', async () => {
+  it('reads mxGraph data-mxgraph HTML', async () => {
     const xml = '<mxfile><diagram name="D"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/><mxCell id="v" value="Hi" vertex="1" parent="1"><mxGeometry x="10" y="10" width="80" height="40" as="geometry"/></mxCell></root></mxGraphModel></diagram></mxfile>';
     const attr = JSON.stringify({ highlight: '#0000ff', xml }).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const html = `<!DOCTYPE html><html><body><div class="mxgraph" style="max-width:100%" data-mxgraph="${attr}"></div></body></html>`;

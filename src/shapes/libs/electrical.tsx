@@ -1,5 +1,5 @@
 /**
- * Electrical schematic symbols (draw.io "Electrical" library parity).
+ * Electrical schematic symbols (mxGraph "Electrical" library parity).
  *
  * Line-art: every two-terminal part has its leads reaching the left/right
  * edges at mid-height (sources & ground: top/bottom centre), so connectors

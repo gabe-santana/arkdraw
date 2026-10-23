@@ -1,5 +1,5 @@
 /**
- * Edit Connection Points (draw.io): a shape's connection points as a list of
+ * Edit Connection Points: a shape's connection points as a list of
  * x,y fractions of its box. Saving stores them on the element
  * (`connectionPoints`), replacing the shape's defaults; Reset restores them.
  */
@@ -15,6 +15,7 @@ import { Dialog, DialogHeader } from '@/ui/Dialog';
 import { Button } from '@/ui/Button';
 import { NumberField } from '@/ui/controls';
 import { Section } from './sections';
+import { useT } from '@/i18n';
 
 export const useConnectionPointsDialog = create<{ id: string | null }>(() => ({ id: null }));
 
@@ -42,6 +43,7 @@ const same = (a: Vec[], b: Vec[]) => a.length === b.length && a.every((p, i) => 
 function Body({ el, close }: { el: ShapeElement; close: () => void }) {
   const [pts, setPts] = useState<Vec[]>(() => connectionPointsOf(el).map((p) => ({ ...p })));
   const defaults = defaultConnectionPoints(el.kind);
+  const t = useT();
   const save = () => {
     const custom = same(pts, defaults) ? undefined : pts.map((p) => ({ x: clamp01(p.x), y: clamp01(p.y) }));
     useEditor.getState().updateElements({ [el.id]: { connectionPoints: custom } });
@@ -50,7 +52,7 @@ function Body({ el, close }: { el: ShapeElement; close: () => void }) {
   const set = (i: number, patch: Partial<Vec>) => setPts((cur) => cur.map((p, k) => (k === i ? { ...p, ...patch } : p)));
   return (
     <div onKeyDown={(e) => e.stopPropagation()}>
-      <DialogHeader title="Edit connection points" subtitle="Positions as fractions of the shape (0 = left/top, 1 = right/bottom)" onClose={close} />
+      <DialogHeader title={t('panels.points.title')} subtitle={t('panels.points.subtitle')} onClose={close} />
       <div className="flex gap-4 px-5 pb-2">
         <Preview el={el} pts={pts} />
         <div className="scroll-thin max-h-[300px] min-w-0 flex-1 space-y-1.5 overflow-y-auto pr-1">
@@ -59,8 +61,8 @@ function Body({ el, close }: { el: ShapeElement; close: () => void }) {
               <NumberField label="X" value={p.x} min={0} max={1} step={0.05} precision={3} onChange={(x) => set(i, { x })} />
               <NumberField label="Y" value={p.y} min={0} max={1} step={0.05} precision={3} onChange={(y) => set(i, { y })} />
               <button
-                aria-label={`Remove point ${i + 1}`}
-                title="Remove point"
+                aria-label={t('panels.points.removeN', { n: i + 1 })}
+                title={t('panels.points.remove')}
                 onClick={() => setPts((cur) => cur.filter((_, k) => k !== i))}
                 className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-hover hover:text-fg"
               >
@@ -68,25 +70,25 @@ function Body({ el, close }: { el: ShapeElement; close: () => void }) {
               </button>
             </div>
           ))}
-          {!pts.length && <p className="text-[12px] text-subtle">No points: connectors will only float to the outline.</p>}
+          {!pts.length && <p className="text-[12px] text-subtle">{t('panels.points.none')}</p>}
           <button
             onClick={() => setPts((cur) => [...cur, { x: 0.5, y: 0.5 }])}
             className="flex h-7 w-full items-center justify-center gap-1.5 rounded-md text-[12px] text-accent hover:bg-accent-soft"
           >
-            <Plus className="size-3.5" /> Add point
+            <Plus className="size-3.5" /> {t('panels.points.add')}
           </button>
         </div>
       </div>
       <div className="flex items-center justify-between gap-2 border-t border-line px-5 py-3">
         <Button variant="ghost" onClick={() => setPts(defaults.map((p) => ({ ...p })))}>
-          Reset to default
+          {t('panels.points.resetDefault')}
         </Button>
         <div className="flex gap-2">
           <Button variant="ghost" onClick={close}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button variant="primary" onClick={save}>
-            Save
+            {t('common.save')}
           </Button>
         </div>
       </div>
@@ -120,17 +122,18 @@ function Preview({ el, pts }: { el: ShapeElement; pts: Vec[] }) {
 /** Format panel entry point for a single shape. */
 export function ConnectionPointsSection({ shape }: { shape: ShapeElement }) {
   const n = connectionPointsOf(shape).length;
+  const t = useT();
   return (
     <Section
-      title="Connection points"
+      title={t('panels.points.section')}
       action={
         <button onClick={() => useConnectionPointsDialog.setState({ id: shape.id })} className="flex h-6 items-center gap-1 rounded-md px-2 text-[11.5px] font-medium text-accent hover:bg-accent-soft">
-          Edit…
+          {t('panels.editEllipsis')}
         </button>
       }
     >
       <p className="text-[11px] leading-relaxed text-subtle">
-        {n} point{n === 1 ? '' : 's'}{shape.connectionPoints ? ' (custom)' : ''}. Drop a connector end on one to fix it there; hold Shift to fix it anywhere on the outline.
+        {t('panels.points.summary', { count: n, custom: shape.connectionPoints ? 'yes' : 'no' })}
       </p>
     </Section>
   );

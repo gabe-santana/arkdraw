@@ -6,6 +6,7 @@
 import { isTauri } from '@/lib/platform';
 import { useUi } from '@/store/ui';
 import { baseName } from '@/io/native';
+import { t } from '@/i18n';
 
 type TauriInternals = { __TAURI_INTERNALS__?: { metadata?: { currentWindow?: { label?: string } } } };
 
@@ -41,10 +42,10 @@ export async function openNewWindow(path?: string): Promise<void> {
  */
 export async function askOpenWhere(path: string, currentName: string): Promise<'window' | 'replace' | 'cancel'> {
   const choice = await useUi.getState().ask({
-    title: `Open “${baseName(path)}” in a new window?`,
-    message: `“${currentName}” has unsaved changes. You can keep working on it here and open the file in a new window.`,
-    confirmLabel: 'Open in new window',
-    denyLabel: 'Replace this diagram',
+    title: t('desktop.openWhere.title', { name: baseName(path) }),
+    message: t('desktop.openWhere.message', { name: currentName }),
+    confirmLabel: t('desktop.openWhere.confirm'),
+    denyLabel: t('desktop.openWhere.deny'),
   });
   return choice === 'confirm' ? 'window' : choice === 'deny' ? 'replace' : 'cancel';
 }

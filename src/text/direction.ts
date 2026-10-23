@@ -1,4 +1,4 @@
-/** Writing direction of labels (draw.io textDirection: ltr / rtl / auto). */
+/** Writing direction of labels (mxGraph textDirection: ltr / rtl / auto). */
 import type { ElementStyle } from '@/model/types';
 
 const RTL_CHAR = /[֐-ࣿיִ-﷿ﹰ-﻿]/;

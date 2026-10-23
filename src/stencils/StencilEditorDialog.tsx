@@ -24,6 +24,8 @@ import { useExt } from '@/extensibility/store';
 import { parseStencil, splitStencilSet, stencilPoints, StencilError, type Stencil } from './parse';
 import { renderStencilXml, STENCIL_KIND } from './shape';
 import { stencilFromShape } from './convert';
+import { rich } from '@/automation/formUi';
+import { t as tNow, useT } from '@/i18n';
 
 /** Starting point for Insert → Shape…: a tag with a hole, showing paths, arcs and the save/restore state stack. */
 export const SAMPLE_STENCIL = `<shape name="Tag" w="120" h="60" aspect="variable" strokewidth="inherit">
@@ -76,6 +78,7 @@ function parse(xml: string): Parsed {
 }
 
 function EditorBody({ el, close }: { el: ShapeElement | null; close: () => void }) {
+  const t = useT();
   const isStencil = el?.kind === STENCIL_KIND;
   const conversion = useMemo(() => (el && !isStencil ? stencilFromShape(el) : null), [el, isStencil]);
   const initialXml = !el ? SAMPLE_STENCIL : isStencil ? (el.stencil ?? '') : conversion?.ok ? conversion.xml : '';
@@ -114,18 +117,19 @@ function EditorBody({ el, close }: { el: ShapeElement | null; close: () => void 
     const shape = createShape(STENCIL_KIND, { x: 0, y: 0, w, h });
     shape.stencil = xml;
     shape.connectionPoints = stencilPoints(xml);
-    useUserLibraries.getState().addItem(SCRATCHPAD_ID, [shape], parsed.stencil.name || 'Custom shape');
-    toast(`Added “${parsed.stencil.name || 'Custom shape'}” to the Scratchpad`, 'success');
+    const name = parsed.stencil.name || tNow('stencils.customShape');
+    useUserLibraries.getState().addItem(SCRATCHPAD_ID, [shape], name);
+    toast(tNow('stencils.addedToScratchpad', { name }), 'success');
   };
 
   const openFile = async () => {
-    const f = await pickAndOpenFile([{ name: 'Stencil XML', extensions: ['xml'] }]);
+    const f = await pickAndOpenFile([{ name: tNow('stencils.fileType'), extensions: ['xml'] }]);
     if (!f) return;
     try {
       const shapes = splitStencilSet(f.contents);
-      if (!shapes.length) throw new Error('No <shape> in this file.');
+      if (!shapes.length) throw new Error(tNow('stencils.noShape'));
       setXml(shapes[0].xml);
-      if (shapes.length > 1) toast(`Loaded the first of ${shapes.length} shapes. Import the file as a library to get all of them.`);
+      if (shapes.length > 1) toast(tNow('stencils.firstOfMany', { count: shapes.length }));
     } catch (e) {
       toast(String((e as Error).message ?? e), 'error');
     }
@@ -143,8 +147,8 @@ function EditorBody({ el, close }: { el: ShapeElement | null; close: () => void 
     requestAnimationFrame(() => areaRef.current?.setSelectionRange(a + 2, a + 2));
   };
 
-  const title = el ? 'Edit shape' : 'Insert shape';
-  const subtitle = el ? (isStencil ? 'mxGraph stencil XML — compatible with draw.io custom shapes' : `${label} is a built-in shape`) : 'Describe a shape in mxGraph stencil XML (the format draw.io uses)';
+  const title = el ? t('stencils.editTitle') : t('stencils.insertTitle');
+  const subtitle = el ? (isStencil ? t('stencils.stencilXml') : t('stencils.builtIn', { shape: label })) : t('stencils.insertSubtitle');
   const lines = xml.split('\n').length;
 
   return (
@@ -154,14 +158,12 @@ function EditorBody({ el, close }: { el: ShapeElement | null; close: () => void 
         <div className="mx-5 mb-3 flex items-start gap-2 rounded-xl bg-panel-2 px-3 py-2.5 text-[12.5px] text-muted">
           <Info className="mt-0.5 size-4 shrink-0 text-accent" />
           {conversion?.ok ? (
-            <span>
-              Built-in shapes are drawn in code. Applying converts this one into an editable <b className="font-medium text-fg">custom shape</b> at its current proportions; text, style and connections are kept.
-            </span>
+            <span>{rich(t, 'stencils.convertInfo', { customShape: <b className="font-medium text-fg">{t('stencils.customShapeTerm')}</b> })}</span>
           ) : (
             <span>
-              {conversion?.ok === false ? conversion.reason : ''} You can still replace it with a custom shape written from scratch.{' '}
+              {conversion?.ok === false ? conversion.reason : ''} {t('stencils.replaceInfo')}{' '}
               <button className="font-medium text-accent hover:underline" onClick={() => setXml(SAMPLE_STENCIL)}>
-                Start from a sample
+                {t('stencils.startFromSample')}
               </button>
             </span>
           )}
@@ -188,7 +190,7 @@ function EditorBody({ el, close }: { el: ShapeElement | null; close: () => void 
             spellCheck={false}
             wrap="off"
             placeholder="<shape name=… w=… h=…>…</shape>"
-            aria-label="Stencil XML"
+            aria-label={t('stencils.fileType')}
             className="scroll-thin h-full flex-1 resize-none bg-transparent py-3 pr-3 font-mono text-[11.5px] leading-[1.6] text-fg outline-none"
           />
         </div>
@@ -199,7 +201,7 @@ function EditorBody({ el, close }: { el: ShapeElement | null; close: () => void 
                 const { w, h } = size(parsed.stencil);
                 const pad = Math.max(4, style.strokeWidth * 2);
                 return (
-                  <svg width={w + pad * 2} height={h + pad * 2} viewBox={`${-pad} ${-pad} ${w + pad * 2} ${h + pad * 2}`} role="img" aria-label="Preview">
+                  <svg width={w + pad * 2} height={h + pad * 2} viewBox={`${-pad} ${-pad} ${w + pad * 2} ${h + pad * 2}`} role="img" aria-label={t('common.preview')}>
                     {renderStencilXml(xml, w, h, style)}
                     {parsed.stencil.connections.map((c, i) => (
                       <path key={i} d={`M${c.x * w - 3},${c.y * h - 3} l6,6 m0,-6 l-6,6`} stroke="#5b5bf6" strokeWidth={1.25} opacity={0.75} />
@@ -208,21 +210,22 @@ function EditorBody({ el, close }: { el: ShapeElement | null; close: () => void 
                 );
               })()
             ) : (
-              <span className="px-4 text-center text-[12px] text-subtle">{xml.trim() ? 'Fix the XML to see a preview' : 'Nothing to preview'}</span>
+              <span className="px-4 text-center text-[12px] text-subtle">{xml.trim() ? t('stencils.fixToPreview') : t('stencils.nothingToPreview')}</span>
             )}
           </div>
           {parsed.ok ? (
             <div className="space-y-1 px-1 text-[12px] text-muted">
               <div>
-                <span className="font-medium text-fg">{parsed.stencil.name || 'Untitled'}</span> · {parsed.stencil.w}×{parsed.stencil.h} · {parsed.stencil.aspect} aspect
+                <span className="font-medium text-fg">{parsed.stencil.name || t('common.untitled')}</span> · {parsed.stencil.w}×{parsed.stencil.h} · {t('stencils.aspect', { aspect: parsed.stencil.aspect })}
               </div>
               <div>
-                {parsed.stencil.connections.length} connection point{parsed.stencil.connections.length === 1 ? '' : 's'} · stroke {parsed.stencil.strokewidth === 'inherit' ? 'from style' : parsed.stencil.strokewidth}
+                {t('stencils.connectionPoints', { count: parsed.stencil.connections.length })} ·{' '}
+                {parsed.stencil.strokewidth === 'inherit' ? t('stencils.strokeFromStyle') : t('stencils.stroke', { width: parsed.stencil.strokewidth })}
               </div>
               {parsed.stencil.unsupported.length > 0 && (
                 <div className="flex items-start gap-1.5 text-amber-600 dark:text-amber-400">
                   <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
-                  Ignored: {[...new Set(parsed.stencil.unsupported)].join(', ')}
+                  {t('stencils.ignored', { items: [...new Set(parsed.stencil.unsupported)].join(', ') })}
                 </div>
               )}
             </div>
@@ -236,26 +239,26 @@ function EditorBody({ el, close }: { el: ShapeElement | null; close: () => void 
       </div>
       <div className="flex items-center gap-2 border-t border-line px-5 py-3">
         <Button size="sm" variant="ghost" icon={<FileUp className="size-3.5" />} onClick={() => void openFile()}>
-          Open XML…
+          {t('stencils.openXml')}
         </Button>
         {xml !== initialXml && initialXml && (
           <Button size="sm" variant="ghost" icon={<RotateCcw className="size-3.5" />} onClick={() => setXml(initialXml)}>
-            Revert
+            {t('stencils.revert')}
           </Button>
         )}
         <div className="flex-1" />
-        <Button onClick={close}>Cancel</Button>
+        <Button onClick={close}>{t('common.cancel')}</Button>
         {el ? (
           <Button variant="primary" disabled={!parsed.ok} onClick={apply}>
-            {isStencil ? 'Apply' : 'Convert & apply'}
+            {isStencil ? t('common.apply') : t('stencils.convertApply')}
           </Button>
         ) : (
           <>
             <Button disabled={!parsed.ok} icon={<BookmarkPlus className="size-3.5" />} onClick={saveToLibrary}>
-              Add to Scratchpad
+              {t('stencils.addToScratchpad')}
             </Button>
             <Button variant="primary" disabled={!parsed.ok} onClick={insert}>
-              Insert
+              {t('common.insert')}
             </Button>
           </>
         )}

@@ -28,7 +28,7 @@ describe('share hash', () => {
     expect(decodeShareHash(`https://draw.example.com/app/?viewer=1${hash}`)).toBe(sample);
   });
 
-  it('decodes draw.io-style links (standard base64 of URI-encoded XML)', () => {
+  it('decodes links (standard base64 of URI-encoded XML)', () => {
     const xml = '<mxfile><diagram name="Página">abc</diagram></mxfile>';
     const bytes = deflateSync(strToU8(encodeURIComponent(xml)));
     let bin = '';

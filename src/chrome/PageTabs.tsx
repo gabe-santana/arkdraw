@@ -1,5 +1,5 @@
 /**
- * Page tabs (draw.io's bottom tab bar): switch, add, rename (double-click),
+ * Page tabs (mxGraph's bottom tab bar): switch, add, rename (double-click),
  * duplicate/delete via context menu, drag to reorder.
  */
 import { useRef, useState } from 'react';
@@ -10,8 +10,10 @@ import { ContextMenu, type MenuEntry } from '@/ui/Menu';
 import { Database } from 'lucide-react';
 import { openAutomationDialog } from '@/automation/ui';
 import { Tooltip } from '@/ui/Tooltip';
+import { useT } from '@/i18n';
 
 export function PageTabs() {
+  const t = useT();
   const pages = useEditor((s) => s.pages);
   const active = useEditor((s) => s.activePageId);
   const [renaming, setRenaming] = useState<string | null>(null);
@@ -21,11 +23,11 @@ export function PageTabs() {
   const s = useEditor.getState;
 
   const items = (id: string): MenuEntry[] => [
-    { label: 'Rename', icon: <Pencil />, onSelect: () => setRenaming(id) },
-    { label: 'Duplicate', icon: <Copy />, onSelect: () => s().duplicatePage(id) },
-    { label: 'Edit data…', icon: <Database />, onSelect: () => openAutomationDialog({ kind: 'data', target: { type: 'page', id } }) },
+    { label: t('common.rename'), icon: <Pencil />, onSelect: () => setRenaming(id) },
+    { label: t('common.duplicate'), icon: <Copy />, onSelect: () => s().duplicatePage(id) },
+    { label: t('chrome.pageTabs.editData'), icon: <Database />, onSelect: () => openAutomationDialog({ kind: 'data', target: { type: 'page', id } }) },
     { type: 'separator' },
-    { label: 'Delete', icon: <Trash />, danger: true, disabled: pages.length <= 1, onSelect: () => s().deletePage(id) },
+    { label: t('common.delete'), icon: <Trash />, danger: true, disabled: pages.length <= 1, onSelect: () => s().deletePage(id) },
   ];
 
   return (
@@ -81,14 +83,14 @@ export function PageTabs() {
           </div>
         ))}
       </div>
-      <Tooltip label="Insert page" side="top">
+      <Tooltip label={t('chrome.pageTabs.insertPage')} side="top">
         <button
           onClick={() => {
             s().addPage();
             requestAnimationFrame(() => scroller.current?.scrollTo({ left: 1e6, behavior: 'smooth' }));
           }}
           className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-hover hover:text-fg"
-          aria-label="Insert page"
+          aria-label={t('chrome.pageTabs.insertPage')}
         >
           <Plus className="size-4" />
         </button>

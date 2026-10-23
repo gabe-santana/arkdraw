@@ -30,7 +30,8 @@ import { visualBounds } from '@/io/export/svg';
 import { clearTextCache } from '@/lib/text';
 import { cn } from '@/lib/cn';
 import { isTauri } from '@/lib/platform';
-import { resolvePageParam, urlWithoutSource, type LaunchParams } from '@/web/launch';
+import { NON_HTTP_URL_ERROR, resolvePageParam, urlWithoutSource, type LaunchParams } from '@/web/launch';
+import { t as tNow, useT } from '@/i18n';
 import { pagesFromContent, resolveSource } from '@/web/loadDiagram';
 import { PwaUpdatePrompt } from '@/web/PwaUpdatePrompt';
 import { ViewerScene } from './ViewerScene';
@@ -62,7 +63,11 @@ function plainEditorUrl() {
 
 export default function Viewer({ launch }: { launch: LaunchParams }) {
   const [state, setState] = useState<LoadState>(() =>
-    launch.source ? { status: 'loading' } : launch.error ? { status: 'error', message: launch.error } : { status: 'empty' },
+    launch.source
+      ? { status: 'loading' }
+      : launch.error
+        ? { status: 'error', message: launch.error === NON_HTTP_URL_ERROR ? tNow('web.launch.onlyHttpUrls') : launch.error }
+        : { status: 'empty' },
   );
   const [dark, setDark] = useState(() => launch.theme === 'dark' || (launch.theme !== 'light' && document.documentElement.classList.contains('dark')));
 
@@ -115,12 +120,13 @@ export default function Viewer({ launch }: { launch: LaunchParams }) {
 // ---------------------------------------------------------------------------
 
 function Placeholder({ state, onOpen }: { state: Exclude<LoadState, { status: 'ready' }>; onOpen: (f: File) => void }) {
+  const t = useT();
   const input = useRef<HTMLInputElement>(null);
   if (state.status === 'loading') {
     return (
       <div className="flex h-full items-center justify-center gap-2.5 text-muted" role="status">
         <Loader2 className="size-4 animate-spin" />
-        Loading diagram…
+        {t('viewer.loadingDiagram')}
       </div>
     );
   }
@@ -131,9 +137,9 @@ function Placeholder({ state, onOpen }: { state: Exclude<LoadState, { status: 'r
         <div className={cn('mb-4 flex size-11 items-center justify-center rounded-xl', error ? 'bg-danger/10 text-danger' : 'bg-accent-soft text-accent')}>
           {error ? <AlertTriangle className="size-5" /> : <FileUp className="size-5" />}
         </div>
-        <h1 className="text-[15px] font-semibold">{error ? 'Couldn’t open this diagram' : 'View a diagram'}</h1>
+        <h1 className="text-[15px] font-semibold">{error ? t('viewer.openFailed') : t('viewer.viewTitle')}</h1>
         <p className="mt-1.5 text-[13px] leading-relaxed text-muted">
-          {error ? state.message : 'Drop an OpenDraw or draw.io file here, or open one from your device. Nothing is uploaded.'}
+          {error ? state.message : t('viewer.emptyHint')}
         </p>
         <div className="mt-5 flex gap-2">
           <button
@@ -141,10 +147,10 @@ function Placeholder({ state, onOpen }: { state: Exclude<LoadState, { status: 'r
             onClick={() => input.current?.click()}
             className="h-8 rounded-lg bg-accent px-3.5 text-[13px] font-medium text-accent-fg transition-colors hover:bg-accent-hover"
           >
-            Open a file…
+            {t('viewer.openFile')}
           </button>
           <a href={plainEditorUrl()} className="flex h-8 items-center rounded-lg px-3.5 text-[13px] font-medium text-fg shadow-[0_0_0_1px_var(--line-strong)] transition-colors hover:bg-hover">
-            Open the editor
+            {t('viewer.openEditor')}
           </a>
         </div>
         <input
@@ -174,6 +180,7 @@ interface Hover {
 }
 
 function DiagramViewer({ pages, name, launch, dark, onToggleTheme }: { pages: Page[]; name: string; launch: LaunchParams; dark: boolean; onToggleTheme: () => void }) {
+  const tr = useT();
   const [pageIndex, setPageIndex] = useState(() => {
     const start = resolvePageParam(pages, launch.page);
     return start ? pages.indexOf(start) : 0;
@@ -356,7 +363,7 @@ function DiagramViewer({ pages, name, launch, dark, onToggleTheme }: { pages: Pa
             <div className="pointer-events-auto flex min-w-0 items-center gap-2 rounded-xl bg-panel/90 py-1.5 pl-1.5 pr-3 shadow-panel backdrop-blur-md">
               <Logo />
               <div className="min-w-0 truncate text-[13px] font-medium">{name}</div>
-              {pages.length > 1 && <div className="hidden shrink-0 text-[12px] text-muted sm:block">{pages.length} pages</div>}
+              {pages.length > 1 && <div className="hidden shrink-0 text-[12px] text-muted sm:block">{tr('common.pageCount', { count: pages.length })}</div>}
             </div>
           </div>
 
@@ -365,12 +372,12 @@ function DiagramViewer({ pages, name, launch, dark, onToggleTheme }: { pages: Pa
             <Pill>
               {layers.length > 0 && (
                 <div className="relative">
-                  <IconButton label="Layers" active={layersOpen} onClick={() => setLayersOpen((o) => !o)}>
+                  <IconButton label={tr('common.layers')} active={layersOpen} onClick={() => setLayersOpen((o) => !o)}>
                     <Layers />
                   </IconButton>
                   {layersOpen && (
                     <div className="absolute right-0 top-10 w-56 rounded-xl bg-panel p-1 shadow-pop" role="menu">
-                      <div className="px-2.5 pb-1 pt-1.5 text-[11px] font-medium uppercase tracking-wide text-subtle">Layers</div>
+                      <div className="px-2.5 pb-1 pt-1.5 text-[11px] font-medium uppercase tracking-wide text-subtle">{tr('common.layers')}</div>
                       {[...layers].reverse().map((l) => (
                         <button
                           key={l.id}
@@ -388,11 +395,11 @@ function DiagramViewer({ pages, name, launch, dark, onToggleTheme }: { pages: Pa
                   )}
                 </div>
               )}
-              <IconButton label={dark ? 'Light theme' : 'Dark theme'} onClick={onToggleTheme}>
+              <IconButton label={dark ? tr('titlebar.lightTheme') : tr('titlebar.darkTheme')} onClick={onToggleTheme}>
                 {dark ? <Sun /> : <Moon />}
               </IconButton>
               {inFrame && (
-                <IconButton label="Open in a new tab" onClick={() => window.open(location.href, '_blank', 'noopener')}>
+                <IconButton label={tr('viewer.openNewTab')} onClick={() => window.open(location.href, '_blank', 'noopener')}>
                   <SquareArrowOutUpRight />
                 </IconButton>
               )}
@@ -404,8 +411,8 @@ function DiagramViewer({ pages, name, launch, dark, onToggleTheme }: { pages: Pa
                 className="flex h-10 items-center gap-1.5 rounded-xl bg-accent px-3.5 text-[13px] font-medium text-accent-fg shadow-panel transition-colors hover:bg-accent-hover"
               >
                 <PenLine className="size-3.5" />
-                <span className="hidden sm:inline">Edit in OpenDraw</span>
-                <span className="sm:hidden">Edit</span>
+                <span className="hidden sm:inline">{tr('viewer.editInOpenDraw')}</span>
+                <span className="sm:hidden">{tr('common.edit')}</span>
               </button>
             )}
           </div>
@@ -414,7 +421,7 @@ function DiagramViewer({ pages, name, launch, dark, onToggleTheme }: { pages: Pa
           {pages.length > 1 && (
             <div data-viewer-ui className="absolute bottom-3 left-1/2 flex max-w-[calc(100%-22rem)] -translate-x-1/2 justify-center max-sm:bottom-16 max-sm:max-w-[calc(100%-1.5rem)]">
               <Pill className="max-w-full">
-                <IconButton label="Previous page" disabled={pageIndex === 0} onClick={() => goTo(pageIndex - 1)}>
+                <IconButton label={tr('viewer.previousPage')} disabled={pageIndex === 0} onClick={() => goTo(pageIndex - 1)}>
                   <ChevronLeft />
                 </IconButton>
                 <div className="no-scrollbar flex min-w-0 items-center gap-0.5 overflow-x-auto" role="tablist">
@@ -434,7 +441,7 @@ function DiagramViewer({ pages, name, launch, dark, onToggleTheme }: { pages: Pa
                     </button>
                   ))}
                 </div>
-                <IconButton label="Next page" disabled={pageIndex === pages.length - 1} onClick={() => goTo(pageIndex + 1)}>
+                <IconButton label={tr('viewer.nextPage')} disabled={pageIndex === pages.length - 1} onClick={() => goTo(pageIndex + 1)}>
                   <ChevronRight />
                 </IconButton>
               </Pill>
@@ -444,22 +451,22 @@ function DiagramViewer({ pages, name, launch, dark, onToggleTheme }: { pages: Pa
           {/* Zoom */}
           <div data-viewer-ui className="absolute bottom-3 right-3">
             <Pill>
-              <IconButton label="Zoom out" onClick={() => ((userMoved.current = true), cam.zoomBy(0.8, undefined, true))}>
+              <IconButton label={tr('viewer.zoomOut')} onClick={() => ((userMoved.current = true), cam.zoomBy(0.8, undefined, true))}>
                 <Minus />
               </IconButton>
               <button
                 type="button"
-                title="Reset to 100%"
+                title={tr('viewer.resetZoom')}
                 onClick={() => ((userMoved.current = true), cam.zoomBy(1 / cam.ref.current.z, undefined, true))}
                 className="h-8 w-12 rounded-lg text-center text-[12px] font-medium tabular-nums text-muted transition-colors hover:bg-hover hover:text-fg"
               >
                 {Math.round(camera.z * 100)}%
               </button>
-              <IconButton label="Zoom in" onClick={() => ((userMoved.current = true), cam.zoomBy(1.25, undefined, true))}>
+              <IconButton label={tr('viewer.zoomIn')} onClick={() => ((userMoved.current = true), cam.zoomBy(1.25, undefined, true))}>
                 <Plus />
               </IconButton>
               <div className="mx-0.5 h-5 w-px bg-line" />
-              <IconButton label="Fit to screen" onClick={() => fit()}>
+              <IconButton label={tr('viewer.fit')} onClick={() => fit()}>
                 <Maximize />
               </IconButton>
             </Pill>
@@ -475,17 +482,21 @@ function DiagramViewer({ pages, name, launch, dark, onToggleTheme }: { pages: Pa
 // ---------------------------------------------------------------------------
 
 function HoverCard({ hover, pages }: { hover: Hover; pages: Page[] }) {
+  const t = useT();
   const { el } = hover;
   const target = el.link ? classifyLink(el.link, pages) : null;
+  const pageName = target?.kind === 'page' ? pages.find((p) => p.id === target.pageId)?.name : undefined;
   const linkLabel =
     target?.kind === 'page'
-      ? `Go to “${pages.find((p) => p.id === target.pageId)?.name ?? 'page'}”`
+      ? pageName != null
+        ? t('viewer.goToPage', { name: pageName })
+        : t('viewer.goToPageUnnamed')
       : target?.kind === 'external'
         ? target.url.replace(/^https?:\/\//, '').replace(/\/$/, '')
         : isActionLink(el.link)
-          ? 'Click to run action'
+          ? t('viewer.runAction')
           : el.link
-          ? 'Unsupported link'
+          ? t('viewer.unsupportedLink')
           : null;
   const W = 300;
   const left = Math.min(hover.x + 14, window.innerWidth - W - 8);

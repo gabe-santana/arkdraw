@@ -1,5 +1,5 @@
 /**
- * draw.io round-trip for the styling extras: shadow options, user-defined
+ * mxGraph round-trip for the styling extras: shadow options, user-defined
  * dark colors (`light-dark(light,dark)` color values) and sketch options
  * (fillStyle, jiggle). Wired into src/io/drawio.ts with one call each way.
  */

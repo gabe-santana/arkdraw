@@ -1,5 +1,5 @@
 /**
- * Custom link actions, compatible with draw.io's `data:action/json,{…}` links.
+ * Custom link actions, compatible with mxGraph's `data:action/json,{…}` links.
  *
  *   data:action/json,{"actions":[{"toggle":{"cells":["a","b"]}},{"highlight":{"tags":["db"]}}]}
  *
@@ -77,7 +77,7 @@ export function parseActionLink(link: string): LinkAction[] | null {
   return out;
 }
 
-/** Serializes actions back into a draw.io-compatible link. */
+/** Serializes actions back into a mxGraph-compatible link. */
 export function buildActionLink(actions: LinkAction[]): string {
   const json = actions.map((a) => {
     if (a.kind === 'open') return { open: a.url };
@@ -117,7 +117,7 @@ export function resolveTargets(doc: Doc, t: ActionTargets): { elements: string[]
 }
 
 /**
- * Shows, hides or toggles targets. Like draw.io, `toggle` flips them all based
+ * Shows, hides or toggles targets. Like mxGraph, `toggle` flips them all based
  * on the first target's state, and hiding a shape also hides its contents and
  * the connectors attached to it. Pure: returns a new doc (or the same one).
  */
@@ -173,7 +173,7 @@ export interface ActionHost {
   open: (link: string) => void;
 }
 
-/** Normalizes draw.io page links to ours. */
+/** Normalizes mxGraph page links to ours. */
 export const normalizeLink = (url: string) => (url.startsWith('data:page/id,') ? `page:${url.slice('data:page/id,'.length)}` : url);
 
 /** Runs every action of a link in order. Returns false when the link isn't a valid action link. */

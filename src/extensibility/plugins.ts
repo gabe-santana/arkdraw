@@ -14,7 +14,7 @@
  *
  * Everything a plugin registers is tracked and removed when it's disabled.
  *
- * Trust model (same as draw.io): plugins run in the page with full access to
+ * Trust model: plugins run in the page with full access to
  * the editor and your diagrams. Only load plugins you trust; the dialog warns
  * before enabling one. Hosts that keep the default Content Security Policy
  * (`script-src 'self'`) can only load plugins served from the app's origin.
@@ -25,6 +25,7 @@ import { isShape } from '@/model/types';
 import { createConnector, createShape } from '@/model/defaults';
 import { useEditor } from '@/store/editor';
 import { useUi } from '@/store/ui';
+import { t } from '@/i18n';
 import { registerAction, runAction, type ActionGroup } from '@/app/actions';
 import { IMPORTERS, type Importer } from '@/io/import';
 import { readFile, saveFile } from '@/io/native';
@@ -204,7 +205,7 @@ function makeContext(rec: Registered): PluginContext {
           try {
             spec.run();
           } catch (e) {
-            useUi.getState().toast(`${rec.plugin.name ?? pid}: ${(e as Error).message ?? e}`, 'error');
+            useUi.getState().toast(t('plugins.commandFailed', { plugin: rec.plugin.name ?? pid, error: String((e as Error).message ?? e) }), 'error');
           }
         },
         shortcuts: spec.shortcut ? ([] as string[]).concat(spec.shortcut) : undefined,
@@ -317,7 +318,7 @@ function makeContext(rec: Registered): PluginContext {
     editor,
     ui: {
       toast: (message, kind) => useUi.getState().toast(String(message), kind),
-      confirm: async (title, message, confirmLabel = 'OK') => (await useUi.getState().ask({ title, message, confirmLabel })) === 'confirm',
+      confirm: async (title, message, confirmLabel = t('common.ok')) => (await useUi.getState().ask({ title, message, confirmLabel })) === 'confirm',
     },
     onDispose: (fn) => void track(fn),
   };
@@ -341,9 +342,9 @@ async function runExporter(exp: PluginExporter) {
       filters: [{ name: exp.label, extensions: [exp.extension] }],
       mime: exp.mime ?? 'application/octet-stream',
     });
-    if (saved) useUi.getState().toast(`Exported ${saved.name}`, 'success');
+    if (saved) useUi.getState().toast(t('plugins.exported', { name: saved.name }), 'success');
   } catch (e) {
-    useUi.getState().toast(`${exp.label} export failed: ${(e as Error).message ?? e}`, 'error');
+    useUi.getState().toast(t('plugins.exportFailed', { format: exp.label, error: String((e as Error).message ?? e) }), 'error');
   }
 }
 
@@ -425,7 +426,7 @@ async function importCode(code: string): Promise<Record<string, unknown>> {
 function explain(e: unknown): string {
   const msg = String((e as Error)?.message ?? e);
   if (/content security policy|csp|refused|failed to fetch dynamically imported module|importing a module script failed/i.test(msg)) {
-    return `${msg} — the script could not be loaded. Check the URL; hosts with a strict Content-Security-Policy only allow plugins from their own origin.`;
+    return t('plugins.cspHint', { error: msg });
   }
   return msg;
 }
@@ -498,12 +499,9 @@ export async function loadSavedPlugins() {
 // Managing saved plugins (the dialog)
 // ---------------------------------------------------------------------------
 
-const TRUST_MESSAGE =
-  'Plugins run inside OpenDraw with full access to your diagrams and the editor, like draw.io plugins. Only enable plugins from sources you trust.';
-
 /** Asks before running third-party code. */
 export async function confirmTrust(what: string): Promise<boolean> {
-  const choice = await useUi.getState().ask({ title: 'Enable this plugin?', message: `${what}\n\n${TRUST_MESSAGE}`, confirmLabel: 'Enable plugin' });
+  const choice = await useUi.getState().ask({ title: t('plugins.trustTitle'), message: t('plugins.trustMessage', { what }), confirmLabel: t('plugins.trustConfirm') });
   return choice === 'confirm';
 }
 
@@ -512,7 +510,7 @@ export async function addPlugin(source: string, code?: string, name?: string): P
   const src = source.trim();
   if (!src) return false;
   if (usePlugins.getState().entries.some((e) => e.source === src)) {
-    useUi.getState().toast('That plugin is already in the list.');
+    useUi.getState().toast(t('plugins.duplicate'));
     return false;
   }
   if (!(await confirmTrust(name ?? src))) return false;
@@ -521,7 +519,7 @@ export async function addPlugin(source: string, code?: string, name?: string): P
   try {
     const ids = await loadSource(entry);
     saveEntries(usePlugins.getState().entries.map((e) => (e.source === src ? { ...e, ids, name: name ?? REGISTRY.get(ids[0])?.plugin.name ?? e.name } : e)));
-    useUi.getState().toast(`Plugin enabled: ${REGISTRY.get(ids[0])?.plugin.name ?? ids[0]}`, 'success');
+    useUi.getState().toast(t('plugins.enabled', { name: REGISTRY.get(ids[0])?.plugin.name ?? ids[0] }), 'success');
     return true;
   } catch (e) {
     useUi.getState().toast(String((e as Error).message ?? e), 'error');
@@ -603,7 +601,7 @@ export function installPluginGlobal() {
       runtime()
         .registerPlugin(p)
         .catch((e) => {
-          useUi.getState().toast(`Plugin ${p?.id ?? ''} failed: ${(e as Error).message ?? e}`, 'error');
+          useUi.getState().toast(t('plugins.failed', { id: p?.id ?? '', error: String((e as Error).message ?? e) }), 'error');
           throw e;
         }),
     loadPluginsFrom: (sources) => runtime().loadPluginsFrom(sources),

@@ -8,7 +8,8 @@ import type { Root } from 'react-dom/client';
 import { useEditor } from '@/store/editor';
 import { useUi } from '@/store/ui';
 import { confirmDiscard, loadOpenedFile, markUnsaved, restoreRecovery } from '@/app/fileCommands';
-import { parseLaunchParams, resolvePageParam, urlWithoutSource, type LaunchParams } from './launch';
+import { NON_HTTP_URL_ERROR, parseLaunchParams, resolvePageParam, urlWithoutSource, type LaunchParams } from './launch';
+import { t } from '@/i18n';
 import { resolveSource } from './loadDiagram';
 import { draftHasContent, putBackRecoveryDraft, shieldRecoveryDraft, takeRecoveryDraft } from './recovery';
 import { initEmbedMode } from './embed';
@@ -34,7 +35,7 @@ export function bootWeb(root: Root, editor: ReactNode, href = location.href): La
 
   // Session-only theme override (not persisted to the user's preference).
   if (launch.theme) useUi.setState({ theme: launch.theme });
-  // draw.io-style editor options: lang, libs, clibs, grid, math, ui.
+  // editor options: lang, libs, clibs, grid, math, ui.
   applyLaunchOptions(launch);
 
   if (launch.mode === 'embed') {
@@ -55,7 +56,10 @@ export function bootWeb(root: Root, editor: ReactNode, href = location.href): La
   root.render(editor);
   installLaunchQueue();
   if (launch.source) void openShared(launch, draft);
-  else if (launch.error) setTimeout(() => useUi.getState().toast(launch.error!, 'error'), 300);
+  else if (launch.error) {
+    const error = launch.error;
+    setTimeout(() => useUi.getState().toast(error === NON_HTTP_URL_ERROR ? t('web.launch.onlyHttpUrls') : error, 'error'), 300);
+  }
   return launch;
 }
 
@@ -66,21 +70,21 @@ async function openShared(launch: LaunchParams, draft: string | null) {
   const keepDraft = () => {
     putBackRecoveryDraft(draft);
     if (draft && restoreRecovery()) {
-      ui.toast('Restored your unsaved diagram', 'info');
+      ui.toast(t('app.restoredUnsaved'), 'info');
       fit();
     }
   };
   let slow: ReturnType<typeof setTimeout> | undefined;
-  if (launch.source!.kind === 'url') slow = setTimeout(() => ui.toast('Loading diagram…', 'info'), 400);
+  if (launch.source!.kind === 'url') slow = setTimeout(() => ui.toast(t('viewer.loadingDiagram'), 'info'), 400);
   try {
     const { pages, name } = await resolveSource(launch.source!, launch.title);
     clearTimeout(slow);
     if (draftHasContent(draft)) {
       const choice = await ui.ask({
-        title: 'Open the shared diagram?',
-        message: 'You have unsaved work from a previous session. Opening the shared diagram replaces it.',
-        confirmLabel: 'Open shared diagram',
-        denyLabel: 'Keep my work',
+        title: t('web.shared.askTitle'),
+        message: t('web.shared.askMessage'),
+        confirmLabel: t('web.shared.confirm'),
+        denyLabel: t('web.shared.deny'),
       });
       if (choice !== 'confirm') {
         history.replaceState(history.state, '', urlWithoutSource(location.href));
@@ -99,7 +103,7 @@ async function openShared(launch: LaunchParams, draft: string | null) {
   } catch (e) {
     clearTimeout(slow);
     keepDraft();
-    ui.toast(`Could not open the shared diagram: ${(e as Error)?.message ?? e}`, 'error');
+    ui.toast(t('web.shared.openFailed', { error: (e as Error)?.message ?? String(e) }), 'error');
   }
 }
 

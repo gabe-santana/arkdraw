@@ -8,6 +8,7 @@ import { knownIconPaths, loadIconProviders, searchIcons } from './icons';
 import { validateOps, type EditOp } from './ops';
 import { editSystemPrompt, editUserMessage, generateSystemPrompt, SEARCH_ICONS_TOOL, SUBMIT_DIAGRAM_TOOL, SUBMIT_EDITS_TOOL } from './prompts';
 import { serializeDoc } from './serialize';
+import { t } from '@/i18n';
 import { validateSpec, type DiagramSpec } from './spec';
 
 export type AssistantMode = 'generate' | 'edit';
@@ -56,7 +57,7 @@ export async function runAssistant(opts: RunOptions): Promise<AgentResult> {
   const chat = opts.chat ?? defaultChat;
   const maxTurns = opts.maxTurns ?? 10;
   const emit = (e: AgentEvent) => onEvent?.(e);
-  if (mode === 'edit' && !opts.doc) throw new AiError('Nothing to edit: the diagram is empty.');
+  if (mode === 'edit' && !opts.doc) throw new AiError(t('ai.error.nothingToEdit'));
 
   const providers = await loadIconProviders();
   const tools: ChatTool[] = [
@@ -74,15 +75,16 @@ export async function runAssistant(opts: RunOptions): Promise<AgentResult> {
   for (let turn = 0; turn < maxTurns; turn++) {
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
     const thinkId = `think-${stepSeq++}`;
-    emit({ type: 'step', id: thinkId, label: turn === 0 ? 'Planning the diagram' : 'Working', state: 'running' });
+    const thinkLabel = turn === 0 ? t('ai.step.planning') : t('ai.step.working');
+    emit({ type: 'step', id: thinkId, label: thinkLabel, state: 'running' });
     let res;
     try {
       res = await chat(config, { system, messages, tools }, signal);
     } catch (e) {
-      emit({ type: 'step', id: thinkId, label: turn === 0 ? 'Planning the diagram' : 'Working', state: 'error' });
+      emit({ type: 'step', id: thinkId, label: thinkLabel, state: 'error' });
       throw e;
     }
-    emit({ type: 'step', id: thinkId, label: turn === 0 ? 'Planning the diagram' : 'Working', state: 'done' });
+    emit({ type: 'step', id: thinkId, label: thinkLabel, state: 'done' });
     messages.push({ role: 'assistant', text: res.text, toolCalls: res.toolCalls, native: res.native });
     if (res.text.trim()) {
       lastText.push(res.text.trim());
@@ -90,8 +92,8 @@ export async function runAssistant(opts: RunOptions): Promise<AgentResult> {
     }
 
     if (!res.toolCalls.length) {
-      if (res.stopReason === 'max_tokens') throw new AiError('The response was cut off. Try a smaller diagram or a more capable model.');
-      if (nudged) throw new AiError(res.text.trim() || 'The model did not produce a diagram. Try rephrasing, or choose a model with tool support.');
+      if (res.stopReason === 'max_tokens') throw new AiError(t('ai.error.cutOff'));
+      if (nudged) throw new AiError(res.text.trim() || t('ai.error.noDiagram'));
       nudged = true;
       messages.push({
         role: 'user',
@@ -108,36 +110,37 @@ export async function runAssistant(opts: RunOptions): Promise<AgentResult> {
       if (call.name === 'search_icons') {
         const query = String(args.query ?? '').slice(0, 120);
         const provider = typeof args.provider === 'string' ? args.provider : undefined;
-        emit({ type: 'step', id, label: `Searching icons “${query}”${provider ? ` in ${provider}` : ''}`, state: 'running' });
+        const label = provider ? t('ai.step.searchingIconsIn', { query, provider }) : t('ai.step.searchingIcons', { query });
+        emit({ type: 'step', id, label, state: 'running' });
         const hits = await searchIcons(query, provider);
-        emit({ type: 'step', id, label: `Searching icons “${query}”${provider ? ` in ${provider}` : ''}`, state: 'done', detail: hits.length ? `${hits.length} matches` : 'no match' });
+        emit({ type: 'step', id, label, state: 'done', detail: t('ai.step.matches', { count: hits.length }) });
         results.push({
           id: call.id,
           name: call.name,
           content: JSON.stringify(hits.length ? { matches: hits } : { matches: [], hint: 'No icon found; try another name or use a generic shape.' }),
         });
       } else if (call.name === 'submit_diagram') {
-        emit({ type: 'step', id, label: 'Validating diagram', state: 'running' });
+        emit({ type: 'step', id, label: t('ai.step.validating'), state: 'running' });
         const known = await knownIconPaths(iconsIn(args));
         const v = validateSpec(args, { knownIcons: known });
         if (v.ok) {
-          emit({ type: 'step', id, label: 'Validating diagram', state: 'done', detail: `${v.spec.nodes.length} nodes · ${v.spec.edges.length} edges` });
+          emit({ type: 'step', id, label: t('ai.step.validating'), state: 'done', detail: t('ai.step.nodesEdges', { nodes: v.spec.nodes.length, edges: v.spec.edges.length }) });
           results.push({ id: call.id, name: call.name, content: `Accepted: ${v.spec.nodes.length} nodes, ${v.spec.edges.length} edges.` });
           final ??= { kind: 'spec', spec: v.spec, warnings: v.warnings, message: '' };
         } else {
-          emit({ type: 'step', id, label: 'Fixing validation errors', state: 'error', detail: v.errors[0] });
+          emit({ type: 'step', id, label: t('ai.step.fixingValidation'), state: 'error', detail: v.errors[0] });
           results.push({ id: call.id, name: call.name, content: `Invalid diagram:\n- ${v.errors.join('\n- ')}`, isError: true });
         }
       } else if (call.name === 'submit_edits' && mode === 'edit') {
-        emit({ type: 'step', id, label: 'Checking changes', state: 'running' });
+        emit({ type: 'step', id, label: t('ai.step.checkingChanges'), state: 'running' });
         const known = await knownIconPaths(iconsIn(args));
         const v = validateOps(args, opts.doc!, known);
         if (v.ok) {
-          emit({ type: 'step', id, label: 'Checking changes', state: 'done', detail: `${v.ops.length} operation${v.ops.length === 1 ? '' : 's'}` });
+          emit({ type: 'step', id, label: t('ai.step.checkingChanges'), state: 'done', detail: t('ai.step.operations', { count: v.ops.length }) });
           results.push({ id: call.id, name: call.name, content: `Accepted ${v.ops.length} operations.` });
           final ??= { kind: 'ops', ops: v.ops, summary: typeof args.summary === 'string' ? args.summary : '', warnings: v.warnings, message: '' };
         } else {
-          emit({ type: 'step', id, label: 'Fixing invalid changes', state: 'error', detail: v.errors[0] });
+          emit({ type: 'step', id, label: t('ai.step.fixingChanges'), state: 'error', detail: v.errors[0] });
           results.push({ id: call.id, name: call.name, content: `Invalid operations:\n- ${v.errors.join('\n- ')}`, isError: true });
         }
       } else {
@@ -150,5 +153,5 @@ export async function runAssistant(opts: RunOptions): Promise<AgentResult> {
       return final;
     }
   }
-  throw new AiError('The model did not finish the diagram. Try again or simplify the request.');
+  throw new AiError(t('ai.error.notFinished'));
 }

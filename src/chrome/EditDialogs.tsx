@@ -18,10 +18,23 @@ import { Button } from '@/ui/Button';
 import { Segmented, Select, Switch } from '@/ui/controls';
 import { withMermaidSource } from '@/automation/mermaidRegen';
 import { applyDrawioStylePatch, diffDrawioStyle, formatDrawioStyle } from '@/extensibility/styleString';
+import { useT } from '@/i18n';
 
 const input =
   'h-8 w-full rounded-lg bg-panel-2 px-2.5 text-[12.5px] text-fg outline-none ring-1 ring-transparent transition-shadow placeholder:text-subtle hover:ring-line focus:bg-panel focus:ring-2 focus:ring-accent/40';
 const stop = (e: React.KeyboardEvent) => e.stopPropagation();
+
+/** Renders a translated sentence with its `{token}` placeholder replaced by a React node. */
+function withNode(render: (marker: string) => string, node: React.ReactNode) {
+  const [before, after = ''] = render('\u0001').split('\u0001');
+  return (
+    <>
+      {before}
+      {node}
+      {after}
+    </>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Edit Data
@@ -39,6 +52,7 @@ export function EditDataDialog() {
 }
 
 function EditDataBody({ el, close }: { el: DiagramElement; close: () => void }) {
+  const t = useT();
   const pages = useEditor((s) => s.pages);
   const [name, setName] = useState(el.name ?? '');
   const [tooltip, setTooltip] = useState(el.tooltip ?? '');
@@ -57,7 +71,7 @@ function EditDataBody({ el, close }: { el: DiagramElement; close: () => void }) 
         name: name.trim() || undefined,
         tooltip: tooltip.trim() || undefined,
         link: link.trim() || undefined,
-        tags: tags.split(/[,\s]+/).map((t) => t.trim()).filter(Boolean),
+        tags: tags.split(/[,\s]+/).map((x) => x.trim()).filter(Boolean),
         data: Object.keys(merged).length ? merged : undefined,
         style: { ...el.style, placeholders: placeholders || undefined },
       },
@@ -67,15 +81,15 @@ function EditDataBody({ el, close }: { el: DiagramElement; close: () => void }) 
 
   return (
     <div onKeyDown={stop}>
-      <DialogHeader title="Edit data" subtitle={<span className="font-mono text-[11.5px]">ID {el.id}</span>} onClose={close} />
+      <DialogHeader title={t('chrome.editData.title')} subtitle={<span className="font-mono text-[11.5px]">{t('chrome.editData.id', { id: el.id })}</span>} onClose={close} />
       <div className="scroll-thin max-h-[60vh] space-y-3 overflow-y-auto px-5 pb-4">
-        <Field label="Name">
-          <input className={input} value={name} onChange={(e) => setName(e.target.value)} placeholder="Shown in the layers panel" />
+        <Field label={t('common.name')}>
+          <input className={input} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('chrome.editData.namePlaceholder')} />
         </Field>
-        <Field label="Tooltip">
-          <input className={input} value={tooltip} onChange={(e) => setTooltip(e.target.value)} placeholder="Shown on hover" />
+        <Field label={t('chrome.editData.tooltip')}>
+          <input className={input} value={tooltip} onChange={(e) => setTooltip(e.target.value)} placeholder={t('chrome.editData.tooltipPlaceholder')} />
         </Field>
-        <Field label="Link">
+        <Field label={t('chrome.editData.link')}>
           <div className="flex gap-1.5">
             <Segmented
               className="w-[120px] shrink-0"
@@ -83,8 +97,8 @@ function EditDataBody({ el, close }: { el: DiagramElement; close: () => void }) 
               value={linkKind}
               onChange={(k) => setLink(k === 'page' ? `page:${pages[0]?.id ?? ''}` : '')}
               options={[
-                { value: 'url', label: 'URL' },
-                { value: 'page', label: 'Page' },
+                { value: 'url', label: t('chrome.editData.linkUrl') },
+                { value: 'page', label: t('common.page') },
               ]}
             />
             {linkKind === 'page' ? (
@@ -97,31 +111,31 @@ function EditDataBody({ el, close }: { el: DiagramElement; close: () => void }) 
             )}
           </div>
         </Field>
-        <Field label="Tags">
-          <input className={input} value={tags} onChange={(e) => setTags(e.target.value)} placeholder="frontend, critical" />
+        <Field label={t('chrome.editData.tags')}>
+          <input className={input} value={tags} onChange={(e) => setTags(e.target.value)} placeholder={t('chrome.editData.tagsPlaceholder')} />
         </Field>
-        <Field label="Properties">
+        <Field label={t('chrome.editData.properties')}>
           <div className="space-y-1.5">
             {rows.map(([k, v], i) => (
               <div key={i} className="flex gap-1.5">
-                <input className={cn(input, 'w-[38%] font-mono text-[12px]')} value={k} placeholder="key" onChange={(e) => setRows(rows.map((r, j) => (j === i ? [e.target.value, r[1]] : r)))} />
-                <input className={input} value={v} placeholder="value" onChange={(e) => setRows(rows.map((r, j) => (j === i ? [r[0], e.target.value] : r)))} />
-                <button className="rounded-lg px-2 text-subtle hover:bg-hover hover:text-danger" onClick={() => setRows(rows.filter((_, j) => j !== i))} aria-label="Remove">
+                <input className={cn(input, 'w-[38%] font-mono text-[12px]')} value={k} placeholder={t('chrome.editData.keyPlaceholder')} onChange={(e) => setRows(rows.map((r, j) => (j === i ? [e.target.value, r[1]] : r)))} />
+                <input className={input} value={v} placeholder={t('chrome.editData.valuePlaceholder')} onChange={(e) => setRows(rows.map((r, j) => (j === i ? [r[0], e.target.value] : r)))} />
+                <button className="rounded-lg px-2 text-subtle hover:bg-hover hover:text-danger" onClick={() => setRows(rows.filter((_, j) => j !== i))} aria-label={t('common.remove')}>
                   <Trash className="size-3.5" />
                 </button>
               </div>
             ))}
             <button onClick={() => setRows([...rows, ['', '']])} className="flex h-7 items-center gap-1.5 rounded-lg px-2 text-[12px] text-accent hover:bg-accent-soft">
-              <Plus className="size-3.5" /> Add property
+              <Plus className="size-3.5" /> {t('chrome.editData.addProperty')}
             </button>
           </div>
         </Field>
-        <Switch label={<>Show <code className="rounded bg-panel-2 px-1">%property%</code> placeholders in the label</>} checked={placeholders} onChange={setPlaceholders} />
+        <Switch label={withNode((token) => t('chrome.editData.placeholders', { token }), <code className="rounded bg-panel-2 px-1">%property%</code>)} checked={placeholders} onChange={setPlaceholders} />
       </div>
       <div className="flex justify-end gap-2 border-t border-line px-5 py-3">
-        <Button onClick={close}>Cancel</Button>
+        <Button onClick={close}>{t('common.cancel')}</Button>
         <Button variant="primary" onClick={save}>
-          Apply
+          {t('common.apply')}
         </Button>
       </div>
     </div>
@@ -175,7 +189,8 @@ export function EditStyleDialog() {
 }
 
 function EditStyleBody({ el, close }: { el: DiagramElement; close: () => void }) {
-  // draw.io style strings by default (src/extensibility/styleString.ts); OpenDraw keys on request.
+  const t = useT();
+  // strings by default (src/extensibility/styleString.ts); OpenDraw keys on request.
   const [format, setFormat] = useState<'drawio' | 'opendraw'>(() => (localStorage.getItem('opendraw:styleFormat') === 'opendraw' ? 'opendraw' : 'drawio'));
   const initial = (f: 'drawio' | 'opendraw') => (f === 'drawio' ? formatDrawioStyle(el) : styleToString(el.style));
   const [text, setText] = useState(() => initial(format));
@@ -210,8 +225,8 @@ function EditStyleBody({ el, close }: { el: DiagramElement; close: () => void })
   return (
     <div onKeyDown={stop}>
       <DialogHeader
-        title="Edit style"
-        subtitle={format === 'drawio' ? 'draw.io style string (key=value;) — applied to the whole selection' : 'OpenDraw style keys, one per line — applied to the whole selection'}
+        title={t('chrome.editStyle.title')}
+        subtitle={format === 'drawio' ? t('chrome.editStyle.subtitleDrawio') : t('chrome.editStyle.subtitleOpendraw')}
         onClose={close}
       />
       <div className="px-5 pb-4">
@@ -221,7 +236,7 @@ function EditStyleBody({ el, close }: { el: DiagramElement; close: () => void })
           value={format}
           onChange={switchFormat}
           options={[
-            { value: 'drawio', label: 'draw.io' },
+            { value: 'drawio', label: t('chrome.editStyle.styleString') },
             { value: 'opendraw', label: 'OpenDraw' },
           ]}
         />
@@ -235,12 +250,12 @@ function EditStyleBody({ el, close }: { el: DiagramElement; close: () => void })
           className="scroll-thin h-[320px] w-full resize-none rounded-xl bg-panel-2 p-3 font-mono text-[12px] leading-relaxed text-fg outline-none ring-1 ring-line focus:ring-2 focus:ring-accent/40"
         />
         {error && <p className="mt-2 text-[12px] text-danger">{error}</p>}
-        {format === 'drawio' && !error && <p className="mt-2 text-[11.5px] text-subtle">Keys OpenDraw doesn’t use are kept and written back on draw.io export.</p>}
+        {format === 'drawio' && !error && <p className="mt-2 text-[11.5px] text-subtle">{t('chrome.editStyle.keptKeys')}</p>}
       </div>
       <div className="flex justify-end gap-2 border-t border-line px-5 py-3">
-        <Button onClick={close}>Cancel</Button>
+        <Button onClick={close}>{t('common.cancel')}</Button>
         <Button variant="primary" onClick={apply}>
-          Apply
+          {t('common.apply')}
         </Button>
       </div>
     </div>
@@ -262,6 +277,7 @@ export function EditDiagramDialog() {
 }
 
 function EditDiagramBody({ close }: { close: () => void }) {
+  const t = useT();
   const doc = useEditor((s) => s.doc);
   const [text, setText] = useState(() => serializeDoc(doc));
   const [error, setError] = useState<string | null>(null);
@@ -279,7 +295,7 @@ function EditDiagramBody({ close }: { close: () => void }) {
   };
   return (
     <div onKeyDown={stop}>
-      <DialogHeader title="Edit diagram" subtitle="The current page as OpenDraw JSON. Changes are undoable." onClose={close} />
+      <DialogHeader title={t('chrome.editDiagram.title')} subtitle={t('chrome.editDiagram.subtitle')} onClose={close} />
       <div className="px-5 pb-4">
         <textarea
           value={text}
@@ -293,10 +309,10 @@ function EditDiagramBody({ close }: { close: () => void }) {
         {error && <p className="mt-2 text-[12px] text-danger">{error}</p>}
       </div>
       <div className="flex justify-end gap-2 border-t border-line px-5 py-3">
-        <Button onClick={() => navigator.clipboard?.writeText(text)}>Copy</Button>
-        <Button onClick={close}>Cancel</Button>
+        <Button onClick={() => navigator.clipboard?.writeText(text)}>{t('common.copy')}</Button>
+        <Button onClick={close}>{t('common.cancel')}</Button>
         <Button variant="primary" onClick={apply}>
-          Apply
+          {t('common.apply')}
         </Button>
       </div>
     </div>
@@ -320,6 +336,7 @@ export function FindPanel() {
 }
 
 function FindBody() {
+  const t = useT();
   const set = useUi((s) => s.set);
   const pages = useEditor((s) => s.pages);
   const doc = useEditor((s) => s.doc);
@@ -395,20 +412,20 @@ function FindBody() {
       title={label}
       className={cn('h-6 rounded-md px-1.5 font-mono text-[11px] transition-colors', opts[k] ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-hover hover:text-fg')}
     >
-      {k === 'caseSensitive' ? 'Aa' : k === 'wholeWord' ? 'ab' : k === 'regex' ? '.*' : 'All'}
+      {k === 'caseSensitive' ? 'Aa' : k === 'wholeWord' ? 'ab' : k === 'regex' ? '.*' : t('chrome.find.allPagesShort')}
     </button>
   );
 
   return (
     <div className="animate-pop pointer-events-auto absolute left-1/2 top-3 z-30 w-[440px] -translate-x-1/2 rounded-2xl bg-panel p-2 shadow-pop" onKeyDown={stop}>
       <div className="flex items-center gap-1.5">
-        <button onClick={() => setOpts({ ...opts, showReplace: !opts.showReplace })} className="rounded-md p-1 text-subtle hover:bg-hover hover:text-fg" aria-label="Toggle replace">
+        <button onClick={() => setOpts({ ...opts, showReplace: !opts.showReplace })} className="rounded-md p-1 text-subtle hover:bg-hover hover:text-fg" aria-label={t('chrome.find.toggleReplace')}>
           {opts.showReplace ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
         </button>
         <input
           autoFocus
           className={cn(input, 'flex-1')}
-          placeholder="Find in labels, names, tooltips and data"
+          placeholder={t('chrome.find.placeholder')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
@@ -422,30 +439,30 @@ function FindBody() {
           }}
         />
         <span className="w-12 text-center text-[11.5px] tabular-nums text-muted">{query ? `${hits.length ? index + 1 : 0}/${hits.length}` : ''}</span>
-        <button onClick={() => go(index - 1)} className="rounded-md p-1 text-muted hover:bg-hover hover:text-fg" aria-label="Previous">
+        <button onClick={() => go(index - 1)} className="rounded-md p-1 text-muted hover:bg-hover hover:text-fg" aria-label={t('common.previous')}>
           <ChevronUp className="size-4" />
         </button>
-        <button onClick={() => go(index + 1)} className="rounded-md p-1 text-muted hover:bg-hover hover:text-fg" aria-label="Next">
+        <button onClick={() => go(index + 1)} className="rounded-md p-1 text-muted hover:bg-hover hover:text-fg" aria-label={t('common.next')}>
           <ChevronDown className="size-4" />
         </button>
-        <button onClick={() => set({ findOpen: false })} className="rounded-md p-1 text-muted hover:bg-hover hover:text-fg" aria-label="Close">
+        <button onClick={() => set({ findOpen: false })} className="rounded-md p-1 text-muted hover:bg-hover hover:text-fg" aria-label={t('common.close')}>
           <X className="size-4" />
         </button>
       </div>
       <div className="mt-1.5 flex items-center gap-0.5 pl-8">
-        {toggle('caseSensitive', 'Match case')}
-        {toggle('wholeWord', 'Whole word')}
-        {toggle('regex', 'Regular expression')}
-        {toggle('allPages', 'All pages')}
+        {toggle('caseSensitive', t('chrome.find.matchCase'))}
+        {toggle('wholeWord', t('chrome.find.wholeWord'))}
+        {toggle('regex', t('chrome.find.regex'))}
+        {toggle('allPages', t('chrome.find.allPages'))}
       </div>
       {opts.showReplace && (
         <div className="mt-1.5 flex items-center gap-1.5 pl-8">
-          <input className={cn(input, 'flex-1')} placeholder="Replace with" value={replacement} onChange={(e) => setReplacement(e.target.value)} />
+          <input className={cn(input, 'flex-1')} placeholder={t('chrome.find.replaceWith')} value={replacement} onChange={(e) => setReplacement(e.target.value)} />
           <Button size="sm" onClick={() => replaceIn(false)} icon={<Replace className="size-3.5" />}>
-            Replace
+            {t('chrome.find.replace')}
           </Button>
           <Button size="sm" onClick={() => replaceIn(true)}>
-            All
+            {t('chrome.find.replaceAll')}
           </Button>
         </div>
       )}
@@ -468,6 +485,7 @@ export function ImportDialog() {
 }
 
 function ImportBody({ close }: { close: () => void }) {
+  const t = useT();
   const textImporters = IMPORTERS.filter((i) => i.acceptsText);
   const [id, setId] = useState(textImporters[0]?.id ?? '');
   const importer = textImporters.find((i) => i.id === id);
@@ -512,15 +530,15 @@ function ImportBody({ close }: { close: () => void }) {
   if (!textImporters.length) {
     return (
       <>
-        <DialogHeader title="Import" onClose={close} />
-        <p className="px-5 pb-6 text-[13px] text-muted">No text importers are installed.</p>
+        <DialogHeader title={t('common.import')} onClose={close} />
+        <p className="px-5 pb-6 text-[13px] text-muted">{t('chrome.import.none')}</p>
       </>
     );
   }
 
   return (
     <div onKeyDown={stop}>
-      <DialogHeader title="Import from text" subtitle={importer?.description} onClose={close} />
+      <DialogHeader title={t('chrome.import.fromText')} subtitle={importer?.description} onClose={close} />
       <div className="grid grid-cols-[170px_1fr] gap-4 px-5 pb-4">
         <div className="space-y-0.5">
           {textImporters.map((i) => (
@@ -545,12 +563,12 @@ function ImportBody({ close }: { close: () => void }) {
         </div>
       </div>
       <div className="flex items-center justify-end gap-2 border-t border-line px-5 py-3">
-        <Button onClick={close}>Cancel</Button>
+        <Button onClick={close}>{t('common.cancel')}</Button>
         <Button onClick={() => run('pages')} disabled={busy || !text.trim()}>
-          As new page
+          {t('chrome.import.asNewPage')}
         </Button>
         <Button variant="primary" onClick={() => run('insert')} disabled={busy || !text.trim()}>
-          Insert
+          {t('common.insert')}
         </Button>
       </div>
     </div>

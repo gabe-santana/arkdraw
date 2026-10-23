@@ -4,6 +4,7 @@
  */
 import { newPage } from '@/store/editor';
 import type { Template } from './types';
+import { templateCategory, templateDescription, templateName } from '@/i18n/catalog';
 import { BASIC_TEMPLATES } from './library/basic';
 import { FLOWCHART_TEMPLATES } from './library/flowcharts';
 import { SOFTWARE_TEMPLATES } from './library/software';
@@ -50,12 +51,15 @@ export const TEMPLATES: Template[] = [
 
 export { CATEGORIES, type Template, type TemplateCategory } from './types';
 
-/** Case-insensitive search over name, category, description and keywords. */
+/**
+ * Case-insensitive search over name, category, description and keywords —
+ * in English and in the UI language.
+ */
 export function searchTemplates(list: Template[], query: string): Template[] {
   const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
   if (!terms.length) return list;
   return list.filter((t) => {
-    const hay = `${t.name} ${t.category} ${t.description} ${t.keywords.join(' ')}`.toLowerCase();
+    const hay = `${t.name} ${t.category} ${t.description} ${t.keywords.join(' ')} ${templateName(t)} ${templateCategory(t.category)} ${templateDescription(t)}`.toLowerCase();
     return terms.every((term) => hay.includes(term));
   });
 }

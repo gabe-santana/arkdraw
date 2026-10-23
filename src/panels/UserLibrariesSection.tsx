@@ -9,10 +9,15 @@ import { pickAndOpenFile, saveFile } from '@/io/native';
 import { Tooltip } from '@/ui/Tooltip';
 import { startLibraryDrag } from './libraryDrag';
 import { parseLibrary, SCRATCHPAD_ID, serializeLibrary, useUserLibraries, type UserLibrary, type UserLibraryItem } from './userLibraries';
+import { t, useT } from '@/i18n';
+
+/** A user library's display name (the Scratchpad's built-in name is translated). */
+const libraryName = (lib: UserLibrary) => (lib.id === SCRATCHPAD_ID ? t('panels.userLib.scratchpad') : lib.name);
 
 /** Scratchpad + custom libraries, shown at the top of the Shapes tab. */
 export function UserLibrariesSection({ query }: { query: string }) {
   const libraries = useUserLibraries((s) => s.libraries);
+  const t = useT();
   const q = query.trim().toLowerCase();
   return (
     <>
@@ -25,15 +30,16 @@ export function UserLibrariesSection({ query }: { query: string }) {
         <div className="mb-2 flex gap-1 px-1">
           <button
             onClick={() => {
-              const name = `Library ${libraries.length}`;
+              const name = t('panels.userLib.defaultName', { n: libraries.length });
               useUserLibraries.getState().createLibrary(name);
             }}
-            className="flex h-7 flex-1 items-center justify-center gap-1 rounded-lg text-[11.5px] text-muted hover:bg-hover hover:text-fg"
+            className="flex h-7 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg text-[11.5px] text-muted hover:bg-hover hover:text-fg"
+            title={t('panels.userLib.new')}
           >
-            <Plus className="size-3.5" /> New library
+            <Plus className="size-3.5 shrink-0" /> <span className="truncate">{t('panels.userLib.new')}</span>
           </button>
-          <button onClick={() => void openLibraryFile()} className="flex h-7 flex-1 items-center justify-center gap-1 rounded-lg text-[11.5px] text-muted hover:bg-hover hover:text-fg">
-            <FolderOpen className="size-3.5" /> Open library…
+          <button onClick={() => void openLibraryFile()} title={t('panels.userLib.open')} className="flex h-7 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg text-[11.5px] text-muted hover:bg-hover hover:text-fg">
+            <FolderOpen className="size-3.5 shrink-0" /> <span className="truncate">{t('panels.userLib.open')}</span>
           </button>
         </div>
       )}
@@ -43,11 +49,11 @@ export function UserLibrariesSection({ query }: { query: string }) {
 
 async function openLibraryFile() {
   try {
-    const f = await pickAndOpenFile([{ name: 'Libraries', extensions: ['opendrawlib', 'xml', 'json'] }]);
+    const f = await pickAndOpenFile([{ name: t('panels.userLib.filterName'), extensions: ['opendrawlib', 'xml', 'json'] }]);
     if (!f) return;
     const { name, items } = await parseLibrary(f.contents, f.name);
     useUserLibraries.getState().createLibrary(name, items);
-    useUi.getState().toast(`Loaded ${items.length} item${items.length === 1 ? '' : 's'} from “${name}”`, 'success');
+    useUi.getState().toast(t('panels.userLib.loaded', { count: items.length, name }), 'success');
   } catch (e) {
     useUi.getState().toast(String((e as Error).message ?? e), 'error');
   }
@@ -57,6 +63,7 @@ function LibrarySection({ lib, items, forceOpen }: { lib: UserLibrary; items: Us
   const [open, setOpen] = useState(true);
   const [renaming, setRenaming] = useState(false);
   const hasSelection = useEditor((s) => s.selection.length > 0);
+  const t = useT();
   const store = useUserLibraries.getState;
   const addSelection = () => {
     const s = useEditor.getState();
@@ -86,27 +93,27 @@ function LibrarySection({ lib, items, forceOpen }: { lib: UserLibrary; items: Us
             />
           ) : (
             <span className="truncate" onDoubleClick={() => lib.id !== SCRATCHPAD_ID && setRenaming(true)}>
-              {lib.name}
+              {libraryName(lib)}
             </span>
           )}
         </button>
         <span className="text-[11px] tabular-nums text-subtle">{lib.items.length}</span>
-        <Tooltip label={hasSelection ? 'Add selection' : 'Select shapes to add them'} side="right">
-          <button disabled={!hasSelection} onClick={addSelection} className="rounded p-0.5 text-subtle hover:bg-hover hover:text-fg disabled:opacity-40" aria-label="Add selection">
+        <Tooltip label={hasSelection ? t('panels.userLib.addSelection') : t('panels.userLib.selectToAdd')} side="right">
+          <button disabled={!hasSelection} onClick={addSelection} className="rounded p-0.5 text-subtle hover:bg-hover hover:text-fg disabled:opacity-40" aria-label={t('panels.userLib.addSelection')}>
             <Plus className="size-3.5" />
           </button>
         </Tooltip>
-        <Tooltip label="Export library" side="right">
+        <Tooltip label={t('panels.userLib.export')} side="right">
           <button
-            onClick={() => void saveFile(serializeLibrary(lib), { defaultName: `${lib.name}.opendrawlib`, filters: [{ name: 'OpenDraw library', extensions: ['opendrawlib'] }], mime: 'application/json' })}
+            onClick={() => void saveFile(serializeLibrary(lib), { defaultName: `${libraryName(lib)}.opendrawlib`, filters: [{ name: t('panels.userLib.fileType'), extensions: ['opendrawlib'] }], mime: 'application/json' })}
             className="rounded p-0.5 text-subtle opacity-0 hover:bg-hover hover:text-fg group-hover:opacity-100"
-            aria-label="Export library"
+            aria-label={t('panels.userLib.export')}
           >
             <Download className="size-3.5" />
           </button>
         </Tooltip>
         {lib.id !== SCRATCHPAD_ID && (
-          <button onClick={() => store().removeLibrary(lib.id)} className="rounded p-0.5 text-subtle opacity-0 hover:bg-danger/10 hover:text-danger group-hover:opacity-100" aria-label="Delete library">
+          <button onClick={() => store().removeLibrary(lib.id)} className="rounded p-0.5 text-subtle opacity-0 hover:bg-danger/10 hover:text-danger group-hover:opacity-100" aria-label={t('panels.userLib.delete')}>
             <Trash className="size-3.5" />
           </button>
         )}
@@ -123,7 +130,7 @@ function LibrarySection({ lib, items, forceOpen }: { lib: UserLibrary; items: Us
             <p
               className="rounded-lg border border-dashed border-line px-3 py-3 text-center text-[11.5px] leading-relaxed text-subtle"
             >
-              {lib.id === SCRATCHPAD_ID ? 'Select shapes and press + to keep them here for reuse.' : 'Empty library — add selections with +.'}
+              {lib.id === SCRATCHPAD_ID ? t('panels.userLib.scratchpadEmpty') : t('panels.userLib.empty')}
             </p>
           )}
         </div>
@@ -133,6 +140,7 @@ function LibrarySection({ lib, items, forceOpen }: { lib: UserLibrary; items: Us
 }
 
 const UserTile = memo(function UserTile({ lib, item }: { lib: UserLibrary; item: UserLibraryItem }) {
+  const t = useT();
   const src = useMemo(() => {
     const doc: Doc = { elements: Object.fromEntries(item.elements.map((e) => [e.id, e])), order: item.elements.map((e) => e.id) };
     try {
@@ -160,7 +168,7 @@ const UserTile = memo(function UserTile({ lib, item }: { lib: UserLibrary; item:
         <button
           onClick={() => useUserLibraries.getState().removeItem(lib.id, item.id)}
           className="absolute -right-0.5 -top-0.5 hidden size-4 items-center justify-center rounded-full bg-panel text-subtle shadow-panel hover:text-danger group-hover:flex"
-          aria-label="Remove item"
+          aria-label={t('panels.userLib.removeItem')}
         >
           <X className="size-2.5" />
         </button>

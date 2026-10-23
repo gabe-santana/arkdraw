@@ -1,5 +1,5 @@
 /**
- * draw.io's Arrange > Insert > Advanced > From Text, in two notations:
+ * mxGraph's Arrange > Insert > Advanced > From Text, in two notations:
  *
  *  - Indented list → tree. Indent with spaces or tabs; bullets (`-`, `*`,
  *    `+`, `•`, `1.`) are optional.

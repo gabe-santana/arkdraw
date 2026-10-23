@@ -8,10 +8,12 @@ import { useEditor } from '@/store/editor';
 import { clientToWorld } from '@/canvas/viewport';
 import { useInteraction } from './store';
 import { deletePoint, insertPoint, isFreehand, movePoint, worldPoints } from './pointEdit';
+import { useT } from '@/i18n';
 
 const ACCENT = 'var(--selection)';
 
 export function PointEditor() {
+  const t = useT();
   const id = useInteraction((s) => s.editPointsId);
   const active = useInteraction((s) => s.activePoint);
   const el = useEditor((s) => (id ? s.doc.elements[id] : undefined));
@@ -65,7 +67,7 @@ export function PointEditor() {
               useInteraction.getState().set({ activePoint: i + 1 });
             }}
           >
-            <title>Double-click to add a point</title>
+            <title>{t('canvas.points.addHint')}</title>
           </line>
         ))}
         {pts.map((p: Vec, i) => (

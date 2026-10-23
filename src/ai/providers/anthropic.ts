@@ -21,6 +21,7 @@ import type {
   ToolCall,
 } from './types';
 import { AiError } from './types';
+import { t } from '@/i18n';
 
 export const ANTHROPIC_BASE = 'https://api.anthropic.com';
 export const ANTHROPIC_VERSION = '2023-06-01';
@@ -82,10 +83,10 @@ export const anthropic: ProviderAdapter = {
 
   parseChat(json): ChatResponse {
     const res = json as { content?: Block[]; stop_reason?: string; stop_details?: { category?: string } | null };
-    if (!res || !Array.isArray(res.content)) throw new AiError('Unexpected response from Anthropic.');
+    if (!res || !Array.isArray(res.content)) throw new AiError(t('ai.error.unexpectedResponse', { provider: 'Anthropic' }));
     if (res.stop_reason === 'refusal') {
       const cat = res.stop_details?.category;
-      throw new AiError(`The model declined this request${cat ? ` (${cat})` : ''}. Try rephrasing it.`);
+      throw new AiError(cat ? t('ai.error.declinedCategory', { category: cat }) : t('ai.error.declined'));
     }
     const toolCalls: ToolCall[] = [];
     let text = '';

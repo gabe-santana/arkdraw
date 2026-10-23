@@ -4,6 +4,7 @@
  */
 import { isTauri } from '@/lib/platform';
 import { useUi } from '@/store/ui';
+import { t } from '@/i18n';
 import { appConfig, autoUpdateCheckEnabled, loadAppConfig, saveAppConfig } from './config';
 import { isMainWindow } from './windows';
 import { autoCheckForUpdates } from './updater';
@@ -21,11 +22,11 @@ export async function showConfigFile(): Promise<void> {
   if (!isTauri()) return;
   try {
     const info = await loadAppConfig();
-    if (!info.path) throw new Error('No configuration folder');
+    if (!info.path) throw new Error(t('desktop.config.noFolder'));
     if (!info.exists) await saveAppConfig({}); // write the defaults the first time
     const { revealItemInDir } = await import('@tauri-apps/plugin-opener');
     await revealItemInDir(appConfig().path ?? info.path);
-    useUi.getState().toast('Edit config.json, then restart OpenDraw to apply it.', 'info');
+    useUi.getState().toast(t('desktop.config.editHint'), 'info');
   } catch (e) {
     useUi.getState().toast(String((e as Error)?.message ?? e), 'error');
   }

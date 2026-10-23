@@ -1,8 +1,9 @@
 /**
- * Quick style presets for the Format panel (draw.io's style palette): fill,
+ * Quick style presets for the Format panel (mxGraph's style palette): fill,
  * stroke and text color combinations applied to the selection in one step.
  */
 import type { DiagramElement, ElementStyle } from '@/model/types';
+import { tx } from '@/i18n';
 
 export interface StylePreset {
   id: string;
@@ -11,6 +12,9 @@ export interface StylePreset {
   stroke: string;
   textColor: string;
 }
+
+/** A preset's name in the UI language ('styling.preset.<id>'). */
+export const presetLabel = (preset: Pick<StylePreset, 'id' | 'label'>): string => tx(`styling.preset.${preset.id}`, preset.label);
 
 export const STYLE_PRESETS: StylePreset[] = [
   { id: 'plain', label: 'Plain', fill: '#ffffff', stroke: '#1e293b', textColor: '#0f172a' },

@@ -1,5 +1,5 @@
 /**
- * Start screen (draw.io's splash): shown on launch when nothing else was
+ * Start screen (mxGraph's splash): shown on launch when nothing else was
  * opened — new blank diagram, a few templates, recent files, open from disk
  * or from browser storage. "Don't show again" turns it off (Preferences
  * brings it back).
@@ -17,6 +17,8 @@ import { TEMPLATES, type Template } from '@/templates';
 import { thumbnail, type Thumb } from '@/templates/thumbnails';
 import { DialogHeader } from '@/ui/Dialog';
 import { openAutomationDialog } from '@/automation/ui';
+import { useT } from '@/i18n';
+import { templateDescription, templateName } from '@/i18n/catalog';
 
 const QUICK = ['flowchart', 'org', 'mind', 'kanban', 'network', 'uml', 'erd', 'sequence'];
 
@@ -52,6 +54,7 @@ export function isPristine(): boolean {
 }
 
 export function StartScreenBody({ close }: { close: () => void }) {
+  const t = useT();
   const [recent, setRecent] = useState<RecentFile[]>([]);
   const show = usePreferences((p) => p.startScreen !== false);
   const update = usePreferences((p) => p.update);
@@ -63,9 +66,9 @@ export function StartScreenBody({ close }: { close: () => void }) {
       .catch(() => {});
   }, []);
 
-  const createFrom = (t: Template) => {
+  const createFrom = (tpl: Template) => {
     close();
-    useEditor.getState().loadPages(t.build(), { path: null, name: t.name });
+    useEditor.getState().loadPages(tpl.build(), { path: null, name: templateName(tpl) });
     markUnsaved();
     requestAnimationFrame(() => useEditor.getState().zoomToFit());
   };
@@ -82,40 +85,40 @@ export function StartScreenBody({ close }: { close: () => void }) {
 
   return (
     <div onKeyDown={(e) => e.stopPropagation()}>
-      <DialogHeader title="Welcome to OpenDraw" subtitle="Start a new diagram or pick up where you left off." onClose={close} />
+      <DialogHeader title={t('chrome.start.title')} subtitle={t('chrome.start.subtitle')} onClose={close} />
       <div className="grid grid-cols-[230px_1fr] gap-4 px-4 pb-3">
         <div className="flex flex-col gap-0.5">
-          {big(<FilePlus />, 'Blank diagram', 'Start from an empty canvas', close)}
-          {big(<LayoutTemplate />, 'Templates…', 'Browse the gallery and My templates', () => {
+          {big(<FilePlus />, t('chrome.start.blank'), t('chrome.start.blankSub'), close)}
+          {big(<LayoutTemplate />, t('chrome.start.templates'), t('chrome.start.templatesSub'), () => {
             close();
             useUi.getState().set({ templatesOpen: true });
           })}
-          {big(<FolderOpen />, 'Open…', isTauri() ? 'A file on this computer' : 'A file from your device', () => {
+          {big(<FolderOpen />, t('chrome.start.open'), isTauri() ? t('chrome.start.openSubDesktop') : t('chrome.start.openSubWeb'), () => {
             close();
             void openDocument();
           })}
           {!isTauri() &&
-            big(<HardDrive />, 'Open from browser…', 'Diagrams saved in this browser', () => {
+            big(<HardDrive />, t('chrome.start.openBrowser'), t('chrome.start.openBrowserSub'), () => {
               close();
               openAutomationDialog({ kind: 'library' });
             })}
         </div>
         <div className="min-w-0 space-y-3">
           <section>
-            <h3 className="mb-1.5 text-[11.5px] font-medium text-muted">Templates</h3>
+            <h3 className="mb-1.5 text-[11.5px] font-medium text-muted">{t('chrome.start.templatesHeading')}</h3>
             <div className="grid grid-cols-5 gap-2">
-              {quick.map((t) => (
-                <button key={t.id} onClick={() => createFrom(t)} className="group text-left" title={t.description}>
+              {quick.map((tpl) => (
+                <button key={tpl.id} onClick={() => createFrom(tpl)} className="group text-left" title={templateDescription(tpl)}>
                   <div className="aspect-[4/3] overflow-hidden rounded-lg bg-white ring-1 ring-line transition-shadow group-hover:ring-2 group-hover:ring-accent/50">
-                    <TemplateThumb t={t} />
+                    <TemplateThumb t={tpl} />
                   </div>
-                  <div className="mt-1 truncate text-[11.5px] text-fg">{t.name}</div>
+                  <div className="mt-1 truncate text-[11.5px] text-fg">{templateName(tpl)}</div>
                 </button>
               ))}
             </div>
           </section>
           <section>
-            <h3 className="mb-1 text-[11.5px] font-medium text-muted">Recent</h3>
+            <h3 className="mb-1 text-[11.5px] font-medium text-muted">{t('chrome.start.recentHeading')}</h3>
             {recent.length ? (
               <div className="grid grid-cols-2 gap-x-2">
                 {recent.map((r) => (
@@ -134,7 +137,7 @@ export function StartScreenBody({ close }: { close: () => void }) {
                 ))}
               </div>
             ) : (
-              <p className="px-2 py-1.5 text-[12px] text-subtle">Files you open or save will show up here.</p>
+              <p className="px-2 py-1.5 text-[12px] text-subtle">{t('chrome.start.recentEmpty')}</p>
             )}
           </section>
         </div>
@@ -142,9 +145,9 @@ export function StartScreenBody({ close }: { close: () => void }) {
       <div className="flex items-center justify-between border-t border-line px-5 py-2.5">
         <label className="flex cursor-pointer items-center gap-2 text-[12px] text-muted">
           <input type="checkbox" className={cn('size-3.5 accent-[var(--accent)]')} checked={!show} onChange={(e) => update({ startScreen: !e.target.checked })} />
-          Don’t show this again
+          {t('chrome.start.dontShow')}
         </label>
-        <span className="text-[11.5px] text-subtle">Turn it back on in Preferences</span>
+        <span className="text-[11.5px] text-subtle">{t('chrome.start.reenableHint')}</span>
       </div>
     </div>
   );

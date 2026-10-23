@@ -118,7 +118,7 @@ const defs: ShapeDef[] = [
     kind: 'callout',
     label: 'Callout',
     rounded: true,
-    // draw.io callout: `size` = pointer height (px), `position` / `base` = where the
+    // mxGraph callout: `size` = pointer height (px), `position` / `base` = where the
     // pointer leaves the body (fraction / px), `position2` = tip x (fraction).
     params: [
       param.px('size', 'Pointer', 18, { drawioDefault: 30 }),

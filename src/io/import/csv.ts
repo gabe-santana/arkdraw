@@ -1,12 +1,12 @@
 /**
- * draw.io's CSV import (Arrange > Insert > Advanced > CSV).
+ * mxGraph's CSV import (Arrange > Insert > Advanced > CSV).
  *
  * Lines starting with `##` are comments, `# key: value` lines configure the
  * import (a trailing `\` continues a directive on the next `#` line), and the
  * rest is CSV whose first row holds the column names. Supported directives:
  *
  *   label, labelname + labels   label template with %column% placeholders (HTML → text)
- *   style, stylename + styles   draw.io style (placeholders allowed), mapped to OpenDraw
+ *   style, stylename + styles   (placeholders allowed), mapped to OpenDraw
  *   vars                        JSON of extra %placeholders% for styles
  *   parentstyle                 style for rows that have children
  *   identity, parent            id column / parent-id column → nested containers
@@ -313,10 +313,10 @@ export function importCsv(text: string): ImportResult {
 export const importer: Importer = {
   id: 'csv',
   label: 'CSV…',
-  description: 'draw.io-compatible CSV with # directives (label, style, connect, layout, …) — great for org charts.',
+  description: 'CSV with # directives (label, style, connect, layout, …) — great for org charts.',
   extensions: ['csv'],
   acceptsText: true,
-  example: `## Org chart in draw.io's CSV format. ## = comment, # = directive.
+  example: `## Org chart in CSV. ## = comment, # = directive.
 # label: %name%<br><i style="color:gray;">%position%</i><br>%email%
 # style: label;image=%image%;whiteSpace=wrap;html=1;rounded=1;fillColor=%fill%;strokeColor=%stroke%;
 # namespace: csvimport-
@@ -334,10 +334,10 @@ export const importer: Importer = {
 # layout: auto
 ## ---- CSV below this line. First line are column names. ----
 name,position,id,location,manager,email,fill,stroke,refs,url,image
-Tessa Miller,CFO,emi,Office 1,,me@example.com,#dae8fc,#6c8ebf,,https://www.draw.io,https://cdn3.iconfinder.com/data/icons/user-avatars-1/512/users-9-2-128.png
-Edward Morrison,Brand Manager,emo,Office 2,Tessa Miller,em@example.com,#d5e8d4,#82b366,,https://www.draw.io,https://cdn3.iconfinder.com/data/icons/user-avatars-1/512/users-10-3-128.png
-Alison Donovan,System Admin,rdo,Office 3,Tessa Miller,rd@example.com,#d5e8d4,#82b366,"emo,tva",https://www.draw.io,https://cdn3.iconfinder.com/data/icons/user-avatars-1/512/users-2-128.png
-Evan Valet,HR Director,tva,Office 4,Tessa Miller,tva@example.com,#d5e8d4,#82b366,,https://www.draw.io,https://cdn3.iconfinder.com/data/icons/user-avatars-1/512/users-3-128.png`,
+Tessa Miller,CFO,emi,Office 1,,me@example.com,#dae8fc,#6c8ebf,,https://www.mxGraph,https://cdn3.iconfinder.com/data/icons/user-avatars-1/512/users-9-2-128.png
+Edward Morrison,Brand Manager,emo,Office 2,Tessa Miller,em@example.com,#d5e8d4,#82b366,,https://www.mxGraph,https://cdn3.iconfinder.com/data/icons/user-avatars-1/512/users-10-3-128.png
+Alison Donovan,System Admin,rdo,Office 3,Tessa Miller,rd@example.com,#d5e8d4,#82b366,"emo,tva",https://www.mxGraph,https://cdn3.iconfinder.com/data/icons/user-avatars-1/512/users-2-128.png
+Evan Valet,HR Director,tva,Office 4,Tessa Miller,tva@example.com,#d5e8d4,#82b366,,https://www.mxGraph,https://cdn3.iconfinder.com/data/icons/user-avatars-1/512/users-3-128.png`,
   detect: (content) => typeof content === 'string' && /^#\s*(label|style|connect|layout)\s*:/m.test(content.slice(0, 10000)),
   run: async (content) => importCsv(toText(content)),
 };

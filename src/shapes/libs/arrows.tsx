@@ -1,5 +1,5 @@
 ﻿/**
- * Arrows: draw.io-style block arrows (single, double, chevrons, U-turn, bent,
+ * Arrows: block arrows (single, double, chevrons, U-turn, bent,
  * curved, callouts, quad, striped, circular).
  */
 import type { Rect, Vec } from '@/model/types';
@@ -63,7 +63,7 @@ const notched = (W: number, H: number): Pt[] => {
   return [...single(W, H), [Math.min(H * 0.3, W * 0.15), H / 2]];
 };
 
-/** draw.io `step`: `size` = notch depth as a fraction of the (canonical) width. */
+/** mxGraph `step`: `size` = notch depth as a fraction of the (canonical) width. */
 const chevron = (W: number, H: number, p?: ParamValues): Pt[] => {
   const s = W * (p ? pn(p, 'size') : 0.25);
   return [[0, 0], [W - s, 0], [W, H / 2], [W - s, H], [0, H], [s, H / 2]];

@@ -140,7 +140,7 @@ describe('file format', () => {
   });
 });
 
-describe('draw.io interop', () => {
+describe('mxGraph interop', () => {
   it('round-trips pages, rotation, layers, waypoints, metadata', async () => {
     const a = createShape('rectangle', { x: 0, y: 0, w: 120, h: 60 }, {}, 'Alpha');
     a.rotation = 30;

@@ -8,6 +8,7 @@ import { createShape, DEFAULT_STYLE } from '@/model/defaults';
 import { useEditor } from '@/store/editor';
 import { clientToWorld, isOverCanvas, viewportCenter } from '@/canvas/viewport';
 import { isImageUrl } from '@/lib/images';
+import { looksLikeSvg } from '@/io/import/svgShapes';
 import { insertImageFile, insertImageUrl } from './commands';
 import { presetForTool } from '@/canvas/tools';
 import { lineHeight, measureText, wrapText } from '@/lib/text';
@@ -20,7 +21,7 @@ export function copyToClipboard(cut: boolean) {
   const els = s.copySelection();
   if (!els.length) return;
   const payload = JSON.stringify({ type: MARKER, elements: els });
-  // Our JSON as text, plus draw.io XML as HTML so the copy also pastes into draw.io.
+  // Our JSON as text, plus mxGraph XML as HTML so the copy also pastes into mxGraph.
   void writeClipboard(payload, els);
   if (cut) s.deleteSelection();
 }
@@ -94,7 +95,7 @@ export async function pasteFromClipboard(text?: string, images: Blob[] = [], at?
     else s.paste(els, viewportCenter());
     return;
   }
-  // draw.io cells (mxGraphModel / mxfile XML).
+  // mxGraph cells (mxGraphModel / mxfile XML).
   if (data && (await pasteDrawioXml(data, (cells) => useEditor.getState().paste(cells, at ?? viewportCenter())))) return;
   const trimmed = data?.trim() ?? '';
   // Office apps put a rendered picture next to their text; the text is what people mean.
@@ -109,6 +110,8 @@ export async function pasteFromClipboard(text?: string, images: Blob[] = [], at?
       return;
     }
   }
+  // SVG markup (e.g. "Copy as SVG" from design tools): image or editable shapes.
+  if (trimmed && looksLikeSvg(trimmed) && (await (await import('./svgImport')).offerSvgText(trimmed, at))) return;
   if (trimmed && isImageUrl(trimmed)) {
     // Unreachable/broken links fall through and paste as text.
     if (await insertImageUrl(trimmed, at, { quiet: true })) return;
@@ -136,7 +139,7 @@ export function installPasteHandler() {
     e.preventDefault();
     const plain = e.clipboardData?.getData('text/plain') ?? '';
     const html = e.clipboardData?.getData('text/html') ?? '';
-    // draw.io puts its XML in the HTML flavour; our own JSON (text) still wins.
+    // mxGraph puts its XML in the HTML flavour; our own JSON (text) still wins.
     const text = !plain.includes(MARKER) && !hasDrawioXml(plain) && hasDrawioXml(html) ? html : plain;
     void pasteFromClipboard(text, clipboardImages(e.clipboardData), pasteTarget());
   };

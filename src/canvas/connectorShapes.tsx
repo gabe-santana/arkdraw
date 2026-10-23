@@ -1,5 +1,5 @@
 /**
- * Connector bodies beyond the plain line (draw.io edge shapes): pipe, wire,
+ * Connector bodies beyond the plain line (mxGraph edge shapes): pipe, wire,
  * link (double line), simple and flex arrows (an outlined band with heads),
  * filled edge (a thick filled band) — plus arrowheads, extra labels and the
  * hand-drawn (sketch) variant. Pure SVG, shared by the canvas and exporters.
@@ -12,7 +12,7 @@ import { lineHeight, measureText, wrapText } from '@/lib/text';
 import { TextLines } from '@/shapes/TextLines';
 import { roughen, seedFor } from '@/shapes/sketch';
 
-/** Default band widths per connector shape (draw.io `width`). */
+/** Default band widths per connector shape (mxGraph `width`). */
 export const BAND_DEFAULTS = { link: 4, flexArrow: 10, arrow: 8, filledEdge: 8 } as const;
 
 export const isBandShape = (shape: ConnectorElement['connectorShape']) => shape === 'arrow' || shape === 'flexArrow';
@@ -232,7 +232,7 @@ function unwrapFragments(node: ReactNode): ReactNode[] {
 
 const LABEL_MAX_WIDTH = 220;
 
-/** Additional labels along the connector (draw.io child edge labels). */
+/** Additional labels along the connector (mxGraph child edge labels). */
 export function ExtraLabels({ el, g, bg }: { el: ConnectorElement; g: ConnectorGeometry; bg: string }) {
   if (!el.labels?.length) return null;
   return (

@@ -4,9 +4,11 @@
  */
 import { Download, X } from 'lucide-react';
 import { confirmDiscard } from '@/app/fileCommands';
+import { useT } from '@/i18n';
 import { installUpdate, useUpdater } from './updater';
 
 export function DesktopUpdatePrompt() {
+  const t = useT();
   const status = useUpdater((s) => s.status);
   const version = useUpdater((s) => s.version);
   const progress = useUpdater((s) => s.progress);
@@ -18,10 +20,12 @@ export function DesktopUpdatePrompt() {
 
   const detail =
     status === 'downloading'
-      ? `Downloading${progress != null ? ` · ${Math.round(progress * 100)}%` : '…'}`
+      ? progress != null
+        ? t('desktop.update.downloadingPercent', { percent: Math.round(progress * 100) })
+        : t('desktop.update.downloading')
       : status === 'installing'
-        ? 'Installing… OpenDraw will restart.'
-        : 'Restart to update. You’ll be asked to save unsaved changes first.';
+        ? t('desktop.update.installing')
+        : t('desktop.update.restartHint');
 
   return (
     <div
@@ -35,7 +39,7 @@ export function DesktopUpdatePrompt() {
         <Download size={15} />
       </span>
       <div className="min-w-0">
-        <div className="font-medium">OpenDraw {version} is available</div>
+        <div className="font-medium">{t('desktop.update.available', { version })}</div>
         <div className="text-[12px] text-muted">{detail}</div>
         {status === 'downloading' && (
           <div className="mt-1.5 h-1 w-48 overflow-hidden rounded-full bg-hover">
@@ -51,13 +55,14 @@ export function DesktopUpdatePrompt() {
           }}
           className="ml-1 h-7 shrink-0 rounded-lg bg-accent px-3 text-[12.5px] font-medium text-accent-fg transition-colors hover:bg-accent-hover"
         >
-          Restart to update
+          {t('desktop.update.restart')}
         </button>
       )}
       {!busy && (
         <button
           type="button"
-          aria-label="Dismiss"
+          aria-label={t('app.dismiss')}
+          title={t('app.dismiss')}
           onClick={dismiss}
           className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-hover hover:text-fg"
         >

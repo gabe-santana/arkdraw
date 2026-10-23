@@ -1,5 +1,5 @@
 /**
- * draw.io style strings for Edit Style (Mod+E).
+ * strings for Edit Style (Mod+E).
  *
  * Emitting reuses the .drawio exporter (`drawioStyleOf`), parsing reuses the
  * importer (`elementFromDrawioStyle`), so the dialog speaks exactly the
@@ -13,7 +13,7 @@ import type { DiagramElement, ElementStyle } from '@/model/types';
 import { drawioStyleOf, elementFromDrawioStyle } from '@/io/drawio';
 import { EXTRA_STYLE_KEY, pairsToStyle, parseStylePairs } from './styleExtras';
 
-/** Keys the draw.io importer interprets (anything else is preserved verbatim). */
+/** Keys the mxGraph importer interprets (anything else is preserved verbatim). */
 const IMPORT_KEYS = new Set(
   (
     'fillColor strokeColor strokeWidth dashed dashPattern opacity fillOpacity strokeOpacity textOpacity rounded absoluteArcSize arcSize shadow ' +
@@ -34,7 +34,7 @@ const withoutExtras = (el: DiagramElement): DiagramElement => {
   return { ...el, data: Object.keys(data).length ? data : undefined };
 };
 
-/** The element's draw.io style string, one `key=value;` per line. */
+/** The element's string, one `key=value;` per line. */
 export function formatDrawioStyle(el: DiagramElement): string {
   return parseStylePairs(drawioStyleOf(el))
     .map(([k, v]) => (v === '' ? `${k};` : `${k}=${v};`))

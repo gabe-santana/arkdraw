@@ -8,6 +8,7 @@ import {
   Square, SquarePen, TriangleAlert, Wand, X,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { useT, type MessageKey } from '@/i18n';
 import { isConnector, isShape } from '@/model/types';
 import type { AiHostApi } from '../host';
 import { PROVIDER_META } from '../providers';
@@ -48,19 +49,20 @@ interface Run {
   applied?: 'insert' | 'replace' | 'edit';
 }
 
-const GENERATE_EXAMPLES = [
-  'AWS 3-tier web app',
-  'C4 container diagram for an e-commerce',
-  'ER diagram for a blog',
-  'Flowchart for a password reset',
-  'Sequence diagram of an OAuth login',
-  'Azure event-driven pipeline',
+const GENERATE_EXAMPLES: MessageKey[] = [
+  'ai.example.generate1',
+  'ai.example.generate2',
+  'ai.example.generate3',
+  'ai.example.generate4',
+  'ai.example.generate5',
+  'ai.example.generate6',
 ];
-const EDIT_EXAMPLES = ['Add a Redis cache in front of the database', 'Label every connection', 'Add a monitoring service connected to all servers', 'Mark external systems as grey'];
+const EDIT_EXAMPLES: MessageKey[] = ['ai.example.edit1', 'ai.example.edit2', 'ai.example.edit3', 'ai.example.edit4'];
 
 let runSeq = 0;
 
 export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelProps) {
+  const t = useT();
   const settings = useAiSettings();
   const { ready, reason } = useAiReady();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -164,7 +166,7 @@ export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelPro
     patchRun(run.id, (r) => ({ ...r, applied: how }));
   };
 
-  const examples = mode === 'edit' ? EDIT_EXAMPLES : GENERATE_EXAMPLES;
+  const examples = (mode === 'edit' ? EDIT_EXAMPLES : GENERATE_EXAMPLES).map((k) => t(k));
 
   return (
     <div className={cn('flex h-full min-h-0 w-full flex-col bg-panel text-[13px] text-fg', className)} onKeyDown={stopKeys}>
@@ -173,23 +175,23 @@ export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelPro
         <div className="flex size-6 items-center justify-center rounded-md bg-accent-soft text-accent">
           <Sparkles className="size-3.5" />
         </div>
-        <span className="font-semibold">Assistant</span>
+        <span className="font-semibold">{t('ai.panel.title')}</span>
         <button
           type="button"
           onClick={openSettings}
-          title="Model settings"
+          title={t('ai.panel.modelSettings')}
           className="ml-1 flex min-w-0 items-center gap-1.5 rounded-md py-1 pl-1 pr-1.5 text-[11.5px] text-muted ring-1 ring-line transition-colors hover:bg-hover hover:text-fg"
         >
           <ProviderMark provider={settings.provider} size={16} className="rounded" />
-          <span className="truncate">{modelLabel || 'No model'}</span>
+          <span className="truncate">{modelLabel || t('ai.panel.noModel')}</span>
           <ChevronDown className="size-3 shrink-0" />
         </button>
         <div className="flex-1" />
-        <IconBtn label="AI settings" size="sm" onClick={openSettings}>
+        <IconBtn label={t('ai.settings.title')} size="sm" onClick={openSettings}>
           <Settings />
         </IconBtn>
         {onClose && (
-          <IconBtn label="Close" size="sm" onClick={onClose}>
+          <IconBtn label={t('common.close')} size="sm" onClick={onClose}>
             <X />
           </IconBtn>
         )}
@@ -199,10 +201,10 @@ export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelPro
       <div className="flex shrink-0 items-center gap-2 px-3 pt-3">
         <div className="grid flex-1 grid-cols-2 rounded-lg bg-panel-2 p-0.5 ring-1 ring-line">
           <ModeTab active={mode === 'generate'} onClick={() => setMode('generate')} icon={<Wand className="size-3.5" />}>
-            Create
+            {t('ai.panel.modeCreate')}
           </ModeTab>
-          <ModeTab active={mode === 'edit'} disabled={docCount === 0} onClick={() => setMode('edit')} icon={<SquarePen className="size-3.5" />} title={docCount === 0 ? 'The canvas is empty' : undefined}>
-            Edit diagram
+          <ModeTab active={mode === 'edit'} disabled={docCount === 0} onClick={() => setMode('edit')} icon={<SquarePen className="size-3.5" />} title={docCount === 0 ? t('ai.panel.canvasEmpty') : undefined}>
+            {t('ai.panel.modeEdit')}
           </ModeTab>
         </div>
       </div>
@@ -212,20 +214,20 @@ export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelPro
         {!isTauri() && (
           <div className="flex gap-2 rounded-lg bg-[#f5a524]/12 px-2.5 py-2 text-[11.5px] leading-snug text-muted ring-1 ring-[#f5a524]/30">
             <TriangleAlert className="mt-px size-3.5 shrink-0 text-[#d48806]" />
-            Browser preview: API keys stay in memory for this tab and requests go straight from the page.
+            {t('ai.panel.browserWarning')}
           </div>
         )}
 
         {ready === false && (
           <div className="animate-slide-up rounded-xl bg-panel-2 p-4 ring-1 ring-line">
             <div className="flex items-center gap-2 font-medium">
-              <Sparkles className="size-4 text-accent" /> Connect a model
+              <Sparkles className="size-4 text-accent" /> {t('ai.panel.connectTitle')}
             </div>
             <p className="mt-1.5 text-[12px] leading-relaxed text-muted">
-              Use your own key for Anthropic, OpenAI or Gemini — or run fully offline with Ollama. {reason ? `${reason} to get started.` : ''}
+              {t('ai.panel.connectBody')} {reason ?? ''}
             </p>
             <Btn variant="primary" size="sm" className="mt-3" onClick={openSettings}>
-              Set up AI
+              {t('ai.panel.setUp')}
             </Btn>
           </div>
         )}
@@ -235,13 +237,13 @@ export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelPro
             <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-accent-soft text-accent">
               <Sparkles className="size-5" />
             </div>
-            <div className="mt-3 text-[14px] font-semibold">{mode === 'edit' ? 'What should change?' : 'What should we draw?'}</div>
+            <div className="mt-3 text-[14px] font-semibold">{mode === 'edit' ? t('ai.panel.emptyEditTitle') : t('ai.panel.emptyGenerateTitle')}</div>
             <p className="mx-auto mt-1 max-w-[260px] text-[12px] text-muted">
               {mode === 'edit'
                 ? selectionCount
-                  ? `Describe a change. “This” refers to the ${selectionCount} selected item${selectionCount === 1 ? '' : 's'}.`
-                  : 'Describe a change to the current diagram.'
-                : 'Describe a system, process or schema. Cloud diagrams use real AWS, Azure and GCP icons.'}
+                  ? t('ai.panel.emptyEditSelection', { count: selectionCount })
+                  : t('ai.panel.emptyEdit')
+                : t('ai.panel.emptyGenerate')}
             </p>
           </div>
         )}
@@ -283,18 +285,18 @@ export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelPro
               }
             }}
             rows={2}
-            placeholder={mode === 'edit' ? 'e.g. Add a CDN in front of the load balancer' : 'e.g. Serverless image upload pipeline on AWS'}
+            placeholder={mode === 'edit' ? t('ai.panel.placeholderEdit') : t('ai.panel.placeholderGenerate')}
             className="block w-full resize-none bg-transparent px-3 pt-2.5 text-[13px] leading-relaxed text-fg outline-none placeholder:text-subtle"
           />
           <div className="flex items-center gap-2 px-2 pb-2">
-            <span className="pl-1 text-[11px] text-subtle">{IS_MAC ? '⌘' : 'Ctrl'} ↵ to send</span>
+            <span className="pl-1 text-[11px] text-subtle">{t('ai.panel.sendHint', { key: IS_MAC ? '⌘' : 'Ctrl' })}</span>
             <div className="flex-1" />
             {running ? (
               <button
                 type="button"
                 onClick={stop}
-                title="Stop"
-                aria-label="Stop"
+                title={t('ai.panel.stop')}
+                aria-label={t('ai.panel.stop')}
                 className="flex size-7 items-center justify-center rounded-lg bg-fg text-panel transition-transform active:scale-95"
               >
                 <Square className="size-3 fill-current" />
@@ -304,8 +306,8 @@ export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelPro
                 type="button"
                 onClick={() => void send()}
                 disabled={!prompt.trim()}
-                title="Send"
-                aria-label="Send"
+                title={t('ai.panel.send')}
+                aria-label={t('ai.panel.send')}
                 className="flex size-7 items-center justify-center rounded-lg bg-accent text-accent-fg shadow-[0_1px_2px_rgb(0_0_0/0.15)] transition-[transform,opacity,background] hover:bg-accent-hover active:scale-95 disabled:opacity-35"
               >
                 <ArrowUp className="size-4" />
@@ -330,12 +332,12 @@ function ModeTab({
       onClick={onClick}
       title={title}
       className={cn(
-        'flex h-7 items-center justify-center gap-1.5 rounded-md text-[12px] font-medium transition-[background,color,box-shadow] duration-150 disabled:opacity-40',
+        'flex h-7 min-w-0 items-center justify-center gap-1.5 rounded-md px-1 text-[12px] font-medium transition-[background,color,box-shadow] duration-150 disabled:opacity-40',
         active ? 'bg-panel text-fg shadow-[0_0_0_1px_var(--line),0_1px_2px_rgb(0_0_0/0.06)]' : 'text-muted hover:text-fg',
       )}
     >
       {icon}
-      {children}
+      <span className="min-w-0 truncate">{children}</span>
     </button>
   );
 }
@@ -347,11 +349,12 @@ function StepIcon({ state }: { state: StepState }) {
 }
 
 function RunCard({ run, docEmpty, onApply, onRetry }: { run: Run; docEmpty: boolean; onApply: (how: 'insert' | 'replace' | 'edit') => void; onRetry: () => void }) {
+  const t = useT();
   return (
     <div className="animate-slide-up space-y-2">
       <div className="ml-6 rounded-xl rounded-tr-sm bg-accent-soft px-3 py-2 text-[12.5px] leading-relaxed text-fg">
         <div className="whitespace-pre-wrap break-words">{run.prompt}</div>
-        {run.mode === 'edit' && <div className="mt-1 text-[10.5px] font-medium uppercase tracking-wide text-accent">Edit</div>}
+        {run.mode === 'edit' && <div className="mt-1 text-[10.5px] font-medium uppercase tracking-wide text-accent">{t('ai.run.editBadge')}</div>}
       </div>
 
       {run.steps.length > 0 && (
@@ -368,11 +371,11 @@ function RunCard({ run, docEmpty, onApply, onRetry }: { run: Run; docEmpty: bool
 
       {run.status === 'running' && run.steps.length === 0 && (
         <div className="flex items-center gap-2 px-1 text-[12px] text-muted">
-          <LoaderCircle className="size-3.5 animate-spin text-accent" /> Starting…
+          <LoaderCircle className="size-3.5 animate-spin text-accent" /> {t('ai.run.starting')}
         </div>
       )}
 
-      {run.status === 'cancelled' && <div className="px-1 text-[12px] text-subtle">Stopped.</div>}
+      {run.status === 'cancelled' && <div className="px-1 text-[12px] text-subtle">{t('ai.run.stopped')}</div>}
 
       {run.status === 'error' && (
         <div className="animate-pop rounded-xl bg-danger/8 p-3 ring-1 ring-danger/25">
@@ -381,7 +384,7 @@ function RunCard({ run, docEmpty, onApply, onRetry }: { run: Run; docEmpty: bool
             <span className="line-clamp-6 break-words">{run.error}</span>
           </div>
           <Btn size="sm" variant="ghost" className="mt-2" icon={<RotateCcw />} onClick={onRetry}>
-            Try again
+            {t('ai.run.tryAgain')}
           </Btn>
         </div>
       )}
@@ -392,6 +395,7 @@ function RunCard({ run, docEmpty, onApply, onRetry }: { run: Run; docEmpty: bool
 }
 
 function ResultCard({ run, result, docEmpty, onApply }: { run: Run; result: AgentResult; docEmpty: boolean; onApply: (how: 'insert' | 'replace' | 'edit') => void }) {
+  const t = useT();
   const [showNotes, setShowNotes] = useState(false);
   const stats = useMemo(() => {
     if (result.kind !== 'spec') {
@@ -407,22 +411,23 @@ function ResultCard({ run, result, docEmpty, onApply }: { run: Run; result: Agen
       <div className="p-3">
         <div className="flex items-center gap-2">
           <CircleCheck className="size-4 text-success" />
-          <span className="font-medium">{result.kind === 'spec' ? (result.spec.title ?? 'Diagram ready') : 'Changes ready'}</span>
+          <span className="font-medium">{result.kind === 'spec' ? (result.spec.title ?? t('ai.result.diagramReady')) : t('ai.result.changesReady')}</span>
           <span className="ml-auto truncate text-[11px] text-subtle">{run.model}</span>
         </div>
         <div className="mt-1 text-[12px] text-muted">
           {result.kind === 'spec' ? (
             <>
-              {result.spec.nodes.length} shapes · {result.spec.edges.length} connectors
-              {result.spec.nodes.some((n) => n.icon) ? ` · ${result.spec.nodes.filter((n) => n.icon).length} icons` : ''}
+              {result.spec.nodes.some((n) => n.icon)
+                ? t('ai.result.specStatsIcons', { shapes: result.spec.nodes.length, connectors: result.spec.edges.length, icons: result.spec.nodes.filter((n) => n.icon).length })
+                : t('ai.result.specStats', { shapes: result.spec.nodes.length, connectors: result.spec.edges.length })}
             </>
           ) : (
             <>
-              {result.summary || 'Edits to the current diagram'}
+              {result.summary || t('ai.result.editsFallback')}
               <span className="mt-1 flex gap-2 text-[11.5px]">
-                {stats!.add > 0 && <span className="text-success">+{stats!.add} added</span>}
-                {stats!.update > 0 && <span className="text-accent">~{stats!.update} changed</span>}
-                {stats!.remove > 0 && <span className="text-danger">−{stats!.remove} removed</span>}
+                {stats!.add > 0 && <span className="text-success">{t('ai.result.added', { count: stats!.add })}</span>}
+                {stats!.update > 0 && <span className="text-accent">{t('ai.result.changed', { count: stats!.update })}</span>}
+                {stats!.remove > 0 && <span className="text-danger">{t('ai.result.removed', { count: stats!.remove })}</span>}
               </span>
             </>
           )}
@@ -433,7 +438,7 @@ function ResultCard({ run, result, docEmpty, onApply }: { run: Run; result: Agen
           <div className="mt-2">
             <button type="button" onClick={() => setShowNotes((v) => !v)} className="flex items-center gap-1 text-[11.5px] text-subtle hover:text-muted">
               <ChevronDown className={cn('size-3 transition-transform', !showNotes && '-rotate-90')} />
-              {result.warnings.length} adjustment{result.warnings.length === 1 ? '' : 's'}
+              {t('ai.result.adjustments', { count: result.warnings.length })}
             </button>
             {showNotes && (
               <ul className="animate-fade mt-1 space-y-0.5 pl-4 text-[11.5px] text-subtle">
@@ -451,23 +456,23 @@ function ResultCard({ run, result, docEmpty, onApply }: { run: Run; result: Agen
           {run.applied ? (
             <span className="animate-fade flex items-center gap-1.5 text-[12px] text-success">
               <Check className="size-3.5" />
-              {run.applied === 'insert' ? 'Inserted' : run.applied === 'replace' ? 'Replaced the diagram' : 'Applied'}
-              <span className="text-subtle">· {IS_MAC ? '⌘' : 'Ctrl'}Z to undo</span>
+              {run.applied === 'insert' ? t('ai.result.inserted') : run.applied === 'replace' ? t('ai.result.replaced') : t('ai.result.applied')}
+              <span className="text-subtle">{t('ai.result.undoHint', { shortcut: `${IS_MAC ? '⌘' : 'Ctrl'}Z` })}</span>
             </span>
           ) : result.kind === 'spec' ? (
             <>
               <Btn variant="primary" size="sm" icon={<Plus />} onClick={() => onApply('insert')}>
-                Insert
+                {t('common.insert')}
               </Btn>
               {!docEmpty && (
                 <Btn size="sm" icon={<Replace />} onClick={() => onApply('replace')}>
-                  Replace diagram
+                  {t('ai.result.replaceDiagram')}
                 </Btn>
               )}
             </>
           ) : (
             <Btn variant="primary" size="sm" icon={<Check />} onClick={() => onApply(result.kind === 'ops' ? 'edit' : 'replace')}>
-              Apply changes
+              {t('ai.result.applyChanges')}
             </Btn>
           )}
         </div>

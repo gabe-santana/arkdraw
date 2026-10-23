@@ -6,6 +6,7 @@ import { useMemo } from 'react';
 import { useEditor, selectionBounds } from '@/store/editor';
 import { useUi } from '@/store/ui';
 import { UNIT_PER_PX } from '@/canvas/paper';
+import { formatNumber, useLocale } from '@/i18n';
 
 const SIZE = 20;
 
@@ -39,6 +40,7 @@ function Ruler({ axis }: { axis: 'x' | 'y' }) {
   const perPx = UNIT_PER_PX[units];
   const pxPerUnit = camera.z / perPx; // screen px per unit
   const step = niceStep(pxPerUnit);
+  const locale = useLocale();
 
   const ticks = useMemo(() => {
     const out: Array<{ pos: number; label?: string; major: boolean }> = [];
@@ -48,11 +50,11 @@ function Ruler({ axis }: { axis: 'x' | 'y' }) {
       const pos = (u / perPx) * camera.z + offset;
       if (pos > len) break;
       const major = Math.abs(u / step - Math.round(u / step)) < 1e-6;
-      out.push({ pos, major, label: major ? `${Math.round(u * 100) / 100}` : undefined });
+      out.push({ pos, major, label: major ? formatNumber(Math.round(u * 100) / 100) : undefined });
       if (out.length > 600) break;
     }
     return out;
-  }, [offset, camera.z, perPx, step, len]);
+  }, [offset, camera.z, perPx, step, len, locale]);
 
   const highlight = sel
     ? axis === 'x'

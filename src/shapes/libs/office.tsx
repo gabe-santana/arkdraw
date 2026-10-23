@@ -20,7 +20,7 @@ import { strokeAttrs } from '../kit';
 type Icon = ComponentType<LucideProps>;
 type Tone = keyof typeof TONE;
 
-/** [name, label, glyph, badge, tone, draw.io stencil, keywords] */
+/** [name, label, glyph, badge, tone, mxGraph stencil, keywords] */
 const TILES: Array<[string, string, Icon, Icon | null, Tone, string, string]> = [
   // Identity & people
   ['user', 'User', User, null, 'blue', 'mxgraph.office.users.user', 'person account member employee'],

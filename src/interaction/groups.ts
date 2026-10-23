@@ -1,5 +1,5 @@
 /**
- * Group navigation (draw.io parity): Enter group isolates a group's members
+ * Group navigation (): Enter group isolates a group's members
  * (everything else is dimmed and can't be picked), Exit group / Home climb
  * back out, and selection inside an entered group works one nesting level at
  * a time. Also Select descendants.
@@ -9,6 +9,7 @@ import { isShape } from '@/model/types';
 import { containedShapes, groupMembers, isHidden, isLocked, useEditor } from '@/store/editor';
 import { useUi } from '@/store/ui';
 import { useInteraction } from './store';
+import { t } from '@/i18n';
 
 const iso = () => useInteraction.getState().isolation;
 const current = () => iso()[iso().length - 1] as string | undefined;
@@ -74,7 +75,7 @@ export function enterGroup(focusId?: string) {
   s.select(focusId ? pickMembers(s.doc, focusId) : []);
 }
 
-/** Leaves the innermost entered group and selects it. Without isolation, selects the parent container (draw.io "Up"). */
+/** Leaves the innermost entered group and selects it. Without isolation, selects the parent container (mxGraph "Up"). */
 export function exitGroup() {
   const s = useEditor.getState();
   const stack = iso();
@@ -90,7 +91,7 @@ export function exitGroup() {
   s.select(member ? pickMembers(s.doc, member, next) : []);
 }
 
-/** Back to the root: leaves every entered group (draw.io "Home"). */
+/** Back to the root: leaves every entered group (mxGraph "Home"). */
 export function exitAllGroups() {
   const stack = iso();
   if (!stack.length) return;
@@ -145,6 +146,6 @@ export function descendantsOf(doc: Doc, ids: string[]): string[] {
 export function selectDescendants() {
   const s = useEditor.getState();
   const next = descendantsOf(s.doc, s.selection);
-  if (!next.length) return useUi.getState().toast('Nothing nested in the selection');
+  if (!next.length) return useUi.getState().toast(t('canvas.group.nothingNested'));
   s.select(next);
 }

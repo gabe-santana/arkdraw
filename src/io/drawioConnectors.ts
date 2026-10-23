@@ -1,5 +1,5 @@
 /**
- * draw.io edge-style mapping for connectors: arrowheads (+ size and fill),
+ * mxGraph edge-style mapping for connectors: arrowheads (+ size and fill),
  * edge shapes (link, flexArrow, wire…), line jumps, fixed connection points
  * (exitX/exitY/exitDx/exitDy, entry*), perimeter spacing, extra edge labels
  * and edge-to-edge connections. Used by src/io/drawio.ts.
@@ -12,7 +12,7 @@ import { uid } from '@/lib/id';
 
 type StyleMap = Map<string, string>;
 
-/** OpenDraw head → draw.io marker name. Fill comes from `arrowFilled`. */
+/** OpenDraw head → mxGraph marker name. Fill comes from `arrowFilled`. */
 export const ARROW_TO_DRAWIO: Record<ArrowHead, string> = {
   none: 'none',
   arrow: 'open',
@@ -75,7 +75,7 @@ const DRAWIO_TO_ARROW: Record<string, ArrowHead> = {
 /** Hollow twin of a head that has a dedicated open variant. */
 const HOLLOW_TWIN: Partial<Record<ArrowHead, ArrowHead>> = { triangle: 'triangleOpen', diamond: 'diamondOpen', circle: 'circleOpen', box: 'boxOpen' };
 
-/** draw.io marker + fill flag → head kind and (when needed) a fill override. */
+/** mxGraph marker + fill flag → head kind and (when needed) a fill override. */
 export function arrowFromDrawio(name: string | undefined, fillFlag: string | undefined, fallback: ArrowHead): { kind: ArrowHead; fill?: boolean } {
   const kind = name === undefined ? fallback : (DRAWIO_TO_ARROW[name] ?? fallback);
   if (fillFlag === undefined || !arrowFillable(kind)) return { kind };
@@ -190,10 +190,10 @@ export function resolveEdgeEnds(elements: Record<string, DiagramElement>, pendin
   }
 }
 
-/** Shape connection points as draw.io's `points=[[x,y],…]` style value. */
+/** Shape connection points as mxGraph's `points=[[x,y],…]` style value. */
 export const connectionPointsToDrawio = (pts: Vec[]) => `[${pts.map((p) => `[${fmt(p.x)},${fmt(p.y)}]`).join(',')}]`;
 
-/** Parses draw.io's `points` style (`[[x,y,perimeter,dx,dy],…]`); undefined when absent or malformed. */
+/** Parses mxGraph's `points` style (`[[x,y,perimeter,dx,dy],…]`); undefined when absent or malformed. */
 export function connectionPointsFromDrawio(v: string | undefined): Vec[] | undefined {
   if (v === undefined) return undefined;
   try {
@@ -208,7 +208,7 @@ export function connectionPointsFromDrawio(v: string | undefined): Vec[] | undef
   }
 }
 
-/** Child label cells for the extra labels (draw.io: x = -1..1 along the edge, y = perpendicular offset). */
+/** Child label cells for the extra labels (mxGraph: x = -1..1 along the edge, y = perpendicular offset). */
 export function extraLabelCells(el: ConnectorElement, esc: (s: string) => string, html: (s: string) => string): string[] {
   return (el.labels ?? []).map(
     (l, i) =>

@@ -1,6 +1,6 @@
 /**
  * Extras → Configuration…: a JSON document for app-wide settings, modelled on
- * draw.io's configuration keys where they exist. Validated, persisted
+ * mxGraph's configuration keys where they exist. Validated, persisted
  * locally, and applied on save and at startup.
  *
  * {
@@ -19,15 +19,16 @@ import { DEFAULT_STYLE, rememberConnectorStyle, setUserDefaultStyle } from '@/mo
 import { usePreferences } from '@/app/preferences';
 import { useEditor } from '@/store/editor';
 import { LIBRARIES } from '@/shapes/libraries';
+import { t } from '@/i18n';
 
 export interface AppConfig {
   defaultVertexStyle?: Partial<ElementStyle>;
   defaultEdgeStyle?: Partial<ElementStyle>;
   defaultFont?: FontKey;
   customPresetColors?: string[];
-  /** `;`-separated shape library ids to show expanded (draw.io `libs`). */
+  /** `;`-separated shape library ids to show expanded (mxGraph `libs`). */
   defaultLibraries?: string;
-  /** Custom library URLs (draw.io `.xml` libraries or `.opendrawlib`). */
+  /** Custom library URLs (mxGraph `.xml` libraries or `.opendrawlib`). */
   libraries?: string[];
   gridSize?: number;
   autosave?: boolean;
@@ -56,17 +57,17 @@ export const CONFIG_EXAMPLE: AppConfig = {
 function validateStyle(v: unknown, key: string, errors: string[]): Partial<ElementStyle> | undefined {
   if (v === undefined) return undefined;
   if (!v || typeof v !== 'object' || Array.isArray(v)) {
-    errors.push(`"${key}" must be an object of style properties.`);
+    errors.push(t('automation.config.styleNotObject', { key }));
     return undefined;
   }
   const allowed = new Set([...Object.keys(DEFAULT_STYLE), ...OPTIONAL_STYLE_KEYS]);
   const out: Record<string, unknown> = {};
   for (const [k, val] of Object.entries(v)) {
-    if (!allowed.has(k)) errors.push(`"${key}.${k}" is not a style property.`);
-    else if (!['string', 'number', 'boolean'].includes(typeof val)) errors.push(`"${key}.${k}" must be a string, number or boolean.`);
+    if (!allowed.has(k)) errors.push(t('automation.config.notStyleProperty', { key: `${key}.${k}` }));
+    else if (!['string', 'number', 'boolean'].includes(typeof val)) errors.push(t('automation.config.stylePrimitive', { key: `${key}.${k}` }));
     else {
       const expected = typeof (DEFAULT_STYLE as unknown as Record<string, unknown>)[k];
-      if (expected !== 'undefined' && expected !== typeof val) errors.push(`"${key}.${k}" must be a ${expected}.`);
+      if (expected !== 'undefined' && expected !== typeof val) errors.push(t('automation.config.styleType', { key: `${key}.${k}`, type: expected }));
       else out[k] = val;
     }
   }
@@ -79,12 +80,12 @@ export function parseConfig(text: string): { config: AppConfig | null; errors: s
   try {
     data = text.trim() ? JSON.parse(text) : {};
   } catch (e) {
-    return { config: null, errors: [`Invalid JSON: ${(e as Error).message}`] };
+    return { config: null, errors: [t('automation.config.invalidJson', { error: (e as Error).message })] };
   }
-  if (!data || typeof data !== 'object' || Array.isArray(data)) return { config: null, errors: ['The configuration must be a JSON object.'] };
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return { config: null, errors: [t('automation.config.notObject')] };
   const o = data as Record<string, unknown>;
   const errors: string[] = [];
-  for (const k of Object.keys(o)) if (!KNOWN_KEYS.includes(k as keyof AppConfig)) errors.push(`Unknown key "${k}".`);
+  for (const k of Object.keys(o)) if (!KNOWN_KEYS.includes(k as keyof AppConfig)) errors.push(t('automation.config.unknownKey', { key: k }));
   const config: AppConfig = {};
   const vs = validateStyle(o.defaultVertexStyle, 'defaultVertexStyle', errors);
   if (vs) config.defaultVertexStyle = vs;
@@ -92,29 +93,29 @@ export function parseConfig(text: string): { config: AppConfig | null; errors: s
   if (es) config.defaultEdgeStyle = es;
   if (o.defaultFont !== undefined) {
     if (FONTS.includes(o.defaultFont as FontKey)) config.defaultFont = o.defaultFont as FontKey;
-    else errors.push(`"defaultFont" must be one of ${FONTS.join(', ')}.`);
+    else errors.push(t('automation.config.defaultFont', { fonts: FONTS.join(', ') }));
   }
   if (o.customPresetColors !== undefined) {
     const list = Array.isArray(o.customPresetColors) ? o.customPresetColors : null;
-    if (!list || list.some((c) => typeof c !== 'string' || !/^#[0-9a-f]{3,8}$/i.test(c))) errors.push('"customPresetColors" must be a list of hex colours like "#0ea5e9".');
+    if (!list || list.some((c) => typeof c !== 'string' || !/^#[0-9a-f]{3,8}$/i.test(c))) errors.push(t('automation.config.customPresetColors'));
     else config.customPresetColors = list as string[];
   }
   if (o.defaultLibraries !== undefined) {
     if (typeof o.defaultLibraries === 'string') config.defaultLibraries = o.defaultLibraries;
-    else errors.push('"defaultLibraries" must be a string like "general;uml".');
+    else errors.push(t('automation.config.defaultLibraries'));
   }
   if (o.libraries !== undefined) {
     const list = Array.isArray(o.libraries) ? o.libraries : null;
-    if (!list || list.some((u) => typeof u !== 'string' || !/^https?:\/\//i.test(u))) errors.push('"libraries" must be a list of http(s) URLs.');
+    if (!list || list.some((u) => typeof u !== 'string' || !/^https?:\/\//i.test(u))) errors.push(t('automation.config.libraries'));
     else config.libraries = list as string[];
   }
   if (o.gridSize !== undefined) {
     if (typeof o.gridSize === 'number' && o.gridSize >= 1 && o.gridSize <= 200) config.gridSize = o.gridSize;
-    else errors.push('"gridSize" must be a number between 1 and 200.');
+    else errors.push(t('automation.config.gridSize'));
   }
   if (o.autosave !== undefined) {
     if (typeof o.autosave === 'boolean') config.autosave = o.autosave;
-    else errors.push('"autosave" must be true or false.');
+    else errors.push(t('automation.config.autosave'));
   }
   return { config: errors.length ? null : config, errors };
 }
@@ -139,7 +140,7 @@ export function saveConfig(config: AppConfig) {
 // Shape libraries (also used by the `libs` / `clibs` URL parameters)
 // ---------------------------------------------------------------------------
 
-/** draw.io library names → OpenDraw library ids. */
+/** mxGraph library names → OpenDraw library ids. */
 const LIB_ALIASES: Record<string, string> = {
   er: 'erd', arrows2: 'arrows', basic: 'basic', lean_mapping: 'lean', android: 'mobile', ios: 'mobile', ios7: 'mobile', archimate3: 'archimate',
   networks: 'network', cisco19: 'cisco', cisco_safe: 'cisco', office: 'office', rack: 'rack', pid: 'pid', mockups: 'mockups', bootstrap: 'bootstrap',
@@ -224,13 +225,13 @@ export async function applyConfig(config: AppConfig, opts: { startup?: boolean }
     if (config.gridSize) useEditor.getState().updateSettings({ gridSize: config.gridSize });
     if (config.defaultLibraries) {
       showOnlyLibraries(resolveLibraryIds(config.defaultLibraries));
-      notes.push('Shape library selection applies the next time the Shapes panel opens.');
+      notes.push(t('automation.config.librarySelectionNote'));
     }
   }
   if (config.libraries?.length) {
     const { added, failed } = await loadLibraryUrls(config.libraries);
-    if (added) notes.push(`Loaded ${added} custom librar${added === 1 ? 'y' : 'ies'}.`);
-    if (failed.length) notes.push(`Could not load ${failed.length} librar${failed.length === 1 ? 'y' : 'ies'} (network or CORS).`);
+    if (added) notes.push(t('automation.config.librariesLoaded', { count: added }));
+    if (failed.length) notes.push(t('automation.librariesFailed', { count: failed.length }));
   }
   return notes;
 }

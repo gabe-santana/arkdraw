@@ -34,7 +34,8 @@ export function normalize(text: string): string {
     .replace(/[̀-ͯ]/g, '')
     .replace(/([a-z])([A-Z])/g, '$1 $2')
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
+    // Letters of any script (Cyrillic, CJK…) so translated labels are searchable.
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim();
 }
 

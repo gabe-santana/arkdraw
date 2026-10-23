@@ -16,12 +16,15 @@ import {
   TEMPLATE_EXTENSION, USER_CATEGORY, deleteTemplate, importTemplateFile, pagesForScope, renameTemplate, saveTemplate, templateFile, useUserTemplates,
   type TemplateScope,
 } from '@/storage/userTemplates';
-import { Field, inputCls, stopKeys, textareaCls } from './formUi';
+import { Field, inputCls, segLabel, stopKeys, textareaCls } from './formUi';
+import { t as tNow, useT } from '@/i18n';
+import { templateCategory } from '@/i18n/catalog';
 
 export const UserCategoryIcon = Bookmark;
 
 /** Rail entry for "My templates", with an import button. Loads the store on mount. */
 export function UserTemplatesRail({ active, count, onClick }: { active: boolean; count: number; onClick: () => void }) {
+  const t = useT();
   const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     void useUserTemplates.getState().refresh();
@@ -29,10 +32,10 @@ export function UserTemplatesRail({ active, count, onClick }: { active: boolean;
   const onFile = async (f: File) => {
     try {
       const st = await importTemplateFile(await f.text(), f.name);
-      useUi.getState().toast(`Imported template “${st.name}”`, 'success');
+      useUi.getState().toast(tNow('automation.templates.imported', { name: st.name }), 'success');
       onClick();
     } catch (e) {
-      useUi.getState().toast(`Could not import template: ${(e as Error)?.message ?? e}`, 'error');
+      useUi.getState().toast(tNow('automation.templates.importFailed', { error: (e as Error)?.message ?? String(e) }), 'error');
     }
   };
   return (
@@ -47,14 +50,14 @@ export function UserTemplatesRail({ active, count, onClick }: { active: boolean;
         )}
       >
         <Bookmark className={cn('size-[15px] shrink-0', active ? 'text-accent' : 'text-muted group-hover:text-fg')} strokeWidth={1.75} />
-        <span className="flex-1 truncate">{USER_CATEGORY}</span>
+        <span className="flex-1 truncate">{templateCategory(USER_CATEGORY)}</span>
         <span className={cn('tabular-nums text-[11px] group-hover/rail:opacity-0', active ? 'text-accent' : 'text-subtle')}>{count}</span>
       </button>
       <button
         onClick={() => fileRef.current?.click()}
         className="absolute right-1 top-1 hidden rounded-md p-1 text-muted hover:bg-panel hover:text-fg group-hover/rail:block"
-        aria-label="Import template file"
-        title={`Import a .${TEMPLATE_EXTENSION} or .opendraw file`}
+        aria-label={t('automation.templates.importFile')}
+        title={t('automation.templates.importTooltip', { ext: TEMPLATE_EXTENSION })}
       >
         <FileUp className="size-3.5" />
       </button>
@@ -74,27 +77,32 @@ export function UserTemplatesRail({ active, count, onClick }: { active: boolean;
 }
 
 /** Rename / export / delete for a user template (Templates dialog preview). */
-export function UserTemplateTools({ t }: { t: Template }) {
+export function UserTemplateTools({ t: tpl }: { t: Template }) {
+  const t = useT();
   const [renaming, setRenaming] = useState(false);
   const ui = useUi.getState();
   const exportIt = async () => {
-    const f = await templateFile(t.id);
+    const f = await templateFile(tpl.id);
     if (!f) return;
     try {
-      await saveFile(f.text, { defaultName: f.name, filters: [{ name: 'OpenDraw template', extensions: [TEMPLATE_EXTENSION] }], mime: 'application/json' });
+      await saveFile(f.text, { defaultName: f.name, filters: [{ name: tNow('automation.templates.fileType'), extensions: [TEMPLATE_EXTENSION] }], mime: 'application/json' });
     } catch (e) {
       ui.toast(String((e as Error)?.message ?? e), 'error');
     }
   };
   const remove = async () => {
-    const choice = await ui.ask({ title: `Delete “${t.name}”?`, message: 'The template is removed from this device. Diagrams made from it are not affected.', confirmLabel: 'Delete' });
-    if (choice === 'confirm') await deleteTemplate(t.id);
+    const choice = await ui.ask({
+      title: tNow('automation.templates.deleteTitle', { name: tpl.name }),
+      message: tNow('automation.templates.deleteMessage'),
+      confirmLabel: tNow('common.delete'),
+    });
+    if (choice === 'confirm') await deleteTemplate(tpl.id);
   };
   if (renaming) {
     return (
       <input
         autoFocus
-        defaultValue={t.name}
+        defaultValue={tpl.name}
         className={inputCls}
         onKeyDown={(e) => {
           e.stopPropagation();
@@ -102,7 +110,7 @@ export function UserTemplateTools({ t }: { t: Template }) {
           if (e.key === 'Escape') setRenaming(false);
         }}
         onBlur={(e) => {
-          void renameTemplate(t.id, e.target.value);
+          void renameTemplate(tpl.id, e.target.value);
           setRenaming(false);
         }}
       />
@@ -111,13 +119,13 @@ export function UserTemplateTools({ t }: { t: Template }) {
   return (
     <div className="flex gap-1.5">
       <Button className="flex-1" size="sm" icon={<Pencil className="size-3.5" />} onClick={() => setRenaming(true)}>
-        Rename
+        <span className="min-w-0 truncate">{t('common.rename')}</span>
       </Button>
       <Button className="flex-1" size="sm" icon={<Download className="size-3.5" />} onClick={() => void exportIt()}>
-        Export
+        <span className="min-w-0 truncate">{t('common.export')}</span>
       </Button>
       <Button className="flex-1" size="sm" icon={<Trash className="size-3.5" />} onClick={() => void remove()}>
-        Delete
+        <span className="min-w-0 truncate">{t('common.delete')}</span>
       </Button>
     </div>
   );
@@ -125,6 +133,7 @@ export function UserTemplateTools({ t }: { t: Template }) {
 
 /** File → Save as template… */
 export function SaveTemplateBody({ close }: { close: () => void }) {
+  const t = useT();
   const hasSelection = useEditor((s) => s.selection.length > 0);
   const pageCount = useEditor((s) => s.pages.length);
   const fileName = useEditor((s) => s.file.name);
@@ -135,45 +144,45 @@ export function SaveTemplateBody({ close }: { close: () => void }) {
 
   const save = async () => {
     const pages = pagesForScope(scope);
-    if (!pages.some((p) => p.doc.order.length)) return useUi.getState().toast('There is nothing to save as a template.', 'info');
+    if (!pages.some((p) => p.doc.order.length)) return useUi.getState().toast(tNow('automation.templates.nothingToSave'), 'info');
     setBusy(true);
     try {
       const st = await saveTemplate(name, description, pages);
-      useUi.getState().toast(`Saved “${st.name}” to My templates`, 'success');
+      useUi.getState().toast(tNow('automation.templates.saved', { name: st.name }), 'success');
       close();
     } catch (e) {
-      useUi.getState().toast(`Could not save the template: ${(e as Error)?.message ?? e}`, 'error');
+      useUi.getState().toast(tNow('automation.templates.saveFailed', { error: (e as Error)?.message ?? String(e) }), 'error');
       setBusy(false);
     }
   };
 
   return (
     <div onKeyDown={stopKeys}>
-      <DialogHeader title="Save as template" subtitle="Appears under My templates in File → New from template… on this device." onClose={close} />
+      <DialogHeader title={t('automation.templates.saveTitle')} subtitle={t('automation.templates.saveSubtitle')} onClose={close} />
       <div className="space-y-3 px-5 pb-4">
-        <Field label="Name">
+        <Field label={t('common.name')}>
           <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} autoFocus onKeyDown={(e) => e.key === 'Enter' && void save()} />
         </Field>
-        <Field label="Description">
-          <textarea className={textareaCls + ' h-16 font-sans text-[12.5px]'} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional" />
+        <Field label={t('common.description')}>
+          <textarea className={textareaCls + ' h-16 font-sans text-[12.5px]'} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('automation.templates.optional')} />
         </Field>
-        <Field label="Contents">
+        <Field label={t('automation.templates.contents')}>
           <Segmented<TemplateScope>
             size="sm"
             value={scope}
             onChange={setScope}
             options={[
-              { value: 'diagram', label: `Whole diagram${pageCount > 1 ? ` (${pageCount} pages)` : ''}` },
-              { value: 'page', label: 'This page' },
-              ...(hasSelection ? [{ value: 'selection' as const, label: 'Selection' }] : []),
+              { value: 'diagram', label: segLabel(t('automation.templates.wholeDiagram', { count: pageCount })) },
+              { value: 'page', label: segLabel(t('automation.templates.thisPage')) },
+              ...(hasSelection ? [{ value: 'selection' as const, label: segLabel(t('common.selection')) }] : []),
             ]}
           />
         </Field>
       </div>
       <div className="flex justify-end gap-2 border-t border-line px-5 py-3">
-        <Button onClick={close}>Cancel</Button>
+        <Button onClick={close}>{t('common.cancel')}</Button>
         <Button variant="primary" disabled={busy} onClick={() => void save()}>
-          Save template
+          {t('automation.templates.save')}
         </Button>
       </div>
     </div>

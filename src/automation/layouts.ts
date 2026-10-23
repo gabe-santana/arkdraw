@@ -1,6 +1,6 @@
 /**
  * Layout extras: Parallel Edges (spread connectors that share the same two
- * shapes) and Apply layout from JSON (a subset of draw.io's
+ * shapes) and Apply layout from JSON (a subset of mxGraph's
  * Arrange → Layout → Apply format, e.g.
  * `[{"layout":"mxHierarchicalLayout","config":{"orientation":"west","intraCellSpacing":30}}]`).
  */
@@ -30,7 +30,7 @@ export function parallelGroups(doc: Doc, ids?: string[]): string[][] {
 const center = (s: ShapeElement) => ({ x: s.x + s.w / 2, y: s.y + s.h / 2 });
 
 /**
- * draw.io's mxParallelEdgeLayout: each connector of a parallel bundle gets a
+ * mxGraph's mxParallelEdgeLayout: each connector of a parallel bundle gets a
  * waypoint offset sideways from the midpoint, `spacing` apart. Orthogonal
  * routes become straight so the bundle fans out cleanly.
  */
@@ -71,7 +71,7 @@ export interface LayoutStep {
 
 const num = (v: unknown): number | undefined => (typeof v === 'number' && Number.isFinite(v) ? v : undefined);
 
-/** Parses draw.io layout JSON into steps. Throws with a readable message on bad input. */
+/** Parses mxGraph layout JSON into steps. Throws with a readable message on bad input. */
 export function parseLayoutJson(text: string): LayoutStep[] {
   let data: unknown;
   try {

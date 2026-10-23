@@ -1,14 +1,16 @@
 /**
- * One-click connector style presets (draw.io's edge style shortcuts): each
+ * One-click connector style presets (mxGraph's edge style shortcuts): each
  * sets routing, arrowheads, line pattern and connector shape together, as a
  * single undo step.
  */
 import type { ArrowHead, ConnectorElement, ConnectorShape, Routing, StrokeStyle } from '@/model/types';
 import { isConnector } from '@/model/types';
 import { useEditor } from '@/store/editor';
+import { tx } from '@/i18n';
 
 export interface ConnectorPreset {
   id: string;
+  /** English name (also the command label, translated by action id). */
   label: string;
   routing: Routing;
   startArrow: ArrowHead;
@@ -29,6 +31,9 @@ export const CONNECTOR_PRESETS: ConnectorPreset[] = [
   { id: 'simple-arrow', label: 'Simple arrow', routing: 'straight', startArrow: 'none', endArrow: 'triangle', strokeStyle: 'solid', connectorShape: 'arrow' },
   { id: 'link', label: 'Link', routing: 'straight', startArrow: 'none', endArrow: 'none', strokeStyle: 'solid', connectorShape: 'link' },
 ];
+
+/** A preset's display name in the UI language. */
+export const connectorPresetLabel = (p: ConnectorPreset): string => tx(`panels.connectorPreset.${p.id}`, p.label);
 
 /** The patch a preset applies to one connector. */
 export function presetPatch(c: ConnectorElement, p: ConnectorPreset): Partial<ConnectorElement> {

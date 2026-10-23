@@ -6,7 +6,8 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { Laptop, LoaderCircle, Plug } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import type { ProviderId } from '../providers';
+import { t, type MessageKey } from '@/i18n';
+import { PROVIDER_META, type ProviderId } from '../providers';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
@@ -97,6 +98,28 @@ export function ProviderMark({ provider, size = 28, className }: { provider: Pro
       );
   }
 }
+
+const TAGLINES: Record<ProviderId, MessageKey> = {
+  anthropic: 'ai.provider.anthropic.tagline',
+  openai: 'ai.provider.openai.tagline',
+  gemini: 'ai.provider.gemini.tagline',
+  ollama: 'ai.provider.ollama.tagline',
+  custom: 'ai.provider.custom.tagline',
+};
+
+const MODEL_HINTS: Record<string, MessageKey> = {
+  'claude-opus-5-5': 'ai.model.hint.mostCapable',
+  'claude-sonnet-5-5': 'ai.model.hint.fastCapable',
+  'claude-haiku-5-5': 'ai.model.hint.fastest',
+  'claude-fable-5-1': 'ai.model.hint.frontier',
+  qwen3: 'ai.model.hint.goodTools',
+};
+
+/** Display texts of PROVIDER_META, translated at call time (brand names stay as they are). */
+export const providerName = (id: ProviderId) => (id === 'custom' ? t('ai.provider.custom.name') : PROVIDER_META[id].name);
+export const providerTagline = (id: ProviderId) => (TAGLINES[id] ? t(TAGLINES[id]) : PROVIDER_META[id].tagline);
+export const providerKeyPlaceholder = (id: ProviderId) => (id === 'custom' ? t('ai.provider.custom.keyPlaceholder') : PROVIDER_META[id].keyPlaceholder);
+export const modelHint = (id: string, hint: string | undefined) => (hint && MODEL_HINTS[id] ? t(MODEL_HINTS[id]) : hint);
 
 export const inputClass =
   'h-8 w-full rounded-lg bg-panel-2 px-2.5 text-[12.5px] text-fg outline-none ring-1 ring-line transition-[box-shadow,background] placeholder:text-subtle hover:ring-line-strong focus:bg-panel focus:ring-2 focus:ring-accent/40';

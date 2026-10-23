@@ -2,12 +2,13 @@
  * User libraries: the Scratchpad plus any number of custom libraries. Items
  * are snapshots of elements (one shape or a whole group with connectors) that
  * can be dropped back onto the canvas. Persisted locally; libraries can be
- * exported/imported as `.opendrawlib` files, and draw.io `<mxlibrary>` files
+ * exported/imported as `.opendrawlib` files, and mxGraph `<mxlibrary>` files
  * can be imported.
  */
 import { create } from 'zustand';
 import type { DiagramElement, Doc } from '@/model/types';
 import { uid } from '@/lib/id';
+import { t } from '@/i18n';
 import { selectionBounds } from '@/store/editor';
 import { importDrawio } from '@/io/drawio';
 import { parseStencilLibrary } from '@/stencils/library';
@@ -33,7 +34,7 @@ const KEY = 'opendraw:user-libraries';
 function load(): UserLibrary[] {
   try {
     const libs = JSON.parse(localStorage.getItem(KEY) || '[]') as UserLibrary[];
-    if (!libs.some((l) => l.id === SCRATCHPAD_ID)) libs.unshift({ id: SCRATCHPAD_ID, name: 'Scratchpad', items: [] });
+    if (!libs.some((l) => l.id === SCRATCHPAD_ID)) libs.unshift({ id: SCRATCHPAD_ID, name: 'Scratchpad', items: [] }); // shown translated (UserLibrariesSection)
     return libs;
   } catch {
     return [{ id: SCRATCHPAD_ID, name: 'Scratchpad', items: [] }];
@@ -105,7 +106,7 @@ export function serializeLibrary(lib: UserLibrary): string {
   return JSON.stringify({ format: 'opendraw-library', version: 1, name: lib.name, items: lib.items }, null, 2) + '\n';
 }
 
-/** Parses an `.opendrawlib` file or a draw.io `<mxlibrary>` file. */
+/** Parses an `.opendrawlib` file or a mxGraph `<mxlibrary>` file. */
 export async function parseLibrary(text: string, fileName: string): Promise<{ name: string; items: UserLibraryItem[] }> {
   const name = fileName.replace(/\.[^.]+$/, '');
   const trimmed = text.trim();
@@ -114,11 +115,11 @@ export async function parseLibrary(text: string, fileName: string): Promise<{ na
   if (stencils) return stencils;
   if (trimmed.startsWith('{')) {
     const data = JSON.parse(trimmed);
-    if (data?.format !== 'opendraw-library' || !Array.isArray(data.items)) throw new Error('Not an OpenDraw library.');
+    if (data?.format !== 'opendraw-library' || !Array.isArray(data.items)) throw new Error(t('panels.userLib.notALibrary'));
     return { name: data.name || name, items: data.items.map((i: UserLibraryItem) => ({ ...i, id: uid() })) };
   }
   const m = trimmed.match(/<mxlibrary[^>]*>([\s\S]*)<\/mxlibrary>/);
-  if (!m) throw new Error('Unsupported library file.');
+  if (!m) throw new Error(t('panels.userLib.unsupported'));
   const entries = JSON.parse(m[1]) as Array<{ xml?: string; title?: string; w?: number; h?: number; data?: string }>;
   const items: UserLibraryItem[] = [];
   for (const entry of entries) {

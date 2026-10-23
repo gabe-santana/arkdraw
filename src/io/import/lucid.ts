@@ -14,7 +14,7 @@
  * relative position) | positionEndpoint (absolute position) | lineEndpoint,
  * style: arrowhead }, text: [{ text, position }] }`.
  *
- * Lucid's proprietary editor JSON (what draw.io reads through its browser
+ * Lucid's proprietary editor JSON (what mxGraph reads through its browser
  * extension) is undocumented and not supported.
  */
 import { unzipSync } from 'fflate';

@@ -5,6 +5,7 @@
  */
 import type { ChatMessage, ChatResponse, HttpRequest, JsonSchema, ModelInfo, ProviderAdapter, StopReason, ToolCall } from './types';
 import { AiError } from './types';
+import { t } from '@/i18n';
 
 export const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 
@@ -84,9 +85,9 @@ export const gemini: ProviderAdapter = {
       candidates?: Array<{ content?: { parts?: Part[] }; finishReason?: string }>;
       promptFeedback?: { blockReason?: string };
     };
-    if (res?.promptFeedback?.blockReason) throw new AiError(`Gemini blocked the prompt (${res.promptFeedback.blockReason}).`);
+    if (res?.promptFeedback?.blockReason) throw new AiError(t('ai.error.geminiBlocked', { reason: res.promptFeedback.blockReason }));
     const cand = res?.candidates?.[0];
-    if (!cand) throw new AiError('Unexpected response from Gemini.');
+    if (!cand) throw new AiError(t('ai.error.unexpectedResponse', { provider: 'Gemini' }));
     const parts = cand.content?.parts ?? [];
     let text = '';
     const toolCalls: ToolCall[] = [];
@@ -97,7 +98,7 @@ export const gemini: ProviderAdapter = {
     const fr = cand.finishReason ?? '';
     let stopReason: StopReason = fr === 'STOP' ? 'end' : fr === 'MAX_TOKENS' ? 'max_tokens' : fr === 'SAFETY' || fr === 'PROHIBITED_CONTENT' ? 'refusal' : 'other';
     if (toolCalls.length) stopReason = 'tool_use';
-    if (stopReason === 'refusal' && !toolCalls.length) throw new AiError('Gemini declined this request. Try rephrasing it.');
+    if (stopReason === 'refusal' && !toolCalls.length) throw new AiError(t('ai.error.geminiDeclined'));
     return { text, toolCalls, stopReason, native: parts };
   },
 

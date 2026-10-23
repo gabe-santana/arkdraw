@@ -1,5 +1,5 @@
 /**
- * Parametric shape geometry (draw.io's "yellow diamond" values).
+ * Parametric shape geometry (mxGraph's "yellow diamond" values).
  *
  * A ShapeDef may declare `params` (corner size, arrow width, header size…)
  * whose values live in `el.params`. `withParams` wraps a definition so its

@@ -16,15 +16,16 @@ import { addRecentFile, baseName, pickAndOpenAnyFile, pickOpenPath, readAnyFile,
 import { isTauri } from '@/lib/platform';
 import { askOpenWhere, openNewWindow, windowScopedKey } from '@/desktop/windows';
 import { backupsEnabled } from '@/desktop/config';
+import { t } from '@/i18n';
 
-const FILTERS = [{ name: 'OpenDraw Diagram', extensions: [FILE_EXTENSION] }];
+const saveFilters = () => [{ name: t('app.filter.opendraw'), extensions: [FILE_EXTENSION] }];
 
 function openFilters() {
   const extra = IMPORTERS.flatMap((i) => i.extensions);
   return [
-    { name: 'All diagrams', extensions: [...new Set([FILE_EXTENSION, 'drawio', 'xml', ...extra])] },
-    { name: 'OpenDraw Diagram', extensions: [FILE_EXTENSION] },
-    { name: 'draw.io Diagram', extensions: ['drawio', 'xml'] },
+    { name: t('app.filter.allDiagrams'), extensions: [...new Set([FILE_EXTENSION, 'drawio', 'xml', ...extra])] },
+    { name: t('app.filter.opendraw'), extensions: [FILE_EXTENSION] },
+    { name: t('app.filter.drawio'), extensions: ['drawio', 'xml'] },
     ...IMPORTERS.filter((i) => i.extensions.length).map((i) => ({ name: i.label.replace(/…$/, ''), extensions: i.extensions })),
   ];
 }
@@ -47,10 +48,10 @@ export async function confirmDiscard(): Promise<boolean> {
   if (!isDirty()) return true;
   const name = useEditor.getState().file.name;
   const choice = await useUi.getState().ask({
-    title: `Save changes to “${name}”?`,
-    message: 'Your changes will be lost if you don’t save them.',
-    confirmLabel: 'Save',
-    denyLabel: 'Don’t save',
+    title: t('app.discard.title', { name }),
+    message: t('app.discard.message'),
+    confirmLabel: t('common.save'),
+    denyLabel: t('app.discard.deny'),
   });
   if (choice === 'cancel') return false;
   if (choice === 'deny') return true;
@@ -98,12 +99,12 @@ export async function loadOpenedFile(f: IncomingFile) {
       s.loadPages(pages, { path: null, name: f.name.replace(/\.[^.]+$/, '') });
       markUnsaved();
       const count = pages.reduce((n, p) => n + p.doc.order.length, 0);
-      ui.toast(`Imported ${count} elements${pages.length > 1 ? ` on ${pages.length} pages` : ''}`, 'success');
+      ui.toast(pages.length > 1 ? t('app.file.importedPages', { count, pages: pages.length }) : t('app.file.imported', { count }), 'success');
       warnings?.slice(0, 2).forEach((w) => ui.toast(w, 'info'));
     }
     requestAnimationFrame(() => useEditor.getState().zoomToFit());
   } catch (e) {
-    ui.toast(e instanceof FileFormatError || e instanceof Error ? e.message : 'Could not open this file.', 'error');
+    ui.toast(e instanceof FileFormatError || e instanceof Error ? e.message : t('app.file.openFailed'), 'error');
   }
 }
 
@@ -151,7 +152,7 @@ export async function saveDocument(saveAs = false): Promise<boolean> {
     if (docOrigin()?.kind === 'library') {
       const { saveCurrentToLibrary } = await import('@/storage/library');
       const entry = await saveCurrentToLibrary();
-      if (entry) useUi.getState().toast('Saved to browser', 'success');
+      if (entry) useUi.getState().toast(t('app.file.savedToBrowser'), 'success');
       return !!entry;
     }
   }
@@ -163,7 +164,7 @@ export async function saveDocument(saveAs = false): Promise<boolean> {
     const res = await saveFile(contents, {
       path: saveAs ? null : s.file.path,
       defaultName: name,
-      filters: FILTERS,
+      filters: saveFilters(),
       mime: 'application/json',
       backup: backupsEnabled(),
       document: saveAs ? 'saveAs' : 'save',
@@ -173,12 +174,12 @@ export async function saveDocument(saveAs = false): Promise<boolean> {
     useEditor.getState().markSaved(res.path, res.path ? baseName(res.path) : res.name);
     void import('@/storage/recent').then((r) => r.noteCurrentDocument());
     if (res.path) addRecentFile(res.path).catch(() => {});
-    useUi.getState().toast('Saved', 'success');
+    useUi.getState().toast(t('common.saved'), 'success');
     clearRecovery();
     void import('./revisions').then((r) => r.addRevision('save'));
     return true;
   } catch (e) {
-    useUi.getState().toast(`Save failed: ${String((e as Error).message ?? e)}`, 'error');
+    useUi.getState().toast(t('app.file.saveFailed', { error: String((e as Error).message ?? e) }), 'error');
     return false;
   }
 }

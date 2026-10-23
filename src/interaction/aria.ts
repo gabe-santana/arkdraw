@@ -5,16 +5,18 @@
  */
 import type { ConnectorElement, ShapeElement } from '@/model/types';
 import { getShapeDef } from '@/shapes/registry';
+import { t } from '@/i18n';
 
 const firstLine = (s: string | undefined) => (s ?? '').split('\n').find((l) => l.trim())?.trim() ?? '';
 
 export function shapeAria(el: ShapeElement) {
-  const kind = el.kind === 'icon' ? 'Icon' : getShapeDef(el.kind).label;
+  const kind = el.kind === 'icon' ? t('canvas.aria.icon') : getShapeDef(el.kind).label;
   const text = firstLine(el.name) || firstLine(el.text) || (el.table ? firstLine(el.table.cells[0]?.join(' ')) : '');
-  return { role: 'img', 'aria-roledescription': kind.toLowerCase(), 'aria-label': text ? `${kind}: ${text}` : kind };
+  return { role: 'img', 'aria-roledescription': kind.toLowerCase(), 'aria-label': text ? t('canvas.aria.labeled', { kind, text }) : kind };
 }
 
 export function connectorAria(el: ConnectorElement) {
   const text = firstLine(el.name) || firstLine(el.text);
-  return { role: 'img', 'aria-roledescription': 'connector', 'aria-label': text ? `Connector: ${text}` : 'Connector' };
+  const kind = t('common.connector');
+  return { role: 'img', 'aria-roledescription': t('canvas.aria.connectorRole'), 'aria-label': text ? t('canvas.aria.labeled', { kind, text }) : kind };
 }

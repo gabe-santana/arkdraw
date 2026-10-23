@@ -730,7 +730,7 @@ const bandLock = (b: Band, p: Paint) => (
 const STYLE =
   'html=1;pointerEvents=1;dashed=0;fillColor=#036897;strokeColor=#ffffff;strokeWidth=2;verticalLabelPosition=bottom;verticalAlign=top;align=center;outlineConnect=0;';
 
-/** [name, label, draw.io stencil, render, w, h, keywords, preset text?] */
+/** [name, label, mxGraph stencil, render, w, h, keywords, preset text?] */
 type Entry = [string, string, string, Render, number, number, string];
 
 const ENTRIES: Entry[] = [

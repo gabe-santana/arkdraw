@@ -47,9 +47,9 @@ export interface ShapeDef {
   autoGrow?: boolean;
   /** Clickable everywhere in its bounds (for line-art / icon shapes). */
   boxHit?: boolean;
-  /** Base draw.io style used by the .drawio exporter (and to map imports back). */
+  /** Base used by the .drawio exporter (and to map imports back). */
   drawio: string;
-  /** Adjustable geometry parameters (draw.io "yellow diamond" values), stored in `el.params`. */
+  /** Adjustable geometry parameters (mxGraph "yellow diamond" values), stored in `el.params`. */
   params?: ShapeParam[];
   /** On-canvas parameter handles, in local (unrotated, unflipped) coordinates. */
   handles?: (g: HandleGeometry) => ParamHandle[];
@@ -76,11 +76,11 @@ export interface ShapeParam {
   max?: number;
   step?: number;
   options?: Array<{ value: string; label: string }>;
-  /** draw.io style key (defaults to `key`); `false` = not exported. */
+  /** key (defaults to `key`); `false` = not exported. */
   drawio?: string | false;
-  /** draw.io's own default, assumed on import when the key is absent (defaults to `default`). */
+  /** mxGraph's own default, assumed on import when the key is absent (defaults to `default`). */
   drawioDefault?: number | string;
-  /** Value is in px when draw.io's `fixedSize=1`, otherwise a fraction of this dimension. */
+  /** Value is in px when mxGraph's `fixedSize=1`, otherwise a fraction of this dimension. */
   fixedSizeOf?: 'w' | 'h';
   /**
    * Enum that switches the shape kind instead of storing a value (option

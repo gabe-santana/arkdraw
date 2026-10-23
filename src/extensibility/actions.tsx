@@ -39,7 +39,7 @@ export function registerExtensibilityActions() {
     group: 'Arrange',
     icon: <Shapes />,
     run: () => ext().set({ stencilEditor: { mode: 'insert' } }),
-    keywords: 'insert custom shape stencil xml mxgraph draw.io',
+    keywords: 'insert custom shape stencil xml mxgraph',
   });
   registerAction({
     id: 'extras.plugins',

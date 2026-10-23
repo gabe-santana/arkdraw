@@ -1,5 +1,5 @@
 /**
- * Per-page grid & snap (draw.io keeps grid/gridSize per diagram page).
+ * Per-page grid & snap (mxGraph keeps grid/gridSize per diagram page).
  *
  * The store's `settings` always holds the *effective* values for the active
  * page: the page's own overrides on top of the global settings, which act as

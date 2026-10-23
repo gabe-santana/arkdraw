@@ -4,6 +4,7 @@
  */
 import type { ChatMessage, ChatResponse, HttpRequest, ModelInfo, ProviderAdapter, ProviderConfig, StopReason, ToolCall } from './types';
 import { AiError } from './types';
+import { t } from '@/i18n';
 
 export const OPENAI_BASE = 'https://api.openai.com/v1';
 
@@ -14,7 +15,7 @@ export function joinUrl(base: string, path: string): string {
 
 function baseOf(config: ProviderConfig): string {
   if (config.provider === 'openai') return OPENAI_BASE;
-  if (!config.baseUrl) throw new AiError('Set a base URL for the custom endpoint in AI settings.');
+  if (!config.baseUrl) throw new AiError(t('ai.error.customBaseUrl'));
   return config.baseUrl;
 }
 
@@ -82,9 +83,9 @@ export const openai: ProviderAdapter = {
       choices?: Array<{ message?: { content?: string | null; tool_calls?: OaiToolCall[]; refusal?: string | null }; finish_reason?: string }>;
     };
     const choice = res?.choices?.[0];
-    if (!choice?.message) throw new AiError('Unexpected response from the model endpoint.');
+    if (!choice?.message) throw new AiError(t('ai.error.unexpectedEndpointResponse'));
     const msg = choice.message;
-    if (msg.refusal) throw new AiError(`The model declined this request: ${msg.refusal}`);
+    if (msg.refusal) throw new AiError(t('ai.error.declinedReason', { reason: msg.refusal }));
     const toolCalls: ToolCall[] = (msg.tool_calls ?? [])
       .filter((c) => c.type === 'function' || c.function)
       .map((c, i) => ({ id: c.id || `call_${i}`, name: c.function.name, args: parseArgs(c.function.arguments) }));

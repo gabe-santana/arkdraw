@@ -1,5 +1,5 @@
 /**
- * draw.io's Explore / Anonymize / Voice plugins as built-in commands. (Replay
+ * mxGraph's Explore / Anonymize / Voice plugins as built-in commands. (Replay
  * lives in ReplayDialog.tsx.)
  *
  * - Explore: focus on one element and its direct neighbours; everything else
@@ -14,6 +14,7 @@ import { isConnector, isShape } from '@/model/types';
 import { useEditor } from '@/store/editor';
 import { useUi } from '@/store/ui';
 import { commitDoc, useHighlights } from './editorBridge';
+import { t } from '@/i18n';
 
 // ---------------------------------------------------------------------------
 // Explore
@@ -59,9 +60,9 @@ export function toggleExplore() {
   if (useHighlights.getState().explore) return useHighlights.setState({ explore: null });
   const s = useEditor.getState();
   const id = s.selection[0];
-  if (!id) return useUi.getState().toast('Select an element to explore from.', 'info');
+  if (!id) return useUi.getState().toast(t('automation.explore.selectFirst'), 'info');
   exploreFrom(id);
-  useUi.getState().toast('Explore: select a neighbour to move on, Esc to exit.', 'info');
+  useUi.getState().toast(t('automation.explore.hint'), 'info');
 }
 
 // ---------------------------------------------------------------------------
@@ -93,13 +94,13 @@ export async function anonymizePage() {
   const s = useEditor.getState();
   if (!s.doc.order.length) return;
   const choice = await useUi.getState().ask({
-    title: 'Anonymize this page?',
-    message: 'Every label, name, tooltip and data value becomes x/X placeholders, and comments are removed, so the diagram can be shared without its content. You can undo this.',
-    confirmLabel: 'Anonymize',
+    title: t('automation.anonymize.title'),
+    message: t('automation.anonymize.message'),
+    confirmLabel: t('automation.anonymize.confirm'),
   });
   if (choice !== 'confirm') return;
   commitDoc(anonymizeDoc(useEditor.getState().doc));
-  useUi.getState().toast('Page anonymized', 'success');
+  useUi.getState().toast(t('automation.anonymize.done'), 'success');
 }
 
 // ---------------------------------------------------------------------------
@@ -126,9 +127,9 @@ export const canDictate = () => typeof window !== 'undefined' && !!recognitionCt
 export function dictateLabel() {
   const Ctor = recognitionCtor();
   const ui = useUi.getState();
-  if (!Ctor) return ui.toast('Speech recognition is not available in this browser.', 'error');
+  if (!Ctor) return ui.toast(t('automation.dictate.unavailable'), 'error');
   const id = useEditor.getState().selection[0];
-  if (!id) return ui.toast('Select a shape or connector to dictate its label.', 'info');
+  if (!id) return ui.toast(t('automation.dictate.selectFirst'), 'info');
   const rec = new Ctor();
   rec.lang = document.documentElement.lang || navigator.language || 'en-US';
   rec.interimResults = false;
@@ -138,9 +139,9 @@ export function dictateLabel() {
     if (!said) return;
     const s = useEditor.getState();
     if (s.doc.elements[id]) s.updateElements({ [id]: { text: said } });
-    ui.toast(`“${said}”`, 'success');
+    ui.toast(t('automation.dictate.said', { text: said }), 'success');
   };
-  rec.onerror = (e) => ui.toast(e.error === 'not-allowed' ? 'Microphone access was denied.' : `Dictation failed (${e.error}).`, 'error');
-  ui.toast('Listening… say the label', 'info');
+  rec.onerror = (e) => ui.toast(e.error === 'not-allowed' ? t('automation.dictate.denied') : t('automation.dictate.failed', { error: e.error }), 'error');
+  ui.toast(t('automation.dictate.listening'), 'info');
   rec.start();
 }

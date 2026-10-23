@@ -1,5 +1,5 @@
 /**
- * Graphviz DOT import (draw.io has no native equivalent). Parses `graph` /
+ * Graphviz DOT import (mxGraph has no native equivalent). Parses `graph` /
  * `digraph` with node, edge and attribute statements, edge chains
  * (`a -> b -> c`), `{a b}` endpoint sets, default `node` / `edge` attributes
  * and subgraphs: `cluster…` subgraphs (or any subgraph with a `label`) become

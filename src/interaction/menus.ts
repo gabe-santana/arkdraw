@@ -5,12 +5,13 @@ import { canEditPoints } from './pointEdit';
 import { hasTable } from './tableCells';
 import { useInteraction } from './store';
 import { TABLE_MENU_IDS } from './actions';
+import { t } from '@/i18n';
 
 export function interactionContextItems(e: (id: string) => MenuItemEntry): MenuEntry[] {
   const out: MenuEntry[] = [];
   if (canEnterGroup()) out.push(e('arrange.enterGroup'));
   if (useInteraction.getState().isolation.length) out.push(e('arrange.exitGroup'));
   if (canEditPoints()) out.push(e('edit.editPoints'));
-  if (hasTable()) out.push({ label: 'Table', items: TABLE_MENU_IDS.map(e) });
+  if (hasTable()) out.push({ label: t('menu.table'), items: TABLE_MENU_IDS.map(e) });
   return out;
 }

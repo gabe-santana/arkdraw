@@ -3,13 +3,14 @@
  * pointer at the canvas' current zoom, so you see the real size before
  * dropping. A simple click inserts at the center of the view instead.
  *
- * draw.io parity:
+ * :
  * - Click with exactly one unlocked shape selected: the new item goes to the
  *   right of it, connected, and becomes the selection (Alt-click skips this).
  * - Shift-drop onto a shape replaces that shape (keeps text, geometry and
  *   connections) when the source provides `replaceWith`.
  */
 import type { DiagramElement, ShapeElement, Vec } from '@/model/types';
+import { t } from '@/i18n';
 import { isShape } from '@/model/types';
 import { createConnector } from '@/model/defaults';
 import { isHidden, isLocked, shapeRect, useEditor } from '@/store/editor';
@@ -54,7 +55,7 @@ export function startLibraryDrag(e: React.PointerEvent<HTMLElement>, src: Librar
     if (!outline) {
       outline = document.createElement('div');
       const tag = document.createElement('div');
-      tag.textContent = 'Replace';
+      tag.textContent = t('panels.libraryDrag.replace');
       tag.style.cssText =
         'position:absolute;left:-1.5px;top:-22px;padding:2px 6px;border-radius:6px;background:var(--accent);color:#fff;font-size:11px;font-weight:500;line-height:16px;white-space:nowrap;';
       outline.appendChild(tag);

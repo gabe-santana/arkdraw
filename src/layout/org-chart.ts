@@ -1,7 +1,7 @@
 /**
  * Org chart: a top-down tidy tree where a manager whose reports are all
  * leaves (two or more) gets them stacked in a single column below it, offset
- * to the right of the manager's center line (draw.io org-chart style). This
+ * to the right of the manager's center line (mxGraph org-chart style). This
  * keeps wide organisations compact; connectors drop down the free lane on the
  * column's left side.
  */

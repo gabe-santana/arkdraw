@@ -13,6 +13,8 @@ import { createIconElement, iconPath, loadPack, loadProviders, searchIcons, useI
 import { ShapePreview } from '@/panels/ShapePreview';
 import { Dialog } from '@/ui/Dialog';
 import { Shortcut } from '@/ui/Kbd';
+import { currentLocale, useT } from '@/i18n';
+import { actionLabel, groupLabel } from '@/i18n/catalog';
 
 interface Item {
   id: string;
@@ -26,18 +28,26 @@ interface Item {
 }
 
 let actionIndex: SearchIndex<(typeof ACTIONS)[number]> | null = null;
-let indexedVersion = -1;
+let indexedVersion = '';
 const searchActions = (q: string) => {
-  // Re-index when plugins/extensions register actions at runtime.
-  if (indexedVersion !== actionsVersion) actionIndex = null;
-  indexedVersion = actionsVersion;
+  // Re-index when plugins/extensions register actions at runtime, or the language changes.
+  const version = `${actionsVersion}:${currentLocale()}`;
+  if (indexedVersion !== version) actionIndex = null;
+  indexedVersion = version;
+  // Matches the label in the UI language AND the English label/keywords, so
+  // "salvar" and "save" both find File → Save.
   actionIndex ??= new SearchIndex(
     ACTIONS.filter((a) => !a.hidden),
-    (a) => [
-      { text: a.label, weight: 3 },
-      { text: a.keywords ?? '', weight: 1.6 },
-      { text: a.group, weight: 0.6 },
-    ],
+    (a) => {
+      const label = actionLabel(a);
+      return [
+        { text: label, weight: 3 },
+        ...(label !== a.label ? [{ text: a.label, weight: 2.4 }] : []),
+        { text: a.keywords ?? '', weight: 1.6 },
+        { text: groupLabel(a.group), weight: 0.6 },
+        ...(groupLabel(a.group) !== a.group ? [{ text: a.group, weight: 0.4 }] : []),
+      ];
+    },
   );
   return actionIndex.search(q, 40);
 };
@@ -58,6 +68,7 @@ function PaletteBody({ close }: { close: () => void }) {
   const [active, setActive] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
   const packs = useIconPacks((s) => s.packs);
+  const t = useT();
 
   useEffect(() => {
     if (query.length >= 2) loadProviders().then((ps) => ps.forEach((p) => loadPack(p.id)));
@@ -68,20 +79,20 @@ function PaletteBody({ close }: { close: () => void }) {
     const q = query.trim();
     const enabled = (a: (typeof ACTIONS)[number]) => !a.enabled || a.enabled();
     if (!q) {
-      for (const a of ACTIONS) if (!a.hidden && enabled(a)) out.push({ id: a.id, group: a.group === 'Tools' ? 'Tools' : 'Commands', label: a.label, icon: a.icon, shortcut: a.shortcuts?.[0], run: a.run, score: 0 });
+      for (const a of ACTIONS) if (!a.hidden && enabled(a)) out.push({ id: a.id, group: a.group === 'Tools' ? t('palette.tools') : t('palette.commands'), label: actionLabel(a), icon: a.icon, shortcut: a.shortcuts?.[0], run: a.run, score: 0 });
       return out.slice(0, 60);
     }
     for (const r of searchActions(q)) {
       const a = r.item;
       if (!enabled(a)) continue;
-      out.push({ id: a.id, group: 'Commands', label: a.label, icon: a.icon, shortcut: a.shortcuts?.[0], run: a.run, score: r.score });
+      out.push({ id: a.id, group: t('palette.commands'), label: actionLabel(a), icon: a.icon, shortcut: a.shortcuts?.[0], run: a.run, score: r.score });
     }
     if (q.length >= 2) {
       for (const h of searchShapes(q, 10)) {
         const item = h.item;
         out.push({
           id: `shape:${h.libraryId}:${item.label}`,
-          group: 'Insert shape',
+          group: t('palette.insertShape'),
           label: item.label,
           hint: h.library,
           icon: <ShapePreview item={item} size={16} />,
@@ -95,7 +106,7 @@ function PaletteBody({ close }: { close: () => void }) {
       for (const { provider, icon } of searchIcons(Object.values(packs), q, 12)) {
         out.push({
           id: `icon:${icon.id}`,
-          group: 'Insert icon',
+          group: t('palette.insertIcon'),
           label: icon.name,
           hint: provider.toUpperCase(),
           icon: <img src={iconUrl(iconPath(provider, icon))} alt="" className="size-4 object-contain" />,
@@ -105,7 +116,7 @@ function PaletteBody({ close }: { close: () => void }) {
       }
     }
     return out;
-  }, [query, packs]);
+  }, [query, packs, t]);
 
   useEffect(() => setActive(0), [query]);
   useEffect(() => {
@@ -141,14 +152,14 @@ function PaletteBody({ close }: { close: () => void }) {
           autoFocus
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Type a command, or search shapes and cloud icons…"
+          placeholder={t('palette.placeholder')}
           className="h-[52px] flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-subtle"
           spellCheck={false}
         />
         <kbd className="rounded-md border border-line px-1.5 py-0.5 text-[10.5px] text-subtle">ESC</kbd>
       </div>
       <div ref={listRef} className="scroll-thin max-h-[380px] overflow-y-auto p-1.5">
-        {!items.length && <div className="py-10 text-center text-[13px] text-muted">No results for “{query}”</div>}
+        {!items.length && <div className="py-10 text-center text-[13px] text-muted">{t('common.noResultsFor', { query })}</div>}
         {items.map((item, i) => {
           const header = item.group !== lastGroup ? item.group : null;
           lastGroup = item.group;

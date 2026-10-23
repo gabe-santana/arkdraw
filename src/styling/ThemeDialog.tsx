@@ -8,7 +8,8 @@ import { create } from 'zustand';
 import { useEditor } from '@/store/editor';
 import { Dialog, DialogHeader } from '@/ui/Dialog';
 import { Segmented } from '@/ui/controls';
-import { DIAGRAM_THEMES, type DiagramTheme } from './themes';
+import { DIAGRAM_THEMES, themeLabel, type DiagramTheme } from './themes';
+import { useT } from '@/i18n';
 import { applyTheme } from './commands';
 
 const useThemeDialog = create<{ open: boolean }>(() => ({ open: false }));
@@ -36,6 +37,7 @@ function ThemeDialogHost() {
 }
 
 function ThemeBody({ close }: { close: () => void }) {
+  const t = useT();
   const hasSelection = useEditor((s) => s.selection.length > 0);
   const empty = useEditor((s) => s.doc.order.length === 0);
   const [scope, setScope] = useState<'page' | 'selection'>(hasSelection ? 'selection' : 'page');
@@ -43,8 +45,8 @@ function ThemeBody({ close }: { close: () => void }) {
     <div onKeyDown={(e) => e.stopPropagation()}>
       <DialogHeader
         id="od-theme-title"
-        title="Theme"
-        subtitle="Recolors fills, lines and text by role. Shapes that shared a color keep sharing one. Undo with Ctrl+Z."
+        title={t('styling.theme.title')}
+        subtitle={t('styling.theme.subtitle')}
         onClose={close}
       />
       <div className="space-y-3 px-5 pb-5">
@@ -54,28 +56,28 @@ function ThemeBody({ close }: { close: () => void }) {
             value={scope}
             onChange={setScope}
             options={[
-              { value: 'page', label: 'Whole page' },
-              { value: 'selection', label: 'Selection' },
+              { value: 'page', label: t('styling.theme.wholePage') },
+              { value: 'selection', label: t('common.selection') },
             ]}
           />
         )}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {DIAGRAM_THEMES.map((t) => (
+          {DIAGRAM_THEMES.map((theme) => (
             <button
-              key={t.id}
+              key={theme.id}
               disabled={empty}
               onClick={() => {
-                applyTheme(t.id, scope);
+                applyTheme(theme.id, scope);
                 close();
               }}
               className="group flex flex-col gap-2 rounded-xl bg-panel-2 p-2 text-left ring-1 ring-line transition-shadow hover:ring-2 hover:ring-accent/50 focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50"
             >
-              <ThemePreview theme={t} />
-              <span className="px-0.5 text-[12px] font-medium text-fg">{t.label}</span>
+              <ThemePreview theme={theme} />
+              <span className="truncate px-0.5 text-[12px] font-medium text-fg">{themeLabel(theme)}</span>
             </button>
           ))}
         </div>
-        {empty && <p className="text-[12px] text-muted">Add some shapes first — themes recolor what's on the page.</p>}
+        {empty && <p className="text-[12px] text-muted">{t('styling.theme.empty')}</p>}
       </div>
     </div>
   );

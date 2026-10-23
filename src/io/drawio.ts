@@ -1,10 +1,10 @@
 /**
- * draw.io / diagrams.net interop.
+ * mxGraph / mxGraph interop.
  *
  * Export writes an uncompressed `.drawio` file (mxGraphModel XML) with
- * native draw.io styles, so diagrams stay editable after migrating.
+ * native mxGraph styles, so diagrams stay editable after migrating.
  * Import reads both plain and compressed (deflate + base64) files and maps
- * common draw.io shapes back to OpenDraw kinds; unknown stencils become
+ * common mxGraph shapes back to OpenDraw kinds; unknown stencils become
  * labeled rectangles so nothing is silently lost.
  */
 import type {
@@ -51,7 +51,7 @@ const xmlEscape = (s: string) =>
 const htmlEscape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 
-/** draw.io only understands #rrggbb; split rgba() into color + opacity. */
+/** mxGraph only understands #rrggbb; split rgba() into color + opacity. */
 function hexAndAlpha(c: string): [string, number | null] {
   const m = c.match(/^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)(?:[\s,/]+([\d.]+))?\s*\)$/i);
   if (!m) return [c, null];
@@ -119,7 +119,7 @@ const plainHtml = (text: string) => htmlEscape(text).replace(/\n/g, '<br>');
 
 /** Wraps a cell in <UserObject> when it carries metadata (tooltip, link, custom data). */
 function withUserObject(el: DiagramElement, label: string, mxCell: string): string {
-  // Element-level visibility (custom link actions) is draw.io's visible="0".
+  // Element-level visibility (custom link actions) is mxGraph's visible="0".
   const cell = el.hidden ? mxCell.replace(/^(<mxCell id="[^"]*" value="[^"]*")/, '$1 visible="0"') : mxCell;
   const attrs: string[] = [];
   if (el.tooltip) attrs.push(`tooltip="${xmlEscape(el.tooltip)}"`);
@@ -173,7 +173,7 @@ function diagramXml(doc: Doc, title: string, iconHref: (p: string) => string): s
     }
     if (el.kind === 'icon' && el.icon) {
       const uri = iconHref(el.icon);
-      // draw.io expects "data:<mime>,<base64>" (no ";base64" marker).
+      // mxGraph expects "data:<mime>,<base64>" (no ";base64" marker).
       if (uri.startsWith('data:')) m.set('image', uri.replace(';base64', ''));
     }
     applyCommonStyle(m, el.style, false);
@@ -248,7 +248,7 @@ function diagramXml(doc: Doc, title: string, iconHref: (p: string) => string): s
 
   const layerCells = layers.map((l) => {
     const cell = `<mxCell id="${xmlEscape(l.id)}" ${doc.layers ? `value="${xmlEscape(l.name)}" ` : ''}parent="0"${l.visible ? '' : ' visible="0"'}${l.locked ? ' style="locked=1;"' : ''}/>`;
-    // Layer Edit Data: draw.io wraps the layer cell in an <object> carrying the properties.
+    // Layer Edit Data: mxGraph wraps the layer cell in an <object> carrying the properties.
     const data = Object.entries(l.data ?? {}).filter(([k]) => /^[A-Za-z_][\w.-]*$/.test(k) && k !== 'label' && k !== 'id');
     if (!data.length) return cell;
     const attrs = data.map(([k, v]) => `${k}="${xmlEscape(v)}"`).join(' ');
@@ -273,7 +273,7 @@ export async function exportDrawio(doc: Doc, title = 'Page-1'): Promise<string> 
   return mxfile([diagramXml(doc, title, iconHref)]);
 }
 
-/** Every page as a separate draw.io page. */
+/** Every page as a separate mxGraph page. */
 export async function exportDrawioPages(pages: Array<{ name: string; doc: Doc }>): Promise<string> {
   const iconHref = await inlineIcons(pages.flatMap((p) => p.doc.order.map((id) => p.doc.elements[id])));
   return mxfile(pages.map((p) => diagramXml(p.doc, p.name, iconHref)));
@@ -285,7 +285,7 @@ const round = (n: number) => Math.round(n * 100) / 100;
 // Import
 // ---------------------------------------------------------------------------
 
-/** Reverse index: draw.io shape name / base style → OpenDraw kind. */
+/** Reverse index: mxGraph shape name / base style → OpenDraw kind. */
 const KIND_BY_DRAWIO: Map<string, string> = (() => {
   const m = new Map<string, string>();
   for (const def of Object.values(SHAPES)) {
@@ -293,7 +293,7 @@ const KIND_BY_DRAWIO: Map<string, string> = (() => {
     const key = st.get('shape') ?? [...st.keys()][0];
     if (key && !m.has(key)) m.set(key, def.kind);
   }
-  // Common draw.io names that map onto our generic shapes.
+  // Common mxGraph names that map onto our generic shapes.
   const extra: Record<string, string> = {
     rhombus: 'diamond',
     ellipse: 'ellipse',
@@ -340,7 +340,7 @@ async function inflate(b64: string): Promise<string> {
   return decodeURIComponent(text);
 }
 
-/** Strips draw.io HTML labels down to plain text. */
+/** Strips mxGraph HTML labels down to plain text. */
 function htmlToText(html: string): string {
   const withBreaks = html
     .replace(/<br\s*\/?>/gi, '\n')
@@ -520,7 +520,7 @@ function modelToDoc(model: Element): Doc {
     if (shapeName === 'image' || c.style.has('image')) {
       const img = c.style.get('image') ?? '';
       kind = 'icon';
-      // draw.io's "data:mime,base64" → standard "data:mime;base64,base64".
+      // mxGraph's "data:mime,base64" → standard "data:mime;base64,base64".
       icon = img.startsWith('data:') && !img.includes(';base64') ? img.replace(/^data:([^,]+),/, 'data:$1;base64,') : img;
     }
     const stencilXml = stencilFromStyleValue(c.style.get('shape'));
@@ -542,7 +542,7 @@ function modelToDoc(model: Element): Doc {
       el.stencil = stencilXml;
       el.connectionPoints ??= stencilPoints(stencilXml);
     }
-    // Group membership from draw.io "group" parents.
+    // Group membership from mxGraph "group" parents.
     const groups: string[] = [];
     let p = c.parent ? byId.get(c.parent) : undefined;
     while (p && p.vertex) {
@@ -555,7 +555,7 @@ function modelToDoc(model: Element): Doc {
       el.kind = 'container';
       el.style = { ...el.style, textAlign: 'left', bold: true };
     } else if (c.style.get('container') === '1' && el.kind !== 'table' && !getShapeDef(el.kind).container) {
-      // Any shape can be a container in draw.io; keep the shape and flag it.
+      // Any shape can be a container in mxGraph; keep the shape and flag it.
       el.container = true;
     }
     behaviorFromDrawio(c.style, el);
@@ -638,14 +638,14 @@ function modelToDoc(model: Element): Doc {
 // Single-element style strings (Edit Style; see src/extensibility/styleString.ts)
 // ---------------------------------------------------------------------------
 
-/** The draw.io style string the exporter writes for one element. */
+/** The string the exporter writes for one element. */
 export function drawioStyleOf(el: DiagramElement): string {
   const xml = diagramXml({ elements: { [el.id]: el }, order: [el.id] }, '', (p) => p);
   const dom = new DOMParser().parseFromString(`<x>${xml}</x>`, 'text/xml');
   return dom.querySelector('mxCell[vertex="1"], mxCell[edge="1"]')?.getAttribute('style') ?? '';
 }
 
-/** Reads a draw.io style string back the way the importer would, as an element shaped like `el`. */
+/** Reads a string back the way the importer would, as an element shaped like `el`. */
 export function elementFromDrawioStyle(style: string, el: DiagramElement): DiagramElement | null {
   const s = xmlEscape(style);
   const cell = isShape(el)

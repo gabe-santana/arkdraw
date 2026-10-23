@@ -20,19 +20,25 @@ import { UserLibrariesSection } from './UserLibrariesSection';
 import { connectableSelection, startLibraryDrag } from './libraryDrag';
 import { hasRef, refKey, useLibraryHistory, type LibraryRef } from './libraryHistory';
 import { ContextMenu } from '@/ui/Menu';
+import { t, tx, useT } from '@/i18n';
+import { segLabel } from './sections';
+
+/** A built-in library's display name; unknown (plugin / stencil) libraries keep their own name. */
+const libraryName = (id: string, name: string) => tx(`panels.library.${id}`, name);
 
 export function LeftPanel() {
   const tab = useUi((s) => s.leftTab);
   const set = useUi((s) => s.set);
+  const t = useT();
   return (
-    <aside aria-label="Shapes panel" className="animate-slide-up pointer-events-auto flex h-full w-[264px] flex-col overflow-hidden rounded-2xl bg-panel shadow-panel">
+    <aside aria-label={t('panels.left.aria')} className="animate-slide-up pointer-events-auto flex h-full w-full flex-col overflow-hidden rounded-2xl bg-panel shadow-panel">
       <div className="p-2 pb-1.5">
         <Segmented<LeftTab>
           value={tab}
           onChange={(leftTab) => set({ leftTab })}
           options={[
-            { value: 'shapes', label: <><Shapes /> Shapes</> },
-            { value: 'icons', label: <><Cloud /> Cloud</> },
+            { value: 'shapes', label: <><Shapes className="shrink-0" /> {segLabel(t('common.shapes'))}</>, title: t('common.shapes') },
+            { value: 'icons', label: <><Cloud className="shrink-0" /> {segLabel(t('panels.left.cloud'))}</>, title: t('panels.left.cloud') },
           ]}
         />
       </div>
@@ -72,6 +78,7 @@ function useCollapsed(key: string) {
 function ShapesTab() {
   const [query, setQuery] = useState('');
   const [collapsed, toggle] = useCollapsed(COLLAPSE_KEY);
+  const t = useT();
   const q = query.trim().toLowerCase();
   const deferredQ = useDeferredValue(q);
   const results = useMemo(() => (deferredQ ? searchShapes(deferredQ, 96) : null), [deferredQ]);
@@ -79,13 +86,13 @@ function ShapesTab() {
   return (
     <>
       <div className="px-2 pb-2">
-        <SearchInput value={query} onChange={setQuery} placeholder="Search shapes" />
+        <SearchInput value={query} onChange={setQuery} placeholder={t('panels.left.searchShapes')} />
       </div>
       <div className="scroll-thin flex-1 overflow-y-auto px-2 pb-3">
         {!q && <HistorySections collapsed={collapsed} toggle={toggle} />}
         <UserLibrariesSection query={query} />
         {results && results.length > 0 && (
-          <Section title="Best matches" count={results.length} open onToggle={() => {}}>
+          <Section title={t('panels.left.bestMatches')} count={results.length} open onToggle={() => {}}>
             <div className="grid grid-cols-4 gap-1">
               {results.map((h, i) => (
                 <ShapeTile key={`${h.libraryId}-${i}-${h.item.label}`} item={h.item} libraryId={h.libraryId} library={h.library} />
@@ -94,7 +101,7 @@ function ShapesTab() {
           </Section>
         )}
         {libs.map((lib) => (
-          <Section key={lib.id} title={lib.name} count={lib.items.length} open={!!q || !collapsed[lib.id]} onToggle={() => toggle(lib.id)}>
+          <Section key={lib.id} title={libraryName(lib.id, lib.name)} count={lib.items.length} open={!!q || !collapsed[lib.id]} onToggle={() => toggle(lib.id)}>
             <div className="grid grid-cols-4 gap-1">
               {lib.items.map((item, i) => (
                 <ShapeTile key={i} item={item} libraryId={lib.id} library={lib.name} />
@@ -102,7 +109,7 @@ function ShapesTab() {
             </div>
           </Section>
         ))}
-        {results && !results.length && <Empty>No shapes match “{query}”.</Empty>}
+        {results && !results.length && <Empty>{t('panels.left.noShapes', { query })}</Empty>}
       </div>
     </>
   );
@@ -133,14 +140,16 @@ function Section({
 /** Hover-card hint for library tiles; mentions click-to-connect when it applies. */
 const tileHint = () =>
   connectableSelection()
-    ? 'Click to add it connected to the selected shape (Alt-click: unconnected) · Shift-drop on a shape to replace it'
-    : 'Drag onto the canvas, or click to insert · Shift-drop on a shape to replace it';
+    ? t('panels.left.hintConnect')
+    : t('panels.left.hintInsert');
 
 /** Tile wrapper: star toggle on hover (top-right) and a right-click menu for favorites. */
 function FavoriteFrame({ libRef, children }: { libRef: LibraryRef; children: React.ReactNode }) {
   const fav = useLibraryHistory((s) => hasRef(s.favorites, libRef));
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const toggleFav = () => useLibraryHistory.getState().toggleFavorite(libRef);
+  const t = useT();
+  const favLabel = fav ? t('panels.left.removeFavorite') : t('panels.left.addFavorite');
   return (
     <div
       className="group/tile relative"
@@ -156,7 +165,7 @@ function FavoriteFrame({ libRef, children }: { libRef: LibraryRef; children: Rea
           'absolute right-0 top-0 hidden size-4 items-center justify-center rounded-full bg-panel shadow-panel transition-colors group-hover/tile:flex',
           fav ? 'text-amber-500' : 'text-subtle hover:text-amber-500',
         )}
-        aria-label={fav ? 'Remove from favorites' : 'Add to favorites'}
+        aria-label={favLabel}
         aria-pressed={fav}
       >
         <Star className={cn('size-2.5', fav && 'fill-current')} />
@@ -166,7 +175,7 @@ function FavoriteFrame({ libRef, children }: { libRef: LibraryRef; children: Rea
           x={menu.x}
           y={menu.y}
           onClose={() => setMenu(null)}
-          items={[{ label: fav ? 'Remove from favorites' : 'Add to favorites', icon: <Star className={cn(fav && 'fill-current')} />, onSelect: toggleFav }]}
+          items={[{ label: favLabel, icon: <Star className={cn(fav && 'fill-current')} />, onSelect: toggleFav }]}
         />
       )}
     </div>
@@ -180,7 +189,7 @@ const ShapeTile = memo(function ShapeTile({ item, libraryId, library }: { item: 
     <HoverCard
       content={() => ({
         title: item.label,
-        meta: library,
+        meta: library && libraryName(libraryId, library),
         description: shapeDescription(item.kind) ?? undefined,
         preview: <ShapePreview item={item} size={92} />,
         hint: tileHint(),
@@ -228,7 +237,7 @@ function resolveRefs(refs: LibraryRef[], packs: Record<string, IconPack>): Resol
   return out;
 }
 
-/** Favorites + Recent (draw.io parity), shown at the top of the Shapes tab when non-empty. */
+/** Favorites + Recent (), shown at the top of the Shapes tab when non-empty. */
 function HistorySections({ collapsed, toggle }: { collapsed: Record<string, boolean>; toggle: (id: string) => void }) {
   const favorites = useLibraryHistory((s) => s.favorites);
   const recent = useLibraryHistory((s) => s.recent);
@@ -248,6 +257,7 @@ function HistorySections({ collapsed, toggle }: { collapsed: Record<string, bool
   }, [providers]);
   const favItems = useMemo(() => resolveRefs(favorites, packs), [favorites, packs]);
   const recentItems = useMemo(() => resolveRefs(recent, packs), [recent, packs]);
+  const t = useT();
   const grid = (items: Resolved[]) => (
     <div className="grid grid-cols-4 gap-1">
       {items.map((r) =>
@@ -262,13 +272,13 @@ function HistorySections({ collapsed, toggle }: { collapsed: Record<string, bool
   return (
     <>
       {favItems.length > 0 && (
-        <Section title="Favorites" count={favItems.length} open={!collapsed['__favorites']} onToggle={() => toggle('__favorites')}>
+        <Section title={t('panels.left.favorites')} count={favItems.length} open={!collapsed['__favorites']} onToggle={() => toggle('__favorites')}>
           {grid(favItems)}
         </Section>
       )}
       {recentItems.length > 0 && (
         <Section
-          title="Recent"
+          title={t('panels.left.recent')}
           count={recentItems.length}
           open={!collapsed['__recent']}
           onToggle={() => toggle('__recent')}
@@ -277,7 +287,7 @@ function HistorySections({ collapsed, toggle }: { collapsed: Record<string, bool
               onClick={() => useLibraryHistory.getState().clearRecent()}
               className="mr-1 rounded px-1.5 py-0.5 text-[11px] text-subtle opacity-0 transition-opacity hover:bg-hover hover:text-fg focus-visible:opacity-100 group-hover:opacity-100"
             >
-              Clear
+              {t('common.clear')}
             </button>
           }
         >
@@ -320,6 +330,7 @@ function IconsTab() {
   const [query, setQuery] = useState('');
   const deferred = useDeferredValue(query);
   const [collapsed, toggle] = useCollapsed(`opendraw:collapsed-icons:${provider}`);
+  const t = useT();
 
   useEffect(() => {
     loadProviders();
@@ -358,7 +369,7 @@ function IconsTab() {
     return (
       <Empty>
         <Cloud className="mx-auto mb-2 size-6 text-subtle" />
-        {error ?? 'No icon packs installed.'}
+        {error ?? t('panels.icons.none')}
         <div className="mt-2 font-mono text-[11px] text-subtle">npm run icons:fetch</div>
       </Empty>
     );
@@ -367,7 +378,7 @@ function IconsTab() {
   return (
     <>
       <div className="px-2 pb-2">
-        <SearchInput value={query} onChange={setQuery} placeholder={`Search ${Math.max(4, Math.floor((providers ?? []).reduce((n, p) => n + p.count, 0) / 1000))},000+ icons`} />
+        <SearchInput value={query} onChange={setQuery} placeholder={t('panels.icons.searchPlaceholder', { count: Math.max(4, Math.floor((providers ?? []).reduce((n, p) => n + p.count, 0) / 1000)) * 1000 })} />
       </div>
       {!query && (
         <div className="no-scrollbar flex gap-1 overflow-x-auto px-2 pb-2 [mask-image:linear-gradient(to_right,transparent,black_10px,black_calc(100%-18px),transparent)]">
@@ -398,7 +409,7 @@ function IconsTab() {
               ))}
             </div>
           ) : (
-            <Empty>No icons match “{query}”.</Empty>
+            <Empty>{t('panels.icons.noMatch', { query })}</Empty>
           )
         ) : !pack ? (
           <IconSkeleton />
@@ -433,7 +444,7 @@ const IconTile = memo(function IconTile({ provider, icon }: { provider: string; 
           title: icon.name,
           meta: `${name} · ${icon.category}`,
           accent: PROVIDER_ACCENT[provider],
-          description: desc ?? `${name} ${icon.category.toLowerCase()} icon for architecture diagrams.`,
+          description: desc ?? t('panels.icons.description', { provider: name, category: icon.category.toLowerCase() }),
           preview: <img src={iconUrl(iconPath(provider, icon))} alt="" className="size-[84px] object-contain" />,
           hint: tileHint(),
         };
@@ -477,9 +488,10 @@ function IconSkeleton() {
 }
 
 function PackFooter({ pack }: { pack: IconPack }) {
+  const t = useT();
   return (
     <p className="px-1.5 pt-3 text-[10.5px] leading-relaxed text-subtle">
-      {pack.name} icons · {pack.version}. Trademarks of their respective owners; provided for architecture diagrams.
+      {t('panels.icons.footer', { name: pack.name, version: pack.version })}
     </p>
   );
 }

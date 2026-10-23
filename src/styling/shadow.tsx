@@ -1,5 +1,5 @@
 /**
- * Drop-shadow options (draw.io shadowColor / shadowBlur / shadowOffsetX /
+ * Drop-shadow options (mxGraph shadowColor / shadowBlur / shadowOffsetX /
  * shadowOffsetY / shadowOpacity). Shapes without options share the built-in
  * soft shadow filter; customised ones get their own filter.
  */

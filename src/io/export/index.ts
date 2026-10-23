@@ -37,7 +37,7 @@ export const FORMATS: Record<ExportFormat, FormatInfo> = {
   pdf: { label: 'PDF', desc: 'Vector document', ext: 'pdf', mime: 'application/pdf', multiPage: 'native' },
   html: { label: 'HTML', desc: 'Interactive viewer', ext: 'html', mime: 'text/html', multiPage: 'native' },
   gif: { label: 'GIF', desc: 'Animated', ext: 'gif', mime: 'image/gif', multiPage: 'none' },
-  drawio: { label: 'draw.io', desc: 'Editable XML', ext: 'drawio', mime: 'application/xml', multiPage: 'native' },
+  drawio: { label: '.drawio', desc: 'Editable XML', ext: 'drawio', mime: 'application/xml', multiPage: 'native' },
   vsdx: { label: 'Visio', desc: 'VSDX drawing', ext: 'vsdx', mime: 'application/vnd.ms-visio.drawing', multiPage: 'native' },
   url: { label: 'Link', desc: 'Shareable URL', ext: 'txt', mime: 'text/plain', multiPage: 'native' },
 };
@@ -65,7 +65,7 @@ export interface ExportSettings {
   appearance: Appearance;
   /** PDF sheet size: per-page content size, or the page's paper size. */
   pdfFit: 'content' | 'paper';
-  /** draw.io: compressed diagram payloads. */
+  /** mxGraph: compressed diagram payloads. */
   compressed: boolean;
   // GIF
   fps: number;
@@ -165,7 +165,7 @@ export function pagesInScope(src: ExportSource, s: Pick<ExportSettings, 'scope' 
   }
 }
 
-/** The page tiles (paper-sized cells) the drawing occupies — draw.io's "whole page" export area. */
+/** The page tiles (paper-sized cells) the drawing occupies — mxGraph's "whole page" export area. */
 export function pageArea(page: Page): Rect | undefined {
   const els = page.doc.order.map((id) => page.doc.elements[id]).filter(Boolean);
   const b = visualBounds(page.doc, els);
@@ -340,7 +340,7 @@ async function renderSvgNoImages(doc: Doc, opts: SvgExportOptions) {
   return renderSvg(doc, opts);
 }
 
-/** draw.io's compressed form: each <diagram> holds base64(deflateRaw(encodeURIComponent(xml))). */
+/** mxGraph's compressed form: each <diagram> holds base64(deflateRaw(encodeURIComponent(xml))). */
 export function compressDrawio(xml: string): string {
   return xml.replace(/(<diagram\b[^>]*>)\s*(<mxGraphModel[\s\S]*?<\/mxGraphModel>)\s*(<\/diagram>)/g, (_, open: string, model: string, close: string) => {
     const deflated = deflateRawSync(utf8Encode(encodeURIComponent(model)));

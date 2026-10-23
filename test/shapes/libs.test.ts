@@ -53,7 +53,7 @@ describe('shape libraries (src/shapes/libs)', () => {
     }
   });
 
-  it('has a non-empty draw.io style for every shape', () => {
+  it('has a non-empty for every shape', () => {
     for (const def of libShapes) expect(def.drawio.trim(), def.kind).not.toBe('');
   });
 

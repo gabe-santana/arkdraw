@@ -1,5 +1,5 @@
 /**
- * Coverage checks for the practitioner libraries added for draw.io parity
+ * Coverage checks for the practitioner libraries added for 
  * (UML 2.5, Cisco-style network, Citrix, Veeam, OpenStack, Office, Active
  * Directory, STRIDE, Bootstrap, Clipart, Isometric, Atlassian-style, CRM, EIP)
  * and for the vendor-style rack equipment.
@@ -52,7 +52,7 @@ describe('extra practitioner libraries', () => {
     }
   });
 
-  it('gives every shape kind of the new libraries a distinct draw.io style', () => {
+  it('gives every shape kind of the new libraries a distinct mxGraph style', () => {
     for (const id of Object.keys(EXPECTED)) {
       const kinds = new Set(lib(id)!.items.map((i) => i.kind));
       for (const k of kinds) expect(SHAPES[k].drawio, k).toMatch(/\S/);

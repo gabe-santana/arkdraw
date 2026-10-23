@@ -1,5 +1,5 @@
 /**
- * Local revision history (draw.io's File → Revision History, but offline):
+ * Local revision history (mxGraph's File → Revision History, but offline):
  * a snapshot is stored on every save and every few minutes while there are
  * unsaved changes. Snapshots live in IndexedDB, keyed by document.
  */

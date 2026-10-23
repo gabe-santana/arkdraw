@@ -1,5 +1,5 @@
 /**
- * mxGraph stencil XML: parsing, rendering, conversion of built-ins, draw.io
+ * mxGraph stencil XML: parsing, rendering, conversion of built-ins, mxGraph
  * `shape=stencil(…)` round trip and stencil libraries.
  */
 import { describe, expect, it } from 'vitest';
@@ -132,7 +132,7 @@ describe('stencil renderer', () => {
   });
 });
 
-describe('draw.io stencil encoding', () => {
+describe('mxGraph stencil encoding', () => {
   it('round-trips through compress / decompress and the style value', () => {
     const packed = compressStencil(BOX);
     expect(packed).toMatch(/^[A-Za-z0-9+/=]+$/);
@@ -204,7 +204,7 @@ describe('stencil libraries', () => {
     ]);
   });
 
-  it('reads OpenDraw shape configs (OpenDraw or draw.io style, size, points, params)', async () => {
+  it('reads OpenDraw shape configs (OpenDraw or mxGraph style, size, points, params)', async () => {
     const cfg = {
       format: 'opendraw-shapes',
       name: 'Config',

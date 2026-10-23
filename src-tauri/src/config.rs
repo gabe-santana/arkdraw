@@ -19,7 +19,7 @@
 //! ```
 //!
 //! Plugins listed in the config only load when `--enable-plugins` is passed
-//! (as in draw.io desktop) or `enablePlugins` is true. The front end reads
+//! or `enablePlugins` is true. The front end reads
 //! everything through `get_app_config` (src/desktop/config.ts).
 
 use std::{

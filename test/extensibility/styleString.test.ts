@@ -1,5 +1,5 @@
 /**
- * Edit Style in draw.io style-string form: emitting reuses the exporter,
+ * Edit Style in mxGraph style-string form: emitting reuses the exporter,
  * applying diffs the parsed strings, unknown keys are preserved.
  */
 import { describe, expect, it } from 'vitest';
@@ -12,7 +12,7 @@ import { drawioStyleOf, exportDrawio } from '@/io/drawio';
 const apply = <T extends DiagramElement>(el: T, text: string): T => ({ ...el, ...applyDrawioStylePatch(el, diffDrawioStyle(el, text), el.type) }) as T;
 const pairs = (s: string) => Object.fromEntries(parseStylePairs(s.replace(/\n/g, ';')));
 
-describe('draw.io style strings for the selection', () => {
+describe('strings for the selection', () => {
   it('emits the same style the .drawio exporter writes, one key per line', () => {
     const el = createShape('ellipse', { x: 0, y: 0, w: 80, h: 40 }, { fill: '#dae8fc', stroke: '#6c8ebf', strokeStyle: 'dashed' });
     const text = formatDrawioStyle(el);

@@ -84,7 +84,7 @@ describe('editable images', () => {
     expect(Object.values(res.pages[0].doc.elements).filter(isShape).map((s) => s.text)).toEqual(['Hello', 'Wörld ✓']);
   });
 
-  it('reads draw.io PNGs (tEXt mxfile, URI-encoded)', async () => {
+  it('reads mxGraph PNGs (tEXt mxfile, URI-encoded)', async () => {
     const text = makePngChunk('tEXt', latin1Encode('mxfile\0' + encodeURIComponent(mxfile('Alpha'))));
     const res = await importEmbedded(tinyPng([text]), 'x.drawio.png');
     const d = res.pages[0].doc;
@@ -93,14 +93,14 @@ describe('editable images', () => {
     expect(Object.values(d.elements).filter(isConnector)).toHaveLength(1);
   });
 
-  it('reads draw.io PNGs with zTXt chunks', async () => {
+  it('reads mxGraph PNGs with zTXt chunks', async () => {
     const body = zlibSync(latin1Encode(encodeURIComponent(mxfile('Zed'))));
     const data = new Uint8Array([...latin1Encode('mxfile'), 0, 0, ...body]);
     const res = await importEmbedded(tinyPng([makePngChunk('zTXt', data)]));
     expect(Object.values(res.pages[0].doc.elements).filter(isShape).some((s) => s.text === 'Zed')).toBe(true);
   });
 
-  it('reads draw.io SVGs with plain and compressed content, one page per diagram', async () => {
+  it('reads mxGraph SVGs with plain and compressed content, one page per diagram', async () => {
     const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" content="${esc(mxfile('One', 'Two'))}"><g/></svg>`;
     expect(importer.detect!(svg, 'a.svg')).toBe(true);
@@ -113,7 +113,7 @@ describe('editable images', () => {
     expect(Object.values(res2.pages[0].doc.elements).filter(isShape).some((s) => s.text === 'Packed')).toBe(true);
   });
 
-  it('reads draw.io PDFs that carry the XML in a string', async () => {
+  it('reads mxGraph PDFs that carry the XML in a string', async () => {
     const pdf = latin1Encode(`%PDF-1.7\n1 0 obj\n<< /Subject (${encodeURIComponent(mxfile('Pdf'))}) >>\nendobj\n%%EOF`);
     const res = await importEmbedded(pdf, 'x.pdf');
     expect(Object.values(res.pages[0].doc.elements).filter(isShape).some((s) => s.text === 'Pdf')).toBe(true);

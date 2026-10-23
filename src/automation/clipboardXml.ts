@@ -1,7 +1,7 @@
 /**
- * Clipboard interop with draw.io. Copying puts draw.io mxGraphModel XML on the
+ * Clipboard interop with mxGraph. Copying puts mxGraph mxGraphModel XML on the
  * clipboard as `text/html` next to our tagged JSON (`text/plain`), so a copy
- * from OpenDraw pastes as cells in draw.io; pasting draw.io XML / mxfile
+ * from OpenDraw pastes as cells in mxGraph; pasting mxGraph XML / mxfile
  * (plain, URL-encoded or HTML-escaped) imports its cells here.
  */
 import type { DiagramElement, Doc, Vec } from '@/model/types';
@@ -10,7 +10,7 @@ import { exportDrawio, importDrawioPages } from '@/io/drawio';
 const decodeEntities = (s: string) =>
   s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&amp;/g, '&');
 
-/** draw.io XML found in clipboard text or HTML, decoded, or null. */
+/** mxGraph XML found in clipboard text or HTML, decoded, or null. */
 export function extractDrawioXml(raw: string | null | undefined): string | null {
   if (!raw) return null;
   let s = raw.trim();
@@ -29,14 +29,14 @@ export function extractDrawioXml(raw: string | null | undefined): string | null 
 
 export const hasDrawioXml = (raw: string | null | undefined) => !!raw && /(<|&lt;|%3C)(mxGraphModel|mxfile)/i.test(raw);
 
-/** Elements of the first page of draw.io XML (fresh ids are assigned when pasting). */
+/** Elements of the first page of mxGraph XML (fresh ids are assigned when pasting). */
 export async function elementsFromDrawioXml(xml: string): Promise<DiagramElement[]> {
   const pages = await importDrawioPages(xml);
   const doc = pages[0]?.doc;
   return doc ? doc.order.map((id) => doc.elements[id]).filter(Boolean) : [];
 }
 
-/** `<mxGraphModel>` XML for a set of elements (what draw.io expects on its clipboard). */
+/** `<mxGraphModel>` XML for a set of elements (what mxGraph expects on its clipboard). */
 export async function drawioXmlFor(els: DiagramElement[]): Promise<string> {
   const ids = new Set(els.map((e) => e.id));
   // Connectors pointing outside the copy keep their position but lose the attachment.
@@ -56,7 +56,7 @@ export async function drawioXmlFor(els: DiagramElement[]): Promise<string> {
   return mxfile.match(/<mxGraphModel[\s\S]*<\/mxGraphModel>/)?.[0] ?? mxfile;
 }
 
-/** Writes our JSON as text plus draw.io XML as HTML; falls back to text only. */
+/** Writes our JSON as text plus mxGraph XML as HTML; falls back to text only. */
 export async function writeClipboard(json: string, els: DiagramElement[]): Promise<void> {
   const Item = (globalThis as { ClipboardItem?: typeof ClipboardItem }).ClipboardItem;
   if (Item && navigator.clipboard?.write) {
@@ -71,7 +71,7 @@ export async function writeClipboard(json: string, els: DiagramElement[]): Promi
   await navigator.clipboard?.writeText(json).catch(() => {});
 }
 
-/** Pastes draw.io XML if `text` holds some. Returns true when it did. */
+/** Pastes mxGraph XML if `text` holds some. Returns true when it did. */
 export async function pasteDrawioXml(text: string, paste: (els: DiagramElement[], at?: Vec) => void, at?: Vec): Promise<boolean> {
   const xml = extractDrawioXml(text);
   if (!xml) return false;

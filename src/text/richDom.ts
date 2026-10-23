@@ -1,11 +1,11 @@
 /**
  * Bridges formatted label text and HTML DOM:
- *  - `domToRich` reads a DOM tree (the WYSIWYG editor, or a draw.io `html=1`
+ *  - `domToRich` reads a DOM tree (the WYSIWYG editor, or a mxGraph `html=1`
  *    label parsed with DOMParser) into formatted text, keeping only the
  *    whitelisted formatting — so it doubles as the sanitizer for imports.
  *  - `richToEditorHtml` builds the editor's HTML from parsed runs (every text
  *    and attribute escaped; never raw stored HTML).
- *  - `richToDrawioHtml` writes draw.io `html=1` label markup.
+ *  - `richToDrawioHtml` writes mxGraph `html=1` label markup.
  */
 import {
   applyCss, escapeHtml, isTableLine, parseCssStyle, parseInline, parseTable, safeColor, safeHref, safeImageSrc, serializeRuns, splitLines,
@@ -207,7 +207,7 @@ function tableHtml(line: string, base: BaseStyle, sizeCss: (px: number) => strin
       return `<${tag}${cellCss ? ` style="${cellCss}${table.border ? ';border:1px solid currentColor' : ''}"` : ''}>${html || '<br>'}</${tag}>`;
     }).join('')}</tr>`)
     .join('');
-  // inline-table follows the label's text alignment in the editor (draw.io ignores it).
+  // inline-table follows the label's text alignment in the editor (mxGraph ignores it).
   return `<table${table.border ? ' border="1"' : ''} style="border-collapse:collapse;display:inline-table">${rows}</table>`;
 }
 
@@ -219,7 +219,7 @@ export function richToEditorHtml(text: string, base: BaseStyle, zoom: number): s
     .join('<br>');
 }
 
-/** draw.io `html=1` label markup. */
+/** mxGraph `html=1` label markup. */
 export function richToDrawioHtml(text: string, base: BaseStyle): string {
   const sizeCss = (px: number) => `${Math.round(px * 100) / 100}px`;
   return splitLines(text)

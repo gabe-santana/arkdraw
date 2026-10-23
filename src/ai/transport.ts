@@ -13,6 +13,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { ADAPTERS, AiError, type HttpRequest, type HttpResponse, type ModelInfo, type ProviderConfig, type ProviderId, type ChatRequest, type ChatResponse } from './providers';
 import { ANTHROPIC_VERSION } from './providers/anthropic';
 import type { CustomAuthStyle } from './settings';
+import { t } from '@/i18n';
 
 export const isTauri = (): boolean => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
@@ -27,7 +28,7 @@ const originOf = (url: string) => {
   try {
     return new URL(url).origin;
   } catch {
-    throw new AiError(`Invalid URL: ${url}`);
+    throw new AiError(t('ai.error.invalidUrl', { url }));
   }
 };
 
@@ -64,13 +65,13 @@ function authHeaders(provider: ProviderId, mk: MemoryKey | undefined): Record<st
   const key = mk?.key;
   switch (provider) {
     case 'anthropic':
-      if (!key) throw new AiError('Add your Anthropic API key in AI settings.');
+      if (!key) throw new AiError(t('ai.error.addKey', { provider: 'Anthropic' }));
       return { 'x-api-key': key, 'anthropic-version': ANTHROPIC_VERSION, 'anthropic-dangerous-direct-browser-access': 'true' };
     case 'openai':
-      if (!key) throw new AiError('Add your OpenAI API key in AI settings.');
+      if (!key) throw new AiError(t('ai.error.addKey', { provider: 'OpenAI' }));
       return { Authorization: `Bearer ${key}` };
     case 'gemini':
-      if (!key) throw new AiError('Add your Gemini API key in AI settings.');
+      if (!key) throw new AiError(t('ai.error.addKey', { provider: 'Gemini' }));
       return { 'x-goog-api-key': key };
     default:
       if (!key) return {};
@@ -108,7 +109,7 @@ export async function sendRequest(provider: ProviderId, req: HttpRequest, signal
       body: body ?? null,
       headers: req.headers ?? null,
     }).catch((e: unknown) => {
-      throw new AiError(typeof e === 'string' ? e : e instanceof Error ? e.message : 'Request failed.');
+      throw new AiError(typeof e === 'string' ? e : e instanceof Error ? e.message : t('ai.error.requestFailed'));
     });
     return abortable(p, signal);
   }
@@ -122,8 +123,8 @@ export async function sendRequest(provider: ProviderId, req: HttpRequest, signal
     res = await fetch(req.url, { method: req.method, headers, body, signal });
   } catch (e) {
     if ((e as Error)?.name === 'AbortError') throw e;
-    const local = provider === 'ollama' ? ' Is Ollama running?' : '';
-    throw new AiError(`Could not reach ${new URL(req.url).host}.${local}`);
+    const host = new URL(req.url).host;
+    throw new AiError(provider === 'ollama' ? t('ai.error.unreachableOllama', { host }) : t('ai.error.unreachable', { host }));
   }
   return { status: res.status, body: await res.text() };
 }
@@ -139,15 +140,15 @@ export function describeHttpError(status: number, body: string): string {
   }
   const prefix =
     status === 401 || status === 403
-      ? 'The API key was rejected'
+      ? t('ai.http.rejected')
       : status === 404
-        ? 'Not found (check the model name and endpoint)'
+        ? t('ai.http.notFound')
         : status === 429
-          ? 'Rate limited or out of credits'
+          ? t('ai.http.rateLimited')
           : status === 529 || status === 503
-            ? 'The provider is overloaded, try again shortly'
-            : `Request failed (${status})`;
-  return detail ? `${prefix}: ${detail}` : `${prefix}.`;
+            ? t('ai.http.overloaded')
+            : t('ai.http.failed', { status: String(status) });
+  return detail ? t('ai.http.withDetail', { message: prefix, detail }) : t('ai.http.noDetail', { message: prefix });
 }
 
 export async function requestJson(provider: ProviderId, req: HttpRequest, signal?: AbortSignal): Promise<unknown> {
@@ -156,12 +157,12 @@ export async function requestJson(provider: ProviderId, req: HttpRequest, signal
   try {
     return JSON.parse(res.body);
   } catch {
-    throw new AiError('The provider returned an invalid response.');
+    throw new AiError(t('ai.error.invalidResponse'));
   }
 }
 
 export async function chat(config: ProviderConfig, req: ChatRequest, signal?: AbortSignal): Promise<ChatResponse> {
-  if (!config.model) throw new AiError('Choose a model in AI settings.');
+  if (!config.model) throw new AiError(t('ai.error.chooseModel'));
   const adapter = ADAPTERS[config.provider];
   const json = await requestJson(config.provider, adapter.buildChat(config, req), signal);
   return adapter.parseChat(json);

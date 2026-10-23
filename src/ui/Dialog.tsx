@@ -2,6 +2,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { useT } from '@/i18n';
 
 interface DialogProps {
   open: boolean;
@@ -47,6 +48,7 @@ export function Dialog({ open, onClose, children, className, placement = 'center
 }
 
 export function DialogHeader({ title, subtitle, onClose, id }: { title: ReactNode; subtitle?: ReactNode; onClose: () => void; id?: string }) {
+  const t = useT();
   return (
     <div className="flex items-start gap-3 px-5 pb-3 pt-4">
       <div className="flex-1">
@@ -55,7 +57,7 @@ export function DialogHeader({ title, subtitle, onClose, id }: { title: ReactNod
         </h2>
         {subtitle && <p className="mt-0.5 text-[12.5px] text-muted">{subtitle}</p>}
       </div>
-      <button onClick={onClose} aria-label="Close" className="-mr-1.5 rounded-lg p-1.5 text-subtle transition-colors hover:bg-hover hover:text-fg">
+      <button onClick={onClose} aria-label={t('common.close')} className="-mr-1.5 rounded-lg p-1.5 text-subtle transition-colors hover:bg-hover hover:text-fg">
         <X className="size-4" />
       </button>
     </div>

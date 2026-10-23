@@ -126,7 +126,7 @@ describe('pipeline', () => {
     expect(sel[0].doc.order).toHaveLength(3);
   });
 
-  it('exports all pages to draw.io, optionally compressed', async () => {
+  it('exports all pages to mxGraph, optionally compressed', async () => {
     const src = source(2);
     const [plain] = await exportFiles(src, { ...DEFAULT_EXPORT_SETTINGS, format: 'drawio', scope: 'all' });
     expect((plain.data as string).match(/<diagram /g)).toHaveLength(2);

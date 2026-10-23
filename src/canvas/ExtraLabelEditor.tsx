@@ -1,5 +1,5 @@
 /**
- * Extra connector labels (draw.io child edge labels): dragging one along its
+ * Extra connector labels (mxGraph child edge labels): dragging one along its
  * connector, and an in-place editor opened by double-clicking it.
  */
 import { useEffect, useRef } from 'react';

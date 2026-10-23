@@ -1,6 +1,6 @@
 /**
  * Embed mode (`?embed=1`): the editor runs inside an <iframe> and is driven
- * by the parent page over postMessage, in the spirit of draw.io's embed API.
+ * by the parent page over postMessage, in the spirit of mxGraph's embed API.
  *
  * Parent → editor (actions)
  *   { action: 'load', json? | xml?, title?, autosave? }   open a diagram (empty = blank)
@@ -18,7 +18,7 @@
  *   { event: 'error', action, message }
  *
  * Any request may carry an `id`; replies echo it. Messages may be objects or
- * JSON strings (draw.io style); once the parent sends a string — or with
+ * JSON strings (mxGraph style); once the parent sends a string — or with
  * `?proto=json` — replies are JSON strings too.
  *
  * Security: only messages whose `source` is `window.parent` are accepted.

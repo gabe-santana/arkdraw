@@ -4,9 +4,11 @@
  */
 import { useEffect, useState } from 'react';
 import { RefreshCw, WifiOff, X } from 'lucide-react';
+import { useT } from '@/i18n';
 import { usePwa } from './pwa';
 
 export function PwaUpdatePrompt() {
+  const tr = useT();
   const needRefresh = usePwa((s) => s.needRefresh);
   const offlineReady = usePwa((s) => s.offlineReady);
   const update = usePwa((s) => s.update);
@@ -34,9 +36,9 @@ export function PwaUpdatePrompt() {
         {needRefresh ? <RefreshCw size={15} /> : <WifiOff size={15} />}
       </span>
       <div className="min-w-0">
-        <div className="font-medium">{needRefresh ? 'A new version of OpenDraw is ready' : 'OpenDraw works offline now'}</div>
+        <div className="font-medium">{needRefresh ? tr('web.pwa.newVersion') : tr('web.pwa.offlineReady')}</div>
         <div className="text-[12px] text-muted">
-          {needRefresh ? 'Reload to update. Unsaved work is restored after the reload.' : 'The app is cached on this device.'}
+          {needRefresh ? tr('web.pwa.reloadHint') : tr('web.pwa.cached')}
         </div>
       </div>
       {needRefresh && update && (
@@ -49,12 +51,13 @@ export function PwaUpdatePrompt() {
           }}
           className="ml-1 h-7 shrink-0 rounded-lg bg-accent px-3 text-[12.5px] font-medium text-accent-fg transition-colors hover:bg-accent-hover disabled:opacity-60"
         >
-          {busy ? 'Updating…' : 'Reload'}
+          {busy ? tr('web.pwa.updating') : tr('web.pwa.reload')}
         </button>
       )}
       <button
         type="button"
-        aria-label="Dismiss"
+        aria-label={tr('app.dismiss')}
+        title={tr('app.dismiss')}
         onClick={dismiss}
         className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-hover hover:text-fg"
       >

@@ -412,7 +412,7 @@ const textBox = (w: number, h: number) => {
   return { x: 8, y: top, w: Math.max(1, w - 16), h: Math.max(1, h - top - 4) };
 };
 
-/** [kind suffix, label, corner, icon key, draw.io appType] */
+/** [kind suffix, label, corner, icon key, mxGraph appType] */
 const ELEMENTS: Array<[string, string, Corner, string, string]> = [
   ['actor', 'Actor', 'square', 'actor', 'actor'],
   ['role', 'Role', 'square', 'role', 'role'],

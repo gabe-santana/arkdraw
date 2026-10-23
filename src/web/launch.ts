@@ -35,17 +35,17 @@ export interface LaunchParams {
   parentOrigin: string | null;
   /** Embed: reply with JSON strings instead of objects (`?proto=json`). */
   jsonProtocol: boolean;
-  /** Embed: show the Save / Exit buttons (`?saveBtn=0`, `?exitBtn=0`, or draw.io's `noSaveBtn` / `noExitBtn`). */
+  /** Embed: show the Save / Exit buttons (`?saveBtn=0`, `?exitBtn=0`, or mxGraph's `noSaveBtn` / `noExitBtn`). */
   saveButton: boolean;
   exitButton: boolean;
   /** Viewer: show the toolbar chrome (`?toolbar=0` hides it, e.g. for tiny embeds). */
   toolbar: boolean;
-  /** draw.io editor options, applied by src/automation/urlParams.ts: */
-  /** `?lang=de` — document language (spell check, dictation, `label_<lang>` placeholders); the UI stays English. */
+  /** mxGraph editor options, applied by src/automation/urlParams.ts: */
+  /** `?lang=de` — UI language for this session (src/i18n) and document language (spell check, dictation, `label_<lang>` placeholders). */
   lang: string | null;
   /** `?libs=general;uml` — shape libraries to show expanded. */
   libs: string | null;
-  /** `?clibs=Uhttps%3A…;Uhttps%3A…` — custom library URLs to load (draw.io's `U` prefix optional). */
+  /** `?clibs=Uhttps%3A…;Uhttps%3A…` — custom library URLs to load (mxGraph's `U` prefix optional). */
   clibs: string[];
   /** `?grid=0|1` — grid on or off for this session. */
   grid: boolean | null;
@@ -56,6 +56,9 @@ export interface LaunchParams {
 }
 
 const FALSY = new Set(['0', 'false', 'no', 'off']);
+
+/** `LaunchParams.error` for a non-http(s) source URL (English; the UI shows t('web.launch.onlyHttpUrls')). */
+export const NON_HTTP_URL_ERROR = 'Only http(s) diagram URLs can be opened.';
 
 function flag(params: URLSearchParams, ...names: string[]): boolean {
   return names.some((n) => params.has(n) && !FALSY.has((params.get(n) ?? '').toLowerCase()));
@@ -93,7 +96,7 @@ export function parseLaunchParams(href: string): LaunchParams {
   const useUrl = (raw: string) => {
     const norm = normalizeSourceUrl(raw, url.origin + url.pathname);
     if (norm) source = { kind: 'url', url: norm };
-    else error = 'Only http(s) diagram URLs can be opened.';
+    else error = NON_HTTP_URL_ERROR;
   };
 
   if (hash.startsWith('R') && hash.length > 1) source = { kind: 'inline', hash: `#${hash}` };

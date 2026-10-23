@@ -8,6 +8,7 @@
  */
 import { useEditor } from '@/store/editor';
 import { useUi } from '@/store/ui';
+import { t } from '@/i18n';
 import { inlineIcons, renderSvg } from '@/io/export/svg';
 import { PAPER_SIZES, paperSize } from '@/canvas/paper';
 import type { Page, PaperSize } from '@/model/types';
@@ -111,7 +112,7 @@ export async function printWithOptions(opts: PrintOptions) {
   const s = useEditor.getState();
   const built = await buildPrintHtml(opts, s.file.name);
   if (!built) {
-    useUi.getState().toast('Nothing to print');
+    useUi.getState().toast(t('app.print.nothing'));
     return;
   }
   const frame = document.createElement('iframe');
@@ -133,6 +134,6 @@ export async function printDiagram(pageIds?: string[]) {
   const s = useEditor.getState();
   const all = s.allPages();
   const idx = all.map((p, i) => (pageIds.includes(p.id) ? i : -1)).filter((i) => i >= 0);
-  if (!idx.length) return useUi.getState().toast('Nothing to print');
+  if (!idx.length) return useUi.getState().toast(t('app.print.nothing'));
   return printWithOptions({ ...DEFAULT_PRINT_OPTIONS, pages: { from: idx[0] + 1, to: idx[idx.length - 1] + 1 } });
 }

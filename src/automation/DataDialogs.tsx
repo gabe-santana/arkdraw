@@ -8,6 +8,7 @@ import { DialogHeader } from '@/ui/Dialog';
 import { documentStats, updateDocMeta } from './fileProperties';
 import { dataOf, Field, inputCls, KeyValueEditor, rowsOf, stopKeys, textareaCls, type Rows } from './formUi';
 import type { DataTarget } from './ui';
+import { formatDate, useT } from '@/i18n';
 
 /** Writes key/value data to a layer (undoable), a page or the document. */
 export function applyTargetData(target: DataTarget, data: Record<string, string> | undefined, name?: string) {
@@ -28,19 +29,20 @@ export function applyTargetData(target: DataTarget, data: Record<string, string>
 }
 
 export function DataBody({ target, close }: { target: DataTarget; close: () => void }) {
+  const t = useT();
   const doc = useEditor((s) => s.doc);
   const pages = useEditor((s) => s.pages);
   const meta = useEditor((s) => s.docMeta);
   const info = useMemo(() => {
     if (target.type === 'layer') {
       const l = layersOf(doc).find((x) => x.id === target.id);
-      return { title: 'Edit layer data', name: l?.name ?? '', data: l?.data, id: target.id };
+      return { title: 'automation.data.layerTitle' as const, name: l?.name ?? '', data: l?.data, id: target.id };
     }
     if (target.type === 'page') {
       const p = pages.find((x) => x.id === target.id);
-      return { title: 'Edit page data', name: p?.name ?? '', data: p?.data, id: target.id };
+      return { title: 'automation.data.pageTitle' as const, name: p?.name ?? '', data: p?.data, id: target.id };
     }
-    return { title: 'Edit document data', name: '', data: meta.data, id: '' };
+    return { title: 'automation.data.documentTitle' as const, name: '', data: meta.data, id: '' };
     // Snapshot when the dialog opens.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -55,33 +57,34 @@ export function DataBody({ target, close }: { target: DataTarget; close: () => v
   return (
     <div onKeyDown={stopKeys}>
       <DialogHeader
-        title={info.title}
-        subtitle={info.id ? <span className="font-mono text-[11.5px]">ID {info.id}</span> : 'Values every page can use as %placeholders%.'}
+        title={t(info.title)}
+        subtitle={info.id ? <span className="font-mono text-[11.5px]">{t('automation.data.id', { id: info.id })}</span> : t('automation.data.documentSubtitle')}
         onClose={close}
       />
       <div className="scroll-thin max-h-[60vh] space-y-3 overflow-y-auto px-5 pb-4">
         {target.type !== 'document' && (
-          <Field label="Name">
+          <Field label={t('common.name')}>
             <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} />
           </Field>
         )}
-        <Field label="Properties" hint="Labels with placeholders on, inside this scope, show %key% values">
+        <Field label={t('automation.data.properties')} hint={t('automation.data.propertiesHint')}>
           <KeyValueEditor rows={rows} onChange={setRows} />
         </Field>
       </div>
       <div className="flex justify-end gap-2 border-t border-line px-5 py-3">
-        <Button onClick={close}>Cancel</Button>
+        <Button onClick={close}>{t('common.cancel')}</Button>
         <Button variant="primary" onClick={save}>
-          Apply
+          {t('common.apply')}
         </Button>
       </div>
     </div>
   );
 }
 
-const fmtDate = (iso?: string) => (iso ? new Date(iso).toLocaleString() : '—');
+const fmtDate = (iso?: string) => (iso ? formatDate(new Date(iso)) : '—');
 
 export function PropertiesBody({ close }: { close: () => void }) {
+  const t = useT();
   const meta = useEditor((s) => s.docMeta);
   const file = useEditor((s) => s.file);
   const livePages = useEditor((s) => s.pages);
@@ -100,45 +103,47 @@ export function PropertiesBody({ close }: { close: () => void }) {
   const stat = (label: string, value: number | string) => (
     <div className="rounded-lg bg-panel-2 px-2.5 py-2">
       <div className="text-[15px] font-semibold tabular-nums text-fg">{value}</div>
-      <div className="text-[11px] text-muted">{label}</div>
+      <div className="truncate text-[11px] text-muted" title={label}>
+        {label}
+      </div>
     </div>
   );
 
   return (
     <div onKeyDown={stopKeys}>
-      <DialogHeader title="File properties" subtitle={file.path ?? file.name} onClose={close} />
+      <DialogHeader title={t('automation.props.title')} subtitle={file.path ?? file.name} onClose={close} />
       <div className="space-y-3 px-5 pb-4">
-        <Field label="Title">
+        <Field label={t('common.title')}>
           <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={file.name.replace(/\.opendraw$/i, '')} autoFocus />
         </Field>
-        <Field label="Author">
-          <input className={inputCls} value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="Who made this diagram" />
+        <Field label={t('automation.props.author')}>
+          <input className={inputCls} value={author} onChange={(e) => setAuthor(e.target.value)} placeholder={t('automation.props.authorPlaceholder')} />
         </Field>
-        <Field label="Description">
-          <textarea className={textareaCls + ' h-20 font-sans text-[12.5px]'} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What this diagram is about" />
+        <Field label={t('common.description')}>
+          <textarea className={textareaCls + ' h-20 font-sans text-[12.5px]'} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('automation.props.descriptionPlaceholder')} />
         </Field>
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[12px]">
-          <span className="text-muted">Created</span>
+          <span className="text-muted">{t('automation.props.created')}</span>
           <span className="text-fg">{fmtDate(meta.created)}</span>
-          <span className="text-muted">Last saved</span>
+          <span className="text-muted">{t('automation.props.lastSaved')}</span>
           <span className="text-fg">{fmtDate(meta.modified)}</span>
         </div>
         <div className="grid grid-cols-4 gap-1.5">
-          {stat(stats.pages === 1 ? 'Page' : 'Pages', stats.pages)}
-          {stat('Shapes', stats.shapes)}
-          {stat('Connectors', stats.connectors)}
-          {stat('Layers', stats.layers)}
-          {stat('Labels', stats.labels)}
-          {stat('Images & icons', stats.images)}
-          {stat('Comments', stats.comments)}
-          {stat('Doc data', Object.keys(meta.data ?? {}).length)}
+          {stat(stats.pages === 1 ? t('common.page') : t('common.pages'), stats.pages)}
+          {stat(t('common.shapes'), stats.shapes)}
+          {stat(t('common.connectors'), stats.connectors)}
+          {stat(t('common.layers'), stats.layers)}
+          {stat(t('automation.props.labels'), stats.labels)}
+          {stat(t('automation.props.images'), stats.images)}
+          {stat(t('automation.props.comments'), stats.comments)}
+          {stat(t('automation.props.docData'), Object.keys(meta.data ?? {}).length)}
         </div>
-        <p className="text-[11.5px] text-subtle">Title, author and description are saved in the .opendraw file and can be used in labels as %title%, %author% and %description%.</p>
+        <p className="text-[11.5px] text-subtle">{t('automation.props.note')}</p>
       </div>
       <div className="flex justify-end gap-2 border-t border-line px-5 py-3">
-        <Button onClick={close}>Cancel</Button>
+        <Button onClick={close}>{t('common.cancel')}</Button>
         <Button variant="primary" onClick={save}>
-          Apply
+          {t('common.apply')}
         </Button>
       </div>
     </div>

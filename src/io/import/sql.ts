@@ -1,5 +1,5 @@
 /**
- * SQL DDL → ER diagram (draw.io's Arrange > Insert > Advanced > SQL).
+ * SQL DDL → ER diagram (mxGraph's Arrange > Insert > Advanced > SQL).
  *
  * Reads CREATE TABLE statements in MySQL, PostgreSQL, SQL Server and SQLite
  * flavours: `backtick`, "double quote" and [bracket] quoting, schema-qualified

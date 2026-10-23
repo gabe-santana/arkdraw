@@ -6,7 +6,7 @@
  *  - PNG: iTXt chunk, keyword `opendraw`, zlib-compressed `.opendraw` JSON.
  *  - SVG: `data-opendraw` attribute on the root `<svg>` = base64 of the JSON.
  *  - PDF: jsPDF has no file-attachment API, so the document info dictionary is
- *    used: `/Subject` = URI-encoded draw.io mxfile XML (what draw.io desktop
+ *    used: `/Subject` = URI-encoded mxGraph mxfile XML (what mxGraph desktop
  *    writes, and what the embedded importer reads), `/Keywords` =
  *    `opendraw:<base64 JSON>` (lossless OpenDraw copy).
  */

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useT } from '@/i18n';
 import { PROVIDER_META, type ProviderId } from '../providers';
 import { baseUrlFor, modelFor, useAiSettings } from '../settings';
 import { hasKey } from '../transport';
@@ -34,16 +35,17 @@ export function useHasKey(provider: ProviderId): [boolean | null, () => void] {
   return [state, refresh];
 }
 
-/** Whether the active provider is configured well enough to send a request. */
+/** Whether the active provider is configured well enough to send a request (`reason`: a whole, translated sentence). */
 export function useAiReady(): { ready: boolean | null; reason?: string } {
+  const t = useT();
   const s = useAiSettings();
   const meta = PROVIDER_META[s.provider];
   const [has] = useHasKey(s.provider);
-  if (!modelFor(s)) return { ready: false, reason: 'Choose a model' };
-  if (meta.needsBaseUrl && !baseUrlFor(s)) return { ready: false, reason: 'Set the endpoint URL' };
+  if (!modelFor(s)) return { ready: false, reason: t('ai.ready.chooseModel') };
+  if (meta.needsBaseUrl && !baseUrlFor(s)) return { ready: false, reason: t('ai.ready.setEndpoint') };
   if (meta.needsKey) {
     if (has === null) return { ready: null };
-    if (!has) return { ready: false, reason: `Add your ${meta.name} API key` };
+    if (!has) return { ready: false, reason: t('ai.ready.addKey', { provider: meta.name }) };
   }
   return { ready: true };
 }

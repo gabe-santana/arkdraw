@@ -45,7 +45,7 @@ export const GOOGLE_FONTS: Array<{ name: string; category: FontCategory }> = [
 
 const GOOGLE = new Map(GOOGLE_FONTS.map((f) => [f.name.toLowerCase(), f]));
 
-/** Common system fonts (draw.io's default list); used as-is, never downloaded. */
+/** Common system fonts (mxGraph's default list); used as-is, never downloaded. */
 export const SYSTEM_FONTS = ['Helvetica', 'Arial', 'Verdana', 'Times New Roman', 'Garamond', 'Comic Sans MS', 'Courier New', 'Georgia', 'Lucida Console', 'Tahoma'];
 
 const GENERIC: Record<FontCategory, string> = {

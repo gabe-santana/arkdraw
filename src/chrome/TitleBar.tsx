@@ -18,6 +18,8 @@ import { openPath } from '@/app/fileCommands';
 import { clearRecentFiles, getRecentFiles, windowControls, type RecentFile } from '@/io/native';
 import { MenuList, useDismiss, type MenuEntry } from '@/ui/Menu';
 import { Button, IconButton } from '@/ui/Button';
+import { t, useT } from '@/i18n';
+import { actionLabel, menuTitle } from '@/i18n/catalog';
 
 const MENUS: Array<{ label: string }> = [
   { label: 'File' },
@@ -31,7 +33,7 @@ const MENUS: Array<{ label: string }> = [
 function toEntry(id: string): MenuEntry {
   const a = ACTION_MAP[id];
   return {
-    label: a.label,
+    label: actionLabel(a),
     icon: a.icon,
     shortcut: a.shortcuts?.[0],
     onSelect: a.run,
@@ -44,7 +46,7 @@ function buildMenu(label: string, recent: RecentFile[]): MenuEntry[] {
   const sep: MenuEntry = { type: 'separator' };
   const ui = useUiStore.getState();
   const units = (['px', 'pt', 'in', 'mm', 'm'] as const).map((u) => ({
-    label: { px: 'Pixels', pt: 'Points', in: 'Inches', mm: 'Millimeters', m: 'Meters' }[u],
+    label: t(`menu.units.${u}`),
     checked: ui.units === u,
     onSelect: () => ui.set({ units: u }),
   }));
@@ -56,13 +58,13 @@ function buildMenu(label: string, recent: RecentFile[]): MenuEntry[] {
         toEntry('file.templates'),
         toEntry('file.open'),
         {
-          label: 'Open recent',
+          label: t('menu.openRecent'),
           icon: <Clock />,
           disabled: !recent.length,
           items: [
             ...recent.map((r) => ({ label: r.name, onSelect: () => void openPath(r.path) })),
             sep,
-            { label: 'Clear recent', icon: <Trash />, onSelect: () => void clearRecentFiles() },
+            { label: t('menu.clearRecent'), icon: <Trash />, onSelect: () => void clearRecentFiles() },
           ],
         },
         toEntry('file.import'),
@@ -95,22 +97,22 @@ function buildMenu(label: string, recent: RecentFile[]): MenuEntry[] {
         toEntry('edit.find'),
         sep,
         {
-          label: 'Select',
+          label: t('menu.select'),
           items: ['edit.selectAll', 'edit.selectVertices', 'edit.selectEdges', 'edit.selectNone', 'edit.selectChildren', 'edit.selectParent', 'edit.selectSiblings', 'edit.selectDescendants'].map(toEntry),
         },
         sep,
         toEntry('edit.data'),
-        { label: 'Data', items: ['edit.pageData', 'edit.documentData', 'edit.revealHidden', 'edit.mermaid'].map(toEntry) },
+        { label: t('menu.data'), items: ['edit.pageData', 'edit.documentData', 'edit.revealHidden', 'edit.mermaid'].map(toEntry) },
         toEntry('edit.link'),
         toEntry('edit.tooltip'),
         toEntry('edit.style'),
         toEntry('edit.editShape'),
         {
-          label: 'Style',
+          label: t('menu.style'),
           items: ['edit.copyStyle', 'edit.pasteStyle', 'edit.defaultStyle', 'edit.clearDefaultStyle'].map(toEntry),
         },
-        { label: 'Text', items: ['format.bold', 'format.italic', 'format.underline', 'format.fontBigger', 'format.fontSmaller', 'format.clear'].map(toEntry) },
-        { label: 'Copy as', items: ['edit.copyImage', 'edit.copySvg'].map(toEntry) },
+        { label: t('menu.text'), items: ['format.bold', 'format.italic', 'format.underline', 'format.fontBigger', 'format.fontSmaller', 'format.clear'].map(toEntry) },
+        { label: t('menu.copyAs'), items: ['edit.copyImage', 'edit.copySvg'].map(toEntry) },
         toEntry('edit.replaceShape'),
         toEntry('edit.editPoints'),
         sep,
@@ -134,7 +136,7 @@ function buildMenu(label: string, recent: RecentFile[]): MenuEntry[] {
         toEntry('view.rulers'),
         toEntry('view.scrollbars'),
         toEntry('view.pageView'),
-        { label: 'Units', items: units },
+        { label: t('menu.units'), items: units },
         sep,
         toEntry('view.zoomIn'),
         toEntry('view.zoomOut'),
@@ -142,8 +144,8 @@ function buildMenu(label: string, recent: RecentFile[]): MenuEntry[] {
         toEntry('view.fit'),
         toEntry('view.fitSelection'),
         sep,
-        { label: 'Pages', items: ['view.newPage', 'view.prevPage', 'view.nextPage'].map(toEntry) },
-        { label: 'Theme', icon: <Sun />, items: [toEntry('view.themeLight'), toEntry('view.themeDark'), toEntry('view.themeSystem'), sep, toEntry('view.adapt')] },
+        { label: t('menu.pages'), items: ['view.newPage', 'view.prevPage', 'view.nextPage'].map(toEntry) },
+        { label: t('menu.theme'), icon: <Sun />, items: [toEntry('view.themeLight'), toEntry('view.themeDark'), toEntry('view.themeSystem'), sep, toEntry('view.adapt')] },
         toEntry('view.fullscreen'),
         toEntry('view.play'),
       ];
@@ -157,38 +159,39 @@ function buildMenu(label: string, recent: RecentFile[]): MenuEntry[] {
         toEntry('arrange.group'),
         toEntry('arrange.ungroup'),
         toEntry('arrange.removeFromGroup'),
-        { label: 'Navigate', items: ['arrange.enterGroup', 'arrange.exitGroup', 'arrange.home'].map(toEntry) },
+        { label: t('menu.navigate'), items: ['arrange.enterGroup', 'arrange.exitGroup', 'arrange.home'].map(toEntry) },
         sep,
         {
-          label: 'Align',
+          label: t('menu.align'),
           items: ['align.left', 'align.hcenter', 'align.right', 'align.top', 'align.vcenter', 'align.bottom', 'arrange.alignGrid'].map(toEntry),
         },
-        { label: 'Distribute', items: ['distribute.h', 'distribute.v'].map(toEntry) },
-        { label: 'Size', items: ['arrange.autosize', 'arrange.equalSize', 'arrange.equalWidth', 'arrange.equalHeight'].map(toEntry) },
-        { label: 'Rotate & flip', items: ['arrange.rotate', 'arrange.rotateCcw', 'arrange.flipH', 'arrange.flipV'].map(toEntry) },
+        { label: t('menu.distribute'), items: ['distribute.h', 'distribute.v'].map(toEntry) },
+        { label: t('menu.size'), items: ['arrange.autosize', 'arrange.equalSize', 'arrange.equalWidth', 'arrange.equalHeight'].map(toEntry) },
+        { label: t('menu.rotateFlip'), items: ['arrange.rotate', 'arrange.rotateCcw', 'arrange.flipH', 'arrange.flipV'].map(toEntry) },
         sep,
-        { label: 'Layout', items: ACTIONS.filter((a) => a.group === 'Layout').map((a) => toEntry(a.id)) },
+        { label: t('menu.layout'), items: ACTIONS.filter((a) => a.group === 'Layout').map((a) => toEntry(a.id)) },
         {
-          label: 'Insert',
-          items: [toEntry('arrange.image'), toEntry('arrange.imageUrl'), toEntry('arrange.table'), toEntry('arrange.insertShape'), toEntry('file.templates'), toEntry('file.import')],
+          label: t('menu.insert'),
+          items: [toEntry('arrange.image'), toEntry('arrange.imageUrl'), toEntry('arrange.svgShapes'), toEntry('arrange.table'), toEntry('arrange.insertShape'), toEntry('file.templates'), toEntry('file.import')],
         },
         {
-          label: 'Table',
+          label: t('menu.table'),
           items: [...TABLE_MENU_IDS, 'arrange.tableRow', 'arrange.tableCol', 'arrange.tableDelRow', 'arrange.tableDelCol'].map(toEntry),
         },
         sep,
-        { label: 'Connector', items: ['arrange.connect', 'arrange.reverse', 'arrange.clearWaypoints'].map(toEntry) },
-        { label: 'Tree', items: ['tree.child', 'tree.sibling', 'tree.siblingBefore'].map(toEntry) },
+        { label: t('menu.connector'), items: ['arrange.connect', 'arrange.reverse', 'arrange.clearWaypoints'].map(toEntry) },
+        { label: t('menu.tree'), items: ['tree.child', 'tree.sibling', 'tree.siblingBefore'].map(toEntry) },
         toEntry('arrange.collapse'),
       ];
     case 'Extras':
-      return [toEntry('edit.diagram'), toEntry('edit.style'), sep, toEntry('extras.theme'), toEntry('extras.sketch'), sep, toEntry('ai.open'), toEntry('ai.settings'), sep, { label: 'Appearance', items: UI_MODE_ACTION_IDS.map(toEntry) }, toEntry('extras.plugins'), { label: 'Tools', items: ['extras.explore', 'extras.anonymize', 'extras.replay', ...(ACTION_MAP['extras.dictate'].hidden ? [] : ['extras.dictate'])].map(toEntry) }, toEntry('extras.configuration'), toEntry('extras.preferences')];
+      return [toEntry('edit.diagram'), toEntry('edit.style'), sep, toEntry('extras.theme'), toEntry('extras.sketch'), sep, toEntry('ai.open'), toEntry('ai.settings'), sep, { label: t('menu.appearance'), items: UI_MODE_ACTION_IDS.map(toEntry) }, toEntry('extras.plugins'), { label: t('menu.tools'), items: ['extras.explore', 'extras.anonymize', 'extras.replay', ...(ACTION_MAP['extras.dictate'].hidden ? [] : ['extras.dictate'])].map(toEntry) }, toEntry('extras.configuration'), toEntry('extras.preferences')];
     default:
       return [toEntry('help.shortcuts'), toEntry('view.palette'), ...(isTauri() ? [sep, toEntry('help.checkUpdates'), toEntry('extras.configFile')] : [])];
   }
 }
 
 export function TitleBar() {
+  const t = useT();
   const name = useEditor((s) => s.file.name);
   const dirty = useIsDirty();
   const canUndo = useEditor((s) => s.past.length > 0);
@@ -243,7 +246,7 @@ export function TitleBar() {
               open?.label === m.label ? 'bg-active text-fg' : 'text-muted hover:bg-hover hover:text-fg',
             )}
           >
-            {m.label}
+            {menuTitle(m.label)}
           </button>
         ))}
       </nav>
@@ -257,7 +260,7 @@ export function TitleBar() {
           </span>
           <span
             className={cn('size-1.5 shrink-0 rounded-full transition-all duration-300', dirty ? 'scale-100 bg-amber-500' : 'scale-0 bg-transparent')}
-            title={dirty ? 'Unsaved changes' : 'Saved'}
+            title={dirty ? t('common.unsavedChanges') : t('common.saved')}
           />
         </div>
       </div>
@@ -266,13 +269,13 @@ export function TitleBar() {
 
       {/* Actions */}
       <div className="flex items-center gap-0.5">
-        <IconButton label="Undo" shortcut="Mod+Z" disabled={!canUndo} onClick={() => runAction('edit.undo')}>
+        <IconButton label={t('titlebar.undo')} shortcut="Mod+Z" disabled={!canUndo} onClick={() => runAction('edit.undo')}>
           <Undo2 />
         </IconButton>
-        <IconButton label="Redo" shortcut="Mod+Shift+Z" disabled={!canRedo} onClick={() => runAction('edit.redo')}>
+        <IconButton label={t('titlebar.redo')} shortcut="Mod+Shift+Z" disabled={!canRedo} onClick={() => runAction('edit.redo')}>
           <Redo2 />
         </IconButton>
-        <IconButton label={dark ? 'Light theme' : 'Dark theme'} onClick={() => setUi({ theme: dark ? 'light' : 'dark' })}>
+        <IconButton label={dark ? t('titlebar.lightTheme') : t('titlebar.darkTheme')} onClick={() => setUi({ theme: dark ? 'light' : 'dark' })}>
           {dark ? <Sun /> : <Moon />}
         </IconButton>
         <div className="mx-1.5 h-5 w-px bg-line" />
@@ -284,10 +287,10 @@ export function TitleBar() {
           )}
         >
           <Sparkles className="size-[15px] text-accent transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110" />
-          Generate
+          {t('titlebar.generate')}
         </button>
         <Button variant="primary" size="sm" icon={<FileDown className="size-3.5" />} onClick={() => runAction('file.export')}>
-          Export
+          {t('titlebar.export')}
         </Button>
       </div>
 
@@ -297,6 +300,7 @@ export function TitleBar() {
 }
 
 function WindowControls() {
+  const t = useT();
   const [maximized, setMaximized] = useState(false);
   useEffect(() => {
     let off: (() => void) | undefined;
@@ -308,13 +312,13 @@ function WindowControls() {
   const btn = 'flex h-11 w-[46px] items-center justify-center text-muted transition-colors hover:bg-hover hover:text-fg [&_svg]:size-[15px]';
   return (
     <div className="-my-0 ml-2 -mr-1.5 flex self-stretch">
-      <button className={btn} aria-label="Minimize" onClick={() => windowControls.minimize()}>
+      <button className={btn} aria-label={t('common.minimize')} onClick={() => windowControls.minimize()}>
         <Minus strokeWidth={1.5} />
       </button>
-      <button className={btn} aria-label={maximized ? 'Restore' : 'Maximize'} onClick={() => windowControls.toggleMaximize()}>
+      <button className={btn} aria-label={maximized ? t('common.restore') : t('common.maximize')} onClick={() => windowControls.toggleMaximize()}>
         {maximized ? <Copy strokeWidth={1.5} className="!size-[13px] -scale-x-100" /> : <Square strokeWidth={1.5} className="!size-[13px]" />}
       </button>
-      <button className={cn(btn, 'hover:bg-[#e81123] hover:text-white')} aria-label="Close" onClick={() => windowControls.close()}>
+      <button className={cn(btn, 'hover:bg-[#e81123] hover:text-white')} aria-label={t('common.close')} onClick={() => windowControls.close()}>
         <X strokeWidth={1.5} />
       </button>
     </div>

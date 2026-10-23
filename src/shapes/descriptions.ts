@@ -15,7 +15,7 @@ export const SHAPE_DESCRIPTIONS: Record<string, string> = {
   callout: 'Speech-bubble callout with a pointer tail, used to annotate, comment on or highlight part of a diagram.',
   blockArrow: 'Thick block arrow pointing right, used to show direction, flow or progression between diagram elements.',
   text: 'Free text label with no border or fill, used for headings, captions and annotations anywhere on the canvas.',
-  stencil: 'Custom shape drawn from mxGraph stencil XML, editable with Edit shape and compatible with draw.io stencils.',
+  stencil: 'Custom shape drawn from mxGraph stencil XML, editable with Edit shape.',
   sticky: 'Sticky note shape resembling a Post-it, used for brainstorming, comments, kanban cards and informal annotations.',
   container: 'Rounded container with a title header that groups and holds child shapes, such as a system or zone.',
   'flow.terminator': 'Flowchart terminator: a rounded pill marking where a process starts or ends.',

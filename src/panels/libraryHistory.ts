@@ -1,5 +1,5 @@
 /**
- * Favorites and recently used library items (draw.io parity). Entries are
+ * Favorites and recently used library items (). Entries are
  * serializable references resolved against the built-in libraries / icon packs
  * at render time, so they survive library updates (unresolvable ones are
  * skipped). Persisted locally, like user libraries.

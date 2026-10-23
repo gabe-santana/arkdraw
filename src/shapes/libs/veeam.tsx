@@ -25,7 +25,7 @@ const ROLE: Record<Role, Partial<ElementStyle>> = {
 };
 const BADGE: Record<Role, string> = { infra: '#374151', storage: GREEN, job: '#374151', source: GREEN };
 
-/** [name, label, glyph, role, badge, draw.io stencil, keywords] */
+/** [name, label, glyph, role, badge, mxGraph stencil, keywords] */
 const TILES: Array<[string, string, Art, Role, Art | undefined, string, string]> = [
   ['backupServer', 'Backup server', Server, 'infra', Settings2, 'veeam_backup_and_replication_server', 'vbr management server console configuration'],
   ['proxy', 'Backup proxy', Server, 'infra', ArrowLeftRight, 'proxy', 'data mover transport vmware hyper-v'],

@@ -26,7 +26,7 @@ export type VerticalAlign = 'top' | 'middle' | 'bottom';
 export type FontKey = 'sans' | 'serif' | 'mono' | 'hand';
 /** A built-in font key, or any font name (Google Font or installed system font); see src/text/fonts.ts. */
 export type FontFamily = FontKey | (string & {});
-/** Writing direction of a label (draw.io textDirection). */
+/** Writing direction of a label (mxGraph textDirection). */
 export type TextDirection = 'ltr' | 'rtl' | 'auto';
 export type GradientDirection = 'south' | 'north' | 'east' | 'west' | 'radial';
 /** Where a shape's label sits relative to the shape. */
@@ -67,7 +67,7 @@ export interface ElementStyle {
   sketch?: boolean;
   /** Fill pattern in sketch mode. */
   sketchFill?: 'hachure' | 'solid' | 'zigzag' | 'cross-hatch' | 'dots' | 'dashed' | 'zigzag-line';
-  /** Sketch wobble (Rough.js roughness, default 1.15; draw.io `jiggle`). */
+  /** Sketch wobble (Rough.js roughness, default 1.15; mxGraph `jiggle`). */
   sketchRoughness?: number;
   /** Drop-shadow options (absent = the built-in soft shadow); see src/styling/shadow.tsx. */
   shadowColor?: string;
@@ -91,9 +91,9 @@ export interface ElementStyle {
   verticalText?: boolean;
   /** Label background (e.g. highlight), or none. */
   labelBackground?: string;
-  /** Border drawn around the label box (draw.io labelBorderColor). */
+  /** Border drawn around the label box (mxGraph labelBorderColor). */
   labelBorderColor?: string;
-  /** Extra per-side label padding (px), added to `spacing` (draw.io spacingTop/Right/Bottom/Left). */
+  /** Extra per-side label padding (px), added to `spacing` (mxGraph spacingTop/Right/Bottom/Left). */
   spacingTop?: number;
   spacingRight?: number;
   spacingBottom?: number;
@@ -108,7 +108,7 @@ export interface ElementStyle {
   math?: boolean;
 }
 
-/** Per-element behavior locks (draw.io's movable=0, resizable=0, …). */
+/** Per-element behavior locks (mxGraph's movable=0, resizable=0, …). */
 export interface Behavior {
   movable?: boolean;
   resizable?: boolean;
@@ -142,7 +142,7 @@ interface ElementBase {
   behavior?: Behavior;
   /** Review comments (threads). */
   comments?: Comment[];
-  /** Hidden on its own (draw.io `visible="0"`), e.g. by a custom link action. */
+  /** Hidden on its own (mxGraph `visible="0"`), e.g. by a custom link action. */
   hidden?: boolean;
 }
 
@@ -224,7 +224,7 @@ export interface ShapeElement extends ElementBase {
   collapsed?: boolean;
   /** Container override: `true` makes any shape a container, `false` opts a container kind out. */
   container?: boolean;
-  /** Constrain proportions when resizing (draw.io `aspect=fixed`). */
+  /** Constrain proportions when resizing (mxGraph `aspect=fixed`). */
   lockAspect?: boolean;
   /** For `kind: 'icon' | 'image'`: icon pack path or data/http URL. */
   icon?: string;
@@ -249,9 +249,9 @@ export interface Endpoint {
   elementId?: string;
   /** Which side of the attached shape. `auto` picks the side facing the other end. */
   side?: AnchorSide | 'auto';
-  /** Fixed connection point as a fraction of the shape's unrotated box (draw.io exitX/exitY, entryX/entryY). Wins over `side`. */
+  /** Fixed connection point as a fraction of the shape's unrotated box (mxGraph exitX/exitY, entryX/entryY). Wins over `side`. */
   fixed?: Vec;
-  /** Extra offset in px from the fixed point (draw.io exitDx/exitDy, entryDx/entryDy). */
+  /** Extra offset in px from the fixed point (mxGraph exitDx/exitDy, entryDx/entryDy). */
   fixedOffset?: Vec;
   /** When `elementId` is another connector: the fraction (0..1) along its path. */
   edgeT?: number;
@@ -264,7 +264,7 @@ export type Routing = 'orthogonal' | 'straight' | 'curved' | 'elbow-h' | 'elbow-
 /** line, pipe (wire with a fill), arrow (simple block arrow), link (double line), flexArrow (sizable arrow band), wire (pipe with a dashed core), filledEdge (thick filled band). */
 export type ConnectorShape = 'line' | 'pipe' | 'arrow' | 'link' | 'flexArrow' | 'wire' | 'filledEdge';
 
-/** An additional connector label (draw.io child edge label). */
+/** An additional connector label (mxGraph child edge label). */
 export interface ConnectorLabel {
   id: string;
   text: string;
@@ -320,21 +320,21 @@ export interface ConnectorElement extends ElementBase {
   connectorShape?: ConnectorShape;
   lineJumps?: LineJumps;
   animation?: ConnectorAnimation;
-  /** Line-jump size in px (draw.io jumpSize, default 6). */
+  /** Line-jump size in px (mxGraph jumpSize, default 6). */
   jumpSize?: number;
-  /** Arrowhead sizes (draw.io startSize/endSize, default 6). */
+  /** Arrowhead sizes (mxGraph startSize/endSize, default 6). */
   startSize?: number;
   endSize?: number;
-  /** Filled/hollow override for the arrowheads (draw.io startFill/endFill); absent = the head's default. */
+  /** Filled/hollow override for the arrowheads (mxGraph startFill/endFill); absent = the head's default. */
   startFill?: boolean;
   endFill?: boolean;
-  /** Body width of wide connector shapes (link, flexArrow, filledEdge — draw.io `width`). */
+  /** Body width of wide connector shapes (link, flexArrow, filledEdge — mxGraph `width`). */
   bandWidth?: number;
-  /** Head width of flex arrows (draw.io startWidth/endWidth). */
+  /** Head width of flex arrows (mxGraph startWidth/endWidth). */
   headWidth?: number;
-  /** Gap kept between the attached shapes and the connector ends (draw.io perimeterSpacing). */
+  /** Gap kept between the attached shapes and the connector ends (mxGraph perimeterSpacing). */
   perimeterSpacing?: number;
-  /** Labels beyond the main one (draw.io child edge labels). */
+  /** Labels beyond the main one (mxGraph child edge labels). */
   labels?: ConnectorLabel[];
 }
 

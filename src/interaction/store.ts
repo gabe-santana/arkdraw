@@ -28,7 +28,7 @@ export interface CellRange {
 }
 
 interface InteractionState {
-  /** Entered groups, outermost first (draw.io "Enter group"). Empty = root. */
+  /** Entered groups, outermost first (mxGraph "Enter group"). Empty = root. */
   isolation: string[];
   /** Freehand shape whose points are being edited. */
   editPointsId: string | null;

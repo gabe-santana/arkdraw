@@ -9,6 +9,7 @@
 import { Children, Fragment, isValidElement, type ReactElement, type ReactNode } from 'react';
 import type { ElementStyle, ShapeElement } from '@/model/types';
 import { getShapeDef } from '@/shapes/registry';
+import { t as tr } from '@/i18n';
 import { strokeAttrs } from '@/shapes/kit';
 
 export type ConvertResult = { ok: true; xml: string } | { ok: false; reason: string };
@@ -311,17 +312,17 @@ export function buildStencilXml(name: string, w: number, h: number, ops: string[
 /** Converts a built-in shape to equivalent stencil XML at its current size. */
 export function stencilFromShape(el: ShapeElement): ConvertResult {
   const def = getShapeDef(el.kind);
-  if (el.kind === 'stencil') return el.stencil ? { ok: true, xml: el.stencil } : { ok: false, reason: 'This custom shape has no stencil yet.' };
-  if (def.textPlacement === 'custom') return { ok: false, reason: `${def.label} draws its own text, which stencils can't express.` };
+  if (el.kind === 'stencil') return el.stencil ? { ok: true, xml: el.stencil } : { ok: false, reason: tr('stencils.convert.noStencil') };
+  if (def.textPlacement === 'custom') return { ok: false, reason: tr('stencils.convert.ownText', { shape: def.label }) };
   const w = Math.max(1, Math.round(el.w));
   const h = Math.max(1, Math.round(el.h));
   const ctx: Ctx = { style: el.style, dx: 0, dy: 0, out: [] };
   try {
     walk(def.render({ w, h, style: el.style, text: '', icon: el.icon, points: el.points, table: el.table, crop: el.crop, collapsed: el.collapsed }), ctx);
   } catch (e) {
-    const why = e instanceof Unsupported ? e.message : 'dynamic rendering';
-    return { ok: false, reason: `${def.label} is a built-in shape that uses features stencils can't express (${why}).` };
+    const why = e instanceof Unsupported ? e.message : tr('stencils.convert.dynamic');
+    return { ok: false, reason: tr('stencils.convert.unsupported', { shape: def.label, why }) };
   }
-  if (!ctx.out.length) return { ok: false, reason: `${def.label} has no outline to convert.` };
+  if (!ctx.out.length) return { ok: false, reason: tr('stencils.convert.noOutline', { shape: def.label }) };
   return { ok: true, xml: buildStencilXml(def.label, w, h, ctx.out) };
 }

@@ -185,7 +185,7 @@ function swotPage() {
   const b = new Builder();
   b.title('SWOT analysis', 0, 0, 900, 'Product: OpenDraw desktop — Q3 review');
   const cells: Array<[string, Tone, string, string]> = [
-    ['Strengths', TONES.green, 'S', '• Fast native performance\n• Works fully offline\n• Open file format & draw.io import\n• Free and open source'],
+    ['Strengths', TONES.green, 'S', '• Fast native performance\n• Works fully offline\n• Open file format, imports common formats\n• Free and open source'],
     ['Weaknesses', TONES.amber, 'W', '• Small template library\n• No real-time collaboration yet\n• Limited brand awareness'],
     ['Opportunities', TONES.blue, 'O', '• Teams leaving SaaS lock-in\n• AI-assisted diagramming\n• Education & universities\n• Plugin marketplace'],
     ['Threats', TONES.red, 'T', '• Established incumbents\n• Browser tools improving fast\n• Vendor icon licensing changes'],

@@ -21,16 +21,18 @@ import { Dialog, DialogHeader } from '@/ui/Dialog';
 import { Button } from '@/ui/Button';
 import { Select } from '@/ui/controls';
 import { PrefsAutomationSection } from '@/automation/autosave';
+import { formatDate, LOCALES, matchLocale, setLocalePreference, t, useI18n, useT, type LocalePreference } from '@/i18n';
 
-const ago = (t: number) => {
-  const s = Math.round((Date.now() - t) / 1000);
-  if (s < 60) return 'just now';
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return new Date(t).toLocaleDateString();
+const ago = (time: number) => {
+  const s = Math.round((Date.now() - time) / 1000);
+  if (s < 60) return t('collab.justNow');
+  const rtf = new Intl.RelativeTimeFormat(useI18n.getState().locale, { numeric: 'auto', style: 'narrow' });
+  if (s < 3600) return rtf.format(-Math.floor(s / 60), 'minute');
+  if (s < 86400) return rtf.format(-Math.floor(s / 3600), 'hour');
+  return formatDate(time, { dateStyle: 'medium' });
 };
 
-const label = (el: DiagramElement) => el.name || el.text.split('\n')[0] || (el.type === 'connector' ? 'Connector' : 'Shape');
+const label = (el: DiagramElement) => el.name || el.text.split('\n')[0] || (el.type === 'connector' ? t('collab.connector') : t('collab.shape'));
 
 // ---------------------------------------------------------------------------
 // Comments
@@ -55,6 +57,7 @@ function CommentsBody() {
   const selection = useEditor((s) => s.selection);
   const [showResolved, setShowResolved] = useState(false);
   const [draft, setDraft] = useState('');
+  const t = useT();
   const threads = useMemo(
     () =>
       doc.order
@@ -76,18 +79,18 @@ function CommentsBody() {
     <div className="animate-slide-up pointer-events-auto absolute bottom-2.5 right-2.5 top-2.5 z-20 flex w-[340px] flex-col overflow-hidden rounded-2xl bg-panel shadow-pop" onKeyDown={(e) => e.stopPropagation()}>
       <div className="flex items-center gap-2 px-4 pb-2 pt-3.5">
         <MessageSquare className="size-4 text-accent" />
-        <h2 className="flex-1 text-[14px] font-semibold text-fg">Comments</h2>
+        <h2 className="flex-1 text-[14px] font-semibold text-fg">{t('collab.comments')}</h2>
         <button onClick={() => setShowResolved(!showResolved)} className={cn('rounded-md px-2 py-0.5 text-[11.5px]', showResolved ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-hover')}>
-          Resolved
+          {t('collab.resolved')}
         </button>
-        <button onClick={() => useUi.getState().set({ commentsOpen: false })} className="rounded-md p-1 text-subtle hover:bg-hover hover:text-fg" aria-label="Close comments">
+        <button onClick={() => useUi.getState().set({ commentsOpen: false })} className="rounded-md p-1 text-subtle hover:bg-hover hover:text-fg" aria-label={t('collab.closeComments')}>
           <X className="size-4" />
         </button>
       </div>
       <div className="scroll-thin flex-1 space-y-2 overflow-y-auto px-3 pb-3">
         {!threads.length && (
           <div className="px-4 py-12 text-center text-[12.5px] leading-relaxed text-muted">
-            No comments yet. Select a shape and leave a note for your team — comments are saved in the file.
+            {t('collab.noComments')}
           </div>
         )}
         {threads.map(({ el, c }) => (
@@ -102,12 +105,12 @@ function CommentsBody() {
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) add();
           }}
           disabled={!target}
-          placeholder={target ? `Comment on “${label(target)}”…` : 'Select an element to comment on it'}
+          placeholder={target ? t('collab.commentOn', { name: label(target) }) : t('collab.selectToComment')}
           className="h-[68px] w-full resize-none rounded-xl bg-panel-2 p-2.5 text-[12.5px] text-fg outline-none ring-1 ring-transparent placeholder:text-subtle focus:ring-2 focus:ring-accent/40 disabled:opacity-60"
         />
         <div className="mt-2 flex justify-end">
           <Button size="sm" variant="primary" disabled={!target || !draft.trim()} onClick={add}>
-            Comment
+            {t('collab.comment')}
           </Button>
         </div>
       </div>
@@ -117,6 +120,7 @@ function CommentsBody() {
 
 function Thread({ el, c }: { el: DiagramElement; c: Comment }) {
   const [reply, setReply] = useState('');
+  const t = useT();
   return (
     <div className={cn('rounded-xl p-3 ring-1 ring-line transition-opacity', c.resolved && 'opacity-60')}>
       <button onClick={() => revealElement(el.id)} className="mb-1.5 max-w-full truncate rounded-md bg-panel-2 px-1.5 py-0.5 text-[11px] text-muted hover:text-fg">
@@ -139,17 +143,17 @@ function Thread({ el, c }: { el: DiagramElement; c: Comment }) {
               setReply('');
             }
           }}
-          placeholder="Reply…"
+          placeholder={t('collab.reply')}
           className="h-7 min-w-0 flex-1 rounded-lg bg-panel-2 px-2 text-[12px] text-fg outline-none placeholder:text-subtle focus:ring-2 focus:ring-accent/40"
         />
         <button
-          title={c.resolved ? 'Reopen' : 'Resolve'}
+          title={c.resolved ? t('collab.reopen') : t('collab.resolve')}
           onClick={() => updateComments(el.id, (cs) => cs.map((x) => (x.id === c.id ? { ...x, resolved: !x.resolved } : x)))}
           className={cn('rounded-md p-1', c.resolved ? 'bg-success/15 text-success' : 'text-subtle hover:bg-hover hover:text-success')}
         >
           <Check className="size-3.5" />
         </button>
-        <button title="Delete" onClick={() => updateComments(el.id, (cs) => cs.filter((x) => x.id !== c.id))} className="rounded-md p-1 text-subtle hover:bg-danger/10 hover:text-danger">
+        <button title={t('common.delete')} onClick={() => updateComments(el.id, (cs) => cs.filter((x) => x.id !== c.id))} className="rounded-md p-1 text-subtle hover:bg-danger/10 hover:text-danger">
           <Trash className="size-3.5" />
         </button>
       </div>
@@ -188,6 +192,7 @@ function RevisionsBody({ close }: { close: () => void }) {
   const [revs, setRevs] = useState<Revision[] | null>(null);
   const [active, setActive] = useState<Revision | null>(null);
   const fileName = useEditor((s) => s.file.name);
+  const t = useT();
   useEffect(() => {
     listRevisions().then((r) => {
       setRevs(r);
@@ -209,17 +214,17 @@ function RevisionsBody({ close }: { close: () => void }) {
     const pages = parsePages(active.data);
     const s = useEditor.getState();
     const f = s.file;
-    s.loadPages(pages, asCopy ? { path: null, name: `${f.name.replace(/\.opendraw$/i, '')} (restored)` } : { path: f.path, name: f.name });
+    s.loadPages(pages, asCopy ? { path: null, name: t('collab.restoredSuffix', { name: f.name.replace(/\.opendraw$/i, '') }) } : { path: f.path, name: f.name });
     markUnsaved();
     close();
   };
   return (
     <>
-      <DialogHeader title="Revision history" subtitle={`Local snapshots of “${fileName}” — taken on every save and while you work.`} onClose={close} />
+      <DialogHeader title={t('collab.revisions')} subtitle={t('collab.revisionsSubtitle', { name: fileName })} onClose={close} />
       <div className="grid grid-cols-[260px_1fr] gap-4 px-5 pb-5">
         <div className="scroll-thin max-h-[420px] space-y-0.5 overflow-y-auto">
-          {revs === null && <div className="py-8 text-center text-[12.5px] text-muted">Loading…</div>}
-          {revs?.length === 0 && <div className="py-8 text-center text-[12.5px] text-muted">No revisions yet. Save the diagram to create one.</div>}
+          {revs === null && <div className="py-8 text-center text-[12.5px] text-muted">{t('common.loading')}</div>}
+          {revs?.length === 0 && <div className="py-8 text-center text-[12.5px] text-muted">{t('collab.noRevisions')}</div>}
           {revs?.map((r) => (
             <div
               key={r.id}
@@ -228,9 +233,9 @@ function RevisionsBody({ close }: { close: () => void }) {
             >
               <History className={cn('size-4 shrink-0', r.kind === 'save' ? 'text-accent' : 'text-subtle')} />
               <div className="min-w-0 flex-1">
-                <div className="text-[12.5px] font-medium text-fg">{new Date(r.createdAt).toLocaleString()}</div>
+                <div className="text-[12.5px] font-medium text-fg">{formatDate(r.createdAt)}</div>
                 <div className="text-[11px] text-muted">
-                  {r.kind === 'save' ? 'Saved' : 'Autosnapshot'} · {r.elements} elements
+                  {r.kind === 'save' ? t('collab.revisionSaved') : t('collab.revisionAuto')} · {t('collab.revisionElements', { count: r.elements })}
                 </div>
               </div>
               <button
@@ -239,7 +244,7 @@ function RevisionsBody({ close }: { close: () => void }) {
                   void deleteRevision(r.id).then(() => setRevs((x) => x?.filter((y) => y.id !== r.id) ?? null));
                 }}
                 className="rounded p-1 text-subtle opacity-0 hover:text-danger group-hover:opacity-100"
-                aria-label="Delete revision"
+                aria-label={t('collab.deleteRevision')}
               >
                 <Trash className="size-3.5" />
               </button>
@@ -248,14 +253,14 @@ function RevisionsBody({ close }: { close: () => void }) {
         </div>
         <div className="flex flex-col">
           <div className="flex min-h-[340px] flex-1 items-center justify-center overflow-hidden rounded-xl bg-white ring-1 ring-line">
-            {preview ? <img src={preview} alt="Revision preview" className="max-h-[320px] max-w-[95%] object-contain" /> : <span className="text-[12.5px] text-muted">Select a revision</span>}
+            {preview ? <img src={preview} alt={t('collab.revisionPreview')} className="max-h-[320px] max-w-[95%] object-contain" /> : <span className="text-[12.5px] text-muted">{t('collab.selectRevision')}</span>}
           </div>
           <div className="mt-3 flex justify-end gap-2">
             <Button disabled={!active} onClick={() => void restore(true)}>
-              Open as copy
+              {t('collab.openAsCopy')}
             </Button>
             <Button variant="primary" disabled={!active} icon={<RotateCcw className="size-3.5" />} onClick={() => void restore(false)}>
-              Restore
+              {t('collab.restore')}
             </Button>
           </div>
         </div>
@@ -281,21 +286,23 @@ export function PreferencesDialog() {
 function PrefsBody({ close }: { close: () => void }) {
   const prefs = usePreferences();
   const [colors, setColors] = useState(prefs.customColors.join(', '));
+  const t = useT();
   const input = 'h-8 w-full rounded-lg bg-panel-2 px-2.5 text-[12.5px] text-fg outline-none focus:ring-2 focus:ring-accent/40';
   return (
     <div onKeyDown={(e) => e.stopPropagation()}>
-      <DialogHeader title="Preferences" onClose={close} />
+      <DialogHeader title={t('prefs.title')} onClose={close} />
       <div className="space-y-4 px-5 pb-5">
+        <LanguageField />
         <label className="block space-y-1.5">
-          <span className="text-[11.5px] font-medium text-muted">Your name (for comments)</span>
-          <input className={input} defaultValue={prefs.author} onBlur={(e) => prefs.update({ author: e.target.value.trim() })} placeholder="e.g. Ada Lovelace" />
+          <span className="text-[11.5px] font-medium text-muted">{t('prefs.author')}</span>
+          <input className={input} defaultValue={prefs.author} onBlur={(e) => prefs.update({ author: e.target.value.trim() })} placeholder={t('prefs.authorPlaceholder')} />
         </label>
         <label className="block space-y-1.5">
-          <span className="text-[11.5px] font-medium text-muted">Default font for new shapes</span>
-          <Select<FontKey> value={prefs.defaultFont} onChange={(defaultFont) => prefs.update({ defaultFont })} options={(Object.keys(FONT_LABELS) as FontKey[]).map((k) => ({ value: k, label: FONT_LABELS[k] }))} />
+          <span className="text-[11.5px] font-medium text-muted">{t('prefs.defaultFont')}</span>
+          <Select<FontKey> value={prefs.defaultFont} onChange={(defaultFont) => prefs.update({ defaultFont })} options={(Object.keys(FONT_LABELS) as FontKey[]).map((k) => ({ value: k, label: k === 'hand' ? t('prefs.fontHand') : FONT_LABELS[k] }))} />
         </label>
         <label className="block space-y-1.5">
-          <span className="text-[11.5px] font-medium text-muted">Custom palette (hex colors, comma separated)</span>
+          <span className="text-[11.5px] font-medium text-muted">{t('prefs.palette')}</span>
           <input
             className={input}
             value={colors}
@@ -314,10 +321,28 @@ function PrefsBody({ close }: { close: () => void }) {
         <PrefsAutomationSection />
         <div className="flex justify-end">
           <Button variant="primary" onClick={close}>
-            Done
+            {t('common.done')}
           </Button>
         </div>
       </div>
     </div>
+  );
+}
+
+/** Preferences → Language: Auto (system) or a fixed UI language, saved locally. */
+function LanguageField() {
+  const t = useT();
+  const preference = useI18n((s) => s.preference);
+  const system = LOCALES.find((l) => l.code === matchLocale(navigator.languages ?? [navigator.language]))!;
+  return (
+    <label className="block space-y-1.5">
+      <span className="text-[11.5px] font-medium text-muted">{t('prefs.language')}</span>
+      <Select<LocalePreference>
+        value={preference}
+        onChange={(v) => void setLocalePreference(v)}
+        options={[{ value: 'auto', label: t('prefs.languageAuto', { language: system.name }) }, ...LOCALES.map((l) => ({ value: l.code, label: l.name }))]}
+      />
+      <span className="block text-[11px] text-subtle">{t('prefs.languageHint')}</span>
+    </label>
   );
 }

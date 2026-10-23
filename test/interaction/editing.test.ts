@@ -85,7 +85,7 @@ describe('containers and behaviour', () => {
     expect(ed().doc.elements[b.id].behavior).toBeUndefined();
   });
 
-  it('round-trips behaviour flags, proportions and the container flag through draw.io', async () => {
+  it('round-trips behaviour flags, proportions and the container flag through mxGraph', async () => {
     const a = rect(0, 0, { behavior: { movable: false, deletable: false, selectable: false }, lockAspect: true, container: true });
     const b = rect(300, 0, { locked: true });
     const conn = createConnector({ elementId: a.id, x: 0, y: 0 }, { elementId: b.id, x: 0, y: 0 });

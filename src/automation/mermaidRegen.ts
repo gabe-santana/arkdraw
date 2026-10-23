@@ -7,6 +7,7 @@
 import type { DiagramElement, Doc } from '@/model/types';
 import { uid } from '@/lib/id';
 import { cloneElements, groupMembers, selectionBounds, useEditor } from '@/store/editor';
+import { t } from '@/i18n';
 
 export const MERMAID_KEY = '__mermaid';
 
@@ -42,10 +43,10 @@ export async function regenerateMermaid(anchorId: string, source: string): Promi
   const { importer } = await import('@/io/import/mermaid');
   const res = await importer.run(source);
   const page = res.pages[0];
-  if (!page?.doc.order.length) throw new Error('The Mermaid source produced no shapes.');
+  if (!page?.doc.order.length) throw new Error(t('automation.mermaid.noShapes'));
   const s = useEditor.getState();
   const group = mermaidGroupOf(s.doc, anchorId);
-  if (!group) throw new Error('This Mermaid diagram is no longer on the page.');
+  if (!group) throw new Error(t('automation.mermaid.gone'));
   const old = selectionBounds(s.doc, group.members);
   const fresh = page.doc.order.map((id) => page.doc.elements[id]);
   const b = selectionBounds(page.doc, page.doc.order);

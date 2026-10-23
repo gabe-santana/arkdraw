@@ -13,10 +13,10 @@ import { Line, TONE, Tint, f, ink, item, roundRectD, shape, solid } from './_kit
 /** Header band size of a pool / lane (without a `startSize` param). */
 export const bandSize = (len: number) => Math.min(32, len * 0.35);
 
-/** Header band size: the `startSize` param (draw.io swimlane) when present. */
+/** Header band size: the `startSize` param (mxGraph swimlane) when present. */
 const band = (len: number, p?: ParamValues) => (p && p.startSize !== undefined ? Math.max(0, Math.min(len, pn(p, 'startSize'))) : bandSize(len));
 
-/** Swimlane params: header size and header fill (draw.io startSize / swimlaneFillColor). */
+/** Swimlane params: header size and header fill (mxGraph startSize / swimlaneFillColor). */
 export const SWIM_PARAMS = (startSize = 30, kinds?: { horizontal: string; vertical: string }): ShapeParam[] => [
   param.px('startSize', 'Header', startSize, { drawioDefault: 23 }),
   param.color('swimlaneFillColor', 'Header fill'),

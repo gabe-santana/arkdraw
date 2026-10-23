@@ -3,7 +3,7 @@
  *
  *  - OpenDraw's HTML export: `<script type="application/vnd.opendraw+json"
  *    id="opendraw-diagram">` holding base64 `.opendraw` JSON (lossless).
- *  - draw.io's "Export as HTML" / embed snippets: `<div class="mxgraph"
+ *  - mxGraph's "Export as HTML" / embed snippets: `<div class="mxgraph"
  *    data-mxgraph="{…&quot;xml&quot;:&quot;&lt;mxfile…&quot;}">` — the JSON's
  *    `xml` field is the mxfile (possibly compressed).
  *  - Any HTML with a literal or escaped `<mxfile>` / `<mxGraphModel>` in it.
@@ -42,7 +42,7 @@ export function extractFromHtml(html: string): { kind: 'opendraw'; json: string 
 
 export async function importHtml(html: string): Promise<ImportResult> {
   const found = extractFromHtml(html);
-  if (!found) throw new Error('This HTML page has no embedded diagram. Export it from OpenDraw or draw.io as HTML to keep it editable.');
+  if (!found) throw new Error('This HTML page has no embedded diagram. Export it as HTML with the diagram embedded to keep it editable.');
   if (found.kind === 'opendraw') return { pages: parsePages(found.json).map((p) => ({ name: p.name, doc: p.doc })) };
   return { pages: await importDrawioPages(found.xml) };
 }
@@ -50,7 +50,7 @@ export async function importHtml(html: string): Promise<ImportResult> {
 export const importer: Importer = {
   id: 'html',
   label: 'Editable HTML…',
-  description: 'HTML exported from OpenDraw or draw.io (the embedded diagram is reopened).',
+  description: 'HTML exports with an embedded diagram (the diagram is reopened).',
   extensions: ['html', 'htm'],
   acceptsText: false,
   detect: (content) => {

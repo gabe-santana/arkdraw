@@ -1,7 +1,7 @@
 /**
  * Editable images: opens PNG / SVG / PDF files that carry a diagram.
  *
- * draw.io embeddings (delegated to `importDrawio`):
+ * mxGraph embeddings (delegated to `importDrawio`):
  *  - PNG: `tEXt` / `zTXt` / `iTXt` chunk with keyword `mxfile`; the text is the
  *    mxfile XML, usually URI-encoded.
  *  - SVG: `content` attribute on the root `<svg>` holding the mxfile XML (plain,
@@ -18,7 +18,7 @@
  *    placed right after `IHDR`.
  *  - SVG: attribute `data-opendraw` on the root `<svg>` element whose value is
  *    the base64 encoding of the UTF-8 JSON.
- *  If both an OpenDraw and a draw.io payload are present, OpenDraw wins.
+ *  If both an OpenDraw and a mxGraph payload are present, OpenDraw wins.
  */
 import { inflateSync, unzlibSync } from 'fflate';
 import { importDrawio } from '@/io/drawio';
@@ -32,7 +32,7 @@ type Payload = { kind: 'opendraw'; json: string } | { kind: 'drawio'; xml: strin
 
 const looksXml = (s: string) => /^\s*</.test(s);
 
-/** Decodes the many ways draw.io stores mxfile text. */
+/** Decodes the many ways mxGraph stores mxfile text. */
 function decodeMx(raw: string): string | null {
   let s = raw.trim();
   if (!s) return null;
@@ -159,7 +159,16 @@ async function drawioPages(xml: string): Promise<ImportedPage[]> {
 
 export async function importEmbedded(content: string | Uint8Array, fileName?: string): Promise<ImportResult> {
   const payload = extract(content, fileName);
-  if (!payload) throw new Error('This image does not contain an editable diagram (no draw.io or OpenDraw data found).');
+  // Plain SVG (no embedded diagram): open its vector content as editable shapes.
+  if (!payload && /\.svg$/i.test(fileName ?? '')) {
+    const { convertSvg } = await import('./svgShapes');
+    const r = convertSvg(typeof content === 'string' ? content : utf8Decode(toBytes(content)));
+    if (r.elements.length) {
+      const doc = { elements: Object.fromEntries(r.elements.map((e) => [e.id, e])), order: r.elements.map((e) => e.id) };
+      return { pages: [{ name: (fileName ?? 'SVG').replace(/^.*[\\/]/, '').replace(/\.svg$/i, ''), doc }], warnings: r.warnings };
+    }
+  }
+  if (!payload) throw new Error('This image does not contain an editable diagram (no diagram data found).');
   if (payload.kind === 'opendraw') {
     const name = (fileName ?? 'Diagram').replace(/^.*[\\/]/, '').replace(/(\.drawio)?\.(png|svg|pdf)$/i, '') || 'Diagram';
     return { pages: [{ name, doc: parseDoc(payload.json) }] };
@@ -170,7 +179,7 @@ export async function importEmbedded(content: string | Uint8Array, fileName?: st
 export const importer: Importer = {
   id: 'embedded',
   label: 'Editable image (PNG / SVG / PDF)…',
-  description: 'Opens PNG, SVG and PDF exports that carry an embedded draw.io or OpenDraw diagram.',
+  description: 'Opens PNG, SVG and PDF exports that carry an embedded diagram.',
   extensions: ['png', 'svg', 'pdf'],
   acceptsText: false,
   detect: (content, fileName) => {

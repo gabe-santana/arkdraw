@@ -105,7 +105,7 @@ describe('connect to edges', () => {
 });
 
 describe('arrowheads', () => {
-  it('covers every draw.io marker with a label and geometry', () => {
+  it('covers every mxGraph marker with a label and geometry', () => {
     expect(ARROW_ORDER.length).toBe(Object.keys(ARROW_LABELS).length);
     for (const k of ARROW_ORDER) {
       if (k === 'none') continue;
@@ -194,7 +194,7 @@ describe('round trips', () => {
     return { a, b, c, branch };
   };
 
-  it('survives draw.io export → import', async () => {
+  it('survives mxGraph export → import', async () => {
     const { a, b, c, branch } = build();
     a.connectionPoints = [{ x: 0.2, y: 0 }, { x: 1, y: 0.8 }];
     const xml = await exportDrawioPages([{ name: 'P', doc: docOf(a, b, c, branch) }]);

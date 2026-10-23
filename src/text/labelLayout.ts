@@ -1,6 +1,6 @@
 /**
  * Where a shape's label box sits: inside (honouring the shape's text box) or
- * outside on one of the 8 compass positions (draw.io labelPosition ×
+ * outside on one of the 8 compass positions (mxGraph labelPosition ×
  * verticalLabelPosition), padded by the global and per-side spacing.
  * Shared by the renderer (ElementBodies) and the in-place editor.
  */

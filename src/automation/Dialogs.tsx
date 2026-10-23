@@ -22,7 +22,8 @@ import { LAYOUT_JSON_EXAMPLE, parseLayoutJson, runLayoutSteps } from './layouts'
 import { commitDoc } from './editorBridge';
 import { iframeSnippet, imageSnippet, markdownImage, markdownLink, svgDataUri, viewerUrl } from './embedSnippets';
 import { mermaidGroupOf, regenerateMermaid } from './mermaidRegen';
-import { Field, inputCls, stopKeys, textareaCls } from './formUi';
+import { Field, inputCls, rich, segLabel, stopKeys, textareaCls } from './formUi';
+import { formatDate, t as tNow, useT } from '@/i18n';
 
 function Footer({ children }: { children: React.ReactNode }) {
   return <div className="flex items-center justify-end gap-2 border-t border-line px-5 py-3">{children}</div>;
@@ -48,7 +49,8 @@ export function ConfigurationBody({ close }: { close: () => void }) {
     const c = loadConfig();
     return JSON.stringify(Object.keys(c).length ? c : {}, null, 2);
   });
-  const { errors } = useMemo(() => parseConfig(text), [text]);
+  const t = useT();
+  const { errors } = useMemo(() => parseConfig(text), [text, t]);
   const [busy, setBusy] = useState(false);
 
   const apply = async () => {
@@ -58,24 +60,22 @@ export function ConfigurationBody({ close }: { close: () => void }) {
     saveConfig(config);
     const notes = await applyConfig(config);
     setBusy(false);
-    useUi.getState().toast('Configuration applied', 'success');
+    useUi.getState().toast(tNow('automation.config.applied'), 'success');
     notes.forEach((n) => useUi.getState().toast(n, 'info'));
     close();
   };
 
   return (
     <div onKeyDown={stopKeys}>
-      <DialogHeader title="Configuration" subtitle="App-wide settings as JSON: default styles and font, preset colours, shape libraries, grid and autosave." onClose={close} />
+      <DialogHeader title={t('automation.config.title')} subtitle={t('automation.config.subtitle')} onClose={close} />
       <div className="space-y-2 px-5 pb-4">
         <textarea className={cn(textareaCls, 'h-[300px]')} spellCheck={false} value={text} onChange={(e) => setText(e.target.value)} autoFocus />
         <ErrorList errors={errors} />
         <div className="flex items-center gap-3 text-[11.5px] text-subtle">
           <button className="text-accent hover:underline" onClick={() => setText(JSON.stringify(CONFIG_EXAMPLE, null, 2))}>
-            Insert example
+            {t('automation.config.insertExample')}
           </button>
-          <span>
-            Keys: defaultVertexStyle, defaultEdgeStyle, defaultFont, customPresetColors, defaultLibraries, libraries, gridSize, autosave.
-          </span>
+          <span>{t('automation.config.keys')}</span>
         </div>
       </div>
       <Footer>
@@ -85,11 +85,11 @@ export function ConfigurationBody({ close }: { close: () => void }) {
             setText('{}');
           }}
         >
-          Reset
+          {t('common.reset')}
         </Button>
-        <Button onClick={close}>Cancel</Button>
+        <Button onClick={close}>{t('common.cancel')}</Button>
         <Button variant="primary" disabled={!!errors.length || busy} onClick={() => void apply()}>
-          Apply
+          {t('common.apply')}
         </Button>
       </Footer>
     </div>
@@ -103,6 +103,7 @@ export function ConfigurationBody({ close }: { close: () => void }) {
 const LAYOUT_KEY = 'opendraw:layout-json';
 
 export function LayoutJsonBody({ close }: { close: () => void }) {
+  const t = useT();
   const [text, setText] = useState(() => localStorage.getItem(LAYOUT_KEY) ?? LAYOUT_JSON_EXAMPLE);
   const error = useMemo(() => {
     try {
@@ -122,7 +123,7 @@ export function LayoutJsonBody({ close }: { close: () => void }) {
     }
     const s = useEditor.getState();
     const { doc, changed } = runLayoutSteps(s.doc, s.selection, steps);
-    if (!changed.length) return useUi.getState().toast('Nothing to lay out');
+    if (!changed.length) return useUi.getState().toast(tNow('automation.layoutJson.nothing'));
     commitDoc(doc);
     close();
     requestAnimationFrame(() => useEditor.getState().zoomToFit(changed.length > 1 ? changed : undefined));
@@ -131,8 +132,8 @@ export function LayoutJsonBody({ close }: { close: () => void }) {
   return (
     <div onKeyDown={stopKeys}>
       <DialogHeader
-        title="Apply layout from JSON"
-        subtitle="draw.io layout JSON: mxHierarchicalLayout, mxCompactTreeLayout, mxRadialTreeLayout, mxFastOrganicLayout, mxCircleLayout, mxOrgChartLayout, mxParallelEdgeLayout. Applies to the selection, or the whole page."
+        title={t('automation.layoutJson.title')}
+        subtitle={t('automation.layoutJson.subtitle')}
         onClose={close}
       />
       <div className="space-y-2 px-5 pb-4">
@@ -140,10 +141,10 @@ export function LayoutJsonBody({ close }: { close: () => void }) {
         <ErrorList errors={error ? [error] : []} />
       </div>
       <Footer>
-        <Button onClick={() => setText(LAYOUT_JSON_EXAMPLE)}>Example</Button>
-        <Button onClick={close}>Cancel</Button>
+        <Button onClick={() => setText(LAYOUT_JSON_EXAMPLE)}>{t('automation.layoutJson.example')}</Button>
+        <Button onClick={close}>{t('common.cancel')}</Button>
         <Button variant="primary" disabled={!!error} onClick={apply}>
-          Apply layout
+          {t('automation.layoutJson.apply')}
         </Button>
       </Footer>
     </div>
@@ -159,6 +160,7 @@ type Scaling = PrintOptions['scaling']['mode'];
 const PAPERS = ['A3', 'A4', 'A5', 'Letter', 'Legal', 'Tabloid'] as const satisfies readonly Exclude<PaperSize, 'Custom'>[];
 
 export function PrintBody({ close }: { close: () => void }) {
+  const t = useT();
   const pageCount = useEditor((s) => s.pages.length);
   const firstPaper = useEditor((s) => s.pages[0]?.settings.paper);
   const saved = useMemo(() => {
@@ -206,57 +208,65 @@ export function PrintBody({ close }: { close: () => void }) {
 
   return (
     <div onKeyDown={stopKeys}>
-      <DialogHeader title="Print" subtitle="Opens the system print dialog with these settings." onClose={close} />
+      <DialogHeader title={t('automation.print.title')} subtitle={t('automation.print.subtitle')} onClose={close} />
       <div className="space-y-3.5 px-5 pb-4">
-        <Field label="Pages">
+        <Field label={t('common.pages')}>
           <Segmented<'all' | 'current' | 'range'>
             size="sm"
             value={which}
             onChange={setWhich}
             options={[
-              { value: 'all', label: `All (${pageCount})` },
-              { value: 'current', label: 'Current' },
-              { value: 'range', label: 'Range' },
+              { value: 'all', label: segLabel(t('automation.print.all', { count: pageCount })) },
+              { value: 'current', label: segLabel(t('automation.print.current')) },
+              { value: 'range', label: segLabel(t('automation.print.range')) },
             ]}
           />
         </Field>
         {which === 'range' && (
           <div className="flex items-center gap-2 text-[12px] text-muted">
-            From {num(from, setFrom, 1, pageCount)} to {num(to, setTo, 1, pageCount)}
+            {rich(t, 'automation.print.fromTo', { from: num(from, setFrom, 1, pageCount), to: num(to, setTo, 1, pageCount) })}
           </div>
         )}
-        <Field label="Scaling">
+        <Field label={t('automation.print.scaling')}>
           <Segmented<Scaling>
             size="sm"
             value={mode}
             onChange={setMode}
             options={[
-              { value: 'fit', label: 'Fit to 1 sheet' },
-              { value: 'sheets', label: 'Fit to sheets' },
-              { value: 'scale', label: 'Scale' },
+              { value: 'fit', label: segLabel(t('automation.print.fitOne')) },
+              { value: 'sheets', label: segLabel(t('automation.print.fitSheets')) },
+              { value: 'scale', label: segLabel(t('automation.print.scale')) },
             ]}
           />
         </Field>
         {mode === 'sheets' && (
           <div className="flex items-center gap-2 text-[12px] text-muted">
-            {num(cols, setCols, 1, 20)} wide × {num(rows, setRows, 1, 20)} tall
+            {rich(t, 'automation.print.sheets', { cols: num(cols, setCols, 1, 20), rows: num(rows, setRows, 1, 20) })}
           </div>
         )}
-        {mode === 'scale' && <div className="flex items-center gap-2 text-[12px] text-muted">Print at {num(percent, setPercent, 5, 1000, '%')} — larger pages are tiled across sheets.</div>}
+        {mode === 'scale' && <div className="flex items-center gap-2 text-[12px] text-muted">{rich(t, 'automation.print.scaleHint', { percent: num(percent, setPercent, 5, 1000, '%') })}</div>}
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Paper">
+          <Field label={t('automation.print.paper')}>
             <Select value={paper} onChange={setPaper} options={PAPERS.map((p) => ({ value: p, label: PAPER_SIZES[p].label }))} />
           </Field>
-          <Field label="Orientation">
-            <Segmented<'p' | 'l'> size="sm" value={landscape ? 'l' : 'p'} onChange={(v) => setLandscape(v === 'l')} options={[{ value: 'p', label: 'Portrait' }, { value: 'l', label: 'Landscape' }]} />
+          <Field label={t('automation.print.orientation')}>
+            <Segmented<'p' | 'l'>
+              size="sm"
+              value={landscape ? 'l' : 'p'}
+              onChange={(v) => setLandscape(v === 'l')}
+              options={[
+                { value: 'p', label: segLabel(t('automation.print.portrait')) },
+                { value: 'l', label: segLabel(t('automation.print.landscape')) },
+              ]}
+            />
           </Field>
         </div>
-        <Switch label="Include page background" checked={background} onChange={setBackground} />
+        <Switch label={t('automation.print.background')} checked={background} onChange={setBackground} />
       </div>
       <Footer>
-        <Button onClick={close}>Cancel</Button>
+        <Button onClick={close}>{t('common.cancel')}</Button>
         <Button variant="primary" onClick={print}>
-          Print…
+          {t('automation.print.print')}
         </Button>
       </Footer>
     </div>
@@ -268,6 +278,7 @@ export function PrintBody({ close }: { close: () => void }) {
 // ---------------------------------------------------------------------------
 
 function Snippet({ label, value, note }: { label: string; value: string; note?: string }) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   return (
     <Field label={label} hint={note}>
@@ -275,7 +286,7 @@ function Snippet({ label, value, note }: { label: string; value: string; note?: 
         <textarea readOnly className={cn(textareaCls, 'h-[64px] pr-10 text-[11px]')} value={value} onFocus={(e) => e.target.select()} />
         <button
           className="absolute right-1.5 top-1.5 rounded-md p-1.5 text-muted hover:bg-hover hover:text-fg"
-          aria-label={`Copy ${label}`}
+          aria-label={t('automation.embed.copy', { label })}
           onClick={() => {
             void navigator.clipboard?.writeText(value).then(() => {
               setCopied(true);
@@ -291,6 +302,7 @@ function Snippet({ label, value, note }: { label: string; value: string; note?: 
 }
 
 export function EmbedBody({ close }: { close: () => void }) {
+  const t = useT();
   const name = useEditor((s) => s.file.name.replace(/\.opendraw$/i, ''));
   const [scope, setScope] = useState<'all' | 'current'>('all');
   const [toolbar, setToolbar] = useState(true);
@@ -320,31 +332,44 @@ export function EmbedBody({ close }: { close: () => void }) {
 
   return (
     <div onKeyDown={stopKeys}>
-      <DialogHeader title="Embed" subtitle="Snippets for web pages, wikis and Markdown. The diagram travels inside the link — nothing is uploaded." onClose={close} />
+      <DialogHeader title={t('automation.embed.title')} subtitle={t('automation.embed.subtitle')} onClose={close} />
       <div className="scroll-thin max-h-[64vh] space-y-3 overflow-y-auto px-5 pb-4">
         <div className="flex flex-wrap items-center gap-3">
-          <Segmented<'all' | 'current'> className="w-[220px]" size="sm" value={scope} onChange={setScope} options={[{ value: 'all', label: 'All pages' }, { value: 'current', label: 'Current page' }]} />
+          <Segmented<'all' | 'current'>
+            className="w-[220px]"
+            size="sm"
+            value={scope}
+            onChange={setScope}
+            options={[
+              { value: 'all', label: segLabel(t('automation.embed.allPages')) },
+              { value: 'current', label: segLabel(t('automation.embed.currentPage')) },
+            ]}
+          />
           <div className="w-[150px]">
-            <Switch label="Toolbar" checked={toolbar} onChange={setToolbar} />
+            <Switch label={t('automation.embed.toolbar')} checked={toolbar} onChange={setToolbar} />
           </div>
           <span className="flex items-center gap-1 text-[12px] text-muted">
-            <input className={cn(inputCls, 'w-16')} value={width} onChange={(e) => setWidth(e.target.value)} aria-label="Width" /> ×
-            <input className={cn(inputCls, 'w-16')} value={height} onChange={(e) => setHeight(e.target.value)} aria-label="Height" />
+            <input className={cn(inputCls, 'w-16')} value={width} onChange={(e) => setWidth(e.target.value)} aria-label={t('common.width')} /> ×
+            <input className={cn(inputCls, 'w-16')} value={height} onChange={(e) => setHeight(e.target.value)} aria-label={t('common.height')} />
           </span>
         </div>
-        <Snippet label="Interactive (iframe)" value={iframeSnippet(url, { width, height, title: name })} note={url.length > SHARE_URL_WARN_LENGTH ? `Long link (${Math.round(url.length / 1000)}k chars)` : undefined} />
-        <Snippet label="Viewer link" value={url} />
-        <Snippet label="Markdown link" value={markdownLink(url, name)} />
+        <Snippet
+          label={t('automation.embed.iframe')}
+          value={iframeSnippet(url, { width, height, title: name })}
+          note={url.length > SHARE_URL_WARN_LENGTH ? t('automation.embed.longLink', { count: Math.round(url.length / 1000) }) : undefined}
+        />
+        <Snippet label={t('automation.embed.viewerLink')} value={url} />
+        <Snippet label={t('automation.embed.markdownLink')} value={markdownLink(url, name)} />
         {dataUri && (
           <>
-            <Snippet label="Image (HTML, current page)" value={imageSnippet(dataUri, { alt: name, link: url })} note={`${Math.round(dataUri.length / 1024)} KB data URI`} />
-            <Snippet label="Image (Markdown, current page)" value={markdownImage(dataUri, { alt: name, link: url })} />
+            <Snippet label={t('automation.embed.imageHtml')} value={imageSnippet(dataUri, { alt: name, link: url })} note={t('automation.embed.dataUriSize', { size: Math.round(dataUri.length / 1024) })} />
+            <Snippet label={t('automation.embed.imageMarkdown')} value={markdownImage(dataUri, { alt: name, link: url })} />
           </>
         )}
       </div>
       <Footer>
         <Button variant="primary" onClick={close}>
-          Done
+          {t('common.done')}
         </Button>
       </Footer>
     </div>
@@ -356,6 +381,7 @@ export function EmbedBody({ close }: { close: () => void }) {
 // ---------------------------------------------------------------------------
 
 export function MermaidBody({ groupId, close }: { groupId: string; close: () => void }) {
+  const t = useT();
   const initial = useMemo(() => mermaidGroupOf(useEditor.getState().doc, groupId)?.source ?? '', [groupId]);
   const [text, setText] = useState(initial);
   const [error, setError] = useState<string | null>(null);
@@ -373,7 +399,7 @@ export function MermaidBody({ groupId, close }: { groupId: string; close: () => 
   };
   return (
     <div onKeyDown={stopKeys}>
-      <DialogHeader title="Edit Mermaid" subtitle="Change the source and apply: the diagram is regenerated in place (one undo step)." onClose={close} />
+      <DialogHeader title={t('automation.mermaid.title')} subtitle={t('automation.mermaid.subtitle')} onClose={close} />
       <div className="space-y-2 px-5 pb-4">
         <textarea
           className={cn(textareaCls, 'h-[280px]')}
@@ -388,9 +414,9 @@ export function MermaidBody({ groupId, close }: { groupId: string; close: () => 
         <ErrorList errors={error ? [error] : []} />
       </div>
       <Footer>
-        <Button onClick={close}>Cancel</Button>
+        <Button onClick={close}>{t('common.cancel')}</Button>
         <Button variant="primary" disabled={busy || !text.trim()} onClick={() => void apply()}>
-          Apply
+          {t('common.apply')}
         </Button>
       </Footer>
     </div>
@@ -407,6 +433,7 @@ interface Frame {
 }
 
 export function ReplayBody({ close }: { close: () => void }) {
+  const t = useT();
   const [frames, setFrames] = useState<Frame[] | null>(null);
   const [i, setI] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -466,34 +493,34 @@ export function ReplayBody({ close }: { close: () => void }) {
   const f = frames?.[i];
   return (
     <div onKeyDown={stopKeys}>
-      <DialogHeader title="Replay" subtitle="Steps through this document’s revision history (current page), oldest first." onClose={close} />
+      <DialogHeader title={t('automation.replay.title')} subtitle={t('automation.replay.subtitle')} onClose={close} />
       <div className="px-5 pb-3">
         <div className="flex aspect-[16/10] items-center justify-center overflow-hidden rounded-xl bg-white ring-1 ring-line">
           {!frames ? (
-            <span className="text-[12px] text-subtle">Loading revisions…</span>
+            <span className="text-[12px] text-subtle">{t('automation.replay.loading')}</span>
           ) : f?.svg ? (
             <img key={f.rev.id} src={f.svg} alt="" className="animate-fade h-full w-full object-contain p-2" />
           ) : (
-            <span className="text-[12px] text-subtle">Empty page at this point</span>
+            <span className="text-[12px] text-subtle">{t('automation.replay.emptyPage')}</span>
           )}
         </div>
         {frames && (
           <div className="mt-3 flex items-center gap-2">
-            <Button size="sm" aria-label="First" onClick={() => setI(0)} icon={<SkipBack className="size-3.5" />} />
+            <Button size="sm" aria-label={t('automation.replay.first')} onClick={() => setI(0)} icon={<SkipBack className="size-3.5" />} />
             <Button size="sm" variant="primary" onClick={() => (i >= frames.length - 1 ? (setI(0), setPlaying(true)) : setPlaying(!playing))} icon={playing ? <Pause className="size-3.5" /> : <Play className="size-3.5" />}>
-              {playing ? 'Pause' : 'Play'}
+              {playing ? t('automation.replay.pause') : t('automation.replay.play')}
             </Button>
-            <Button size="sm" aria-label="Last" onClick={() => setI(frames.length - 1)} icon={<SkipForward className="size-3.5" />} />
-            <input type="range" min={0} max={Math.max(0, frames.length - 1)} value={i} onChange={(e) => (setPlaying(false), setI(Number(e.target.value)))} className="flex-1 accent-[var(--accent)]" aria-label="Revision" />
-            <span className="w-[150px] text-right text-[11.5px] tabular-nums text-muted">
-              {f?.rev.id === 'now' ? 'Now' : f ? new Date(f.rev.createdAt).toLocaleString() : ''} · {i + 1}/{frames.length}
+            <Button size="sm" aria-label={t('automation.replay.last')} onClick={() => setI(frames.length - 1)} icon={<SkipForward className="size-3.5" />} />
+            <input type="range" min={0} max={Math.max(0, frames.length - 1)} value={i} onChange={(e) => (setPlaying(false), setI(Number(e.target.value)))} className="flex-1 accent-[var(--accent)]" aria-label={t('automation.replay.revision')} />
+            <span className="w-[150px] truncate text-right text-[11.5px] tabular-nums text-muted">
+              {f?.rev.id === 'now' ? t('automation.replay.now') : f ? formatDate(f.rev.createdAt) : ''} · {i + 1}/{frames.length}
             </span>
           </div>
         )}
-        {frames && frames.length <= 1 && <p className="mt-2 text-[12px] text-subtle">No revisions yet: they are recorded on every save and every few minutes of unsaved work.</p>}
+        {frames && frames.length <= 1 && <p className="mt-2 text-[12px] text-subtle">{t('automation.replay.noRevisions')}</p>}
       </div>
       <Footer>
-        <Button onClick={close}>Close</Button>
+        <Button onClick={close}>{t('common.close')}</Button>
       </Footer>
     </div>
   );

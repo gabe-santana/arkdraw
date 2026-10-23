@@ -1,5 +1,5 @@
 /**
- * Floorplan library (draw.io "Floorplan" parity): walls, openings, and
+ * Floorplan library (mxGraph "Floorplan" parity): walls, openings, and
  * top-down furniture & fixtures in a clean architectural style.
  */
 import type { ReactNode } from 'react';

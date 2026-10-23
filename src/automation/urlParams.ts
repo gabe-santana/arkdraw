@@ -1,9 +1,10 @@
 /**
- * draw.io-style URL parameters for the web editor (parsed in src/web/launch.ts):
+ * URL parameters for the web editor (parsed in src/web/launch.ts):
  *
- *   ?lang=de        document language: <html lang>, spell checking and dictation (the UI stays English)
+ *   ?lang=de        UI language for the session (read by src/i18n at startup) and document language:
+ *                   <html lang>, spell checking and dictation
  *   ?libs=general;uml   shape libraries to show expanded in the Shapes panel
- *   ?clibs=Uhttps%3A%2F%2F…;…   custom library URLs (draw.io `.xml` / `.opendrawlib`) to load
+ *   ?clibs=Uhttps%3A%2F%2F…;…   custom library URLs (mxGraph `.xml` / `.opendrawlib`) to load
  *   ?grid=0|1       grid off / on for this session
  *   ?math=1         typeset labels that contain LaTeX ($$…$$, \(…\)) in every opened diagram
  *   ?ui=dark|light|atlas|kennedy|min|simple|sketch   theme, or a minimal layout (panels hidden)
@@ -14,6 +15,7 @@ import { useUi } from '@/store/ui';
 import type { LaunchParams } from '@/web/launch';
 import { withoutOriginTracking } from '@/storage/origin';
 import { loadLibraryUrls, resolveLibraryIds, showOnlyLibraries } from './configuration';
+import { t } from '@/i18n';
 
 const MATH_RE = /\$\$[\s\S]+?\$\$|\\\([\s\S]+?\\\)/;
 
@@ -60,13 +62,14 @@ function installMathOnLoad(): () => void {
 }
 
 export function applyLaunchOptions(launch: Pick<LaunchParams, 'lang' | 'libs' | 'clibs' | 'grid' | 'math' | 'ui'>) {
+  // The UI language itself was already applied by initI18n() (src/main.tsx).
   if (launch.lang) document.documentElement.lang = launch.lang;
   if (launch.libs) showOnlyLibraries(resolveLibraryIds(launch.libs));
   if (launch.clibs.length) {
     void loadLibraryUrls(launch.clibs).then(({ added, failed }) => {
       const ui = useUi.getState();
-      if (added) ui.toast(`Loaded ${added} custom librar${added === 1 ? 'y' : 'ies'}`, 'success');
-      if (failed.length) ui.toast(`Could not load ${failed.length} librar${failed.length === 1 ? 'y' : 'ies'} (network or CORS).`, 'error');
+      if (added) ui.toast(t('automation.urlParams.librariesLoaded', { count: added }), 'success');
+      if (failed.length) ui.toast(t('automation.librariesFailed', { count: failed.length }), 'error');
     });
   }
   if (launch.grid !== null) {

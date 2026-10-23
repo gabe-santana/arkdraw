@@ -7,6 +7,7 @@
  * text gets the color that reads on its background.
  */
 import type { DiagramElement, Doc, ElementStyle } from '@/model/types';
+import { tx } from '@/i18n';
 
 export interface DiagramTheme {
   id: string;
@@ -21,6 +22,9 @@ export interface DiagramTheme {
   /** Connectors and unfilled outlines. */
   line: string;
 }
+
+/** A theme's name in the UI language ('styling.theme.<id>'). */
+export const themeLabel = (theme: Pick<DiagramTheme, 'id' | 'label'>): string => tx(`styling.theme.${theme.id}`, theme.label);
 
 export const DIAGRAM_THEMES: DiagramTheme[] = [
   {

@@ -1,5 +1,5 @@
 /**
- * Swimlane pools that grow with their lanes (draw.io stackLayout on pools).
+ * Swimlane pools that grow with their lanes (mxGraph stackLayout on pools).
  *
  * Lanes inside a pool are stacked edge to edge below / beside the pool's
  * header band and stretched across its body; the pool's length is the sum of

@@ -1,5 +1,5 @@
 /**
- * Editor commands that combine store operations (draw.io parity features).
+ * Editor commands that combine store operations (features).
  * Kept separate from the store so the store stays a small, generic model API.
  */
 import type { ConnectorElement, DiagramElement, ElementStyle, ShapeElement, Vec } from '@/model/types';
@@ -20,6 +20,7 @@ import { svgToCanvas } from '@/io/export/raster';
 import { iconUrl } from '@/shapes/IconImage';
 import { fitImageSize, imageMimeFromUrl, normalizeImageUrl } from '@/lib/images';
 import { promptText } from '@/ui/PromptDialog';
+import { t } from '@/i18n';
 
 const ed = () => useEditor.getState();
 const ui = () => useUi.getState();
@@ -38,7 +39,7 @@ export function zoomToPercent(percent: number) {
 }
 
 /**
- * draw.io's page zooms. Pages tile from the origin at the paper size (see
+ * mxGraph's page zooms. Pages tile from the origin at the paper size (see
  * PageBackdrop); "the page" is the one holding the diagram's top-left.
  */
 export function zoomToPage(mode: 'onePage' | 'twoPages' | 'pageWidth', insets: { left: number; right: number; top: number; bottom: number }) {
@@ -108,7 +109,7 @@ export interface ShapeTemplate {
 }
 
 /**
- * Turns shapes into another kind (draw.io "Replace" / Shift-drop): geometry,
+ * Turns shapes into another kind (mxGraph "Replace" / Shift-drop): geometry,
  * text, connections, layer, groups and data are kept; the new kind's style
  * is layered over the old one.
  */
@@ -159,7 +160,7 @@ export function flipSelection(axis: 'h' | 'v') {
   ed().updateElements(Object.fromEntries(shapes.map((s) => [s.id, { [key]: !s[key] || undefined }])));
 }
 
-/** Resizes shapes to fit their label (draw.io Autosize). */
+/** Resizes shapes to fit their label (mxGraph Autosize). */
 export function autosizeSelection() {
   const patches: Record<string, Partial<ShapeElement>> = {};
   for (const s of selectedShapes()) {
@@ -238,11 +239,11 @@ export function copyStyle() {
   const el = s.doc.elements[s.selection[0]];
   if (!el) return;
   copiedStyle = { ...el.style };
-  ui().toast('Style copied');
+  ui().toast(t('app.style.copied'));
 }
 
 export function pasteStyle() {
-  if (!copiedStyle) return ui().toast('Copy a style first');
+  if (!copiedStyle) return ui().toast(t('app.style.copyFirst'));
   const s = ed();
   s.updateStyle(s.selection, copiedStyle);
 }
@@ -253,12 +254,12 @@ export function setDefaultStyleFromSelection() {
   if (!isShape(el)) return;
   const { fill, stroke, strokeWidth, strokeStyle, fontFamily, fontSize, textColor, shadow, sketch, radius } = el.style;
   setUserDefaultStyle({ fill, stroke, strokeWidth, strokeStyle, fontFamily, fontSize, textColor, shadow, sketch, radius });
-  ui().toast('New shapes will use this style');
+  ui().toast(t('app.style.defaultSet'));
 }
 
 export function clearDefaultStyle() {
   setUserDefaultStyle(null);
-  ui().toast('Default style reset');
+  ui().toast(t('app.style.defaultReset'));
 }
 
 // --- Connectors --------------------------------------------------------------------
@@ -277,7 +278,7 @@ export function reverseConnectors() {
   );
 }
 
-/** Connects two selected shapes (draw.io: select two shapes, then connect). */
+/** Connects two selected shapes (mxGraph: select two shapes, then connect). */
 export function connectSelection() {
   const shapes = selectedShapes();
   if (shapes.length !== 2) return;
@@ -299,7 +300,7 @@ export function applyLayout(id: string) {
   if (!layout) return;
   const s = ed();
   const patches = layout.run(s.doc, s.selection.filter((sid) => isShape(s.doc.elements[sid])), { nodeSpacing: 40, levelSpacing: 70 });
-  if (!Object.keys(patches).length) return ui().toast('Nothing to lay out');
+  if (!Object.keys(patches).length) return ui().toast(t('app.layout.nothing'));
   s.updateElements(patches);
   requestAnimationFrame(() => {
     const ids = Object.keys(patches);
@@ -345,9 +346,9 @@ export async function copyAsImage(format: 'png' | 'svg') {
       const blob = await new Promise<Blob>((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error('encode failed'))), 'image/png'));
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
     }
-    ui().toast(`Copied as ${format.toUpperCase()}`, 'success');
+    ui().toast(t('app.copyAs.done', { format: format.toUpperCase() }), 'success');
   } catch (e) {
-    ui().toast(`Copy failed: ${String((e as Error).message ?? e)}`, 'error');
+    ui().toast(t('app.copyAs.failed', { error: String((e as Error).message ?? e) }), 'error');
   }
 }
 
@@ -415,7 +416,9 @@ async function addImageShape(src: string, natural: { w: number; h: number } | nu
 }
 
 /** Insert an image from a file picker / dropped / pasted file at a world point. */
-export async function insertImageFile(file: File | Blob, at?: Vec) {
+export async function insertImageFile(file: File | Blob, at?: Vec, asImage = false) {
+  // SVGs: offer "Convert to shapes" first (src/app/svgImport.tsx).
+  if (!asImage && (await (await import('./svgImport')).offerSvgConvert(file, at))) return;
   const url = await blobToDataUrl(file);
   await addImageShape(url, await measureImage(url), at);
 }
@@ -452,11 +455,11 @@ export async function insertImageUrl(url: string, at?: Vec, { quiet = false } = 
   }
   const natural = await measureImage(src);
   if (!natural) {
-    if (!quiet) ui().toast("Couldn't load an image from that URL.", 'error');
+    if (!quiet) ui().toast(t('app.image.loadFailed'), 'error');
     return false;
   }
   await addImageShape(src, natural, at);
-  if (linked) ui().toast('Image linked, not embedded: the server blocks downloads, so it needs a connection to display.', 'info');
+  if (linked) ui().toast(t('app.image.linked'), 'info');
   return true;
 }
 
@@ -465,11 +468,11 @@ export async function insertImageFromUrl() {
   const at = viewportCenter();
   const base = typeof location !== 'undefined' ? location.href : undefined;
   const value = await promptText({
-    title: 'Insert image from URL',
-    message: 'Paste a link to a PNG, JPEG, GIF, WebP or SVG image, or a data: URI.',
+    title: t('app.image.urlTitle'),
+    message: t('app.image.urlMessage'),
     placeholder: 'https://example.com/picture.png',
-    confirmLabel: 'Insert',
-    validate: (v) => (normalizeImageUrl(v, base) ? null : 'Enter an http(s) or data:image URL.'),
+    confirmLabel: t('common.insert'),
+    validate: (v) => (normalizeImageUrl(v, base) ? null : t('app.image.urlInvalid')),
   });
   const url = value && normalizeImageUrl(value, base);
   if (url) await insertImageUrl(url, at);

@@ -92,7 +92,7 @@ export function snapRect(r: Rect, targets: SnapTargets, o: SnapOptions): { dx: n
 }
 
 /**
- * Equal-spacing snap (like Figma / draw.io): centers the moving box between
+ * Equal-spacing snap (like Figma / mxGraph): centers the moving box between
  * its nearest neighbours on an axis, or repeats an existing gap next to it.
  * Returns gap guides to draw as distance markers.
  */

@@ -1,5 +1,5 @@
 /**
- * Process engineering / P&ID symbols (draw.io "Proc. Eng." parity).
+ * Process engineering / P&ID symbols (mxGraph "Proc. Eng." parity).
  *
  * In-line equipment (valves, pumps) keeps its pipe connections on the left and
  * right edges at mid-height so connectors attach where the pipe enters.

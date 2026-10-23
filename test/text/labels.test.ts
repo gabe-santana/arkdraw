@@ -84,7 +84,7 @@ describe('fonts', () => {
     expect(used.get('Roboto')).toBe('Hi');
   });
 
-  it('reads draw.io font names', () => {
+  it('reads mxGraph font names', () => {
     expect(fontFromDrawio('Helvetica')).toBe('sans');
     expect(fontFromDrawio('Courier New')).toBe('mono');
     expect(fontFromDrawio('Architects Daughter')).toBe('hand');
@@ -126,7 +126,7 @@ describe('clear formatting', () => {
   });
 });
 
-describe('draw.io round-trip of text styles', () => {
+describe('mxGraph round-trip of text styles', () => {
   it('exports and re-imports formatted labels, positions, spacing, direction, fonts and translations', async () => {
     const a = createShape('rectangle', { x: 0, y: 0, w: 120, h: 60 }, {
       richText: true, labelPosition: 'top-left', spacing: 3, spacingTop: 4, spacingLeft: 7, textDirection: 'rtl', labelBorderColor: '#dc2626',

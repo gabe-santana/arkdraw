@@ -1,5 +1,5 @@
 /**
- * draw.io-style yellow diamond handles for parametric shapes (corner size,
+ * yellow diamond handles for parametric shapes (corner size,
  * arrow width, header size…). Shown on a single selected shape whose kind
  * declares `handles`; dragging one edits `el.params` (or the corner radius)
  * as a single undo step, with a small value tooltip.
@@ -16,6 +16,7 @@ import type { ParamPatch, ShapeDef } from '@/shapes/types';
 import { isLocked, useEditor } from '@/store/editor';
 import { installLaneLayout } from '@/store/laneLayout';
 import { clientToWorld } from './viewport';
+import { t } from '@/i18n';
 
 // Pools grow / restack when lanes are added or resized (one-time store hook).
 installLaneLayout();
@@ -25,7 +26,7 @@ const EDGE = '#a16207';
 
 /** Tooltip text for a patch: the shown param's formatted value, or the corner radius. */
 function describe(def: ShapeDef, el: ShapeElement, patch: ParamPatch, show?: string): string {
-  if (patch.style?.radius !== undefined) return `Corner ${patch.style.radius}`;
+  if (patch.style?.radius !== undefined) return t('canvas.param.corner', { value: patch.style.radius });
   const key = show && patch.params && show in patch.params ? show : Object.keys(patch.params ?? {})[0];
   const param = def.params?.find((p) => p.key === key);
   if (!param) return '';

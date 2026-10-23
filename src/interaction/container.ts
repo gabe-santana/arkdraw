@@ -1,5 +1,5 @@
 /**
- * Containers: any shape can carry children (draw.io's "Container" checkbox).
+ * Containers: any shape can carry children (mxGraph's "Container" checkbox).
  * A shape is a container when its kind says so (`ShapeDef.container`) unless
  * the element overrides it with `container: true | false`.
  */

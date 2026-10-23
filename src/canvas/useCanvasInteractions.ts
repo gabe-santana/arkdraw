@@ -1,7 +1,7 @@
 /**
  * Pointer & wheel interaction state machine for the canvas.
  *
- * Gestures (draw.io parity):
+ * Gestures ():
  * - pan: Space-drag, middle/right-drag, hand tool, wheel; Ctrl/⌘+wheel or pinch zooms
  * - select: click, Shift-click, marquee (Alt+drag starts a marquee even on a shape)
  * - move: smart guides + grid snap (Alt disables snapping), Ctrl/⌘-drag clones,
@@ -105,7 +105,7 @@ function elementIdAt(x: number, y: number): string | null {
 
 const attr = (target: Element, name: string) => target.closest(`[${name}]`)?.getAttribute(name) ?? null;
 
-/** Clones `shape` one step away in `side` and connects the two (draw.io blue arrows). */
+/** Clones `shape` one step away in `side` and connects the two (mxGraph blue arrows). */
 export function cloneAndConnect(shapeId: string, side: AnchorSide) {
   const s = useEditor.getState();
   const src = s.doc.elements[shapeId];
@@ -337,7 +337,7 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
         return;
       }
 
-      // Alt+drag always starts a marquee (draw.io), even on top of a shape.
+      // Alt+drag always starts a marquee, even on top of a shape.
       if (el && !isLocked(s.doc, el) && !e.altKey) {
         const ids = e.ctrlKey || e.metaKey ? [el.id] : pickMembers(s.doc, el.id);
         const wasSelected = ids.every((id) => s.selection.includes(id));
@@ -653,7 +653,7 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
           s.addElements([conn]);
           s.endInteraction();
           if (s.tool === 'connector') s.setTool('select');
-          // Dropped on blank canvas: offer the shape picker to complete the connection (draw.io).
+          // Dropped on blank canvas: offer the shape picker to complete the connection.
           if (!target) {
             useUi.getState().set({ shapePicker: { clientX: e.clientX, clientY: e.clientY, worldX: p.x, worldY: p.y, connectFrom: conn.id } });
           }

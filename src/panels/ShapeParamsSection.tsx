@@ -12,6 +12,7 @@ import type { ShapeDef, ShapeParam } from '@/shapes/types';
 import { useEditor } from '@/store/editor';
 import { ColorField, NumberField, Segmented, Select, Switch } from '@/ui/controls';
 import { Row, Section, begin, common, end } from './sections';
+import { useT } from '@/i18n';
 
 /** Writes one param on every shape (one undo step unless inside a scrub). */
 function setParam(def: ShapeDef, els: ShapeElement[], key: string, value: number | string) {
@@ -41,6 +42,7 @@ function setKind(els: ShapeElement[], param: ShapeParam, value: string) {
 }
 
 export function ShapeParamsSection({ els }: { els: ShapeElement[] }) {
+  const t = useT();
   const kind = common(els.map((e) => e.kind));
   if (!kind) return null;
   const def = getShapeDef(kind);
@@ -50,12 +52,12 @@ export function ShapeParamsSection({ els }: { els: ShapeElement[] }) {
 
   return (
     <Section
-      title="Shape"
+      title={t('common.shape')}
       action={
         anyCustom ? (
           <button
-            title="Reset shape parameters"
-            aria-label="Reset shape parameters"
+            title={t('panels.params.reset')}
+            aria-label={t('panels.params.reset')}
             onClick={() => useEditor.getState().updateElements(Object.fromEntries(els.map((el) => [el.id, { params: undefined }])))}
             className="flex size-6 items-center justify-center rounded-md text-subtle hover:bg-hover hover:text-fg [&_svg]:size-3.5"
           >
@@ -91,7 +93,7 @@ export function ShapeParamsSection({ els }: { els: ShapeElement[] }) {
               <div className="flex items-center gap-1">
                 <ColorField label={p.label} value={v === null ? null : set ? String(v) : 'auto'} onChange={(c) => setParam(def, els, p.key, c)} swatches={PALETTE.fills} allowNone />
                 {set && (
-                  <button title="Automatic" aria-label="Automatic" onClick={() => setParam(def, els, p.key, '')} className="flex size-7 shrink-0 items-center justify-center rounded-md text-subtle hover:bg-hover hover:text-fg [&_svg]:size-3.5">
+                  <button title={t('panels.params.automatic')} aria-label={t('panels.params.automatic')} onClick={() => setParam(def, els, p.key, '')} className="flex size-7 shrink-0 items-center justify-center rounded-md text-subtle hover:bg-hover hover:text-fg [&_svg]:size-3.5">
                     <RotateCcw />
                   </button>
                 )}

@@ -1,5 +1,5 @@
 /**
- * Layers (draw.io Ctrl+Shift+L): add, rename, show/hide, lock, reorder,
+ * Layers (mxGraph Ctrl+Shift+L): add, rename, show/hide, lock, reorder,
  * choose the active layer, move the selection — plus the tag filter.
  */
 import { useMemo, useState } from 'react';
@@ -11,6 +11,7 @@ import { openAutomationDialog } from '@/automation/ui';
 import { layersOf, useEditor } from '@/store/editor';
 import { cn } from '@/lib/cn';
 import { Tooltip } from '@/ui/Tooltip';
+import { useT } from '@/i18n';
 
 export function LayersManager() {
   const doc = useEditor((s) => s.doc);
@@ -22,19 +23,20 @@ export function LayersManager() {
   const [renaming, setRenaming] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ layer: Layer; x: number; y: number } | null>(null);
+  const t = useT();
   const s = useEditor.getState;
 
   const menuItems = (l: Layer): MenuEntry[] => [
-    { label: 'Rename', icon: <Pencil />, onSelect: () => setRenaming(l.id) },
-    { label: 'Edit data…', icon: <Database />, onSelect: () => openAutomationDialog({ kind: 'data', target: { type: 'layer', id: l.id } }) },
-    { label: 'Duplicate', icon: <Copy />, onSelect: () => s().duplicateLayer(l.id) },
-    { label: 'Select all in layer', icon: <MousePointer2 />, onSelect: () => s().selectLayer(l.id), disabled: !counts.get(l.id) },
-    { label: 'Move selection here', icon: <ArrowDownToLine />, onSelect: () => s().moveSelectionToLayer(l.id), disabled: !selection.length },
+    { label: t('common.rename'), icon: <Pencil />, onSelect: () => setRenaming(l.id) },
+    { label: t('panels.layers.editData'), icon: <Database />, onSelect: () => openAutomationDialog({ kind: 'data', target: { type: 'layer', id: l.id } }) },
+    { label: t('common.duplicate'), icon: <Copy />, onSelect: () => s().duplicateLayer(l.id) },
+    { label: t('panels.layers.selectAll'), icon: <MousePointer2 />, onSelect: () => s().selectLayer(l.id), disabled: !counts.get(l.id) },
+    { label: t('panels.layers.moveHere'), icon: <ArrowDownToLine />, onSelect: () => s().moveSelectionToLayer(l.id), disabled: !selection.length },
     { type: 'separator' },
-    { label: l.visible ? 'Hide' : 'Show', icon: l.visible ? <EyeOff /> : <Eye />, onSelect: () => s().setLayerVisible(l.id, !l.visible) },
-    { label: l.locked ? 'Unlock' : 'Lock', icon: l.locked ? <LockOpen /> : <Lock />, onSelect: () => s().setLayerLocked(l.id, !l.locked) },
+    { label: l.visible ? t('common.hide') : t('common.show'), icon: l.visible ? <EyeOff /> : <Eye />, onSelect: () => s().setLayerVisible(l.id, !l.visible) },
+    { label: l.locked ? t('panels.unlock') : t('panels.lock'), icon: l.locked ? <LockOpen /> : <Lock />, onSelect: () => s().setLayerLocked(l.id, !l.locked) },
     { type: 'separator' },
-    { label: 'Delete layer', icon: <Trash />, danger: true, disabled: layers.length <= 1, onSelect: () => s().deleteLayer(l.id) },
+    { label: t('panels.layers.delete'), icon: <Trash />, danger: true, disabled: layers.length <= 1, onSelect: () => s().deleteLayer(l.id) },
   ];
 
   const counts = useMemo(() => {
@@ -48,30 +50,30 @@ export function LayersManager() {
 
   const tags = useMemo(() => {
     const set = new Set<string>();
-    for (const id of doc.order) for (const t of doc.elements[id].tags ?? []) set.add(t);
+    for (const id of doc.order) for (const tag of doc.elements[id].tags ?? []) set.add(tag);
     return [...set].sort();
   }, [doc]);
 
   return (
     <div className="border-b border-line px-2 pb-2">
       <div className="flex h-8 items-center justify-between px-1.5">
-        <span className="text-[11px] font-medium text-subtle">Document layers</span>
+        <span className="min-w-0 truncate text-[11px] font-medium text-subtle">{t('panels.layers.documentLayers')}</span>
         <div className="flex items-center">
           {selection.length > 0 && layers.length > 1 && (
-            <Tooltip label="Move selection to active layer" side="bottom">
-              <button onClick={() => s().moveSelectionToLayer(activeId)} className="rounded-md p-1 text-muted hover:bg-hover hover:text-fg" aria-label="Move selection to layer">
+            <Tooltip label={t('panels.layers.moveToActive')} side="bottom">
+              <button onClick={() => s().moveSelectionToLayer(activeId)} className="rounded-md p-1 text-muted hover:bg-hover hover:text-fg" aria-label={t('panels.layers.moveToLayer')}>
                 <ArrowDownToLine className="size-3.5" />
               </button>
             </Tooltip>
           )}
-          <Tooltip label="Add layer" side="bottom">
-            <button onClick={() => s().addLayer()} className="rounded-md p-1 text-muted hover:bg-hover hover:text-fg" aria-label="Add layer">
+          <Tooltip label={t('panels.layers.add')} side="bottom">
+            <button onClick={() => s().addLayer()} className="rounded-md p-1 text-muted hover:bg-hover hover:text-fg" aria-label={t('panels.layers.add')}>
               <Plus className="size-3.5" />
             </button>
           </Tooltip>
         </div>
       </div>
-      {/* Top layer first, like draw.io. */}
+      {/* Top layer first. */}
       {[...layers].reverse().map((l) => {
         const index = layers.indexOf(l);
         return (
@@ -95,8 +97,8 @@ export function LayersManager() {
               setMenu({ layer: l, x: e.clientX, y: e.clientY });
             }}
             className={cn(
-              'group flex h-8 items-center gap-1.5 rounded-lg pl-2 pr-1 text-[12.5px] transition-colors',
-              l.id === activeId ? 'bg-accent-soft text-fg' : 'text-muted hover:bg-hover hover:text-fg',
+              'group flex h-7 items-center gap-1.5 rounded-md pl-2 pr-1 text-[12.5px] transition-colors hover:bg-hover',
+              l.id === activeId ? 'font-medium text-fg' : 'text-fg/70 hover:text-fg',
               dragId === l.id && 'opacity-40',
             )}
           >
@@ -126,7 +128,7 @@ export function LayersManager() {
                 s().setLayerVisible(l.id, !l.visible);
               }}
               className={cn('rounded p-1 hover:bg-hover hover:text-fg', l.visible ? 'text-subtle opacity-0 group-hover:opacity-100' : 'text-fg')}
-              aria-label={l.visible ? 'Hide layer' : 'Show layer'}
+              aria-label={l.visible ? t('panels.layers.hide') : t('panels.layers.show')}
             >
               {l.visible ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
             </button>
@@ -136,7 +138,7 @@ export function LayersManager() {
                 s().setLayerLocked(l.id, !l.locked);
               }}
               className={cn('rounded p-1 hover:bg-hover hover:text-fg', l.locked ? 'text-fg' : 'text-subtle opacity-0 group-hover:opacity-100')}
-              aria-label={l.locked ? 'Unlock layer' : 'Lock layer'}
+              aria-label={l.locked ? t('panels.layers.unlock') : t('panels.layers.lock')}
             >
               {l.locked ? <Lock className="size-3.5" /> : <LockOpen className="size-3.5" />}
             </button>
@@ -147,7 +149,7 @@ export function LayersManager() {
                 setMenu({ layer: l, x: r.left, y: r.bottom + 4 });
               }}
               className="rounded p-1 text-subtle opacity-0 hover:bg-hover hover:text-fg group-hover:opacity-100"
-              aria-label="Layer actions"
+              aria-label={t('panels.layers.actions')}
             >
               <MoreHorizontal className="size-3.5" />
             </button>
@@ -157,23 +159,23 @@ export function LayersManager() {
       {tags.length > 0 && (
         <div className="mt-2 px-1.5">
           <div className="mb-1 flex items-center gap-1 text-[11px] font-medium text-subtle">
-            <Tag className="size-3" /> Tags
+            <Tag className="size-3" /> {t('panels.layers.tags')}
             {tagFilter.length > 0 && (
               <button onClick={() => useEditor.setState({ tagFilter: [] })} className="ml-auto text-[11px] text-accent hover:underline">
-                Show all
+                {t('panels.layers.showAll')}
               </button>
             )}
           </div>
           <div className="flex flex-wrap gap-1">
-            {tags.map((t) => {
-              const on = tagFilter.includes(t);
+            {tags.map((tag) => {
+              const on = tagFilter.includes(tag);
               return (
                 <button
-                  key={t}
-                  onClick={() => useEditor.setState({ tagFilter: on ? tagFilter.filter((x) => x !== t) : [...tagFilter, t] })}
+                  key={tag}
+                  onClick={() => useEditor.setState({ tagFilter: on ? tagFilter.filter((x) => x !== tag) : [...tagFilter, tag] })}
                   className={cn('h-6 rounded-full px-2 text-[11px] font-medium transition-colors', on ? 'bg-accent text-accent-fg' : 'bg-panel-2 text-muted hover:text-fg')}
                 >
-                  #{t}
+                  #{tag}
                 </button>
               );
             })}

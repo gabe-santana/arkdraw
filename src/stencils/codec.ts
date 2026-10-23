@@ -1,5 +1,5 @@
 /**
- * draw.io's `shape=stencil(…)` payload: base64( deflateRaw( encodeURIComponent(xml) ) ),
+ * mxGraph's `shape=stencil(…)` payload: base64( deflateRaw( encodeURIComponent(xml) ) ),
  * the same encoding as `Graph.compress` / `Graph.decompress`.
  */
 import { deflateSync, inflateSync, strFromU8, strToU8 } from 'fflate';
@@ -17,7 +17,7 @@ function fromBase64(b64: string): Uint8Array {
   return out;
 }
 
-/** Compresses stencil XML the way draw.io stores it in styles. */
+/** Compresses stencil XML stores it in styles. */
 export function compressStencil(xml: string): string {
   return toBase64(deflateSync(strToU8(encodeURIComponent(xml))));
 }
@@ -34,10 +34,10 @@ export function decompressStencil(data: string): string {
   }
 }
 
-/** `stencil(…)` style value for a draw.io `shape=` key. */
+/** `stencil(…)` style value for a mxGraph `shape=` key. */
 export const stencilStyleValue = (xml: string) => `stencil(${compressStencil(xml)})`;
 
-/** Extracts the XML from a draw.io `shape` value such as `stencil(…)`; null for other shapes. */
+/** Extracts the XML from a mxGraph `shape` value such as `stencil(…)`; null for other shapes. */
 export function stencilFromStyleValue(shape: string | undefined): string | null {
   if (!shape || !shape.startsWith('stencil(') || !shape.endsWith(')')) return null;
   try {

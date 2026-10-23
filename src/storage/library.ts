@@ -13,6 +13,7 @@ import { renderSvg } from '@/io/export/svg';
 import { commitSavedMeta, metaForSave } from '@/automation/fileProperties';
 import { idbAll, idbDelete, idbGet, idbPut } from './idb';
 import { docOrigin, offerOrigin, setOrigin } from './origin';
+import { t } from '@/i18n';
 
 export interface LibraryDoc {
   id: string;
@@ -99,7 +100,7 @@ export async function saveCurrentToLibrary(opts: { name?: string; asNew?: boolea
   try {
     await idbPut('documents', entry);
   } catch (e) {
-    useUi.getState().toast(`Could not save to the browser: ${(e as Error)?.message ?? e}`, 'error');
+    useUi.getState().toast(t('storage.saveFailed', { error: (e as Error)?.message ?? String(e) }), 'error');
     return null;
   }
   commitSavedMeta(meta);
@@ -114,7 +115,7 @@ export async function saveCurrentToLibrary(opts: { name?: string; asNew?: boolea
 export async function openLibraryDoc(id: string): Promise<boolean> {
   const entry = await idbGet<LibraryDoc>('documents', id).catch(() => undefined);
   if (!entry) {
-    useUi.getState().toast('That document is no longer in the browser library.', 'error');
+    useUi.getState().toast(t('storage.docGone'), 'error');
     return false;
   }
   offerOrigin({ kind: 'library', id });

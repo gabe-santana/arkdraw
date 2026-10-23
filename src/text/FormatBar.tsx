@@ -12,6 +12,7 @@ import { PALETTE } from '@/model/defaults';
 import { nextFontSize } from '@/app/commands';
 import { cn } from '@/lib/cn';
 import { safeHref } from './richFormat';
+import { useT } from '@/i18n';
 
 type Cmd = 'bold' | 'italic' | 'underline' | 'strikeThrough' | 'subscript' | 'superscript';
 
@@ -125,10 +126,11 @@ function Btn({ label, active, onClick, children }: { label: string; active?: boo
 }
 
 function Swatches({ colors, onPick, none }: { colors: string[]; onPick: (c: string | null) => void; none?: boolean }) {
+  const t = useT();
   return (
     <div className="absolute left-0 top-full z-10 mt-1 grid w-[156px] grid-cols-6 gap-1 rounded-lg bg-panel p-2 shadow-pop">
       {none && (
-        <button type="button" tabIndex={-1} title="None" onMouseDown={(e) => (e.preventDefault(), onPick(null))} className="relative size-5 rounded-md bg-panel-2 ring-1 ring-line">
+        <button type="button" tabIndex={-1} title={t('common.none')} onMouseDown={(e) => (e.preventDefault(), onPick(null))} className="relative size-5 rounded-md bg-panel-2 ring-1 ring-line">
           <span className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 rotate-45 bg-danger" />
         </button>
       )}
@@ -142,6 +144,7 @@ function Swatches({ colors, onPick, none }: { colors: string[]; onPick: (c: stri
 const STATES: Cmd[] = ['bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript'];
 
 export function FormatBar({ editor, baseSize, zoom }: { editor: React.RefObject<HTMLDivElement | null>; baseSize: number; zoom: number }) {
+  const t = useT();
   const [active, setActive] = useState<Record<string, boolean>>({});
   const [menu, setMenu] = useState<null | 'color' | 'highlight' | 'link'>(null);
   const [href, setHref] = useState('');
@@ -190,24 +193,24 @@ export function FormatBar({ editor, baseSize, zoom }: { editor: React.RefObject<
     <div
       data-format-bar
       role="toolbar"
-      aria-label="Text format"
+      aria-label={t('canvas.format.toolbar')}
       onPointerDown={(e) => e.stopPropagation()}
       className="animate-pop absolute bottom-full left-0 mb-2 flex items-center gap-0.5 rounded-xl bg-panel p-1 shadow-pop"
       style={{ whiteSpace: 'nowrap' }}
     >
-      <Btn label="Bold (Ctrl+B)" active={active.bold} onClick={run(() => toggleRun('bold'))}><Bold /></Btn>
-      <Btn label="Italic (Ctrl+I)" active={active.italic} onClick={run(() => toggleRun('italic'))}><Italic /></Btn>
-      <Btn label="Underline (Ctrl+U)" active={active.underline} onClick={run(() => toggleRun('underline'))}><Underline /></Btn>
-      <Btn label="Strikethrough" active={active.strikeThrough} onClick={run(() => toggleRun('strikeThrough'))}><Strikethrough /></Btn>
+      <Btn label={t('canvas.format.bold', { shortcut: 'Ctrl+B' })} active={active.bold} onClick={run(() => toggleRun('bold'))}><Bold /></Btn>
+      <Btn label={t('canvas.format.italic', { shortcut: 'Ctrl+I' })} active={active.italic} onClick={run(() => toggleRun('italic'))}><Italic /></Btn>
+      <Btn label={t('canvas.format.underline', { shortcut: 'Ctrl+U' })} active={active.underline} onClick={run(() => toggleRun('underline'))}><Underline /></Btn>
+      <Btn label={t('canvas.format.strikethrough')} active={active.strikeThrough} onClick={run(() => toggleRun('strikeThrough'))}><Strikethrough /></Btn>
       <span className="mx-0.5 h-4 w-px bg-line" />
-      <Btn label="Smaller (Ctrl+Shift+<)" onClick={run(() => root() && stepRunSize(root()!, baseSize, zoom, -1))}><AArrowDown /></Btn>
-      <Btn label="Larger (Ctrl+Shift+>)" onClick={run(() => root() && stepRunSize(root()!, baseSize, zoom, 1))}><AArrowUp /></Btn>
+      <Btn label={t('canvas.format.smaller', { shortcut: 'Ctrl+Shift+<' })} onClick={run(() => root() && stepRunSize(root()!, baseSize, zoom, -1))}><AArrowDown /></Btn>
+      <Btn label={t('canvas.format.larger', { shortcut: 'Ctrl+Shift+>' })} onClick={run(() => root() && stepRunSize(root()!, baseSize, zoom, 1))}><AArrowUp /></Btn>
       <div className="relative">
-        <Btn label="Text color" active={menu === 'color'} onClick={() => setMenu(menu === 'color' ? null : 'color')}><Baseline /></Btn>
+        <Btn label={t('canvas.format.textColor')} active={menu === 'color'} onClick={() => setMenu(menu === 'color' ? null : 'color')}><Baseline /></Btn>
         {menu === 'color' && <Swatches colors={PALETTE.strokes} onPick={(c) => run(() => (exec('styleWithCSS', 'false'), exec('foreColor', c ?? '#000000')))()} />}
       </div>
       <div className="relative">
-        <Btn label="Highlight" active={menu === 'highlight'} onClick={() => setMenu(menu === 'highlight' ? null : 'highlight')}><Highlighter /></Btn>
+        <Btn label={t('canvas.format.highlight')} active={menu === 'highlight'} onClick={() => setMenu(menu === 'highlight' ? null : 'highlight')}><Highlighter /></Btn>
         {menu === 'highlight' && (
           <Swatches
             none
@@ -217,11 +220,11 @@ export function FormatBar({ editor, baseSize, zoom }: { editor: React.RefObject<
         )}
       </div>
       <span className="mx-0.5 h-4 w-px bg-line" />
-      <Btn label="Subscript" active={active.subscript} onClick={run(() => toggleRun('subscript'))}><Subscript /></Btn>
-      <Btn label="Superscript" active={active.superscript} onClick={run(() => toggleRun('superscript'))}><Superscript /></Btn>
+      <Btn label={t('canvas.format.subscript')} active={active.subscript} onClick={run(() => toggleRun('subscript'))}><Subscript /></Btn>
+      <Btn label={t('canvas.format.superscript')} active={active.superscript} onClick={run(() => toggleRun('superscript'))}><Superscript /></Btn>
       <div className="relative">
         <Btn
-          label="Link"
+          label={t('canvas.format.link')}
           active={menu === 'link'}
           onClick={() => {
             saved.current = selectionIn(root())?.cloneRange() ?? null;
@@ -253,8 +256,8 @@ export function FormatBar({ editor, baseSize, zoom }: { editor: React.RefObject<
           </div>
         )}
       </div>
-      <Btn label="Remove link" onClick={run(() => exec('unlink'))}><Unlink /></Btn>
-      <Btn label="Clear formatting" onClick={run(() => root() && clearRunFormatting(root()!))}><RemoveFormatting /></Btn>
+      <Btn label={t('canvas.format.removeLink')} onClick={run(() => exec('unlink'))}><Unlink /></Btn>
+      <Btn label={t('canvas.format.clearFormatting')} onClick={run(() => root() && clearRunFormatting(root()!))}><RemoveFormatting /></Btn>
     </div>
   );
 }

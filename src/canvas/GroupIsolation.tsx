@@ -10,6 +10,7 @@ import { useEditor } from '@/store/editor';
 import { useInteraction } from '@/interaction/store';
 import { exitGroup } from '@/interaction/groups';
 import { Kbd } from '@/ui/Kbd';
+import { useT } from '@/i18n';
 
 const sel = (id: string) => `[data-el="${CSS.escape(id)}"]`;
 
@@ -35,6 +36,7 @@ function IsolationStyles({ isolation }: { isolation: string[] }) {
 }
 
 export function GroupIsolation() {
+  const t = useT();
   const isolation = useInteraction((s) => s.isolation);
   const sizes = useEditor(useShallow((s) => isolation.map((g) => s.doc.order.filter((id) => s.doc.elements[id]?.groupIds.includes(g)).length)));
   return (
@@ -43,16 +45,16 @@ export function GroupIsolation() {
       {isolation.length > 0 && (
         <div className="pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2">
           <nav
-            aria-label="Entered groups"
+            aria-label={t('canvas.group.breadcrumbLabel')}
             className="animate-slide-up pointer-events-auto flex items-center gap-1 rounded-xl bg-panel py-1 pl-1 pr-1 text-[12px] shadow-pop"
             onPointerDown={(e) => e.stopPropagation()}
           >
             <button
               className="rounded-md px-2 py-1 text-muted hover:bg-hover hover:text-fg"
               onClick={() => useInteraction.getState().set({ isolation: [] })}
-              title="Back to the whole diagram (Home)"
+              title={t('canvas.group.backToDiagram')}
             >
-              Diagram
+              {t('common.diagram')}
             </button>
             {isolation.map((g, i) => (
               <span key={g} className="flex items-center gap-1">
@@ -62,13 +64,13 @@ export function GroupIsolation() {
                   aria-current={i === isolation.length - 1 ? 'location' : undefined}
                   onClick={() => useInteraction.getState().set({ isolation: isolation.slice(0, i + 1) })}
                 >
-                  {i === 0 ? 'Group' : 'Subgroup'} <span className="tabular-nums text-subtle">· {sizes[i] ?? 0}</span>
+                  {i === 0 ? t('canvas.group.group') : t('canvas.group.subgroup')} <span className="tabular-nums text-subtle">· {sizes[i] ?? 0}</span>
                 </button>
               </span>
             ))}
             <div className="mx-1 h-4 w-px bg-line" />
             <button className="flex items-center gap-1.5 rounded-md px-2 py-1 font-medium text-accent hover:bg-accent-soft" onClick={exitGroup}>
-              <LogOut className="size-3.5" /> Exit group <Kbd>Esc</Kbd>
+              <LogOut className="size-3.5" /> {t('canvas.group.exit')} <Kbd>Esc</Kbd>
             </button>
           </nav>
         </div>

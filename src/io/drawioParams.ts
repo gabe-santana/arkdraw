@@ -1,9 +1,9 @@
 /**
- * draw.io round-trip of parametric shape values (`el.params`): `size`,
+ * mxGraph round-trip of parametric shape values (`el.params`): `size`,
  * `arcSize`-like keys, `arrowWidth` / `arrowSize`, `startSize`,
  * `swimlaneFillColor`, callout `position` / `position2` / `base`,
  * partialRectangle sides… Each `ShapeParam` names its style key; this module
- * converts units (draw.io's `fixedSize=1` switches some keys between a
+ * converts units (mxGraph's `fixedSize=1` switches some keys between a
  * fraction of the size and px) and maps swimlanes back to pools / lanes.
  */
 import type { ShapeElement } from '@/model/types';
@@ -17,7 +17,7 @@ const exported = (p: ShapeParam) => p.drawio !== false && !p.kindOptions;
 const styleKey = (p: ShapeParam) => (typeof p.drawio === 'string' ? p.drawio : p.key);
 const num = (v: number) => String(Math.round(v * 1e4) / 1e4);
 
-/** Writes the element's params into a draw.io style map (overriding the shape's base style). */
+/** Writes the element's params into a map (overriding the shape's base style). */
 export function exportShapeParams(el: ShapeElement, m: StyleMap) {
   const def = getShapeDef(el.kind);
   if (!def.params?.length || def.kind !== el.kind) return;
@@ -47,7 +47,7 @@ export function exportShapeParams(el: ShapeElement, m: StyleMap) {
   }
 }
 
-/** Parses one draw.io value for `p` (converting fraction ↔ px for `fixedSizeOf`). */
+/** Parses one mxGraph value for `p` (converting fraction ↔ px for `fixedSizeOf`). */
 function parseValue(p: ShapeParam, raw: string | number, m: StyleMap, el: ShapeElement): number | string | null {
   if (p.kind === 'color') return typeof raw === 'string' && raw !== 'default' && raw !== '' ? raw : null;
   if (p.kind === 'enum') return normalizeParam(p, String(raw));
@@ -71,8 +71,8 @@ export interface ParamImportContext {
 }
 
 /**
- * Reads params from a draw.io style into `el.params`, after the importer
- * picked the kind. Plain draw.io swimlanes become pools / lanes here: a
+ * Reads params from a into `el.params`, after the importer
+ * picked the kind. Plain mxGraph swimlanes become pools / lanes here: a
  * `horizontal=0` swimlane is a pool with a left header (a lane when nested
  * in another swimlane); a top-header swimlane holding swimlanes is a vertical pool.
  */

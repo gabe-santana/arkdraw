@@ -26,7 +26,7 @@ describe('custom link actions', () => {
   const doc = docOf(shape('a', 0, 0, { tags: ['db'] }), shape('b', 200, 0), shape('c', 400, 0, { tags: ['db'] }), conn('ab', 'a', 'b'));
   const docL: Doc = { ...doc, layers: [{ id: 'L1', name: 'Base', visible: true, locked: false }, { id: 'L2', name: 'Notes', visible: true, locked: false }] };
 
-  it('parses draw.io action JSON and builds it back', () => {
+  it('parses mxGraph action JSON and builds it back', () => {
     const link = 'data:action/json,{"actions":[{"toggle":{"cells":["a"]}},{"highlight":{"tags":["db"],"color":"#f00"}},{"open":"data:page/id,p2"}]}';
     const actions = parseActionLink(link)!;
     expect(actions.map((a) => a.kind)).toEqual(['toggle', 'highlight', 'open']);
@@ -90,7 +90,7 @@ describe('file format: page data, layer data, hidden and file properties', () =>
     expect(parseMeta('{"format":"opendraw","pages":[]}')).toBeUndefined();
   });
 
-  it('round-trips layer data and hidden cells through draw.io', async () => {
+  it('round-trips layer data and hidden cells through mxGraph', async () => {
     const doc: Doc = {
       ...docOf(shape('a', 0, 0, { layerId: 'L1' }), shape('b', 200, 0, { layerId: 'L2', hidden: true })),
       layers: [{ id: 'L1', name: 'Base', visible: true, locked: false }, { id: 'L2', name: 'Notes', visible: true, locked: false, data: { owner: 'Ada' } }],
@@ -126,7 +126,7 @@ describe('layouts', () => {
     expect(p.c3.waypoints?.[0].y).toBe(50);
   });
 
-  it('maps draw.io layout JSON and runs it', () => {
+  it('maps mxGraph layout JSON and runs it', () => {
     const steps = parseLayoutJson('[{"layout":"mxHierarchicalLayout","config":{"orientation":"west","intraCellSpacing":30}},{"layout":"mxParallelEdgeLayout"}]');
     expect(steps.map((s) => s.id)).toEqual(['flow-horizontal', 'parallel-edges']);
     expect(steps[0].options.nodeSpacing).toBe(30);
@@ -160,7 +160,7 @@ describe('configuration', () => {
     expect(parseConfig('{oops').errors[0]).toMatch(/Invalid JSON/);
   });
 
-  it('maps draw.io library names', () => {
+  it('maps mxGraph library names', () => {
     expect(resolveLibraryIds('general;er;uml;nonexistent')).toEqual(['general', 'erd', 'uml']);
   });
 });
@@ -195,7 +195,7 @@ describe('print layout', () => {
 });
 
 describe('clipboard XML interop', () => {
-  it('extracts plain, escaped and URL-encoded draw.io XML', () => {
+  it('extracts plain, escaped and URL-encoded mxGraph XML', () => {
     const xml = '<mxGraphModel><root><mxCell id="0"/></root></mxGraphModel>';
     expect(extractDrawioXml(`<meta charset="utf-8">${xml}`)).toBe(xml);
     expect(extractDrawioXml(xml.replace(/</g, '&lt;').replace(/>/g, '&gt;'))).toBe(xml);

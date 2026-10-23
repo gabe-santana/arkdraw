@@ -72,7 +72,7 @@ describe('viewer model', () => {
 });
 
 describe('loadDiagram', () => {
-  it('parses OpenDraw JSON and draw.io XML', async () => {
+  it('parses OpenDraw JSON and mxGraph XML', async () => {
     const json = serializePages([newPage('Only', layered)]);
     expect((await pagesFromContent(json)).map((p) => p.name)).toEqual(['Only']);
     expect((await pagesFromContent(new TextEncoder().encode(`﻿${json}`))).length).toBe(1);

@@ -35,7 +35,7 @@ Options:
                           Several outputs (--all-pages with an image format) are written
                           as <name>-1.<ext>, <name>-2.<ext>…, or into <path> if it ends with / or \\
   -p, --page <n>          Page to export, 1-based (default: 1)
-  -a, --all-pages         Export every page (PDF/HTML/VSDX/draw.io: one file; images: one file per page)
+  -a, --all-pages         Export every page (PDF/HTML/VSDX/.drawio: one file; images: one file per page)
   -s, --scale <k>         Raster scale, e.g. 2 for 192 dpi (default: 1)
   -b, --border <px>       Border around the drawing in px (default: 0)
   -t, --transparent       Transparent background (PNG, WebP, SVG, HTML)
@@ -125,7 +125,7 @@ pub fn parse_args<I: IntoIterator<Item = String>>(args: I) -> Result<Parsed, Str
         match flag.as_str() {
             "-h" | "--help" => return Ok(Parsed::Help),
             "-x" | "--export" => {
-                // `--export` may also be a bare flag with the input given positionally (draw.io style).
+                // `--export` may also be a bare flag with the input given positionally (mxGraph style).
                 if inline.is_some() {
                     input = inline.clone();
                 } else if let Some(next) = it.peek() {

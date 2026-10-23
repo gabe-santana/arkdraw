@@ -10,6 +10,7 @@ import { cloneElements, newPage, useEditor } from '@/store/editor';
 import { parsePages, serializePages } from '@/io/fileFormat';
 import type { Template, TemplateCategory } from '@/templates/types';
 import { idbAll, idbDelete, idbGet, idbPut } from './idb';
+import { t } from '@/i18n';
 
 export const USER_CATEGORY = 'My templates';
 export const USER_TEMPLATE_PREFIX = 'user:';
@@ -40,7 +41,7 @@ export function toTemplate(st: StoredTemplate): Template {
     id: `${USER_TEMPLATE_PREFIX}${st.id}`,
     name: st.name,
     category: USER_CATEGORY as TemplateCategory,
-    description: st.description || 'Saved from one of your diagrams.',
+    description: st.description || t('storage.templateDescription'),
     keywords: ['my', 'custom', 'user', 'saved'],
     build: () => freshPages(st.data),
   };

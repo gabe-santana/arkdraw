@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   AppWindow, Check, ChevronLeft, ChevronRight, Copy, FileCode2, FileImage, FileText, Film, Image, ImageDown, Info, Link2, Loader2, Network, Shapes, TriangleAlert,
 } from 'lucide-react';
@@ -18,6 +18,7 @@ import { hasAnimation } from '@/animation/timeline';
 import { Dialog, DialogHeader } from '@/ui/Dialog';
 import { Button } from '@/ui/Button';
 import { NumberField, Segmented, Slider, Switch } from '@/ui/controls';
+import { formatNumber, t as translate, useT, type MessageKey } from '@/i18n';
 
 const ORDER: ExportFormat[] = ['png', 'jpeg', 'webp', 'svg', 'gif', 'pdf', 'html', 'drawio', 'vsdx', 'url'];
 
@@ -34,6 +35,31 @@ const LOOK: Record<ExportFormat, { icon: ReactNode; hue: string }> = {
   vsdx: { icon: <Shapes />, hue: '#2563eb' },
   url: { icon: <Link2 />, hue: '#10b981' },
 };
+
+/** Format-card subtitles (FORMATS[id].desc), translated at render. */
+const DESC_KEYS: Record<ExportFormat, MessageKey> = {
+  png: 'export.format.png.desc',
+  jpeg: 'export.format.jpeg.desc',
+  webp: 'export.format.webp.desc',
+  svg: 'export.format.svg.desc',
+  gif: 'export.format.gif.desc',
+  pdf: 'export.format.pdf.desc',
+  html: 'export.format.html.desc',
+  drawio: 'export.format.drawio.desc',
+  vsdx: 'export.format.vsdx.desc',
+  url: 'export.format.url.desc',
+};
+
+/** A format's display name: file-format names stay as-is, "Link" is translated. */
+const formatLabel = (id: ExportFormat) => (id === 'url' ? translate('export.format.url') : FORMATS[id].label);
+
+/** A translated sentence whose `{name}` placeholders are React nodes (e.g. bold words). */
+function rich(key: MessageKey, nodes: Record<string, ReactNode>): ReactNode {
+  const marks = Object.fromEntries(Object.keys(nodes).map((k) => [k, `\u0001${k}\u0001`]));
+  return translate(key, marks)
+    .split('\u0001')
+    .map((part, i) => (i % 2 ? <Fragment key={i}>{nodes[part]}</Fragment> : part));
+}
 
 const PREFS_KEY = 'opendraw:export-prefs:v2';
 
@@ -65,6 +91,7 @@ interface Preview {
 }
 
 function ExportBody({ close }: { close: () => void }) {
+  const t = useT();
   const doc = useEditor((s) => s.doc);
   const selection = useEditor((s) => s.selection);
   const activePageId = useEditor((s) => s.activePageId);
@@ -161,7 +188,7 @@ function ExportBody({ close }: { close: () => void }) {
     }
     setCopied(true);
     setTimeout(() => setCopied(false), 1600);
-    toast('Link copied to clipboard', 'success');
+    toast(t('export.linkCopied'), 'success');
   };
 
   const run = async () => {
@@ -174,15 +201,15 @@ function ExportBody({ close }: { close: () => void }) {
       const ext = file.name.split('.').pop()!;
       const res = await saveFile(file.data, {
         defaultName: file.name,
-        filters: [{ name: ext === 'zip' ? 'ZIP archive' : fmt.label, extensions: [ext] }],
+        filters: [{ name: ext === 'zip' ? t('export.zipArchive') : fmt.label, extensions: [ext] }],
         mime: file.mime,
       });
       if (res) {
-        toast(`Exported ${res.name}`, 'success');
+        toast(t('export.exported', { name: res.name }), 'success');
         close();
       }
     } catch (e) {
-      if ((e as Error).name !== 'AbortError') toast(`Export failed: ${String((e as Error).message ?? e)}`, 'error');
+      if ((e as Error).name !== 'AbortError') toast(t('export.failed', { error: String((e as Error).message ?? e) }), 'error');
     } finally {
       setProgress(null);
       abort.current = null;
@@ -196,12 +223,12 @@ function ExportBody({ close }: { close: () => void }) {
 
   return (
     <>
-      <DialogHeader id="export-title" title="Export" subtitle="Rendered locally — nothing leaves your machine." onClose={close} />
+      <DialogHeader id="export-title" title={t('common.export')} subtitle={t('export.subtitle')} onClose={close} />
 
       {/* Format cards */}
-      <div className="grid grid-cols-5 gap-2 px-5 pb-4" role="radiogroup" aria-label="Format">
+      <div className="grid grid-cols-5 gap-2 px-5 pb-4" role="radiogroup" aria-label={t('export.formatGroup')}>
         {ORDER.map((id) => {
-          const f = FORMATS[id];
+          const desc = t(DESC_KEYS[id]);
           const on = prefs.format === id;
           return (
             <button
@@ -221,8 +248,8 @@ function ExportBody({ close }: { close: () => void }) {
                 {LOOK[id].icon}
               </span>
               <span className="min-w-0">
-                <span className="block text-[12.5px] font-semibold leading-tight text-fg">{f.label}</span>
-                <span className="block truncate text-[11px] leading-tight text-muted">{f.desc}</span>
+                <span className="block text-[12.5px] font-semibold leading-tight text-fg">{formatLabel(id)}</span>
+                <span className="block truncate text-[11px] leading-tight text-muted" title={desc}>{desc}</span>
               </span>
               {on && <Check className="absolute right-2 top-2 size-3.5 text-accent" />}
             </button>
@@ -238,12 +265,12 @@ function ExportBody({ close }: { close: () => void }) {
               <img
                 key={preview.url.length}
                 src={preview.url}
-                alt="Export preview"
+                alt={t('export.previewAlt')}
                 className={cn('animate-fade max-w-full object-contain', pages.length > 1 ? 'max-h-[290px]' : 'max-h-[330px]', !transparent && 'rounded-[3px] shadow-[0_0_0_1px_var(--line),0_10px_30px_-12px_rgb(0_0_0/0.35)]')}
                 draggable={false}
               />
             ) : (
-              <span className="text-[13px] text-muted">{empty ? 'Nothing to export on this page yet.' : 'Rendering preview…'}</span>
+              <span className="text-[13px] text-muted">{empty ? t('export.empty') : t('export.rendering')}</span>
             )}
           </div>
 
@@ -251,25 +278,25 @@ function ExportBody({ close }: { close: () => void }) {
           {preview && (
             <div className="pointer-events-none absolute left-2.5 top-2.5 flex gap-1.5">
               <Badge>{isRaster(prefs.format) || prefs.format === 'gif' ? `${estimate?.width ?? 0} × ${estimate?.height ?? 0}px` : `${preview.w} × ${preview.h}`}</Badge>
-              {pages.length > 1 && <Badge>{pages.length} pages</Badge>}
+              {pages.length > 1 && <Badge>{t('common.pageCount', { count: pages.length })}</Badge>}
             </div>
           )}
           {prefs.format === 'gif' && animated && (
             <span className="absolute right-2.5 top-2.5 flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 text-[11px] font-medium text-white">
-              <Film className="size-3" /> {gifDuration}s loop
+              <Film className="size-3" /> {t('export.gifLoop', { seconds: gifDuration })}
             </span>
           )}
 
           {/* Page switcher */}
           {pages.length > 1 && (
             <div className="absolute bottom-2.5 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-xl bg-panel/90 p-1 shadow-pop backdrop-blur">
-              <PagerButton label="Previous page" disabled={pageIdx === 0} onClick={() => setPreviewIdx(pageIdx - 1)}>
+              <PagerButton label={t('export.prevPage')} disabled={pageIdx === 0} onClick={() => setPreviewIdx(pageIdx - 1)}>
                 <ChevronLeft />
               </PagerButton>
               <span className="max-w-[220px] truncate px-1.5 text-[12px] tabular-nums text-fg">
                 <span className="text-muted">{pageIdx + 1}/{pages.length}</span> · {previewPage?.name}
               </span>
-              <PagerButton label="Next page" disabled={pageIdx >= pages.length - 1} onClick={() => setPreviewIdx(pageIdx + 1)}>
+              <PagerButton label={t('export.nextPage')} disabled={pageIdx >= pages.length - 1} onClick={() => setPreviewIdx(pageIdx + 1)}>
                 <ChevronRight />
               </PagerButton>
             </div>
@@ -279,24 +306,24 @@ function ExportBody({ close }: { close: () => void }) {
         {/* Options */}
         <div className="scroll-thin -mr-2 flex max-h-[440px] min-h-0 flex-col gap-4 overflow-y-auto pb-1 pr-2">
           {scopes.length > 1 && (
-            <Field label="Pages">
+            <Field label={t('common.pages')}>
               <Segmented<PageScope>
                 value={prefs.scope}
                 onChange={(scope) => setPrefs(scope === 'range' && prefs.rangeFrom >= prefs.rangeTo ? { scope, rangeFrom: 1, rangeTo: pageCount } : { scope })}
-                options={scopes.map((s) => ({ value: s, label: { current: 'Current', all: 'All', selection: 'Selection', range: 'Range' }[s] }))}
+                options={scopes.map((s) => ({ value: s, label: { current: t('export.scope.current'), all: t('export.scope.all'), selection: t('export.scope.selection'), range: t('export.scope.range') }[s] }))}
               />
               {prefs.scope === 'range' && (
                 <div className="mt-2 flex items-center gap-2">
-                  <NumberField label="From" value={prefs.rangeFrom} min={1} max={pageCount} onChange={(v) => setPrefs({ rangeFrom: Math.round(v) })} className="flex-1 [&>span]:w-10" />
-                  <NumberField label="To" value={prefs.rangeTo} min={1} max={pageCount} onChange={(v) => setPrefs({ rangeTo: Math.round(v) })} className="flex-1 [&>span]:w-8" />
+                  <NumberField label={t('export.rangeFrom')} value={prefs.rangeFrom} min={1} max={pageCount} onChange={(v) => setPrefs({ rangeFrom: Math.round(v) })} className="flex-1 [&>span]:w-10" />
+                  <NumberField label={t('export.rangeTo')} value={prefs.rangeTo} min={1} max={pageCount} onChange={(v) => setPrefs({ rangeTo: Math.round(v) })} className="flex-1 [&>span]:w-8" />
                 </div>
               )}
-              {multiFile && <Hint>One {fmt.label} per page, bundled as a .zip.</Hint>}
+              {multiFile && <Hint>{t('export.zipHint', { format: fmt.label })}</Hint>}
             </Field>
           )}
 
           {supports.scale(prefs.format) && (
-            <Field label={prefs.format === 'gif' ? 'Scale' : 'Scale · resolution'}>
+            <Field label={prefs.format === 'gif' ? t('export.scale') : t('export.scaleResolution')}>
               <div className="flex items-center gap-2">
                 <Segmented
                   className="flex-1"
@@ -306,7 +333,7 @@ function ExportBody({ close }: { close: () => void }) {
                 />
                 {prefs.format !== 'gif' && (
                   <NumberField
-                    label="DPI"
+                    label={t('export.dpi')}
                     value={Math.round(prefs.scale * 96)}
                     min={24}
                     max={1200}
@@ -320,80 +347,80 @@ function ExportBody({ close }: { close: () => void }) {
           )}
 
           {supports.quality(prefs.format) && (
-            <Field label="Quality" aside={`${Math.round(prefs.quality * 100)}%`}>
+            <Field label={t('export.quality')} aside={`${Math.round(prefs.quality * 100)}%`}>
               <Slider value={Math.round(prefs.quality * 100)} min={10} max={100} onChange={(v) => setPrefs({ quality: v / 100 })} />
             </Field>
           )}
 
           {supports.area(prefs.format) && (
-            <Field label="Area">
+            <Field label={t('export.area')}>
               <div className="flex items-center gap-2">
                 <Segmented<'content' | 'page'>
                   className="flex-1"
                   value={prefs.scope === 'selection' ? 'content' : prefs.area}
                   onChange={(area) => setPrefs({ area })}
                   options={[
-                    { value: 'content', label: 'Crop to content' },
-                    { value: 'page', label: 'Whole page', title: activePage?.settings.pageView ? 'Page-sized area' : 'Uses the page size from page settings' },
+                    { value: 'content', label: t('export.cropToContent') },
+                    { value: 'page', label: t('export.wholePage'), title: activePage?.settings.pageView ? t('export.wholePageTitlePageView') : t('export.wholePageTitle') },
                   ]}
                 />
-                <NumberField label="Border" value={prefs.border} min={0} max={400} onChange={(v) => setPrefs({ border: Math.round(v) })} className="w-[96px] [&>span]:w-11" suffix="px" />
+                <NumberField label={t('export.border')} value={prefs.border} min={0} max={400} onChange={(v) => setPrefs({ border: Math.round(v) })} className="w-[96px] [&>span]:w-11" suffix="px" />
               </div>
             </Field>
           )}
 
           {supports.background(prefs.format) && (
-            <Field label="Background">
+            <Field label={t('export.background')}>
               <Segmented<ExportSettings['background']>
                 value={prefs.format === 'jpeg' && prefs.background === 'transparent' ? 'page' : prefs.background}
                 onChange={(background) => setPrefs({ background })}
                 options={[
-                  { value: 'page', label: 'Page' },
-                  { value: 'white', label: 'White' },
-                  ...(supports.transparent(prefs.format) || prefs.format === 'pdf' ? [{ value: 'transparent' as const, label: 'Transparent' }] : []),
+                  { value: 'page', label: t('common.page') },
+                  { value: 'white', label: t('export.bg.white') },
+                  ...(supports.transparent(prefs.format) || prefs.format === 'pdf' ? [{ value: 'transparent' as const, label: t('export.bg.transparent') }] : []),
                 ]}
               />
             </Field>
           )}
 
           {supports.appearance(prefs.format) && (
-            <Field label="Appearance">
+            <Field label={t('export.appearance')}>
               <Segmented<ExportSettings['appearance']>
                 value={prefs.appearance}
                 onChange={(appearance) => setPrefs({ appearance })}
                 options={[
-                  { value: 'light', label: 'Light' },
-                  { value: 'dark', label: 'Dark' },
-                  { value: 'auto', label: 'Auto', title: 'Follows the viewer’s light/dark setting' },
+                  { value: 'light', label: t('export.light') },
+                  { value: 'dark', label: t('export.dark') },
+                  { value: 'auto', label: t('common.auto'), title: t('export.autoTitle') },
                 ]}
               />
-              {prefs.appearance === 'auto' && <Hint>Switches with the viewer’s system theme (prefers-color-scheme).</Hint>}
+              {prefs.appearance === 'auto' && <Hint>{t('export.autoHint')}</Hint>}
             </Field>
           )}
 
           {prefs.format === 'pdf' && (
-            <Field label="Sheet size">
+            <Field label={t('export.sheetSize')}>
               <Segmented<ExportSettings['pdfFit']>
                 value={prefs.pdfFit}
                 onChange={(pdfFit) => setPrefs({ pdfFit })}
                 options={[
-                  { value: 'content', label: 'Fit content' },
-                  { value: 'paper', label: 'Paper size' },
+                  { value: 'content', label: t('export.fitContent') },
+                  { value: 'paper', label: t('export.paperSize') },
                 ]}
               />
-              <Hint>{prefs.pdfFit === 'paper' ? 'Each page on its paper format (page settings), scaled to fit.' : 'Each PDF page is sized to its diagram.'}</Hint>
+              <Hint>{prefs.pdfFit === 'paper' ? t('export.paperHint') : t('export.contentHint')}</Hint>
             </Field>
           )}
 
           {prefs.format === 'gif' && (
             <>
-              <Field label="Frame rate">
+              <Field label={t('export.frameRate')}>
                 <Segmented value={String(prefs.fps)} onChange={(v) => setPrefs({ fps: Number(v) })} options={['10', '15', '20', '30'].map((v) => ({ value: v, label: `${v} fps` }))} />
               </Field>
-              <Switch label="Loop forever" checked={prefs.loop} onChange={(loop) => setPrefs({ loop })} />
+              <Switch label={t('export.loopForever')} checked={prefs.loop} onChange={(loop) => setPrefs({ loop })} />
               {!animated && (
                 <Callout tone="warn">
-                  This diagram has no animation yet. Select a connector and pick <b>Flow</b> or <b>Dots</b> in the properties panel, or set reveal steps.
+                  {rich('export.gifNoAnimation', { flow: <b>{t('export.gifFlow')}</b>, dots: <b>{t('export.gifDots')}</b> })}
                 </Callout>
               )}
             </>
@@ -401,44 +428,44 @@ function ExportBody({ close }: { close: () => void }) {
 
           {(supports.grid(prefs.format) || supports.embed(prefs.format) || supports.fonts(prefs.format) || prefs.format === 'drawio') && (
             <div className="-my-0.5 space-y-0.5">
-              {supports.grid(prefs.format) && <Switch label="Include grid" checked={prefs.grid} onChange={(grid) => setPrefs({ grid })} />}
-              {supports.fonts(prefs.format) && <Switch label="Embed fonts" checked={prefs.embedFonts} onChange={(embedFonts) => setPrefs({ embedFonts })} />}
-              {supports.images(prefs.format) && <Switch label="Embed images" checked={prefs.embedImages} onChange={(embedImages) => setPrefs({ embedImages })} />}
+              {supports.grid(prefs.format) && <Switch label={t('export.includeGrid')} checked={prefs.grid} onChange={(grid) => setPrefs({ grid })} />}
+              {supports.fonts(prefs.format) && <Switch label={t('export.embedFonts')} checked={prefs.embedFonts} onChange={(embedFonts) => setPrefs({ embedFonts })} />}
+              {supports.images(prefs.format) && <Switch label={t('export.embedImages')} checked={prefs.embedImages} onChange={(embedImages) => setPrefs({ embedImages })} />}
               {supports.embed(prefs.format) && (
                 <Switch
                   label={
                     <span className="inline-flex items-center gap-1.5">
-                      Editable <span className="text-subtle">— include diagram data</span>
+                      {rich('export.editable', { hint: <span className="text-subtle">{t('export.editableHint')}</span> })}
                     </span>
                   }
                   checked={prefs.embedDiagram}
                   onChange={(embedDiagram) => setPrefs({ embedDiagram })}
                 />
               )}
-              {prefs.format === 'drawio' && <Switch label="Compressed XML" checked={prefs.compressed} onChange={(compressed) => setPrefs({ compressed })} />}
+              {prefs.format === 'drawio' && <Switch label={t('export.compressedXml')} checked={prefs.compressed} onChange={(compressed) => setPrefs({ compressed })} />}
             </div>
           )}
 
-          {prefs.format === 'svg' && <Hint icon>Text is written as native SVG text, so it stays selectable and searchable.</Hint>}
-          {prefs.format === 'html' && <Hint icon>A single offline file: page tabs, zoom & pan, layer toggles, tooltips and links.</Hint>}
-          {prefs.format === 'vsdx' && <Hint icon>Opens in Microsoft Visio 2013+ and draw.io. Shapes map to rectangles, ellipses and diamonds; icons become pictures.</Hint>}
-          {prefs.format === 'drawio' && <Hint icon>Opens in draw.io / diagrams.net with every page.</Hint>}
+          {prefs.format === 'svg' && <Hint icon>{t('export.hint.svg')}</Hint>}
+          {prefs.format === 'html' && <Hint icon>{t('export.hint.html')}</Hint>}
+          {prefs.format === 'vsdx' && <Hint icon>{t('export.hint.vsdx')}</Hint>}
+          {prefs.format === 'drawio' && <Hint icon>{t('export.hint.drawio')}</Hint>}
 
           {prefs.format === 'url' && (
-            <Field label="Share link" aside={shareUrl ? `${shareUrl.length.toLocaleString()} chars` : undefined}>
+            <Field label={t('export.shareLink')} aside={shareUrl ? t('export.shareChars', { count: shareUrl.length }) : undefined}>
               <textarea
                 readOnly
-                value={shareUrl || 'Nothing to share yet.'}
+                value={shareUrl || t('export.shareEmpty')}
                 onFocus={(e) => e.currentTarget.select()}
                 spellCheck={false}
                 className="scroll-thin h-[92px] w-full resize-none break-all rounded-lg bg-panel-2 px-2.5 py-2 font-mono text-[11px] leading-relaxed text-fg outline-none ring-1 ring-transparent hover:ring-line focus:ring-2 focus:ring-accent/40"
               />
               {shareUrlTooLong(shareUrl) ? (
                 <Callout tone="warn">
-                  This link is longer than {SHARE_URL_WARN_LENGTH.toLocaleString()} characters — some apps and browsers may cut it off. Share the file instead for large diagrams.
+                  {t('export.shareTooLong', { max: SHARE_URL_WARN_LENGTH })}
                 </Callout>
               ) : (
-                <Hint>The diagram is compressed into the link itself — no upload, no account.</Hint>
+                <Hint>{t('export.shareHint')}</Hint>
               )}
             </Field>
           )}
@@ -458,15 +485,15 @@ function ExportBody({ close }: { close: () => void }) {
           ) : (
             <span className="truncate text-[11.5px] text-subtle">
               {prefs.format === 'url'
-                ? shareUrl && `${(shareUrl.length / 1024).toFixed(1)} KB link`
-                : estimate && estimate.bytes > 0 && `≈ ${formatBytes(estimate.bytes)}${multiFile ? ` · ${pages.length} files (.zip)` : ''}`}
+                ? shareUrl && t('export.linkSize', { size: formatNumber(Math.round(shareUrl.length / 102.4) / 10) })
+                : estimate && estimate.bytes > 0 && (multiFile ? t('export.estimateZip', { size: formatBytes(estimate.bytes), count: pages.length }) : t('export.estimate', { size: formatBytes(estimate.bytes) }))}
             </span>
           )}
         </div>
         {busy ? (
-          <Button onClick={() => abort.current?.abort()}>Cancel</Button>
+          <Button onClick={() => abort.current?.abort()}>{t('common.cancel')}</Button>
         ) : (
-          <Button onClick={close}>Close</Button>
+          <Button onClick={close}>{t('common.close')}</Button>
         )}
         <Button
           variant="primary"
@@ -475,7 +502,7 @@ function ExportBody({ close }: { close: () => void }) {
           icon={busy ? <Loader2 className="size-3.5 animate-spin" /> : prefs.format === 'url' ? copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" /> : undefined}
           className="min-w-[124px]"
         >
-          {busy ? 'Exporting…' : prefs.format === 'url' ? (copied ? 'Copied' : 'Copy link') : multiFile ? `Export ${pages.length} files` : `Export ${fmt.label}`}
+          {busy ? t('export.exporting') : prefs.format === 'url' ? (copied ? t('common.copied') : t('export.copyLink')) : multiFile ? t('export.exportFiles', { count: pages.length }) : t('export.exportFormat', { format: fmt.label })}
         </Button>
       </div>
     </>

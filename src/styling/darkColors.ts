@@ -1,5 +1,5 @@
 /**
- * User-defined dark-mode colors (draw.io `light-dark(light, dark)` colors).
+ * User-defined dark-mode colors (mxGraph `light-dark(light, dark)` colors).
  *
  * With "Adapt diagram colors in dark mode" on, the canvas re-tints the whole
  * diagram layer with a CSS filter (`.diagram-adapt` in index.css):

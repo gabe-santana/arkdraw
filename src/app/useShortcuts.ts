@@ -55,7 +55,7 @@ export function useShortcuts() {
         else s.clearSelection();
         return;
       }
-      // Ctrl/⌘+Enter with nothing selected opens the shape picker (draw.io).
+      // Ctrl/⌘+Enter with nothing selected opens the shape picker.
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !s.selection.length) {
         e.preventDefault();
         const r = document.querySelector('[data-canvas]')!.getBoundingClientRect();
@@ -73,7 +73,7 @@ export function useShortcuts() {
         }
         return;
       }
-      // Typing with one element selected starts editing its label, replacing it (draw.io).
+      // Typing with one element selected starts editing its label, replacing it.
       // Tool letters (R, O, …) therefore only act with nothing selected.
       if (startsTyping(e) && s.selection.length === 1) {
         const el = s.doc.elements[s.selection[0]];
@@ -85,7 +85,7 @@ export function useShortcuts() {
         }
       }
       if (e.key.startsWith('Arrow') && !e.altKey && (e.ctrlKey || e.metaKey) && e.shiftKey && s.selection.length) {
-        // Resize by the grid size (draw.io).
+        // Resize by the grid size.
         e.preventDefault();
         const g = s.settings.gridSize;
         const [dw, dh] = { ArrowLeft: [-g, 0], ArrowRight: [g, 0], ArrowUp: [0, -g], ArrowDown: [0, g] }[e.key as 'ArrowLeft']!;

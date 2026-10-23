@@ -16,20 +16,21 @@ import { revealAll } from './linkActions';
 import { parallelEdgesPatches } from './layouts';
 import { anonymizePage, canDictate, dictateLabel, toggleExplore } from './plugins';
 import { selectedMermaidGroup } from './mermaidRegen';
+import { t } from '@/i18n';
 
 const ed = () => useEditor.getState();
 
 function parallelEdges() {
   const s = ed();
   const patches = parallelEdgesPatches(s.doc, s.selection);
-  if (!Object.keys(patches).length) return useUi.getState().toast('No connectors share the same two shapes.', 'info');
+  if (!Object.keys(patches).length) return useUi.getState().toast(t('automation.parallelEdgesNone'), 'info');
   s.updateElements(patches);
 }
 
 async function saveToBrowser() {
   const { saveCurrentToLibrary } = await import('@/storage/library');
   const entry = await saveCurrentToLibrary();
-  if (entry) useUi.getState().toast(`Saved “${entry.name}” to the browser`, 'success');
+  if (entry) useUi.getState().toast(t('automation.savedToBrowser', { name: entry.name }), 'success');
 }
 
 export const AUTOMATION_ACTIONS: Action[] = [

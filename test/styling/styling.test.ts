@@ -20,7 +20,7 @@ const docOf = (...els: Array<ShapeElement | ConnectorElement>): Doc => ({
 const rect = (fill: string, stroke = '#111111') => createShape('rectangle', { x: 0, y: 0, w: 100, h: 60 }, { fill, stroke });
 
 describe('paper sizes', () => {
-  it('covers the draw.io list', () => {
+  it('covers the mxGraph list', () => {
     for (const k of ['A0', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'B4', 'B5', 'Letter', 'Legal', 'Tabloid', 'Ledger', 'Executive']) expect(PAPER_SIZES).toHaveProperty(k);
   });
   it('treats Ledger as naturally landscape', () => {
@@ -131,7 +131,7 @@ describe('shadow options', () => {
   });
 });
 
-describe('draw.io round-trip', () => {
+describe('mxGraph round-trip', () => {
   it('parses light-dark() colors', () => {
     expect(splitLightDark('light-dark(#ffffff,#121212)')).toEqual(['#ffffff', '#121212']);
     expect(splitLightDark('#abc')).toEqual(['#abc', undefined]);

@@ -8,12 +8,14 @@ import { cn } from '@/lib/cn';
 import { Slider, Switch } from '@/ui/controls';
 import { pressureOutline, smoothPath } from './freehandPath';
 import { useInteraction } from './store';
+import { useT } from '@/i18n';
 
 const WIDTHS = [1, 2, 4, 8];
 /** Sample squiggle for the live preview (with a pressure ramp). */
 const SAMPLE = Array.from({ length: 13 }, (_, i) => ({ x: 8 + i * 10, y: 20 + Math.sin(i / 1.9) * 9, p: 0.25 + 0.6 * Math.sin((i / 12) * Math.PI) }));
 
 export function BrushPopover() {
+  const t = useT();
   const active = useEditor((s) => s.tool === 'freehand');
   const brush = useInteraction((s) => s.brush);
   const setBrush = useInteraction((s) => s.setBrush);
@@ -22,12 +24,12 @@ export function BrushPopover() {
     <div className="pointer-events-none absolute bottom-[76px] left-1/2 z-10 -translate-x-1/2">
       <div
         role="dialog"
-        aria-label="Brush options"
+        aria-label={t('canvas.brush.options')}
         className="animate-slide-up pointer-events-auto flex w-[300px] flex-col gap-2.5 rounded-2xl bg-panel p-3 shadow-pop"
         onPointerDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <span className="text-[11.5px] font-semibold text-fg">Brush</span>
+          <span className="text-[11.5px] font-semibold text-fg">{t('canvas.brush.title')}</span>
           <svg width="140" height="40" viewBox="0 0 140 40" aria-hidden className="rounded-md bg-panel-2">
             {brush.pressure ? (
               <path d={pressureOutline(SAMPLE, brush.width)} fill={brush.color} />
@@ -36,7 +38,7 @@ export function BrushPopover() {
             )}
           </svg>
         </div>
-        <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="Brush color">
+        <div className="flex flex-wrap gap-1" role="radiogroup" aria-label={t('canvas.brush.color')}>
           {PALETTE.strokes.map((c) => (
             <button
               key={c}
@@ -50,7 +52,7 @@ export function BrushPopover() {
           ))}
         </div>
         <div className="grid grid-cols-[52px_1fr] items-center gap-2">
-          <span className="text-[12px] text-muted">Width</span>
+          <span className="min-w-0 truncate text-[12px] text-muted" title={t('common.width')}>{t('common.width')}</span>
           <div className="flex items-center gap-1">
             {WIDTHS.map((w) => (
               <button
@@ -64,13 +66,13 @@ export function BrushPopover() {
               </button>
             ))}
           </div>
-          <span className="text-[12px] text-muted">Smooth</span>
+          <span className="min-w-0 truncate text-[12px] text-muted" title={t('canvas.brush.smooth')}>{t('canvas.brush.smooth')}</span>
           <div className="flex items-center gap-2">
             <Slider value={Math.round(brush.smoothing * 100)} min={0} max={100} step={5} onChange={(v) => setBrush({ smoothing: v / 100 })} />
             <span className="w-8 text-right text-[11.5px] tabular-nums text-muted">{Math.round(brush.smoothing * 100)}%</span>
           </div>
         </div>
-        <Switch label="Pen pressure (variable width)" checked={brush.pressure} onChange={(pressure) => setBrush({ pressure })} />
+        <Switch label={t('canvas.brush.pressure')} checked={brush.pressure} onChange={(pressure) => setBrush({ pressure })} />
       </div>
     </div>
   );

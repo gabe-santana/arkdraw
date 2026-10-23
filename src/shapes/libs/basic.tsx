@@ -1,6 +1,6 @@
 /**
  * Basic geometric primitives and the Misc / Advanced grab-bag
- * (draw.io "Basic", "Misc" and "Advanced" palettes).
+ * (mxGraph "Basic", "Misc" and "Advanced" palettes).
  */
 import { Image as ImageIcon, Link2 } from 'lucide-react';
 import { Body, Detail, HorizontalCylinder, RoundRect, hCylRx, inset } from '../kit';
@@ -19,7 +19,7 @@ const star = (n: number, inner: number) => (w: number, h: number) => pathOf(fitP
 /** A regular polygon whose vertices fill the bounds. */
 const regular = (n: number, rot = -90) => (w: number, h: number) => pathOf(fitPts(regularPts(0, 0, 1, 1, n, rot), w, h));
 
-/** Number of sides of a regular polygon (not a draw.io key; kept for our own round-trip). */
+/** Number of sides of a regular polygon (not a mxGraph key; kept for our own round-trip). */
 const SIDES = (n: number) => param.count('sides', 'Sides', n, 3, 24, { drawio: 'polySides' });
 
 /** Inner-radius handle on the first inner vertex of a star fitted to the bounds. */
@@ -99,7 +99,7 @@ function cornerRect(w: number, h: number, r: number, [tl, tr, br, bl]: [number, 
   );
 }
 
-/** draw.io partialRectangle: which sides get an outline. */
+/** mxGraph partialRectangle: which sides get an outline. */
 export const PARTIAL_SIDES = (top: number, right: number, bottom: number, left: number) => [
   param.bool('top', 'Top', !!top, { drawioDefault: 1 }),
   param.bool('right', 'Right', !!right, { drawioDefault: 1 }),
@@ -155,7 +155,7 @@ const shapes: ShapeDef[] = [
   // ----- Symbols --------------------------------------------------------------
   shape('basic.plus', 'Cross', 'shape=cross;size=0.34;', ({ w, h, style, params }) => <Body d={plus(w, h, pn(params, 'size'))} s={style} />, {
     params: [param.pct('size', 'Thickness', 0.34, { drawioDefault: 0.2 })],
-    // draw.io: the handle sits at the centre minus half the arm thickness.
+    // mxGraph: the handle sits at the centre minus half the arm thickness.
     handles: ({ w, h, p }) => {
       const t = (m(w, h) * pn(p, 'size')) / 2;
       return [handle(w / 2 - t, h / 2 - t, (pt) => ({ params: { size: (Math.min(h / 2 - pt.y, w / 2 - pt.x) * 2) / m(w, h) } }))];
@@ -290,7 +290,7 @@ const shapes: ShapeDef[] = [
     handles: ({ w, h, p }) => [handle(Math.min(pn(p, 'size'), m(w, h) / 2), 0, (pt) => ({ params: { size: Math.round(pt.x) } }))],
   }),
 
-  // ----- Classic draw.io general extras ---------------------------------------
+  // ----- Classic mxGraph general extras ---------------------------------------
   shape('basic.cube', 'Cube', 'shape=cube;size=16;', ({ w, h, style, params }) => {
     const d = Math.min(pn(params, 'size'), m(w, h));
     return (
@@ -484,7 +484,7 @@ const shapes: ShapeDef[] = [
     params: [param.pct('size', 'Spine', 0.5)],
     handles: ({ w, h, p }) => [handle(w * pn(p, 'size'), h / 4, (pt) => ({ params: { size: pt.x / w } }))],
   }),
-  // Drawn mirrored natively; exported as draw.io's flipped curlyBracket, so `size` is measured from the right.
+  // Drawn mirrored natively; exported as mxGraph's flipped curlyBracket, so `size` is measured from the right.
   shape('misc.curlyRight', 'Curly brace (right)', 'shape=curlyBracket;rounded=1;size=0.5;flipH=1;', ({ w, h, style, params }) => {
     const x = w * (1 - pn(params, 'size'));
     const r = Math.min(w * 0.5, h * 0.1);

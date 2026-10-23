@@ -10,6 +10,7 @@ import { useEditor } from '@/store/editor';
 import { serializePages } from '@/io/fileFormat';
 import { idbAll, idbClear, idbDelete, idbGet, idbPut } from './idb';
 import { docOrigin, ensurePermission, offerOrigin } from './origin';
+import { t } from '@/i18n';
 
 export const WEB_RECENT_PREFIX = 'web-recent:';
 const KEEP = 12;
@@ -79,19 +80,19 @@ export const forgetRecentDoc = (id: string) => idbDelete('recent', id).catch(() 
  */
 export async function readRecentDoc(id: string): Promise<{ name: string; contents: string }> {
   const r = await idbGet<RecentDoc>('recent', id);
-  if (!r) throw new Error('This recent document is no longer available.');
+  if (!r) throw new Error(t('storage.recentGone'));
   if (r.handle) {
-    if (!(await ensurePermission(r.handle, 'read'))) throw new Error(`Permission to read “${r.name}” was denied.`);
+    if (!(await ensurePermission(r.handle, 'read'))) throw new Error(t('storage.recentPermission', { name: r.name }));
     const file = await r.handle.getFile();
     offerOrigin({ kind: 'handle', handle: r.handle });
     return { name: file.name, contents: await file.text() };
   }
   if (r.libraryId) {
     const doc = await idbGet<{ name: string; data: string }>('documents', r.libraryId);
-    if (!doc) throw new Error(`“${r.name}” was removed from the browser library.`);
+    if (!doc) throw new Error(t('storage.recentRemoved', { name: r.name }));
     offerOrigin({ kind: 'library', id: r.libraryId });
     return { name: `${doc.name}.opendraw`, contents: doc.data };
   }
   if (r.data) return { name: `${r.name}.opendraw`, contents: r.data };
-  throw new Error('This recent document is no longer available.');
+  throw new Error(t('storage.recentGone'));
 }

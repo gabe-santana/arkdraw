@@ -1,5 +1,5 @@
 /**
- * Formatted labels (draw.io "Formatted Text"): Markdown subset + sanitized
+ * Formatted labels (mxGraph "Formatted Text"): Markdown subset + sanitized
  * inline HTML (see ./richFormat.ts), plus inline/display LaTeX math. Runs are
  * laid out explicitly (no text-anchor tricks) so mixed styles, sizes, images,
  * tables and formula boxes wrap and align correctly, and the result is plain

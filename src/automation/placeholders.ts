@@ -1,5 +1,5 @@
 /**
- * `%key%` placeholder lookup with draw.io's parent chain: the element itself
+ * `%key%` placeholder lookup with mxGraph's parent chain: the element itself
  * (handled in ElementBodies), then its container ancestors, then its layer,
  * the page and finally the document's properties.
  */

@@ -4,7 +4,7 @@
  *
  * Contents:
  *  - document building (kind fallback, spec → laid-out elements, connectors)
- *  - colour / HTML-text / draw.io-style normalisation
+ *  - colour / HTML-text / normalisation
  *  - bytes, base64, CRC32, PNG chunk reading/writing
  *  - `embedDiagramInPng` / `embedDiagramInSvg`: OpenDraw's own convention for
  *    "editable images" (documented in ./embedded.ts), used by the exporters.
@@ -132,7 +132,7 @@ export function cleanSpec(spec: DiagramSpec): DiagramSpec {
 export interface LayoutOverrides {
   /** Fixed sizes per spec node id (otherwise sized to fit the text). */
   sizes?: Map<string, { w?: number; h?: number }>;
-  /** Extra space added to auto sizes (draw.io CSV `padding`). */
+  /** Extra space added to auto sizes (mxGraph CSV `padding`). */
   padding?: number;
   nodesep?: number;
   ranksep?: number;
@@ -287,10 +287,10 @@ export function htmlToPlain(html: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// draw.io styles → OpenDraw
+// mxGraph styles → OpenDraw
 // ---------------------------------------------------------------------------
 
-/** draw.io shape names → OpenDraw kind candidates. */
+/** mxGraph shape names → OpenDraw kind candidates. */
 const DRAWIO_KIND: Record<string, string[]> = {
   rectangle: ['rectangle'], label: ['rectangle'], rect: ['rectangle'],
   ellipse: ['ellipse'], doubleEllipse: ['erd.multivalued', 'ellipse'],
@@ -308,7 +308,7 @@ const DRAWIO_KIND: Record<string, string[]> = {
   offPageConnector: ['flow.offPage'], or: ['flow.or', 'ellipse'], xor: ['flow.xor', 'ellipse'],
 };
 
-/** Reverse index of the registry's own draw.io styles. */
+/** Reverse index of the registry's own mxGraph styles. */
 let registryIndex: Map<string, string> | undefined;
 function kindFromRegistry(name: string): string | undefined {
   if (!registryIndex) {
@@ -384,7 +384,7 @@ export interface MappedDrawioStyle {
   container: boolean;
 }
 
-/** Maps a draw.io style string onto an OpenDraw kind + style overrides. */
+/** Maps a string onto an OpenDraw kind + style overrides. */
 export function mapDrawioStyle(styleText: string, isEdge = false): MappedDrawioStyle {
   const m = parseStyle(styleText);
   const style: Partial<ElementStyle> = {};

@@ -44,6 +44,8 @@ import { Dialog, DialogHeader } from '@/ui/Dialog';
 import { Button } from '@/ui/Button';
 import { SearchInput } from '@/ui/controls';
 import { Kbd } from '@/ui/Kbd';
+import { t as translate, useLocale, useT } from '@/i18n';
+import { templateCategory, templateDescription, templateName } from '@/i18n/catalog';
 
 type CategoryFilter = 'all' | TemplateCategory;
 
@@ -88,10 +90,10 @@ async function createFrom(t: Template, close: () => void) {
     return;
   }
   const pages = t.build();
-  useEditor.getState().loadPages(pages, { path: null, name: t.id === 'blank' ? 'Untitled' : t.name });
+  useEditor.getState().loadPages(pages, { path: null, name: t.id === 'blank' ? 'Untitled' : templateName(t) });
   markUnsaved();
   requestAnimationFrame(() => useEditor.getState().zoomToFit());
-  if (t.id !== 'blank') useUi.getState().toast(`Created “${t.name}”`, 'success');
+  if (t.id !== 'blank') useUi.getState().toast(translate('templates.created', { name: templateName(t) }), 'success');
 }
 
 function insertFrom(t: Template, pageIndex: number, close: () => void) {
@@ -106,7 +108,7 @@ function insertFrom(t: Template, pageIndex: number, close: () => void) {
   const ed = useEditor.getState();
   ed.addElements(clones);
   ed.zoomToFit(clones.filter(isShape).map((e) => e.id));
-  useUi.getState().toast(`Inserted “${t.name}”`, 'success');
+  useUi.getState().toast(translate('templates.inserted', { name: templateName(t) }), 'success');
 }
 
 // ---------------------------------------------------------------------------
@@ -187,6 +189,7 @@ function loadCategory(): CategoryFilter {
 }
 
 function Gallery({ close }: { close: () => void }) {
+  const t = useT();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<CategoryFilter>(loadCategory);
   const [focusId, setFocusId] = useState<string>(TEMPLATES[0].id);
@@ -220,9 +223,9 @@ function Gallery({ close }: { close: () => void }) {
   const visible = useMemo(() => (category === 'all' ? matches : matches.filter((t) => t.category === category)), [matches, category]);
   const focused = visible.find((t) => t.id === focusId) ?? visible[0];
   const sections = useMemo(() => {
-    if (category !== 'all' || query) return [{ title: query ? `Results for “${query}”` : category, items: visible }];
-    return [USER_CATEGORY, ...CATEGORIES].map((c) => ({ title: c, items: visible.filter((t) => t.category === c) })).filter((s) => s.items.length);
-  }, [category, query, visible]);
+    if (category !== 'all' || query) return [{ id: category, title: query ? t('templates.resultsFor', { query }) : templateCategory(category), items: visible }];
+    return [USER_CATEGORY, ...CATEGORIES].map((c) => ({ id: c, title: templateCategory(c), items: visible.filter((x) => x.category === c) })).filter((s) => s.items.length);
+  }, [category, query, visible, t]);
 
   const focus = (t: Template | undefined) => {
     if (!t) return;
@@ -275,29 +278,29 @@ function Gallery({ close }: { close: () => void }) {
     <div className="flex min-h-0 flex-1 flex-col" onKeyDownCapture={onKeyDown}>
       <DialogHeader
         id="templates-title"
-        title="Start from a template"
-        subtitle={`${TEMPLATES.length} templates across ${CATEGORIES.length} categories — every one fully editable.`}
+        title={t('templates.title')}
+        subtitle={t('templates.subtitle', { templates: TEMPLATES.length, categories: CATEGORIES.length })}
         onClose={close}
       />
       <div className="flex min-h-0 flex-1 border-t border-line">
         {/* Category rail */}
-        <nav ref={railRef} className="flex w-[220px] shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-line bg-panel-2/60 p-2.5" aria-label="Template categories">
-          <SearchInput value={query} onChange={setQuery} placeholder="Search templates" autoFocus className="mb-2" />
-          <RailItem active={category === 'all'} icon={LayoutGrid} label="All templates" count={matches.length} onClick={() => setCategory('all')} />
+        <nav ref={railRef} className="flex w-[220px] shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-line bg-panel-2/60 p-2.5" aria-label={t('templates.categoriesNav')}>
+          <SearchInput value={query} onChange={setQuery} placeholder={t('templates.searchPlaceholder')} autoFocus className="mb-2" />
+          <RailItem active={category === 'all'} icon={LayoutGrid} label={t('templates.all')} count={matches.length} onClick={() => setCategory('all')} />
           <div className="mx-2 my-1.5 h-px bg-line" />
           <UserTemplatesRail active={(category as string) === USER_CATEGORY} count={counts.get(USER_CATEGORY) ?? 0} onClick={() => setCategory(USER_CATEGORY as CategoryFilter)} />
           {CATEGORIES.map((c) => (
-            <RailItem key={c} active={category === c} icon={CATEGORY_ICONS[c]} label={c} count={counts.get(c) ?? 0} onClick={() => setCategory(c)} />
+            <RailItem key={c} active={category === c} icon={CATEGORY_ICONS[c]} label={templateCategory(c)} count={counts.get(c) ?? 0} onClick={() => setCategory(c)} />
           ))}
         </nav>
 
         {/* Grid */}
-        <div ref={gridRef} role="listbox" aria-label="Templates" className="min-w-0 flex-1 overflow-y-auto px-5 pb-6">
+        <div ref={gridRef} role="listbox" aria-label={t('templates.grid')} className="min-w-0 flex-1 overflow-y-auto px-5 pb-6">
           {visible.length === 0 ? (
             <EmptyState query={query} onClear={() => setQuery('')} />
           ) : (
             sections.map((s) => (
-              <section key={s.title}>
+              <section key={s.id}>
                 <h3 className="sticky top-0 z-[2] -mx-5 flex items-baseline gap-2 bg-panel/90 px-5 pb-2 pt-4 text-[12px] font-semibold tracking-tight text-fg backdrop-blur">
                   {s.title}
                   <span className="font-normal text-subtle">{s.items.length}</span>
@@ -323,15 +326,15 @@ function Gallery({ close }: { close: () => void }) {
           {focused ? (
             <Preview t={focused} pageIndex={pageIndex} setPageIndex={setPageIndex} close={close} />
           ) : (
-            <div className="flex flex-1 items-center justify-center text-[12.5px] text-subtle">Nothing selected</div>
+            <div className="flex flex-1 items-center justify-center text-[12.5px] text-subtle">{t('templates.nothingSelected')}</div>
           )}
         </aside>
       </div>
       <footer className="flex items-center gap-4 border-t border-line px-5 py-2 text-[11.5px] text-muted">
-        <Hint keys={['←', '→', '↑', '↓']} label="Browse" />
-        <Hint keys={[<CornerDownLeft key="e" className="size-3" />]} label="Create" />
-        <Hint keys={['⇧', <CornerDownLeft key="e" className="size-3" />]} label="Insert into current diagram" />
-        <span className="ml-auto">Double-click a card to create</span>
+        <Hint keys={['←', '→', '↑', '↓']} label={t('templates.hint.browse')} />
+        <Hint keys={[<CornerDownLeft key="e" className="size-3" />]} label={t('common.create')} />
+        <Hint keys={['⇧', <CornerDownLeft key="e" className="size-3" />]} label={t('templates.insertIntoCurrent')} />
+        <span className="ml-auto">{t('templates.doubleClickHint')}</span>
       </footer>
     </div>
   );
@@ -349,20 +352,21 @@ function RailItem({ active, icon: Icon, label, count, onClick }: { active: boole
       )}
     >
       <Icon className={cn('size-[15px] shrink-0', active ? 'text-accent' : 'text-muted group-hover:text-fg')} strokeWidth={1.75} />
-      <span className="flex-1 truncate">{label}</span>
+      <span className="flex-1 truncate" title={label}>{label}</span>
       <span className={cn('tabular-nums text-[11px]', active ? 'text-accent' : 'text-subtle')}>{count}</span>
     </button>
   );
 }
 
-function Card({ t, active, onFocus, onOpen }: { t: Template; active: boolean; onFocus: () => void; onOpen: () => void }) {
+function Card({ t: tpl, active, onFocus, onOpen }: { t: Template; active: boolean; onFocus: () => void; onOpen: () => void }) {
+  useLocale(); // template names are looked up by id: re-render on language change
   const [ref, inView] = useInView<HTMLButtonElement>();
-  const thumb = useThumb(t, 0, false, inView);
-  const pages = thumb ? previewPages(t).length : 1;
+  const thumb = useThumb(tpl, 0, false, inView);
+  const pages = thumb ? previewPages(tpl).length : 1;
   return (
     <button
       ref={ref}
-      data-template={t.id}
+      data-template={tpl.id}
       role="option"
       aria-selected={active}
       tabIndex={-1}
@@ -377,7 +381,7 @@ function Card({ t, active, onFocus, onOpen }: { t: Template; active: boolean; on
           active ? 'ring-2 ring-accent shadow-[0_0_0_4px_var(--accent-soft)]' : 'ring-line group-hover:ring-line-strong',
         )}
       >
-        <ThumbView t={t} enabled={inView} />
+        <ThumbView t={tpl} enabled={inView} />
         {pages > 1 && (
           <span className="absolute right-1.5 top-1.5 inline-flex items-center gap-1 rounded-md bg-slate-900/75 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur">
             <Files className="size-3" />
@@ -386,29 +390,30 @@ function Card({ t, active, onFocus, onOpen }: { t: Template; active: boolean; on
         )}
       </div>
       <div className="min-w-0 px-0.5 pt-2">
-        <div className={cn('truncate text-[12.5px] font-medium', active ? 'text-accent' : 'text-fg')}>{t.name}</div>
-        <div className="truncate text-[11px] text-muted">{t.category}</div>
+        <div className={cn('truncate text-[12.5px] font-medium', active ? 'text-accent' : 'text-fg')} title={templateName(tpl)}>{templateName(tpl)}</div>
+        <div className="truncate text-[11px] text-muted">{templateCategory(tpl.category)}</div>
       </div>
     </button>
   );
 }
 
-function Preview({ t, pageIndex, setPageIndex, close }: { t: Template; pageIndex: number; setPageIndex: (i: number) => void; close: () => void }) {
-  const pages = t.id === 'blank' ? null : previewPages(t);
+function Preview({ t: tpl, pageIndex, setPageIndex, close }: { t: Template; pageIndex: number; setPageIndex: (i: number) => void; close: () => void }) {
+  const t = useT();
+  const pages = tpl.id === 'blank' ? null : previewPages(tpl);
   const stats = useMemo(() => {
     if (!pages) return null;
     const page = pages[Math.min(pageIndex, pages.length - 1)];
     const els = Object.values(page.doc.elements);
     return { shapes: els.filter(isShape).length, links: els.length - els.filter(isShape).length };
   }, [pages, pageIndex]);
-  const Icon = CATEGORY_ICONS[t.category] ?? UserCategoryIcon;
+  const Icon = CATEGORY_ICONS[tpl.category] ?? UserCategoryIcon;
   return (
-    <div key={t.id} className="animate-fade flex min-h-0 flex-1 flex-col p-4">
+    <div key={tpl.id} className="animate-fade flex min-h-0 flex-1 flex-col p-4">
       <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl bg-white shadow-[0_1px_3px_rgb(15_23_42/0.08)] ring-1 ring-line">
-        <ThumbView t={t} pageIndex={pageIndex} large enabled />
+        <ThumbView t={tpl} pageIndex={pageIndex} large enabled />
       </div>
       {pages && pages.length > 1 && (
-        <div className="mt-2.5 flex flex-wrap gap-1" role="tablist" aria-label="Pages">
+        <div className="mt-2.5 flex flex-wrap gap-1" role="tablist" aria-label={t('common.pages')}>
           {pages.map((p, i) => (
             <button
               key={p.id}
@@ -428,19 +433,19 @@ function Preview({ t, pageIndex, setPageIndex, close }: { t: Template; pageIndex
       <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
         <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted">
           <Icon className="size-3.5" strokeWidth={2} />
-          {t.category}
+          {templateCategory(tpl.category)}
         </div>
-        <h3 className="mt-1 text-[17px] font-semibold tracking-tight text-fg">{t.name}</h3>
-        <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted">{t.description}</p>
+        <h3 className="mt-1 text-[17px] font-semibold tracking-tight text-fg">{templateName(tpl)}</h3>
+        <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted">{templateDescription(tpl)}</p>
         {stats && pages && (
           <div className="mt-3 flex gap-3 text-[11.5px] text-muted">
-            <Meta>{pages.length === 1 ? '1 page' : `${pages.length} pages`}</Meta>
-            <Meta>{stats.shapes} shapes</Meta>
-            {stats.links > 0 && <Meta>{stats.links} connectors</Meta>}
+            <Meta>{t('common.pageCount', { count: pages.length })}</Meta>
+            <Meta>{t('common.shapeCount', { count: stats.shapes })}</Meta>
+            {stats.links > 0 && <Meta>{t('templates.connectorCount', { count: stats.links })}</Meta>}
           </div>
         )}
         <div className="mt-3 flex flex-wrap gap-1">
-          {t.keywords.slice(0, 6).map((k) => (
+          {tpl.keywords.slice(0, 6).map((k) => (
             <span key={k} className="rounded-md bg-panel px-1.5 py-0.5 text-[11px] text-muted ring-1 ring-line">
               {k}
             </span>
@@ -448,19 +453,19 @@ function Preview({ t, pageIndex, setPageIndex, close }: { t: Template; pageIndex
         </div>
       </div>
       <div className="mt-4 flex flex-col gap-2">
-        <Button variant="primary" className="h-9 w-full" icon={<FilePlus className="size-4" />} onClick={() => void createFrom(t, close)}>
-          {t.id === 'blank' ? 'Create blank diagram' : 'Create new diagram'}
+        <Button variant="primary" className="h-9 w-full" icon={<FilePlus className="size-4" />} onClick={() => void createFrom(tpl, close)}>
+          {tpl.id === 'blank' ? t('templates.createBlank') : t('templates.createNew')}
         </Button>
         <Button
           variant="secondary"
           className="h-9 w-full"
           icon={<Import className="size-4" />}
-          disabled={t.id === 'blank'}
-          onClick={() => insertFrom(t, pageIndex, close)}
+          disabled={tpl.id === 'blank'}
+          onClick={() => insertFrom(tpl, pageIndex, close)}
         >
-          Insert into current diagram
+          {t('templates.insertIntoCurrent')}
         </Button>
-        {isUserTemplate(t) && <UserTemplateTools t={t} />}
+        {isUserTemplate(tpl) && <UserTemplateTools t={tpl} />}
       </div>
     </div>
   );
@@ -484,17 +489,18 @@ function Hint({ keys, label }: { keys: ReactNode[]; label: string }) {
 }
 
 function EmptyState({ query, onClear }: { query: string; onClear: () => void }) {
+  const t = useT();
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
       <div className="flex size-12 items-center justify-center rounded-2xl bg-panel-2 text-subtle ring-1 ring-line">
         <SearchX className="size-5" />
       </div>
       <div>
-        <div className="text-[13.5px] font-medium text-fg">No templates match “{query}”</div>
-        <div className="mt-0.5 text-[12px] text-muted">Try a broader term like “cloud”, “uml” or “wireframe”.</div>
+        <div className="text-[13.5px] font-medium text-fg">{t('templates.noMatch', { query })}</div>
+        <div className="mt-0.5 text-[12px] text-muted">{t('templates.tryBroader')}</div>
       </div>
       <Button size="sm" onClick={onClear}>
-        Clear search
+        {t('chrome.ui.clearSearch')}
       </Button>
     </div>
   );

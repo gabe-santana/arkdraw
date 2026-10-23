@@ -25,7 +25,7 @@ const GROUP_TONE = {
   amenity: TONE.slate,
 };
 
-/** [name, label, icon, group, draw.io stencil, keywords] */
+/** [name, label, icon, group, mxGraph stencil, keywords] */
 const SIGNS: Array<[string, string, ComponentType<LucideProps>, Group, string, string]> = [
   ['person', 'Person', User, 'people', 'people.man_1', 'man woman user human'],
   ['group', 'Group', Users, 'people', 'people.meeting', 'people team users'],

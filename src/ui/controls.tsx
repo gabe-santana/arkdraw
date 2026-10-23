@@ -7,6 +7,7 @@ import { Check, ChevronDown, Search, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useDismiss } from './Menu';
 import { usePreferences } from '@/app/preferences';
+import { useT } from '@/i18n';
 
 // ---------------------------------------------------------------------------
 // Search
@@ -23,6 +24,7 @@ export function SearchInput({
   /** Keys still reach this (e.g. list navigation) — they don't bubble past the input. */
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }) {
+  const t = useT();
   return (
     <div className={cn('group relative flex items-center', className)}>
       <Search className="pointer-events-none absolute left-2.5 size-[14px] text-subtle transition-colors group-focus-within:text-accent" />
@@ -40,7 +42,7 @@ export function SearchInput({
         className="h-8 w-full rounded-lg bg-panel-2 pl-8 pr-7 text-[12.5px] text-fg outline-none ring-1 ring-transparent transition-[box-shadow,background] placeholder:text-subtle hover:ring-line focus:bg-panel focus:ring-2 focus:ring-accent/40"
       />
       {value && (
-        <button onClick={() => onChange('')} className="absolute right-1.5 rounded p-0.5 text-subtle hover:bg-hover hover:text-fg" aria-label="Clear search">
+        <button onClick={() => onChange('')} className="absolute right-1.5 rounded p-0.5 text-subtle hover:bg-hover hover:text-fg" aria-label={t('chrome.ui.clearSearch')}>
           <X className="size-3.5" />
         </button>
       )}
@@ -70,6 +72,7 @@ interface NumberFieldProps {
 export function NumberField({
   label, value, onChange, onCommit, onScrubStart, min = -Infinity, max = Infinity, step = 1, suffix, precision = 0, className,
 }: NumberFieldProps) {
+  const t = useT();
   const [draft, setDraft] = useState<string | null>(null);
   const fmt = (v: number | null) => (v === null ? '' : (Math.round(v * 10 ** precision) / 10 ** precision).toString());
   const clampV = (v: number) => Math.min(max, Math.max(min, v));
@@ -116,7 +119,7 @@ export function NumberField({
       </span>
       <input
         value={draft ?? fmt(value)}
-        placeholder={value === null ? 'Mixed' : undefined}
+        placeholder={value === null ? t('chrome.ui.mixed') : undefined}
         onChange={(e) => setDraft(e.target.value)}
         onFocus={(e) => e.target.select()}
         onBlur={commitDraft}
@@ -165,15 +168,16 @@ export function Segmented<T extends string>({
       {options.map((o) => (
         <button
           key={o.value}
-          title={o.title}
+          title={o.title ?? (typeof o.label === 'string' ? o.label : undefined)}
           onClick={() => onChange(o.value)}
           className={cn(
-            'relative z-[1] flex items-center justify-center gap-1.5 rounded-md font-medium transition-colors [&_svg]:size-[15px]',
+            'relative z-[1] flex min-w-0 items-center justify-center gap-1.5 rounded-md px-1 font-medium transition-colors [&_svg]:size-[15px]',
             size === 'sm' ? 'h-6 text-[11.5px]' : 'h-7 text-[12px]',
             o.value === value ? 'text-fg' : 'text-muted hover:text-fg',
           )}
         >
-          {o.label}
+          {/* Long translations truncate instead of overflowing the track. */}
+          {typeof o.label === 'string' ? <span className="min-w-0 truncate">{o.label}</span> : o.label}
         </button>
       ))}
     </div>
@@ -243,6 +247,7 @@ export function Select<T extends string>({
   className?: string;
   renderValue?: (v: T | null) => ReactNode;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLButtonElement>(null);
   const [rect, setRect] = useState<DOMRect | null>(null);
@@ -263,7 +268,7 @@ export function Select<T extends string>({
         )}
       >
         {current?.icon && <span className="text-muted [&_svg]:size-3.5">{current.icon}</span>}
-        <span className="flex-1 truncate">{renderValue ? renderValue(value) : (current?.label ?? 'Mixed')}</span>
+        <span className="flex-1 truncate">{renderValue ? renderValue(value) : (current?.label ?? t('chrome.ui.mixed'))}</span>
         <ChevronDown className={cn('size-3.5 text-subtle transition-transform duration-200', open && 'rotate-180')} />
       </button>
       {open &&
@@ -302,6 +307,7 @@ export function Select<T extends string>({
 export function ColorField({
   value, onChange, swatches, allowNone, label,
 }: { value: string | null; onChange: (v: string) => void; swatches: string[]; allowNone?: boolean; label: string }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLButtonElement>(null);
   const [rect, setRect] = useState<DOMRect | null>(null);
@@ -331,7 +337,7 @@ export function ColorField({
         )}
       >
         <Swatch color={value} />
-        <span className="flex-1 truncate text-left font-mono text-[11.5px] uppercase text-fg">{value === null ? 'Mixed' : isNone ? 'None' : value}</span>
+        <span className="flex-1 truncate text-left font-mono text-[11.5px] uppercase text-fg">{value === null ? t('chrome.ui.mixed') : isNone ? t('common.none') : value}</span>
       </button>
       {open &&
         rect &&
@@ -348,7 +354,7 @@ export function ColorField({
                 />
               ))}
             </div>
-            {[['Custom', custom], ['Recent', recent]].map(([title, list]) =>
+            {[[t('common.custom'), custom], [t('chrome.ui.recentColors'), recent]].map(([title, list]) =>
               (list as string[]).length ? (
                 <div key={title as string} className="mt-2.5">
                   <div className="mb-1 text-[10.5px] font-medium uppercase tracking-wide text-subtle">{title as string}</div>
@@ -377,7 +383,7 @@ export function ColorField({
               />
               {allowNone && (
                 <button onClick={() => onChange('none')} className={cn('h-7 rounded-md px-2 text-[12px] text-muted hover:bg-hover hover:text-fg', isNone && 'bg-accent-soft text-accent')}>
-                  None
+                  {t('common.none')}
                 </button>
               )}
             </div>

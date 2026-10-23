@@ -13,8 +13,10 @@ import { registerCanvasElement } from './viewport';
 import { ShapePicker } from './ShapePicker';
 import { InteractionLayer } from '@/interaction/InteractionLayer';
 import { Scrollbars } from '@/styling/Scrollbars';
+import { useT } from '@/i18n';
 
 export function Canvas({ dark }: { dark: boolean }) {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   const { onPointerDown, onPointerMove, onPointerUp, onDoubleClick, onContextMenu, panning, spaceHeld, freehand } =
     useCanvasInteractions(ref);
@@ -63,8 +65,8 @@ export function Canvas({ dark }: { dark: boolean }) {
       data-canvas
       tabIndex={0}
       role="application"
-      aria-roledescription="diagram canvas"
-      aria-label="Diagram canvas. Tab moves between shapes, Alt+Arrow follows connections, Shift+F10 opens the context menu."
+      aria-roledescription={t('canvas.roleDescription')}
+      aria-label={t('canvas.ariaLabel')}
       className="absolute inset-0 overflow-hidden bg-canvas outline-none focus-visible:shadow-[inset_0_0_0_2px_var(--selection)]"
       style={{
         cursor,
@@ -94,6 +96,7 @@ export function Canvas({ dark }: { dark: boolean }) {
 }
 
 function EmptyState() {
+  const t = useT();
   const leftOpen = useUi((s) => s.leftOpen);
   return (
     <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -104,20 +107,20 @@ function EmptyState() {
             <Shapes className="size-7 text-white" strokeWidth={1.75} />
           </div>
         </div>
-        <h2 className="text-[17px] font-semibold tracking-tight text-fg">Start with a blank canvas</h2>
+        <h2 className="text-[17px] font-semibold tracking-tight text-fg">{t('canvas.empty.title')}</h2>
         <p className="mt-1.5 max-w-[340px] text-[13px] leading-relaxed text-muted">
-          Drag shapes from the library, draw with the toolbar, or describe a diagram and let AI sketch it for you.
+          {t('canvas.empty.body')}
         </p>
         <div className="mt-5 flex items-center gap-4 text-[12px] text-muted">
           <span className="flex items-center gap-1.5">
-            <MousePointer2 className="size-3.5" /> <Kbd>R</Kbd> rectangle
+            <MousePointer2 className="size-3.5" /> <Kbd>R</Kbd> {t('canvas.empty.rectangle')}
           </span>
           <span className="flex items-center gap-1.5">
-            <Kbd>L</Kbd> connector
+            <Kbd>L</Kbd> {t('canvas.empty.connector')}
           </span>
           <span className="flex items-center gap-1.5">
             <Sparkles className="size-3.5" /> <Kbd>Ctrl</Kbd>
-            <Kbd>I</Kbd> AI
+            <Kbd>I</Kbd> {t('canvas.empty.ai')}
           </span>
         </div>
       </div>

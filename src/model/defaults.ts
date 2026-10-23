@@ -58,7 +58,7 @@ export const PALETTE = {
   ],
 };
 
-// --- User default style (draw.io "Set as Default Style") ------------------------
+// --- User default style (mxGraph "Set as Default Style") ------------------------
 
 const DEFAULT_KEY = 'opendraw:default-style';
 let userDefault: Partial<ElementStyle> = (() => {
@@ -113,7 +113,7 @@ export function createShape(
   };
 }
 
-/** Remembered connector look (draw.io applies the last-used edge style to new edges). */
+/** Remembered connector look (mxGraph applies the last-used edge style to new edges). */
 let connectorDefaults: Partial<ConnectorElement> = {};
 export function rememberConnectorStyle(c: Partial<ConnectorElement>) {
   const { routing, startArrow, endArrow, connectorShape, lineJumps, style } = c;

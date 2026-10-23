@@ -8,6 +8,7 @@ import { createRoot } from 'react-dom/client';
 import { create } from 'zustand';
 import { Dialog } from './Dialog';
 import { Button } from './Button';
+import { useT } from '@/i18n';
 
 export interface PromptRequest {
   title: string;
@@ -58,6 +59,7 @@ function PromptHost() {
 }
 
 function PromptBody({ req }: { req: NonNullable<ReturnType<typeof usePrompt.getState>['req']> }) {
+  const t = useT();
   const [value, setValue] = useState(req.defaultValue ?? '');
   const [error, setError] = useState<string | null>(null);
   const submit = () => {
@@ -89,10 +91,10 @@ function PromptBody({ req }: { req: NonNullable<ReturnType<typeof usePrompt.getS
       {error && <p className="mt-1.5 text-[12px] text-danger">{error}</p>}
       <div className="mt-5 flex items-center justify-end gap-2">
         <Button type="button" onClick={() => req.resolve(null)}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" variant="primary" disabled={!value.trim()}>
-          {req.confirmLabel ?? 'OK'}
+          {req.confirmLabel ?? t('common.ok')}
         </Button>
       </div>
     </form>

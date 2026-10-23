@@ -5,25 +5,27 @@
  * sit inside the visible area between them.
  */
 import { useMemo, useRef } from 'react';
+import { columnInset } from '@/chrome/Dock';
 import { selectionBounds, useEditor } from '@/store/editor';
 import { useUi } from '@/store/ui';
 import { cn } from '@/lib/cn';
 import { dragTo, scrollMetrics, type AxisMetrics } from './scrollbarMath';
 
 const EDGE = 3;
-const PANEL = 284;
+/** Gap between a docked panel column and the scrollbar track. */
+const PANEL_GAP = 20;
 
 export function Scrollbars() {
   const doc = useEditor((s) => s.doc);
   const camera = useEditor((s) => s.camera);
   const viewport = useEditor((s) => s.viewport);
-  const leftOpen = useUi((s) => s.leftOpen);
-  const rightOpen = useUi((s) => s.rightOpen);
+  const leftInset = useUi((s) => columnInset(s, 'left'));
+  const rightInset = useUi((s) => columnInset(s, 'right'));
   const aiOpen = useUi((s) => s.aiOpen);
   const content = useMemo(() => selectionBounds(doc, doc.order), [doc]);
 
-  const left = leftOpen ? PANEL : EDGE;
-  const right = aiOpen ? 396 : rightOpen ? PANEL : EDGE;
+  const left = leftInset ? leftInset + PANEL_GAP : EDGE;
+  const right = aiOpen ? 396 : rightInset ? rightInset + PANEL_GAP : EDGE;
   const top = 8;
   const bottom = 4;
   const track = { w: Math.max(40, viewport.w - left - right - 14), h: Math.max(40, viewport.h - top - bottom - 14) };

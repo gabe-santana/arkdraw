@@ -1,7 +1,7 @@
 /**
  * mxGraph stencil XML → a typed stencil model.
  *
- * draw.io describes custom shapes ("Edit shape", `shape=stencil(…)`, sidebar
+ * mxGraph describes custom shapes ("Edit shape", `shape=stencil(…)`, sidebar
  * stencil sets) in this format:
  *
  *   <shape name="Box" w="100" h="60" aspect="variable" strokewidth="inherit">
@@ -19,7 +19,7 @@
 export interface StencilConnection {
   x: number;
   y: number;
-  /** Project the point onto the shape outline (draw.io `perimeter="1"`). */
+  /** Project the point onto the shape outline (mxGraph `perimeter="1"`). */
   perimeter: boolean;
   name?: string;
 }

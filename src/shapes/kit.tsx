@@ -183,7 +183,7 @@ export const cloudPath = (w: number, h: number) =>
   `C${w},${0.3 * h} ${0.8 * w},${0.1 * h} ${0.625 * w},${0.2 * h} ` +
   `C${0.5 * w},${0.05 * h} ${0.3 * w},${0.05 * h} ${0.25 * w},${0.25 * h} Z`;
 
-/** Cap radius of a cylinder: the `size` param in px (draw.io cylinder3) when set, else proportional. */
+/** Cap radius of a cylinder: the `size` param in px (mxGraph cylinder3) when set, else proportional. */
 export const cylRy = (w: number, h: number, size?: number | string) =>
   size === undefined || !Number.isFinite(Number(size)) ? Math.min(h * 0.15, w * 0.2, 16) : Math.max(0, Math.min(Number(size), h / 2));
 
