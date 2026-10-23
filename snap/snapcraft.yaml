@@ -6,10 +6,10 @@
 name: opendraw
 base: core22
 adopt-info: opendraw
-summary: Open-source, offline diagram editor (draw.io alternative)
+summary: Open-source, offline, local-first diagram editor
 description: |
   OpenDraw is an open-source, fully offline diagramming app for flowcharts,
-  UML, ER diagrams and network maps. It opens and saves draw.io files and
+  UML, ER diagrams and network maps. It opens and saves .drawio files and
   imports Visio (.vsdx).
 grade: stable
 confinement: strict

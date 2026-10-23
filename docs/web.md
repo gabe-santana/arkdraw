@@ -47,8 +47,8 @@ npm run preview:web    # serve dist/ on http://localhost:4173 (service worker ac
 | `?saveBtn=0`, `?exitBtn=0` (or `noSaveBtn=1`, `noExitBtn=1`) | Embed: hide the floating Save / Exit buttons. |
 
 Supported content everywhere (share links, URLs, `load` messages, drag & drop
-into the viewer): OpenDraw JSON (`.opendraw`), draw.io XML (`.drawio`, plain
-or compressed), and PNG/SVG/PDF exports carrying an embedded draw.io or
+into the viewer): OpenDraw JSON (`.opendraw`), mxGraph XML (`.drawio`, plain
+or compressed), and PNG/SVG/PDF exports carrying an embedded mxGraph or
 OpenDraw diagram.
 
 ## Share links
@@ -59,7 +59,7 @@ https://draw.example.com/?viewer=1#R…
 ```
 
 The fragment never reaches the server, so a shared diagram is visible only to
-people who have the link. draw.io `#R` links (standard base64 of a
+people who have the link. mxGraph `#R` links (standard base64 of a
 URI-encoded XML) decode too.
 
 ```ts
@@ -111,7 +111,7 @@ GitHub raw files, S3/GCS public buckets and most CDNs do.
 ## Embed mode (`?embed=1`)
 
 The full editor in an iframe, controlled by the parent page — modelled on
-draw.io's embed protocol.
+mxGraph's embed protocol.
 
 ```html
 <iframe id="od" src="https://draw.example.com/?embed=1&autosave=1&origin=https://app.example.com"></iframe>
@@ -131,7 +131,7 @@ draw.io's embed protocol.
 
 | Message | Effect |
 | --- | --- |
-| `{ action: 'load', json?, xml?, title?, autosave? }` | Open a diagram. `json` may be a string or object; `xml` may be draw.io XML or OpenDraw JSON. Empty = blank document. |
+| `{ action: 'load', json?, xml?, title?, autosave? }` | Open a diagram. `json` may be a string or object; `xml` may be mxGraph XML or OpenDraw JSON. Empty = blank document. |
 | `{ action: 'export', format, page?, scale?, background? }` | `format`: `svg`, `png`, `json`, `drawio`. `page`: index (1-based), id or name (default: current). `scale`: PNG scale (default 2). `background`: CSS color or `null` for transparent (default: page background; white for PNG). |
 | `{ action: 'status', modified: false }` | The host has saved; clears the dirty marker. |
 | `{ action: 'exit' }` | Asks the editor to close; it answers with an `exit` event. |
@@ -149,7 +149,7 @@ draw.io's embed protocol.
 | `error` | `{ action, message }` |
 
 Every request may carry an `id`; replies echo it. If the parent sends JSON
-strings (draw.io style), or with `?proto=json`, replies are JSON strings.
+strings (mxGraph style), or with `?proto=json`, replies are JSON strings.
 
 A manual test host lives at `test/web/embed-host.html`
 (`http://localhost:1420/test/web/embed-host.html` with the dev server).

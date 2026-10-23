@@ -2,9 +2,9 @@
 
 OpenDraw can be extended in four ways, from least to most powerful:
 
-1. **Custom shapes** written in mxGraph stencil XML, the format draw.io uses.
+1. **Custom shapes** written in mxGraph stencil XML, the format mxGraph uses.
 2. **Shape configs**: JSON files that package stencils with default styles, sizes and connection points into a library.
-3. **Style strings**: draw.io `key=value;` styles, edited with *Edit → Edit style…*.
+3. **Style strings**: mxGraph `key=value;` styles, edited with *Edit → Edit style…*.
 4. **Plugins**: JavaScript that adds commands, menus, shape libraries and file formats.
 
 The code lives in `src/stencils/` (shapes) and `src/extensibility/` (style strings, plugins, UI modes).
@@ -17,7 +17,7 @@ A custom shape is a shape of kind `stencil` that carries its own stencil XML (`S
 
 - **Arrange → Insert → Shape from stencil XML…** opens an editor with a live preview. **Insert** places the shape; **Add to Scratchpad** saves it to the Scratchpad library.
 - **Edit → Edit shape…** opens the XML of the selected custom shape, and **Apply** updates it as one undo step. For a built-in shape, the dialog offers **Convert & apply** when the shape's geometry is plain SVG (rectangles, ellipses, diamonds, cylinders, documents, notes…). Shapes that draw their own text or images, such as UML classes and icons, can't be converted, and the dialog explains why. You can still replace them with a stencil written from scratch.
-- **draw.io files**: cells styled `shape=stencil(…)` import as custom shapes and export back the same way. The payload is base64(deflateRaw(encodeURIComponent(xml))), as in draw.io's `Graph.compress`.
+- **mxGraph files**: cells styled `shape=stencil(…)` import as custom shapes and export back the same way. The payload is base64(deflateRaw(encodeURIComponent(xml))) `Graph.compress`.
 
 ### Format
 
@@ -68,7 +68,7 @@ The shape's fill, stroke, stroke width, dash, opacity and font set the initial s
 | File | Becomes |
 | --- | --- |
 | `.opendrawlib` | An OpenDraw library. |
-| draw.io `<mxlibrary>` `.xml` | One item per entry. Entries built from `shape=stencil(…)` cells become custom shapes. |
+| mxGraph `<mxlibrary>` `.xml` | One item per entry. Entries built from `shape=stencil(…)` cells become custom shapes. |
 | Stencil set `.xml`: `<shapes name="…"><shape …/>…</shapes>` or a single `<shape>` | One custom shape per `<shape>`. |
 | Shape config `.json` (see below) | One custom shape per entry, with its defaults. |
 
@@ -100,7 +100,7 @@ The shape's fill, stroke, stroke width, dash, opacity and font set the initial s
 | `name` | yes | Library item title, and the shape's name. |
 | `stencil` | yes | Stencil XML. |
 | `w`, `h` | no | Default size. Defaults to the stencil's `w` and `h`. |
-| `style` | no | Default style, as either OpenDraw `ElementStyle` keys or a draw.io style string (`"fillColor=#fef3c7;dashed=1;"`). |
+| `style` | no | Default style, as either OpenDraw `ElementStyle` keys or a string (`"fillColor=#fef3c7;dashed=1;"`). |
 | `text` | no | Default label. |
 | `connectionPoints` | no | Fractions of the box. Defaults to the stencil's `<constraint>`s. |
 | `params` | no | Values stored in `ShapeElement.params`. |
@@ -112,11 +112,11 @@ A bare JSON array of entries is also accepted. Plugins pass the same entries to 
 
 ## 3. Style strings
 
-**Edit → Edit style…** (`Mod+E`) shows the selection's style as a draw.io style string, with one `key=value;` per line. A toggle switches to OpenDraw's own style keys.
+**Edit → Edit style…** (`Mod+E`) shows the selection's style as a string, with one `key=value;` per line. A toggle switches to OpenDraw's own style keys.
 
 - The string comes from the `.drawio` exporter (`drawioStyleOf` in `src/io/drawio.ts`), and edits are read back by the importer (`elementFromDrawioStyle`). The dialog therefore speaks exactly the dialect that `.drawio` files use.
 - Applying a style is a diff. Only the fields whose keys you changed are written, so OpenDraw-only properties that a style string can't express (underline, label position, custom shadow…) are left alone. The change applies to the whole selection as one undo step. Shape-only fields, such as the shape kind, apply only to elements of the same type.
-- Keys OpenDraw doesn't understand (`myPluginFlag=1`, newer draw.io keys…) are kept in the element's hidden data (`data.__drawioStyle`). They show up again in the dialog and are written back into the cell style on `.drawio` export.
+- Keys OpenDraw doesn't understand (`myPluginFlag=1`, newer mxGraph keys…) are kept in the element's hidden data (`data.__drawioStyle`). They show up again in the dialog and are written back into the cell style on `.drawio` export.
 
 ---
 
@@ -132,7 +132,7 @@ The list is saved, and enabled plugins load at startup.
 
 ### Trust model
 
-Plugins work like draw.io plugins: they run in the page, with full access to the editor, your diagrams and anything the page can reach. There is no sandbox. **Only load plugins you trust.** OpenDraw asks for confirmation before it enables a plugin, either when you add one or when you re-enable one.
+Plugins work plugins: they run in the page, with full access to the editor, your diagrams and anything the page can reach. There is no sandbox. **Only load plugins you trust.** OpenDraw asks for confirmation before it enables a plugin, either when you add one or when you re-enable one.
 
 Content Security Policy:
 

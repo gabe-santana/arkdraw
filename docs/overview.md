@@ -6,7 +6,7 @@ The details that used to live in the README: features, editions, formats, icon p
 
 - **Infinite canvas** with grid snapping, smart alignment and equal-spacing guides, rulers (px, pt, in, mm, m), page view with paper sizes, an outline/minimap, and focus mode.
 - **Connectors** with orthogonal auto-routing that avoids shapes, plus straight, curved, elbow, entity-relation and isometric styles, waypoints, line jumps, 28 arrowheads including crow's-foot, fixed and custom connection points, multiple labels and connector-to-connector glue.
-- **1,200+ shapes in 40+ libraries**: General, Flowchart, UML and UML 2.5, ER, C4, BPMN 2.0, ArchiMate 3, SysML, Cisco-style network, Rack, Citrix, Veeam, OpenStack, Office/M365, Active Directory, STRIDE, Bootstrap, Electrical, P&amp;ID, Floorplan, Lean/VSM, Mockups, isometric, clipart, EIP and more. Parametric shapes have draw.io-style yellow handles.
+- **1,200+ shapes in 40+ libraries**: General, Flowchart, UML and UML 2.5, ER, C4, BPMN 2.0, ArchiMate 3, SysML, Cisco-style network, Rack, Citrix, Veeam, OpenStack, Office/M365, Active Directory, STRIDE, Bootstrap, Electrical, P&amp;ID, Floorplan, Lean/VSM, Mockups, isometric, clipart, EIP and more. Parametric shapes have yellow handles.
 - **Template gallery** with 15 categories, live previews and "insert into current diagram".
 - **Automatic layouts**: flow, tree, radial, org chart, mind map (with `Tab` / `Ctrl+Enter` tree editing), organic, circle and grid.
 
@@ -21,8 +21,8 @@ The details that used to live in the README: features, editions, formats, icon p
 
 - Multi-page documents, layers (hide, lock, reorder), tags with a tag filter, groups and collapsible containers.
 - Edit Data (custom properties, tooltips, links, `%placeholder%` labels), raw Edit Style, and Edit Diagram as JSON.
-- Find and replace (regex, all pages), a **command palette** (`Ctrl/⌘+K`), and draw.io-compatible shortcuts generated from one action registry.
-- Comment threads stored in the file, local revision history, a Scratchpad, and custom libraries (`.opendrawlib`; draw.io `<mxlibrary>` files import too).
+- Find and replace (regex, all pages), a **command palette** (`Ctrl/⌘+K`), and familiar shortcuts generated from one action registry.
+- Comment threads stored in the file, local revision history, a Scratchpad, and custom libraries (`.opendrawlib`; mxGraph `<mxlibrary>` files import too).
 
 ## Web vs desktop
 
@@ -49,7 +49,7 @@ npm run docker:build && npm run docker:run  # http://localhost:8080
 | Format | Import | Export | Notes |
 | --- | :---: | :---: | --- |
 | OpenDraw `.opendraw` | ✓ | ✓ | Pretty-printed JSON, git-friendly |
-| draw.io / diagrams.net `.drawio`, `.xml` | ✓ | ✓ | Compressed or plain; `flow` animation survives as `flowAnimation=1` |
+| mxGraph XML `.drawio`, `.xml` | ✓ | ✓ | Compressed or plain; `flow` animation survives as `flowAnimation=1` |
 | PNG / SVG / PDF with an embedded diagram | ✓ | ✓ | "Include a copy of the diagram" makes the image re-editable |
 | PNG, JPEG, WebP | | ✓ | Scale, border, transparent background, selection only |
 | SVG | | ✓ | Same renderer as the canvas |
@@ -59,7 +59,7 @@ npm run docker:build && npm run docker:run  # http://localhost:8080
 | Gliffy | ✓ | | Best-effort |
 | Lucid | ✓ | | Standard Import format |
 | Mermaid | ✓ | | Flowchart, sequence, class, ER, state, mindmap, converted to native shapes |
-| CSV | ✓ | | draw.io-style CSV |
+| CSV | ✓ | | CSV |
 | SQL | ✓ | | `CREATE TABLE` DDL becomes an ER diagram |
 | Text | ✓ | | Indented lists or `a -> b` edges |
 | Animated GIF | | ✓ | Encoded in a Web Worker, matches the canvas preview |
@@ -92,7 +92,7 @@ opendraw --export architecture.opendraw --format png --output architecture.png -
 opendraw -x flows.drawio -f pdf --all-pages --embed -o flows.pdf
 ```
 
-Formats: PNG, SVG, PDF, JPG, WebP, HTML, VSDX, draw.io and URL. Rendering runs in the hidden WebView, so the output matches the Export dialog. See [`docs/cli-export.md`](docs/cli-export.md) for every option, exit codes and Windows notes.
+Formats: PNG, SVG, PDF, JPG, WebP, HTML, VSDX, .drawio and URL. Rendering runs in the hidden WebView, so the output matches the Export dialog. See [`docs/cli-export.md`](docs/cli-export.md) for every option, exit codes and Windows notes.
 
 ## AI assistant (bring your own key)
 
@@ -143,7 +143,7 @@ Configure it in *Extras → AI provider & API key…*.
 │   ├── icons/ search/    vendor icon packs, fuzzy search for shapes, icons and templates
 │   ├── layout/           auto-layout algorithms (auto-discovered)
 │   ├── templates/        template gallery
-│   ├── io/               .opendraw format, draw.io interop, importers, exporters, VSDX writer
+│   ├── io/               .opendraw format, mxGraph interop, importers, exporters, VSDX writer
 │   ├── ai/               provider adapters, agent loop, spec → diagram
 │   ├── animation/        animation timeline
 │   ├── viewer/ web/      read-only viewer, web boot, share links, embed API, PWA

@@ -35,7 +35,7 @@
     "active": true,
     "category": "Productivity",
     "shortDescription": "Native, offline diagramming",
-    "longDescription": "OpenDraw is an open-source, fully offline diagramming app for flowcharts, UML, ER diagrams and network maps. A modern alternative to draw.io.",
+    "longDescription": "OpenDraw is an open-source, fully offline diagramming app for flowcharts, UML, ER diagrams and network maps.",
     "publisher": "OpenDraw",
     "copyright": "Copyright (c) 2026 Gabriel Santana. MIT License.",
     "license": "MIT",
@@ -58,8 +58,8 @@
       },
       {
         "ext": ["drawio"],
-        "name": "draw.io Diagram",
-        "description": "draw.io Diagram",
+        "name": "Diagram XML",
+        "description": "Diagram XML (.drawio)",
         "role": "Editor",
         "mimeType": "application/vnd.jgraph.mxfile"
       },

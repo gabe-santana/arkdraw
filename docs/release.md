@@ -28,7 +28,7 @@ Notes:
   store login.
 - **File associations** (installers only): `.opendraw` (editor), `.drawio` (editor)
   and `.vsdx` (viewer, alternate handler on macOS), set in `bundle.fileAssociations`
-  in `tauri.conf.json`. As with draw.io desktop, `.png`/`.svg`/`.xml` open only
+  in `tauri.conf.json`. As with mxGraph desktop, `.png`/`.svg`/`.xml` open only
   through *File → Open*, not by association.
 
 ## Versioning

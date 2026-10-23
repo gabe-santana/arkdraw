@@ -1,0 +1,50 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting! Please search existing issues first. For security problems, see SECURITY.md instead.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: A clear description of the bug, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open File → New from template… → AWS serverless
+        2. Select the API Gateway icon
+        3. …
+    validations:
+      required: true
+  - type: dropdown
+    id: edition
+    attributes:
+      label: Edition
+      options:
+        - Desktop (Windows)
+        - Desktop (macOS)
+        - Desktop (Linux)
+        - Web / PWA
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: v0.1.0, or the commit hash if you built from source
+  - type: input
+    id: browser
+    attributes:
+      label: Browser (web edition only)
+      placeholder: Chrome 140, Firefox 143, Safari 26…
+  - type: textarea
+    id: media
+    attributes:
+      label: Screenshots, recordings or a sample file
+      description: Drag files here. A small `.opendraw` file that reproduces the problem helps a lot.

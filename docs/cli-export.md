@@ -13,7 +13,7 @@ opendraw --export <input.opendraw|input.drawio> --format <fmt> --output <path> [
 | `-f, --format <fmt>` | `png`, `svg`, `pdf`, `jpg`, `webp`, `html`, `vsdx`, `drawio`, `url`. Defaults to the output extension, else `png`. |
 | `-o, --output <path>` | Output file. Defaults to the input name with the format's extension. |
 | `-p, --page <n>` | Page to export (1-based, default 1). |
-| `-a, --all-pages` | Every page. PDF / HTML / VSDX / draw.io produce one multi-page file; images produce one file per page (`out-1.png`, `out-2.png`…, or into `<path>` when it ends with `/` or `\`). |
+| `-a, --all-pages` | Every page. PDF / HTML / VSDX / mxGraph produce one multi-page file; images produce one file per page (`out-1.png`, `out-2.png`…, or into `<path>` when it ends with `/` or `\`). |
 | `-s, --scale <k>` | Raster scale (`2` = 192 dpi). Default 1. |
 | `-b, --border <px>` | Border around the drawing. Default 0. |
 | `-t, --transparent` | Transparent background (PNG, WebP, SVG, HTML). |
@@ -21,7 +21,7 @@ opendraw --export <input.opendraw|input.drawio> --format <fmt> --output <path> [
 | `-q, --quality <0-100>` | JPEG / WebP quality. Default 90. |
 | `-h, --help` | Usage. |
 
-`--flag=value` works too, and draw.io-style `-x` with a positional input
+`--flag=value` works too, and `-x` with a positional input
 (`opendraw -x -f pdf diagram.drawio`) is accepted.
 
 Each written path is printed to stdout (for `--format url`, the link follows on

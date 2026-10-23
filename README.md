@@ -9,7 +9,7 @@
 
 <p align="center">
   <b>The open-source diagram editor that keeps your diagrams on your disk.</b><br>
-  Desktop and web, offline, draw.io-compatible, with official cloud icons and AI that uses your own key.
+  Desktop and web, offline, open formats, official cloud icons and AI that uses your own key.
 </p>
 
 <p align="center">
@@ -27,7 +27,7 @@
 
 - **Your files, your disk.** `.opendraw` is plain JSON that diffs in git. No account, no server, works offline.
 - **Desktop and web from one codebase.** A small native app for Windows, macOS and Linux, plus an installable PWA.
-- **Speaks draw.io.** Opens and saves `.drawio`; imports Visio, Lucid, Gliffy, Mermaid, Graphviz, CSV and SQL.
+- **Open formats.** Opens and saves `.drawio` and `.vsdx`; imports Mermaid, Graphviz, CSV, SQL and other common diagram exports.
 - **14,000+ icons.** Official AWS, Azure, Google Cloud, Oracle, Alibaba, IBM and Kubernetes packs, with search that forgives typos (`lamda`) and knows acronyms (`vnet`).
 - **Diagrams that move.** Build-up sequences and flowing connectors, exported as GIF. Every animation on this page comes from the same animation engine.
 - **AI, bring your own key.** Describe a system and get a native, editable diagram from Claude, GPT, Gemini or a local model.
@@ -73,7 +73,7 @@ Installers for every OS are built by `npm run tauri build` or by pushing a `v*` 
 
 ## Contributing
 
-Issues and pull requests are welcome. Run `npm run typecheck && npm test && npm run build` before opening a PR. Shapes, importers, layouts and commands are auto-discovered modules — see [docs/overview.md](docs/overview.md#project-structure).
+Issues and pull requests are welcome — start with [CONTRIBUTING.md](CONTRIBUTING.md) and the [`good first issue`](https://github.com/gabe-santana/opendraw/labels/good%20first%20issue) label. Please follow the [Code of Conduct](CODE_OF_CONDUCT.md) and report vulnerabilities privately ([SECURITY.md](SECURITY.md)).
 
 ## License
 
