@@ -1,0 +1,306 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource/caveat/400.css';
+@import '@fontsource/caveat/700.css';
+
+/* Dark mode is class-based so the user can override the OS setting. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Design tokens. Semantic colors are CSS variables so light/dark switch
+ * without re-rendering; Tailwind utilities (bg-panel, text-muted, border-line,
+ * bg-accent, shadow-panel, ...) map onto them.
+ */
+:root {
+  --app-bg: #eeeef1;
+  --panel: #ffffff;
+  --panel-2: #f6f6f8;
+  --hover: rgb(20 20 40 / 0.05);
+  --active: rgb(20 20 40 / 0.09);
+  --line: rgb(20 20 40 / 0.08);
+  --line-strong: rgb(20 20 40 / 0.15);
+  --fg: #18181b;
+  --fg-muted: #6b6b76;
+  --fg-subtle: #a1a1ab;
+  --canvas: #f7f7f9;
+  --grid-dot: rgb(20 20 40 / 0.16);
+  --accent: #5b5bf6;
+  --accent-hover: #4b4be8;
+  --accent-fg: #ffffff;
+  --accent-soft: rgb(91 91 246 / 0.12);
+  --danger: #e5484d;
+  --success: #30a46c;
+  --selection: #5b5bf6;
+  --shadow-panel: 0 0 0 1px var(--line), 0 1px 2px rgb(20 20 40 / 0.04), 0 8px 24px -10px rgb(20 20 40 / 0.14);
+  --shadow-pop: 0 0 0 1px var(--line), 0 4px 10px -2px rgb(20 20 40 / 0.08), 0 18px 44px -12px rgb(20 20 40 / 0.24);
+  color-scheme: light;
+}
+
+.dark {
+  --app-bg: #08080a;
+  --panel: #141418;
+  --panel-2: #1b1b20;
+  --hover: rgb(255 255 255 / 0.06);
+  --active: rgb(255 255 255 / 0.1);
+  --line: rgb(255 255 255 / 0.08);
+  --line-strong: rgb(255 255 255 / 0.15);
+  --fg: #ececf1;
+  --fg-muted: #9b9ba7;
+  --fg-subtle: #62626e;
+  --canvas: #0e0e11;
+  --grid-dot: rgb(255 255 255 / 0.11);
+  --accent: #7272ff;
+  --accent-hover: #8484ff;
+  --accent-fg: #ffffff;
+  --accent-soft: rgb(114 114 255 / 0.18);
+  --danger: #ff6369;
+  --success: #3dd68c;
+  --selection: #7c7cff;
+  --shadow-panel: 0 0 0 1px var(--line), 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 30px -10px rgb(0 0 0 / 0.6);
+  --shadow-pop: 0 0 0 1px var(--line-strong), 0 6px 14px -4px rgb(0 0 0 / 0.45), 0 22px 50px -12px rgb(0 0 0 / 0.7);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: 'Inter Variable', Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --color-app: var(--app-bg);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-hover: var(--hover);
+  --color-active: var(--active);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--fg-muted);
+  --color-subtle: var(--fg-subtle);
+  --color-canvas: var(--canvas);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --shadow-panel: var(--shadow-panel);
+  --shadow-pop: var(--shadow-pop);
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+    overflow: hidden;
+  }
+  body {
+    margin: 0;
+    background: var(--app-bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 1.45;
+    font-feature-settings: 'cv11', 'ss01', 'ss03';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: default;
+  }
+  input,
+  textarea,
+  [contenteditable] {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+  button {
+    cursor: default;
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  ::selection {
+    background: var(--accent-soft);
+  }
+}
+
+/* Thin, unobtrusive scrollbars. */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+.scroll-thin::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 10px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/* Motion: quick, springy, and respectful of reduced-motion preferences. */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-pop {
+  animation: pop-in 140ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  transform-origin: top center;
+}
+.animate-fade {
+  animation: fade-in 160ms ease-out both;
+}
+.animate-slide-up {
+  animation: slide-up 220ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-pop,
+  .animate-fade,
+  .animate-slide-up {
+    animation: none;
+  }
+}
+
+/* Diagram colors adapt in dark mode (export keeps the real colors). */
+.dark .diagram-adapt {
+  filter: invert(0.92) hue-rotate(180deg) saturate(1.15);
+}
+/* Vendor icons keep their true brand colors under the adapted layer. */
+.dark .diagram-adapt .od-keep-color {
+  filter: invert(1) hue-rotate(180deg) saturate(0.87);
+}
+
+/* Range slider: filled track + floating thumb. */
+.od-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 4px;
+  background: linear-gradient(to right, var(--accent) var(--pct), var(--line-strong) var(--pct));
+}
+.od-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  margin-top: -5px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.12), 0 1px 3px rgb(0 0 0 / 0.25);
+  transition: transform 0.15s;
+}
+.od-slider:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+.od-slider::-moz-range-track {
+  height: 4px;
+  border-radius: 4px;
+  background: linear-gradient(to right, var(--accent) var(--pct), var(--line-strong) var(--pct));
+}
+.od-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.12), 0 1px 3px rgb(0 0 0 / 0.25);
+}
+
+.theme-switching,
+.theme-switching * {
+  transition: none !important;
+}
+
+/* Library thumbnails follow the canvas' dark-mode color adaptation. */
+.dark .diagram-adapt-tile svg {
+  filter: invert(0.92) hue-rotate(180deg) saturate(1.15);
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Group / ungroup feedback: quick, quiet confirmations. */
+@keyframes od-flash-group {
+  0% {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+@keyframes od-flash-ungroup {
+  0% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.05);
+  }
+}
+@keyframes od-flash-label {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  20%,
+  70% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.od-flash-group,
+.od-flash-ungroup {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: od-flash-group 520ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+.od-flash-ungroup {
+  animation-name: od-flash-ungroup;
+  animation-duration: 480ms;
+}
+.od-flash-label > * {
+  animation: od-flash-label 680ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .od-flash-group,
+  .od-flash-ungroup,
+  .od-flash-label > * {
+    animation: none;
+    opacity: 0;
+  }
+}

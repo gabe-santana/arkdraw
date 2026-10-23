@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content="Open-source diagramming for flowcharts, UML, ER diagrams and network maps. Works offline." />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/pwa/apple-touch-icon.png" />
+    <meta name="theme-color" content="#eeeef1" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#08080a" media="(prefers-color-scheme: dark)" />
+    <title>OpenDraw</title>
+    <script>
+      // Apply the theme before first paint to avoid a flash.
+      try {
+        var t = JSON.parse(localStorage.getItem('opendraw:theme') || '{}').theme || 'system';
+        if (t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,15 @@
+# Keep the build context small; the image only needs sources + public assets.
+node_modules
+dist
+dist-ssr
+src-tauri
+.git
+.github
+.vscode
+.idea
+.claude
+docs
+*.log
+*.local
+Dockerfile
+.dockerignore
