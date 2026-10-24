@@ -4,7 +4,8 @@
 import type { ArrowHead, ConnectorElement, DiagramElement, ElementStyle, Endpoint, Rect, ShapeElement, Vec } from '@/model/types';
 import { createConnector, createShape, DEFAULT_CONNECTOR_STYLE } from '@/model/defaults';
 import { measureText } from '@/lib/text';
-import { layoutDiagram } from './layout';
+import { layoutDiagram, type LayoutEdge, type LayoutOptions } from './layout';
+import { layoutRouted, type RoutedEdge, type RoutedLayout } from './elkLayout';
 import { defaultDirection, resolveSpec, type ResolvedNode } from './resolve';
 import type { DiagramSpec, DiagramType, SpecEdge } from './spec';
 
@@ -111,24 +112,92 @@ function sequenceToElements(spec: DiagramSpec, origin: Vec, anchor: 'center' | '
   return { elements, idMap, bounds: { x: ox, y: oy, w: width, h: height } };
 }
 
+function layoutInput(spec: DiagramSpec): { nodes: ResolvedNode[]; edges: LayoutEdge[]; options: LayoutOptions } {
+  const nodes = resolveSpec(spec);
+  const iconHeavy = nodes.filter((n) => n.labelBelow > 0).length > nodes.length / 3;
+  const roomy = spec.type === 'class' || spec.type === 'erd' || spec.type === 'c4';
+  return {
+    nodes,
+    edges: spec.edges.map((e) => ({ from: e.from, to: e.to, label: e.label })),
+    options: {
+      direction: spec.direction ?? defaultDirection(spec.type),
+      nodesep: iconHeavy ? 56 : roomy ? 64 : 48,
+      ranksep: iconHeavy ? 84 : roomy ? 90 : 64,
+    },
+  };
+}
+
+/** Routed layouts computed ahead of time by `prepareLayout`, per spec object. */
+const routedLayouts = new WeakMap<DiagramSpec, RoutedLayout | null>();
+
+/**
+ * Computes the routed layout of a spec (shapes placed and every edge routed
+ * together, see elkLayout.ts). `convertSpec` uses it afterwards for the same
+ * spec object; without it, or if it fails, it falls back to the simpler
+ * synchronous layout whose edges are routed one by one when drawn.
+ */
+export async function prepareLayout(spec: DiagramSpec): Promise<void> {
+  if (spec.type === 'sequence' || routedLayouts.has(spec)) return;
+  const { nodes, edges, options } = layoutInput(spec);
+  try {
+    routedLayouts.set(spec, await layoutRouted(nodes, edges, options));
+  } catch {
+    routedLayouts.set(spec, null);
+  }
+}
+
+/** Box fraction of a point on (or near) a shape's border. */
+const fractionOn = (r: Rect, p: Vec): Vec => ({
+  x: Math.min(1, Math.max(0, (p.x - r.x) / Math.max(1, r.w))),
+  y: Math.min(1, Math.max(0, (p.y - r.y) / Math.max(1, r.h))),
+});
+
+/** How far along a polyline (0..1) the point closest to `at` is. */
+function labelT(pts: Vec[], at: Vec): number {
+  let total = 0;
+  let best = { d: Infinity, along: 0 };
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i];
+    const b = pts[i + 1];
+    const len = Math.hypot(b.x - a.x, b.y - a.y);
+    if (!len) continue;
+    const ux = (b.x - a.x) / len;
+    const uy = (b.y - a.y) / len;
+    const k = Math.max(0, Math.min(len, (at.x - a.x) * ux + (at.y - a.y) * uy));
+    const px = a.x + ux * k;
+    const py = a.y + uy * k;
+    const d = Math.hypot(at.x - px, at.y - py);
+    if (d < best.d) best = { d, along: total + k };
+    total += len;
+  }
+  return total ? best.along / total : 0.5;
+}
+
+/** A connector that follows a precomputed route exactly: fixed ends where the route meets the shapes, bends as waypoints. */
+function routedConnector(s: ShapeElement, t: ShapeElement, route: RoutedEdge, ox: number, oy: number, rest: Partial<ConnectorElement>): ConnectorElement {
+  const pts = route.points.map((p) => ({ x: Math.round(p.x + ox), y: Math.round(p.y + oy) }));
+  const start = pts[0];
+  const end = pts[pts.length - 1];
+  // A straight route still gets a waypoint, so it is drawn exactly where it was routed.
+  const waypoints = pts.length > 2 ? pts.slice(1, -1) : [{ x: Math.round((start.x + end.x) / 2), y: Math.round((start.y + end.y) / 2) }];
+  // Labels sit on the line, at the spot the layout kept free for them.
+  const along = route.label && rest.text ? labelT(pts, { x: route.label.x + ox, y: route.label.y + oy }) : undefined;
+  return createConnector(
+    { elementId: s.id, fixed: fractionOn(s, start), x: start.x, y: start.y },
+    { elementId: t.id, fixed: fractionOn(t, end), x: end.x, y: end.y },
+    { ...rest, waypoints, ...(along !== undefined && { labelT: Math.round(along * 1000) / 1000 }) },
+  );
+}
+
 /** Lays out a spec and converts it to elements, with details. */
 export function convertSpec(spec: DiagramSpec, origin: Vec, opts: ConvertOptions = {}): SpecConversion {
   const anchor = opts.anchor ?? 'center';
   if (spec.type === 'sequence') return sequenceToElements(spec, origin, anchor);
 
-  const nodes = resolveSpec(spec);
+  const { nodes, edges, options } = layoutInput(spec);
   const byId = new Map(nodes.map((n) => [n.id, n]));
-  const iconHeavy = nodes.filter((n) => n.labelBelow > 0).length > nodes.length / 3;
-  const roomy = spec.type === 'class' || spec.type === 'erd' || spec.type === 'c4';
-  const layout = layoutDiagram(
-    nodes,
-    spec.edges.map((e) => ({ from: e.from, to: e.to, label: e.label })),
-    {
-      direction: spec.direction ?? defaultDirection(spec.type),
-      nodesep: iconHeavy ? 56 : roomy ? 64 : 48,
-      ranksep: iconHeavy ? 84 : roomy ? 90 : 64,
-    },
-  );
+  const routed = routedLayouts.get(spec) ?? null;
+  const layout = routed ?? layoutDiagram(nodes, edges, options);
   const ox = anchor === 'center' ? origin.x - layout.width / 2 : origin.x;
   const oy = anchor === 'center' ? origin.y - layout.height / 2 : origin.y;
   const abs = (r: Rect): Rect => ({ x: r.x + ox, y: r.y + oy, w: r.w, h: r.h });
@@ -148,21 +217,24 @@ export function convertSpec(spec: DiagramSpec, origin: Vec, opts: ConvertOptions
   const leaves = nodes.filter((n) => !n.container);
 
   const defaults = edgeDefaults(spec.type);
-  const connectors: ConnectorElement[] = spec.edges.map((e) => {
+  const connectors: ConnectorElement[] = spec.edges.map((e, i) => {
     const s = shapes.get(e.from)!;
     const t = shapes.get(e.to)!;
+    const rest: Partial<ConnectorElement> = {
+      routing: e.routing ?? 'orthogonal',
+      startArrow: e.startArrow ?? defaults.startArrow,
+      endArrow: e.endArrow ?? defaults.endArrow,
+      text: e.label ?? '',
+      style: connectorStyle(e),
+    };
+    const route = routed?.routes[i];
+    if (route && rest.routing === 'orthogonal') return routedConnector(s, t, route, ox, oy, rest);
     const sp = facingPoint(s, center(t));
     const tp = facingPoint(t, center(s));
     return createConnector(
       { elementId: s.id, side: 'auto', x: Math.round(sp.x), y: Math.round(sp.y) },
       { elementId: t.id, side: 'auto', x: Math.round(tp.x), y: Math.round(tp.y) },
-      {
-        routing: e.routing ?? 'orthogonal',
-        startArrow: e.startArrow ?? defaults.startArrow,
-        endArrow: e.endArrow ?? defaults.endArrow,
-        text: e.label ?? '',
-        style: connectorStyle(e),
-      },
+      rest,
     );
   });
 

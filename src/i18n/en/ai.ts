@@ -43,6 +43,13 @@ export default {
   'ai.run.starting': 'Starting…',
   'ai.run.stopped': 'Stopped.',
   'ai.run.tryAgain': 'Try again',
+  'ai.phase.understanding': 'Understanding your request',
+  'ai.phase.icons': 'Choosing icons',
+  'ai.phase.building': 'Drawing the diagram',
+  'ai.phase.checking': 'Checking the result',
+  'ai.phase.fixing': 'Fixing a few details',
+  'ai.run.showDetails': 'Show details',
+  'ai.run.hideDetails': 'Hide details',
 
   // AiPanel — result card
   'ai.result.diagramReady': 'Diagram ready',

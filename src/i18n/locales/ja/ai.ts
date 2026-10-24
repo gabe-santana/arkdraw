@@ -45,6 +45,13 @@ export default {
   'ai.run.starting': '開始中…',
   'ai.run.stopped': '停止しました。',
   'ai.run.tryAgain': 'もう一度試す',
+  'ai.phase.understanding': 'リクエストを理解しています',
+  'ai.phase.icons': 'アイコンを選んでいます',
+  'ai.phase.building': 'ダイアグラムを作成しています',
+  'ai.phase.checking': '結果を確認しています',
+  'ai.phase.fixing': '細部を調整しています',
+  'ai.run.showDetails': '詳細を表示',
+  'ai.run.hideDetails': '詳細を隠す',
 
   // AiPanel — result card
   'ai.result.diagramReady': 'ダイアグラムの準備ができました',

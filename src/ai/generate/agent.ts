@@ -10,13 +10,27 @@ import { editSystemPrompt, editUserMessage, generateSystemPrompt, SEARCH_ICONS_T
 import { serializeDoc } from './serialize';
 import { t } from '@/i18n';
 import { validateSpec, type DiagramSpec } from './spec';
+import { prepareLayout } from './toElements';
 
 export type AssistantMode = 'generate' | 'edit';
 
 export type StepState = 'running' | 'done' | 'error';
 
+/** What a step is about, so the UI can group steps into friendly phases. */
+export type StepKind = 'think' | 'icons' | 'check';
+
 export type AgentEvent =
-  | { type: 'step'; id: string; label: string; state: StepState; detail?: string }
+  | {
+      type: 'step';
+      id: string;
+      label: string;
+      state: StepState;
+      detail?: string;
+      kind?: StepKind;
+      /** Icon searches: what was searched and the best match (a node `icon` value). */
+      query?: string;
+      icon?: string;
+    }
   | { type: 'text'; text: string };
 
 export type AgentResult =
@@ -76,15 +90,15 @@ export async function runAssistant(opts: RunOptions): Promise<AgentResult> {
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
     const thinkId = `think-${stepSeq++}`;
     const thinkLabel = turn === 0 ? t('ai.step.planning') : t('ai.step.working');
-    emit({ type: 'step', id: thinkId, label: thinkLabel, state: 'running' });
+    emit({ type: 'step', id: thinkId, label: thinkLabel, state: 'running', kind: 'think' });
     let res;
     try {
       res = await chat(config, { system, messages, tools }, signal);
     } catch (e) {
-      emit({ type: 'step', id: thinkId, label: thinkLabel, state: 'error' });
+      emit({ type: 'step', id: thinkId, label: thinkLabel, state: 'error', kind: 'think' });
       throw e;
     }
-    emit({ type: 'step', id: thinkId, label: thinkLabel, state: 'done' });
+    emit({ type: 'step', id: thinkId, label: thinkLabel, state: 'done', kind: 'think' });
     messages.push({ role: 'assistant', text: res.text, toolCalls: res.toolCalls, native: res.native });
     if (res.text.trim()) {
       lastText.push(res.text.trim());
@@ -111,36 +125,36 @@ export async function runAssistant(opts: RunOptions): Promise<AgentResult> {
         const query = String(args.query ?? '').slice(0, 120);
         const provider = typeof args.provider === 'string' ? args.provider : undefined;
         const label = provider ? t('ai.step.searchingIconsIn', { query, provider }) : t('ai.step.searchingIcons', { query });
-        emit({ type: 'step', id, label, state: 'running' });
+        emit({ type: 'step', id, label, state: 'running', kind: 'icons', query });
         const hits = await searchIcons(query, provider);
-        emit({ type: 'step', id, label, state: 'done', detail: t('ai.step.matches', { count: hits.length }) });
+        emit({ type: 'step', id, label, state: 'done', detail: t('ai.step.matches', { count: hits.length }), kind: 'icons', query, icon: hits[0]?.icon });
         results.push({
           id: call.id,
           name: call.name,
           content: JSON.stringify(hits.length ? { matches: hits } : { matches: [], hint: 'No icon found; try another name or use a generic shape.' }),
         });
       } else if (call.name === 'submit_diagram') {
-        emit({ type: 'step', id, label: t('ai.step.validating'), state: 'running' });
+        emit({ type: 'step', id, label: t('ai.step.validating'), state: 'running', kind: 'check' });
         const known = await knownIconPaths(iconsIn(args));
         const v = validateSpec(args, { knownIcons: known });
         if (v.ok) {
-          emit({ type: 'step', id, label: t('ai.step.validating'), state: 'done', detail: t('ai.step.nodesEdges', { nodes: v.spec.nodes.length, edges: v.spec.edges.length }) });
+          emit({ type: 'step', id, label: t('ai.step.validating'), state: 'done', kind: 'check', detail: t('ai.step.nodesEdges', { nodes: v.spec.nodes.length, edges: v.spec.edges.length }) });
           results.push({ id: call.id, name: call.name, content: `Accepted: ${v.spec.nodes.length} nodes, ${v.spec.edges.length} edges.` });
           final ??= { kind: 'spec', spec: v.spec, warnings: v.warnings, message: '' };
         } else {
-          emit({ type: 'step', id, label: t('ai.step.fixingValidation'), state: 'error', detail: v.errors[0] });
+          emit({ type: 'step', id, label: t('ai.step.fixingValidation'), state: 'error', kind: 'check', detail: v.errors[0] });
           results.push({ id: call.id, name: call.name, content: `Invalid diagram:\n- ${v.errors.join('\n- ')}`, isError: true });
         }
       } else if (call.name === 'submit_edits' && mode === 'edit') {
-        emit({ type: 'step', id, label: t('ai.step.checkingChanges'), state: 'running' });
+        emit({ type: 'step', id, label: t('ai.step.checkingChanges'), state: 'running', kind: 'check' });
         const known = await knownIconPaths(iconsIn(args));
         const v = validateOps(args, opts.doc!, known);
         if (v.ok) {
-          emit({ type: 'step', id, label: t('ai.step.checkingChanges'), state: 'done', detail: t('ai.step.operations', { count: v.ops.length }) });
+          emit({ type: 'step', id, label: t('ai.step.checkingChanges'), state: 'done', kind: 'check', detail: t('ai.step.operations', { count: v.ops.length }) });
           results.push({ id: call.id, name: call.name, content: `Accepted ${v.ops.length} operations.` });
           final ??= { kind: 'ops', ops: v.ops, summary: typeof args.summary === 'string' ? args.summary : '', warnings: v.warnings, message: '' };
         } else {
-          emit({ type: 'step', id, label: t('ai.step.fixingChanges'), state: 'error', detail: v.errors[0] });
+          emit({ type: 'step', id, label: t('ai.step.fixingChanges'), state: 'error', kind: 'check', detail: v.errors[0] });
           results.push({ id: call.id, name: call.name, content: `Invalid operations:\n- ${v.errors.join('\n- ')}`, isError: true });
         }
       } else {
@@ -150,6 +164,8 @@ export async function runAssistant(opts: RunOptions): Promise<AgentResult> {
     messages.push({ role: 'tool', results });
     if (final) {
       final.message = lastText.join('\n\n');
+      // Place shapes and route every edge together now, so the diagram comes out clean when inserted.
+      if (final.kind === 'spec') await prepareLayout(final.spec);
       return final;
     }
   }

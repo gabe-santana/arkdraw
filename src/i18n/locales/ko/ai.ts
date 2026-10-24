@@ -41,6 +41,13 @@ export default {
   'ai.run.starting': '시작하는 중…',
   'ai.run.stopped': '중지되었습니다.',
   'ai.run.tryAgain': '다시 시도',
+  'ai.phase.understanding': '요청을 이해하는 중',
+  'ai.phase.icons': '아이콘 고르는 중',
+  'ai.phase.building': '다이어그램 그리는 중',
+  'ai.phase.checking': '결과 확인 중',
+  'ai.phase.fixing': '세부 사항 다듬는 중',
+  'ai.run.showDetails': '세부 정보 보기',
+  'ai.run.hideDetails': '세부 정보 숨기기',
 
   // AiPanel — result card
   'ai.result.diagramReady': '다이어그램 준비됨',

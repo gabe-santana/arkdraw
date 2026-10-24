@@ -168,10 +168,21 @@ export function endpointPositions(conn: ConnectorElement, lookup: Lookup) {
 
 const STUB = 20;
 
-/** Orthogonal path through waypoints: each hop is an L. */
+/** Whether `q` lies straight out of an attached end, along its exit direction. */
+function straightAhead(end: RouteEnd, q: Vec | undefined): boolean {
+  if (!q) return false;
+  const aligned = end.dir.x !== 0 ? Math.abs(q.y - end.point.y) < 0.5 : Math.abs(q.x - end.point.x) < 0.5;
+  return aligned && (q.x - end.point.x) * end.dir.x + (q.y - end.point.y) * end.dir.y > 0;
+}
+
+/**
+ * Orthogonal path through waypoints: each hop is an L. Attached ends first
+ * leave their shape by a short stub, unless the next point already lies
+ * straight ahead (then the route goes there directly, without overshooting).
+ */
 function orthoThrough(a: RouteEnd, b: RouteEnd, wps: Vec[]): Vec[] {
-  const a1 = a.rect ? { x: a.point.x + a.dir.x * STUB, y: a.point.y + a.dir.y * STUB } : a.point;
-  const b1 = b.rect ? { x: b.point.x + b.dir.x * STUB, y: b.point.y + b.dir.y * STUB } : b.point;
+  const a1 = a.rect && !straightAhead(a, wps[0]) ? { x: a.point.x + a.dir.x * STUB, y: a.point.y + a.dir.y * STUB } : a.point;
+  const b1 = b.rect && !straightAhead(b, wps[wps.length - 1]) ? { x: b.point.x + b.dir.x * STUB, y: b.point.y + b.dir.y * STUB } : b.point;
   const pts: Vec[] = [a.point, a1];
   let horizontal = a.dir.x !== 0;
   for (const q of [...wps, b1]) {

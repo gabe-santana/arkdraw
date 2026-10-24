@@ -15,7 +15,7 @@ import { isConnector, isShape, type Doc } from '@/model/types';
 import type { AiHostApi } from '../host';
 import { AiError, PROVIDER_META } from '../providers';
 import { modelFor, providerConfig, useAiSettings } from '../settings';
-import { runAssistant, type AgentEvent, type AgentResult, type AssistantMode, type StepState } from '../generate/agent';
+import { runAssistant, type AgentEvent, type AgentResult, type AssistantMode, type StepKind, type StepState } from '../generate/agent';
 import { applyOps } from '../generate/ops';
 import { convertSpec } from '../generate/toElements';
 import { AiSettingsDialog } from './AiSettingsDialog';
@@ -36,6 +36,9 @@ interface Step {
   label: string;
   state: StepState;
   detail?: string;
+  kind?: StepKind;
+  query?: string;
+  icon?: string;
 }
 
 interface Run {
@@ -123,7 +126,7 @@ export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelPro
       if (e.type !== 'step') return;
       patchRun(id, (r) => {
         const i = r.steps.findIndex((s) => s.id === e.id);
-        const step = { id: e.id, label: e.label, state: e.state, detail: e.detail };
+        const step: Step = { id: e.id, label: e.label, state: e.state, detail: e.detail, kind: e.kind, query: e.query, icon: e.icon };
         const steps = i < 0 ? [...r.steps, step] : r.steps.map((s, j) => (j === i ? step : s));
         return { ...r, steps };
       });
@@ -348,6 +351,102 @@ function StepIcon({ state }: { state: StepState }) {
   return <Check className="size-3.5 text-success" />;
 }
 
+type PhaseId = 'understand' | 'icons' | 'build' | 'check';
+
+interface Phase {
+  id: PhaseId;
+  state: StepState;
+  steps: Step[];
+}
+
+const PHASE_LABEL: Record<PhaseId, MessageKey> = {
+  understand: 'ai.phase.understanding',
+  icons: 'ai.phase.icons',
+  build: 'ai.phase.building',
+  check: 'ai.phase.checking',
+};
+
+/** Groups the agent's steps into a few phases a person cares about; null when steps carry no kind. */
+function phasesOf(run: Run): Phase[] | null {
+  if (run.steps.some((st) => !st.kind)) return null;
+  const out: Phase[] = [];
+  let thinks = 0;
+  for (const st of run.steps) {
+    const id: PhaseId = st.kind === 'think' ? (thinks++ === 0 ? 'understand' : 'build') : st.kind === 'icons' ? 'icons' : 'check';
+    let phase = out.find((ph) => ph.id === id);
+    if (!phase) out.push((phase = { id, state: 'done', steps: [] }));
+    phase.steps.push(st);
+  }
+  for (const ph of out) {
+    const last = ph.steps[ph.steps.length - 1];
+    ph.state = ph.steps.some((st) => st.state === 'running') ? 'running' : run.status === 'error' && last.state === 'error' ? 'error' : 'done';
+  }
+  return out;
+}
+
+/** Friendly progress: a line per phase (icons shown as they're found), with the raw log behind "Show details". */
+function RunProgress({ run }: { run: Run }) {
+  const t = useT();
+  const [details, setDetails] = useState(false);
+  const phases = phasesOf(run);
+  const raw = (
+    <ol className="space-y-1 px-1">
+      {run.steps.map((st) => (
+        <li key={st.id} className="animate-fade flex items-center gap-2 text-[12px]">
+          <StepIcon state={st.state} />
+          <span className={cn('truncate', st.state === 'running' ? 'text-fg' : 'text-muted')}>{st.label}</span>
+          {st.detail && <span className="ml-auto shrink-0 truncate pl-2 text-[11px] text-subtle">{st.detail}</span>}
+        </li>
+      ))}
+    </ol>
+  );
+  if (!phases) return raw;
+  return (
+    <div className="space-y-1.5 px-1">
+      {phases.map((ph) => {
+        const fixing = ph.id === 'check' && ph.state === 'running' && ph.steps.some((st) => st.state === 'error');
+        return (
+          <div key={ph.id} className="animate-fade">
+            <div className="flex items-center gap-2 text-[12.5px]">
+              <StepIcon state={ph.state} />
+              <span className={cn('truncate', ph.state === 'running' ? 'font-medium text-fg' : 'text-muted')}>
+                {fixing ? t('ai.phase.fixing') : t(PHASE_LABEL[ph.id])}
+              </span>
+              {ph.id === 'icons' && <span className="text-[11px] tabular-nums text-subtle">{ph.steps.length}</span>}
+            </div>
+            {ph.id === 'icons' && (
+              <div className="mt-1.5 flex flex-wrap gap-1 pl-[22px]">
+                {ph.steps.map((st) => (
+                  <span
+                    key={st.id}
+                    title={st.query}
+                    className={cn(
+                      'flex size-7 items-center justify-center rounded-md bg-white ring-1 ring-line',
+                      st.state === 'running' ? 'animate-pulse' : 'animate-pop',
+                      st.state !== 'running' && !st.icon && 'border border-dashed border-line bg-transparent ring-0',
+                    )}
+                  >
+                    {st.icon && <img src={`${import.meta.env.BASE_URL}icons/${st.icon}`} alt="" className="size-5 object-contain" draggable={false} />}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+      <button
+        type="button"
+        onClick={() => setDetails((v) => !v)}
+        className="flex items-center gap-1 pl-[22px] text-[11px] text-subtle transition-colors hover:text-muted"
+      >
+        <ChevronDown className={cn('size-3 transition-transform', !details && '-rotate-90')} />
+        {details ? t('ai.run.hideDetails') : t('ai.run.showDetails')}
+      </button>
+      {details && <div className="pl-[22px]">{raw}</div>}
+    </div>
+  );
+}
+
 interface ApplyProps {
   docEmpty: boolean;
   onApply: (how: 'insert' | 'replace' | 'edit') => void;
@@ -363,17 +462,7 @@ function RunCard({ run, onRetry, onOpenSettings, ...apply }: { run: Run; onRetry
         <div className="whitespace-pre-wrap break-words">{run.prompt}</div>
       </div>
 
-      {run.steps.length > 0 && (
-        <ol className="space-y-1 px-1">
-          {run.steps.map((s) => (
-            <li key={s.id} className="animate-fade flex items-center gap-2 text-[12px]">
-              <StepIcon state={s.state} />
-              <span className={cn('truncate', s.state === 'running' ? 'text-fg' : 'text-muted')}>{s.label}</span>
-              {s.detail && <span className="ml-auto shrink-0 truncate pl-2 text-[11px] text-subtle">{s.detail}</span>}
-            </li>
-          ))}
-        </ol>
-      )}
+      {run.steps.length > 0 && <RunProgress run={run} />}
 
       {run.status === 'running' && run.steps.length === 0 && (
         <div className="flex items-center gap-2 px-1 text-[12px] text-muted">

@@ -41,6 +41,13 @@ export default {
   'ai.run.starting': '正在启动…',
   'ai.run.stopped': '已停止。',
   'ai.run.tryAgain': '重试',
+  'ai.phase.understanding': '正在理解你的需求',
+  'ai.phase.icons': '正在挑选图标',
+  'ai.phase.building': '正在绘制图表',
+  'ai.phase.checking': '正在检查结果',
+  'ai.phase.fixing': '正在调整细节',
+  'ai.run.showDetails': '查看详情',
+  'ai.run.hideDetails': '隐藏详情',
 
   // AiPanel — result card
   'ai.result.diagramReady': '图表已生成',
