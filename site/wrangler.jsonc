@@ -2,15 +2,21 @@
 // https://www.arkdraw.com). The editor itself is a separate Worker at
 // https://app.arkdraw.com (../wrangler.jsonc).
 //
-// Assets-only (no code runs), so requests don't count against the free plan.
+// Static assets, plus a tiny Worker for the videos (/media/*) only, so page
+// requests don't count against the free plan.
 // Deployed by .github/workflows/deploy-web.yml; credentials are repository
 // secrets, never stored in the repo.
 {
   "name": "arkdraw-site",
   "compatibility_date": "2026-10-01",
+  // Only /media/* runs code (range requests for the videos, see worker.js);
+  // everything else is served straight from the assets.
+  "main": "worker.js",
   "assets": {
     "directory": "./public",
-    "not_found_handling": "404-page"
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/media/*"]
   },
   "routes": [
     { "pattern": "arkdraw.com", "custom_domain": true },

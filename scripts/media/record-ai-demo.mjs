@@ -370,7 +370,8 @@ function writeGif(name, frames, marks, dir) {
 function writeVideo(name, frames, marks, dir) {
   const n = resample(frames, marks, dir);
   mkdirSync(OUT, { recursive: true });
-  const mp4 = join(OUT, `${name}.mp4`);
+  // "-4k" in the name: a new recording must not be served from a cache of the old one.
+  const mp4 = join(OUT, `${name}-4k.mp4`);
   execFileSync('ffmpeg', [
     '-y', '-loglevel', 'error',
     '-framerate', String(FPS), '-i', join(dir, 'f%05d.jpg'),
@@ -378,7 +379,7 @@ function writeVideo(name, frames, marks, dir) {
     '-c:v', 'libx264', '-preset', 'slow', '-crf', '20', '-profile:v', 'high', '-level', '5.1',
     '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-an', mp4,
   ]);
-  execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', join(dir, `f${String(n - 1).padStart(5, '0')}.jpg`), '-q:v', '3', join(OUT, `${name}.jpg`)]);
+  execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', join(dir, `f${String(n - 1).padStart(5, '0')}.jpg`), '-q:v', '3', join(OUT, `${name}-4k.jpg`)]);
   return { out: mp4, frames: n };
 }
 

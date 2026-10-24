@@ -1,0 +1,30 @@
+# Production smoke tests (scripts/smoke/prod.mjs) against https://arkdraw.com
+# and https://app.arkdraw.com: after every web deploy, once a day, or by hand.
+# Public URLs only, no secrets.
+name: Smoke (production)
+
+on:
+  workflow_run:
+    workflows: ['Deploy web']
+    types: [completed]
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Edge caches take a moment to pick up a fresh deploy.
+      - if: github.event_name == 'workflow_run'
+        run: sleep 30
+      - name: Smoke tests (HTTP + headless Chrome)
+        run: node scripts/smoke/prod.mjs

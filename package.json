@@ -25,7 +25,8 @@
     "docker:build": "docker build -t opendraw .",
     "docker:run": "docker run --rm -p 8080:8080 opendraw",
     "media:gifs": "node scripts/media/render-diagram-gifs.mjs",
-    "media:ai": "node --experimental-websocket scripts/media/record-ai-demo.mjs"
+    "media:ai": "node --experimental-websocket scripts/media/record-ai-demo.mjs",
+    "smoke:prod": "node --experimental-websocket scripts/smoke/prod.mjs"
   },
   "dependencies": {
     "@dagrejs/dagre": "^3.1.1",
