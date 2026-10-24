@@ -208,6 +208,43 @@ jobs:
           Compress-Archive -Path "$dir/*" -DestinationPath $zip -Force
           gh release upload $env:TAG $zip --clobber
 
+      # Microsoft Store package (MSIX). Needs the identity from Partner Center as
+      # repository variables; the Store signs it, so Store installs have no SmartScreen
+      # prompt. With the Store API secrets it is also submitted automatically.
+      - name: MSIX for the Microsoft Store
+        if: runner.os == 'Windows' && vars.MSIX_IDENTITY_NAME != ''
+        shell: pwsh
+        env:
+          MSIX_IDENTITY_NAME: ${{ vars.MSIX_IDENTITY_NAME }}
+          MSIX_PUBLISHER: ${{ vars.MSIX_PUBLISHER }}
+          MSIX_PUBLISHER_DISPLAY_NAME: ${{ vars.MSIX_PUBLISHER_DISPLAY_NAME }}
+        run: node scripts/msix/build-msix.mjs --exe src-tauri/target/release/opendraw.exe --out msix/OpenDraw.msix
+
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Windows' && vars.MSIX_IDENTITY_NAME != ''
+        with:
+          name: msix
+          path: msix/OpenDraw.msix
+
+      - name: Store API credentials
+        id: store
+        if: runner.os == 'Windows' && vars.MSIX_IDENTITY_NAME != '' && !contains(env.TAG, '-')
+        shell: bash
+        env:
+          CLIENT_SECRET: ${{ secrets.MSSTORE_CLIENT_SECRET }}
+        run: |
+          if [ -n "$CLIENT_SECRET" ]; then echo "ready=true" >> "$GITHUB_OUTPUT"; else echo "::notice::MSSTORE_CLIENT_SECRET not set: MSIX built but not submitted"; fi
+
+      - uses: microsoft/setup-msstore-cli@v1
+        if: steps.store.outputs.ready == 'true'
+
+      - name: Submit to the Microsoft Store
+        if: steps.store.outputs.ready == 'true'
+        shell: pwsh
+        run: |
+          msstore reconfigure --tenantId "${{ secrets.MSSTORE_TENANT_ID }}" --sellerId "${{ secrets.MSSTORE_SELLER_ID }}" --clientId "${{ secrets.MSSTORE_CLIENT_ID }}" --clientSecret "${{ secrets.MSSTORE_CLIENT_SECRET }}"
+          msstore publish msix/OpenDraw.msix --appId "${{ vars.MSSTORE_PRODUCT_ID }}"
+
   snap:
     name: Snap (best effort)
     needs: [prepare, build]
@@ -248,3 +285,28 @@ jobs:
           latest="--latest"
           case "$TAG" in *-*) latest="--latest=false" ;; esac
           gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false $latest
+
+  # winget: opens the version-bump PR in microsoft/winget-pkgs for each stable
+  # release (`winget install GabrielSantana.OpenDraw`). Needs WINGET_TOKEN, a classic
+  # personal access token with the public_repo scope (forks and PRs on your behalf).
+  winget:
+    name: Update winget
+    needs: [prepare, publish]
+    if: ${{ !contains(github.event.inputs.tag || github.ref_name, '-') }}
+    runs-on: windows-latest
+    steps:
+      - name: Check token
+        id: token
+        shell: bash
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          if [ -n "$WINGET_TOKEN" ]; then echo "ready=true" >> "$GITHUB_OUTPUT"; else echo "::notice::WINGET_TOKEN not set: skipping the winget update"; fi
+      - uses: vedantmgoyal9/winget-releaser@v2
+        if: steps.token.outputs.ready == 'true'
+        with:
+          identifier: GabrielSantana.OpenDraw
+          version: ${{ needs.prepare.outputs.version }}
+          release-tag: ${{ env.TAG }}
+          installers-regex: '_x64_en-US\.msi$'
+          token: ${{ secrets.WINGET_TOKEN }}

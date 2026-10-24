@@ -129,6 +129,48 @@ certificate removes the SmartScreen warning immediately; a standard OV certifica
 builds reputation over time. With the Apple secrets, the app is signed with the
 hardened runtime and notarised, so it opens without warnings.
 
+## Microsoft Store and winget (no SmartScreen prompts)
+
+Installs from the Microsoft Store and from `winget` never show the SmartScreen
+*unknown publisher* screen, even while the MSI on GitHub is unsigned.
+
+### Microsoft Store (MSIX)
+
+`scripts/msix/build-msix.mjs` packages the release executable as an MSIX
+(`src-tauri/msix/AppxManifest.xml`); the Store signs it on ingestion. The release
+workflow builds it when the identity variables exist and submits it when the Store
+API secrets exist.
+
+One-time setup (needs your Microsoft account, so it can't be scripted):
+
+1. Register at <https://storedeveloper.microsoft.com> (individual accounts are free).
+2. In Partner Center create the app and reserve the name **OpenDraw**.
+3. *Product identity* page → add repository **variables**
+   (*Settings → Secrets and variables → Actions → Variables*):
+   `MSIX_IDENTITY_NAME` (Package/Identity/Name), `MSIX_PUBLISHER` (Package/Identity/Publisher),
+   `MSIX_PUBLISHER_DISPLAY_NAME`, and `MSSTORE_PRODUCT_ID` (the Store ID, `9N…`).
+4. *Account settings → User management → Microsoft Entra applications* → create an
+   application with the **Manager** role, then add the **secrets**
+   `MSSTORE_TENANT_ID`, `MSSTORE_CLIENT_ID`, `MSSTORE_CLIENT_SECRET` and `MSSTORE_SELLER_ID`.
+5. Complete the first submission in Partner Center (listing text, screenshots, age
+   rating questionnaire); upload the `msix` artifact from the release run.
+
+After that every stable tag builds the MSIX and submits it with the
+[Microsoft Store CLI](https://learn.microsoft.com/windows/apps/publish/msstore-dev-cli/overview)
+(`msstore publish`). Pre-release tags are never submitted.
+
+To build the package locally: `npm run tauri build` then `node scripts/msix/build-msix.mjs`
+(placeholder identity unless the `MSIX_*` variables are set).
+
+### winget
+
+The package id is `GabrielSantana.OpenDraw` (`winget install GabrielSantana.OpenDraw`).
+The `winget` job opens the version-bump pull request in
+[microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs) after each stable
+release. It needs the `WINGET_TOKEN` secret: a classic personal access token with
+the `public_repo` scope. Manifests are validated and merged by the winget team,
+usually within a day.
+
 ## Desktop configuration file
 
 `config.json` in the app config directory (*Help → Configuration file…* reveals it),
