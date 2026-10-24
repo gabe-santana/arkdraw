@@ -7,7 +7,7 @@ import { cn } from '@/lib/cn';
 
 export const PANEL_WIDTH = { min: 220, max: 520, left: 264, right: 268 } as const;
 /** The AI tab of the right column: a chat reads better a little wider. */
-export const AI_WIDTH = { min: 300, max: 720, default: 380 } as const;
+export const AI_WIDTH = { min: 300, max: 720, default: 360 } as const;
 
 export function PanelResizer({ edge, width, onChange, defaultWidth, label, min = PANEL_WIDTH.min, max = PANEL_WIDTH.max }: {
   /** Which edge of the panel the handle sits on (the one facing the canvas). */

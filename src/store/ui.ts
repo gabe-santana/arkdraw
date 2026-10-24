@@ -79,7 +79,7 @@ function load<T>(key: string, fallback: T): T {
 
 // First visit (nothing saved yet): the AI tab open, the library only where there's room for it.
 const wide = typeof window === 'undefined' || window.innerWidth >= 1500;
-const panels = load(PANELS_KEY, { leftOpen: wide, rightOpen: true, layersOpen: true, layersHeight: 300, leftWidth: 264, rightWidth: 268, aiWidth: 380, aiOpen: true, dock: { left: ['shapes'], right: ['format', 'layers'] } as DockLayout });
+const panels = load(PANELS_KEY, { leftOpen: wide, rightOpen: true, layersOpen: true, layersHeight: 300, leftWidth: 264, rightWidth: 268, aiWidth: 360, aiOpen: true, dock: { left: ['shapes'], right: ['format', 'layers'] } as DockLayout });
 // A saved layout must still contain each panel exactly once.
 {
   const all = [...panels.dock.left, ...panels.dock.right];
