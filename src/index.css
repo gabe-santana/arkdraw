@@ -37,17 +37,17 @@
 }
 
 .dark {
-  --app-bg: #08080a;
-  --panel: #141418;
-  --panel-2: #1b1b20;
+  --app-bg: #000000;
+  --panel: #050509;
+  --panel-2: #0d0d13;
   --hover: rgb(255 255 255 / 0.06);
   --active: rgb(255 255 255 / 0.1);
   --line: rgb(255 255 255 / 0.08);
   --line-strong: rgb(255 255 255 / 0.15);
-  --fg: #ececf1;
-  --fg-muted: #9b9ba7;
-  --fg-subtle: #62626e;
-  --canvas: #0e0e11;
+  --fg: #ffffff;
+  --fg-muted: #a2a2b0;
+  --fg-subtle: #5f5f6d;
+  --canvas: #000000;
   --grid-dot: rgb(255 255 255 / 0.11);
   --accent: #7272ff;
   --accent-hover: #8484ff;

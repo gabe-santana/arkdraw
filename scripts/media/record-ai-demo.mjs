@@ -372,12 +372,14 @@ function writeVideo(name, frames, marks, dir) {
   mkdirSync(OUT, { recursive: true });
   // "-4k" in the name: a new recording must not be served from a cache of the old one.
   const mp4 = join(OUT, `${name}-4k.mp4`);
+  // The JPEG frames are full range; browsers play H.264 as limited range, which would crush
+  // the dark theme to black. Convert, so the video shows the app's real colors.
   execFileSync('ffmpeg', [
     '-y', '-loglevel', 'error',
     '-framerate', String(FPS), '-i', join(dir, 'f%05d.jpg'),
-    '-vf', `scale=${VIEW.width * VIEW.scale}:${VIEW.height * VIEW.scale}:flags=lanczos`,
+    '-vf', `scale=${VIEW.width * VIEW.scale}:${VIEW.height * VIEW.scale}:flags=lanczos:out_range=tv`,
     '-c:v', 'libx264', '-preset', 'slow', '-crf', '20', '-profile:v', 'high', '-level', '5.1',
-    '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-an', mp4,
+    '-pix_fmt', 'yuv420p', '-color_range', 'tv', '-movflags', '+faststart', '-an', mp4,
   ]);
   // 1080p for phones and ordinary screens, and a light WebP poster (site/public/main.js picks).
   execFileSync('ffmpeg', [
