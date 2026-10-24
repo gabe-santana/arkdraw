@@ -39,6 +39,9 @@ const DEMOS = {
     setup: 'Simple web app on AWS: users → Application Load Balancer → two EC2 instances → RDS PostgreSQL.',
     prompts: ['Add an ElastiCache Redis cache between the instances and the database, and animate the data flow.'],
   },
+  'gcp-pipeline': {
+    prompts: ['Streaming analytics on Google Cloud: Pub/Sub → Dataflow → BigQuery, with a Looker dashboard. Show the events moving as dots.'],
+  },
   flowchart: {
     prompts: ['Flowchart for a password reset: request reset, email exists?, send link, link valid?, set new password, done. Build it step by step.'],
   },

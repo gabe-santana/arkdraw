@@ -53,8 +53,8 @@ Open the **AI** tab (<kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>I</kbd>) and say what
       <p align="center"><sub><b>Flowcharts too:</b> "Password reset flowchart. Build it step by step."</sub></p>
     </td>
     <td width="50%" valign="top">
-      <img src="docs/media/animated/gcp-data-pipeline.gif" alt="An animated Google Cloud streaming data pipeline exported as a GIF from OpenDraw">
-      <p align="center"><sub><b>Share it moving:</b> any diagram exports as an animated GIF.</sub></p>
+      <img src="docs/media/ai/gcp-pipeline.gif" alt="The assistant draws a Google Cloud streaming pipeline: Pub/Sub, Dataflow, BigQuery and Looker inside a GCP project, with events moving along the arrows as dots">
+      <p align="center"><sub><b>Google Cloud:</b> "Pub/Sub → Dataflow → BigQuery, with a Looker dashboard. Show the events moving as dots."</sub></p>
     </td>
   </tr>
 </table>
