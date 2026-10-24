@@ -10,7 +10,7 @@
  *   node --experimental-websocket scripts/media/record-ai-demo.mjs --video [name…]
  *
  * `--video` records in 4K (a 1280×720 window at 3× density) and writes MP4s
- * plus poster frames for the landing page (site/public/media/<name>.mp4). A
+ * for the landing page: <name>-4k.mp4, <name>-1080p.mp4 and a <name>.webp poster. A
  * 4K screenshot takes ~130 ms, so the page's animations run at quarter speed
  * while it is recorded and the video is assembled on that clock: smooth
  * 30 fps at full speed.
@@ -379,7 +379,13 @@ function writeVideo(name, frames, marks, dir) {
     '-c:v', 'libx264', '-preset', 'slow', '-crf', '20', '-profile:v', 'high', '-level', '5.1',
     '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-an', mp4,
   ]);
-  execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', join(dir, `f${String(n - 1).padStart(5, '0')}.jpg`), '-q:v', '3', join(OUT, `${name}-4k.jpg`)]);
+  // 1080p for phones and ordinary screens, and a light WebP poster (site/public/main.js picks).
+  execFileSync('ffmpeg', [
+    '-y', '-loglevel', 'error', '-i', mp4, '-vf', 'scale=1920:1080:flags=lanczos',
+    '-c:v', 'libx264', '-preset', 'slow', '-crf', '22', '-profile:v', 'high', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-an',
+    join(OUT, `${name}-1080p.mp4`),
+  ]);
+  execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', join(dir, `f${String(n - 1).padStart(5, '0')}.jpg`), '-vf', 'scale=1600:-1:flags=lanczos', '-c:v', 'libwebp', '-quality', '72', join(OUT, `${name}.webp`)]);
   return { out: mp4, frames: n };
 }
 

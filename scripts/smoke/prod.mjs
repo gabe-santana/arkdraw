@@ -62,7 +62,7 @@ async function get(url, init = {}) {
 function referencedAssets(html, base) {
   const urls = new Set();
   // <meta content="…"> only counts for og:image (viewport and friends aren't URLs).
-  const attr = /\b(?:src|href|poster|data-src)="([^"]+)"|property="og:image" content="([^"]+)"/g;
+  const attr = /\b(?:src|href|poster|data-src|data-poster)="([^"]+)"|property="og:image" content="([^"]+)"/g;
   for (const m of html.matchAll(attr)) {
     const v = m[1] ?? m[2];
     if (/^(#|mailto:|data:|javascript:)/.test(v)) continue;
@@ -137,8 +137,9 @@ async function httpTests() {
     assert(n >= 10, `only ${n} assets referenced`);
   });
   await test('videos support range requests (Safari, seeking)', async () => {
-    const videos = [...landing.matchAll(/(?:src|data-src)="(\/media\/[^"]+\.mp4)"/g)].map((m) => m[1]);
-    assert(videos.length >= 3, `only ${videos.length} videos`);
+    const names = [...landing.matchAll(/data-video="([^"]+)"/g)].map((m) => m[1]);
+    assert(names.length >= 3, `only ${names.length} videos`);
+    const videos = names.flatMap((n) => [`/media/${n}-4k.mp4`, `/media/${n}-1080p.mp4`]);
     for (const v of videos) {
       const res = await get(`${SITE}${v}`, { headers: { range: 'bytes=0-1023' } });
       assert(res.status === 206, `${v} → ${res.status} for a range request`);
