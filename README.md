@@ -23,6 +23,28 @@
   <img src="docs/media/animated/aws-serverless.gif" alt="An animated AWS serverless architecture built in OpenDraw: services appear one by one, then data flows along the connectors" width="100%">
 </p>
 
+## Download
+
+Get the latest version from **[Releases](https://github.com/gabe-santana/opendraw/releases/latest)**:
+
+| OS | File | Notes |
+| --- | --- | --- |
+| **Windows** 10/11 | `OpenDraw_x.y.z_x64_en-US.msi` | Installer for all users (IT-friendly) |
+| | `OpenDraw_x.y.z_x64-setup.exe` | Per-user install, no admin rights needed |
+| | `OpenDraw_x.y.z_x64-portable.zip` | No install; just run `OpenDraw.exe` |
+| **macOS** 11+ | `OpenDraw_x.y.z_universal.dmg` | Apple Silicon and Intel |
+| **Linux** | `OpenDraw_x.y.z_amd64.AppImage` | Any distro: `chmod +x` and run |
+| | `OpenDraw_x.y.z_amd64.deb` / `OpenDraw-x.y.z-1.x86_64.rpm` | Debian/Ubuntu, Fedora/openSUSE (arm64 builds too) |
+
+Prefer the browser? The same app runs as an installable web app — see [self-hosting](docs/web.md). Verify downloads against `SHA256SUMS.txt` in each release.
+
+<details>
+<summary>Windows or macOS warns about an unknown developer?</summary>
+
+Early builds may be unsigned. On Windows, click **More info → Run anyway**. On macOS, right-click OpenDraw in Applications and choose **Open**, or run `xattr -dr com.apple.quarantine /Applications/OpenDraw.app`.
+
+</details>
+
 ## Why OpenDraw
 
 - **Your files, your disk.** `.opendraw` is plain JSON that diffs in git. No account, no server, works offline.

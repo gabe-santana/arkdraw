@@ -194,4 +194,11 @@ export default {
   'action.extras.dictate': '听写标签',
   'action.layout.parallelEdges': '平行连接线',
   'action.layout.fromJson': '从 JSON 应用布局…',
+  'action.edit.editShape': '编辑图形…',
+  'action.arrange.insertShape': '从模具 XML 插入图形…',
+  'action.extras.plugins': '插件…',
+  'action.view.uiMode.default': '默认界面',
+  'action.view.uiMode.minimal': '极简界面',
+  'action.view.uiMode.sketch': '手绘界面',
+  'action.view.uiMode.compact': '紧凑界面',
 } satisfies CatalogTranslation;

@@ -194,4 +194,11 @@ export default {
   'action.extras.dictate': 'Detta etichetta',
   'action.layout.parallelEdges': 'Connettori paralleli',
   'action.layout.fromJson': 'Applica layout da JSON…',
+  'action.edit.editShape': 'Modifica forma…',
+  'action.arrange.insertShape': 'Forma da XML stencil…',
+  'action.extras.plugins': 'Plugin…',
+  'action.view.uiMode.default': 'Interfaccia predefinita',
+  'action.view.uiMode.minimal': 'Interfaccia minimale',
+  'action.view.uiMode.sketch': 'Interfaccia schizzo',
+  'action.view.uiMode.compact': 'Interfaccia compatta',
 } satisfies CatalogTranslation;

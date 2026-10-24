@@ -194,4 +194,11 @@ export default {
   'action.extras.dictate': 'ラベルを音声入力',
   'action.layout.parallelEdges': '平行エッジ',
   'action.layout.fromJson': 'JSON からレイアウトを適用…',
+  'action.edit.editShape': '図形を編集…',
+  'action.arrange.insertShape': 'ステンシル XML から図形…',
+  'action.extras.plugins': 'プラグイン…',
+  'action.view.uiMode.default': 'デフォルト UI',
+  'action.view.uiMode.minimal': 'ミニマル UI',
+  'action.view.uiMode.sketch': 'スケッチ UI',
+  'action.view.uiMode.compact': 'コンパクト UI',
 } satisfies CatalogTranslation;

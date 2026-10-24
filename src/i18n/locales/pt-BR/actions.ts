@@ -194,4 +194,11 @@ export default {
   'action.extras.dictate': 'Ditar rótulo',
   'action.layout.parallelEdges': 'Arestas paralelas',
   'action.layout.fromJson': 'Aplicar layout a partir de JSON…',
+  'action.edit.editShape': 'Editar forma…',
+  'action.arrange.insertShape': 'Forma a partir de XML de estêncil…',
+  'action.extras.plugins': 'Plug-ins…',
+  'action.view.uiMode.default': 'Interface padrão',
+  'action.view.uiMode.minimal': 'Interface mínima',
+  'action.view.uiMode.sketch': 'Interface de esboço',
+  'action.view.uiMode.compact': 'Interface compacta',
 } satisfies CatalogTranslation;

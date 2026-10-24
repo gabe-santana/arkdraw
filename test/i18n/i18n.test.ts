@@ -10,6 +10,8 @@ import { applyLocale, formatNumber, initI18n, loadMessages, resolvePreference, s
 import { actionLabel, groupLabel, templateCategory, templateName } from '@/i18n/catalog';
 import { EN, EN_NAMESPACES } from '@/i18n/en';
 import { ACTIONS, ACTION_MAP } from '@/app/actions';
+import '@/extensibility/actions'; // runtime-registered commands (Edit shape…, Plugins…, UI modes)
+import { searchTemplates } from '@/templates';
 import { TEMPLATES, CATEGORIES } from '@/templates';
 import { USER_CATEGORY } from '@/storage/userTemplates';
 
@@ -178,7 +180,7 @@ describe('translations', () => {
         if (missing.length) console.warn(`${code}: ${missing.length} untranslated keys (English fallback): ${missing.slice(0, 20).join(', ')}`);
         // New strings may land before their translations (they fall back to English), but not many.
         expect(dictPct).toBeGreaterThanOrEqual(97);
-        expect(actionPct).toBeGreaterThanOrEqual(95);
+        expect(actionPct).toBe(100);
         expect(tplPct).toBeGreaterThanOrEqual(95);
       });
 
@@ -252,5 +254,69 @@ describe('shape search understands common pt-BR / es terms', () => {
     expect(top('pasta')).toBe('Folder');
     // The typed words still match literally.
     expect(index.search('banco inter', 3)[0]?.item).toBe('Banco Inter logo');
+  });
+});
+
+describe('English search keeps working in every UI language', () => {
+  afterAll(() => applyLocale('en', 'auto'));
+
+  const english = <T,>(fn: () => T): Promise<T> => applyLocale('en').then(fn);
+
+  it('command palette: English labels/keywords find the same commands as in English', async () => {
+    const { searchActions } = await import('@/chrome/CommandPalette');
+    const queries = ['export', 'bold', 'layers', 'group', 'undo', 'snap to grid', 'png'];
+    const top = (q: string) => searchActions(q).slice(0, 3).map((r) => r.item.id);
+    const base = await english(() => Object.fromEntries(queries.map((q) => [q, top(q)])));
+    for (const code of ['pt-BR', 'de', 'ja'] as const) {
+      await applyLocale(code);
+      for (const q of queries) expect(top(q).slice(0, base[q].length), `${code}: "${q}"`).toEqual(base[q]);
+    }
+    await applyLocale('pt-BR');
+    expect(top('exportar')).toContain('file.export');
+    expect(top('negrito')).toContain('format.bold');
+  });
+
+  it('shape and icon search return the same results for English queries', async () => {
+    const { searchShapes } = await import('@/search/indexes');
+    const { SearchIndex } = await import('@/search/engine');
+    const { readFileSync, existsSync } = await import('node:fs');
+    const icons: Array<{ id: string; name: string; keywords: string[]; category: string; provider: string }> = [];
+    for (const p of ['aws', 'azure', 'gcp']) {
+      const f = `public/icons/${p}/index.json`;
+      if (existsSync(f)) for (const i of JSON.parse(readFileSync(f, 'utf-8')).icons) icons.push({ ...i, provider: p });
+    }
+    const iconIndex = new SearchIndex(icons, (i) => [
+      { text: i.name, weight: 3 },
+      { text: i.keywords.join(' '), weight: 1.5 },
+      { text: i.category, weight: 1 },
+    ]);
+    const queries = ['database', 'load balancer', 'vnet', 'lamda', 'server', 'queue'];
+    const run = () =>
+      queries.map((q) => [
+        searchShapes(q, 5).map((h) => `${h.libraryId}:${h.item.label}`),
+        iconIndex.search(q, 5).map((r) => `${r.item.provider}:${r.item.name}`),
+      ]);
+    const base = await english(run);
+    expect(base[0][0].length).toBeGreaterThan(0);
+    for (const code of ['pt-BR', 'de', 'ja'] as const) {
+      await applyLocale(code);
+      expect(run(), code).toEqual(base);
+    }
+    if (icons.length) {
+      expect(base[3][1].join('|')).toMatch(/Lambda/i); // "lamda" typo still resolves
+      expect(base[2][1].join('|')).toMatch(/Virtual Network/i);
+    }
+  });
+
+  it('template search matches English and translated names', async () => {
+    const ids = (q: string) => searchTemplates(TEMPLATES, q).map((x) => x.id);
+    const base = await english(() => ['flowchart', 'kanban', 'network'].map(ids));
+    for (const code of ['pt-BR', 'de', 'ja'] as const) {
+      await applyLocale(code);
+      const now = ['flowchart', 'kanban', 'network'].map(ids);
+      now.forEach((list, i) => expect(list, code).toEqual(expect.arrayContaining(base[i])));
+    }
+    await applyLocale('pt-BR');
+    expect(ids('fluxograma').length).toBeGreaterThan(0);
   });
 });

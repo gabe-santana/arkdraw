@@ -11,9 +11,9 @@ How OpenDraw's desktop builds are packaged, signed and updated. The workflow is
 | Windows | MSI (WiX) | tauri-action | `tauri.windows.conf.json` | yes |
 | Windows | Portable `.zip` (bare `OpenDraw.exe`) | release.yml step | — | no |
 | macOS | `.app` / `.dmg` (universal, macOS 11+) | tauri-action | `tauri.macos.conf.json` | yes (`.app.tar.gz`) |
-| Linux | AppImage | tauri-action | `tauri.linux.conf.json` | yes |
-| Linux | `.deb` | tauri-action | `tauri.linux.conf.json` | no (use the package manager) |
-| Linux | `.rpm` | tauri-action | `tauri.linux.conf.json` | no (use the package manager) |
+| Linux (x64, arm64) | AppImage | tauri-action | `tauri.linux.conf.json` | yes |
+| Linux (x64, arm64) | `.deb` | tauri-action | `tauri.linux.conf.json` | no (use the package manager) |
+| Linux (x64, arm64) | `.rpm` | tauri-action | `tauri.linux.conf.json` | no (use the package manager) |
 | Linux | snap | `snap` job, `snap/snapcraft.yaml` | — | via the Snap Store |
 
 Notes:
@@ -28,8 +28,8 @@ Notes:
   store login.
 - **File associations** (installers only): `.opendraw` (editor), `.drawio` (editor)
   and `.vsdx` (viewer, alternate handler on macOS), set in `bundle.fileAssociations`
-  in `tauri.conf.json`. As with mxGraph desktop, `.png`/`.svg`/`.xml` open only
-  through *File → Open*, not by association.
+  in `tauri.conf.json`. `.png`/`.svg`/`.xml` open only through *File → Open*,
+  not by association.
 
 ## Versioning
 
@@ -40,10 +40,20 @@ Bump `version` in `package.json`, `src-tauri/tauri.conf.json` and
 git tag v0.2.0 && git push origin v0.2.0
 ```
 
-The workflow creates a **draft** release named `OpenDraw v0.2.0` with every package
-attached. Review it and click *Publish*: the updater only sees published releases,
-because `releases/latest/download/latest.json` resolves to the newest published,
-non-prerelease release.
+The workflow then:
+
+1. **prepare** — fails fast if the tag doesn't match all three versions, and creates
+   a draft release with generated release notes;
+2. **build** — Windows x64, macOS universal, Linux x64 and Linux arm64 in parallel,
+   each uploading its packages to the draft;
+3. **snap** — best effort;
+4. **publish** — uploads `SHA256SUMS.txt` and publishes the release (marked *latest*).
+   If any platform fails, the release stays a draft so nothing half-built goes out;
+   fix and re-run the failed jobs, or run the workflow manually with the tag.
+
+Tags with a pre-release suffix (`v0.3.0-1`) are published as pre-releases and never
+become *latest* (so the updater ignores them). MSI only accepts numeric pre-release
+identifiers, so use `-1`, `-2`… rather than `-beta`.
 
 ## Auto-update
 
@@ -98,14 +108,26 @@ npm run tauri build -- --config src-tauri/tauri.updater.conf.json
 
 ## Code signing (installers)
 
-The workflow doesn't sign or notarise installers, so Windows SmartScreen and macOS
-Gatekeeper will warn. This is separate from the updater key above. To sign them, add
-the standard Tauri secrets to the tauri-action step:
+Signing is separate from the updater key above and fully optional: each signing
+step is skipped when its secrets are missing. Unsigned builds work, but Windows
+SmartScreen shows *Windows protected your PC* (users click *More info → Run anyway*)
+and macOS Gatekeeper refuses to open the app until the user right-clicks it and
+chooses *Open* (or runs `xattr -dr com.apple.quarantine /Applications/OpenDraw.app`).
 
-- macOS: `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`,
-  and for notarisation `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID`.
-- Windows: a code-signing certificate configured through
-  `bundle.windows.certificateThumbprint` or `bundle.windows.signCommand`.
+| Secret | Platform | Value |
+| --- | --- | --- |
+| `WINDOWS_CERTIFICATE` | Windows | base64 of a code-signing `.pfx` (`[Convert]::ToBase64String([IO.File]::ReadAllBytes('cert.pfx'))`) |
+| `WINDOWS_CERTIFICATE_PASSWORD` | Windows | the `.pfx` password |
+| `APPLE_CERTIFICATE` | macOS | base64 of a *Developer ID Application* `.p12` |
+| `APPLE_CERTIFICATE_PASSWORD` | macOS | the `.p12` password |
+| `APPLE_SIGNING_IDENTITY` | macOS | e.g. `Developer ID Application: Your Name (TEAMID)` |
+| `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID` | macOS | notarisation: Apple ID, an app-specific password, and the team ID |
+
+With `WINDOWS_CERTIFICATE` the workflow imports the certificate and signs the exe,
+MSI and setup with SHA-256 and a DigiCert timestamp. An EV or Azure Trusted Signing
+certificate removes the SmartScreen warning immediately; a standard OV certificate
+builds reputation over time. With the Apple secrets, the app is signed with the
+hardened runtime and notarised, so it opens without warnings.
 
 ## Desktop configuration file
 

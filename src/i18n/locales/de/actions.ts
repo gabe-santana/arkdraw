@@ -194,4 +194,11 @@ export default {
   'action.extras.dictate': 'Beschriftung diktieren',
   'action.layout.parallelEdges': 'Parallele Kanten',
   'action.layout.fromJson': 'Layout aus JSON anwenden…',
+  'action.edit.editShape': 'Form bearbeiten…',
+  'action.arrange.insertShape': 'Form aus Stencil-XML…',
+  'action.extras.plugins': 'Plugins…',
+  'action.view.uiMode.default': 'Standardoberfläche',
+  'action.view.uiMode.minimal': 'Minimale Oberfläche',
+  'action.view.uiMode.sketch': 'Skizzenoberfläche',
+  'action.view.uiMode.compact': 'Kompakte Oberfläche',
 } satisfies CatalogTranslation;

@@ -65,8 +65,8 @@
       },
       {
         "ext": ["vsdx"],
-        "name": "Visio Drawing",
-        "description": "Microsoft Visio Drawing",
+        "name": "VSDX Drawing",
+        "description": "VSDX Drawing",
         "role": "Viewer",
         "rank": "Alternate",
         "mimeType": "application/vnd.ms-visio.drawing.main+xml"

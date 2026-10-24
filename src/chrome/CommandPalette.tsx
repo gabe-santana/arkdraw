@@ -27,29 +27,38 @@ interface Item {
   score: number;
 }
 
-let actionIndex: SearchIndex<(typeof ACTIONS)[number]> | null = null;
+type ActionItem = (typeof ACTIONS)[number];
+let englishIndex: SearchIndex<ActionItem> | null = null;
+let localIndex: SearchIndex<ActionItem> | null = null;
 let indexedVersion = '';
-export const searchActions = (q: string) => {
+/**
+ * Command search. English always works, in every UI language: the English
+ * index (labels + keywords, exactly as in the English UI) is searched next to
+ * an index of the translated labels, so "save" and "salvar" both find
+ * File → Save. Whichever index matches best leads; the other's extra hits
+ * follow. English queries therefore rank exactly as in the English UI.
+ */
+export const searchActions = (q: string, limit = 40) => {
   // Re-index when plugins/extensions register actions at runtime, or the language changes.
   const version = `${actionsVersion}:${currentLocale()}`;
-  if (indexedVersion !== version) actionIndex = null;
+  if (indexedVersion !== version) englishIndex = localIndex = null;
   indexedVersion = version;
-  // Matches the label in the UI language AND the English label/keywords, so
-  // "salvar" and "save" both find File → Save.
-  actionIndex ??= new SearchIndex(
-    ACTIONS.filter((a) => !a.hidden),
-    (a) => {
-      const label = actionLabel(a);
-      return [
-        { text: label, weight: 3 },
-        ...(label !== a.label ? [{ text: a.label, weight: 2.4 }] : []),
-        { text: a.keywords ?? '', weight: 1.6 },
-        { text: groupLabel(a.group), weight: 0.6 },
-        ...(groupLabel(a.group) !== a.group ? [{ text: a.group, weight: 0.4 }] : []),
-      ];
-    },
-  );
-  return actionIndex.search(q, 40);
+  const visible = () => ACTIONS.filter((a) => !a.hidden);
+  englishIndex ??= new SearchIndex(visible(), (a) => [
+    { text: a.label, weight: 3 },
+    { text: a.keywords ?? '', weight: 1.6 },
+    { text: a.group, weight: 0.6 },
+  ]);
+  const english = englishIndex.search(q, limit);
+  if (currentLocale() === 'en') return english;
+  localIndex ??= new SearchIndex(visible(), (a) => [
+    { text: actionLabel(a), weight: 3 },
+    { text: groupLabel(a.group), weight: 0.6 },
+  ]);
+  const local = localIndex.search(q, limit);
+  const [first, second] = (local[0]?.score ?? 0) > (english[0]?.score ?? 0) ? [local, english] : [english, local];
+  const seen = new Set(first.map((r) => r.item.id));
+  return [...first, ...second.filter((r) => !seen.has(r.item.id))].slice(0, limit);
 };
 
 export function CommandPalette() {

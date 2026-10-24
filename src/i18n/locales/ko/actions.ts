@@ -194,4 +194,11 @@ export default {
   'action.extras.dictate': '레이블 받아쓰기',
   'action.layout.parallelEdges': '평행 커넥터',
   'action.layout.fromJson': 'JSON으로 레이아웃 적용…',
+  'action.edit.editShape': '도형 편집…',
+  'action.arrange.insertShape': '스텐실 XML에서 도형…',
+  'action.extras.plugins': '플러그인…',
+  'action.view.uiMode.default': '기본 UI',
+  'action.view.uiMode.minimal': '최소 UI',
+  'action.view.uiMode.sketch': '스케치 UI',
+  'action.view.uiMode.compact': '컴팩트 UI',
 } satisfies CatalogTranslation;

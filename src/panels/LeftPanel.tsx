@@ -123,7 +123,7 @@ function Section({
       <div className="group flex h-8 w-full items-center rounded-lg hover:bg-hover">
         <button onClick={onToggle} className="flex h-full min-w-0 flex-1 items-center gap-1 px-1.5 text-[12px] font-semibold text-fg">
           <ChevronRight className={cn('size-3.5 text-subtle transition-transform duration-200', open && 'rotate-90')} />
-          <span className="flex-1 truncate text-left">{title}</span>
+          <span className="flex-1 truncate text-left" title={title}>{title}</span>
           {count !== undefined && <span className="text-[11px] font-normal tabular-nums text-subtle">{count}</span>}
         </button>
         {action}

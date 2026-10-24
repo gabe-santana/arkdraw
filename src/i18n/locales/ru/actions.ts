@@ -194,4 +194,11 @@ export default {
   'action.extras.dictate': 'Надиктовать подпись',
   'action.layout.parallelEdges': 'Параллельные связи',
   'action.layout.fromJson': 'Применить компоновку из JSON…',
+  'action.edit.editShape': 'Изменить фигуру…',
+  'action.arrange.insertShape': 'Фигура из XML трафарета…',
+  'action.extras.plugins': 'Плагины…',
+  'action.view.uiMode.default': 'Стандартный интерфейс',
+  'action.view.uiMode.minimal': 'Минимальный интерфейс',
+  'action.view.uiMode.sketch': 'Интерфейс «Эскиз»',
+  'action.view.uiMode.compact': 'Компактный интерфейс',
 } satisfies CatalogTranslation;

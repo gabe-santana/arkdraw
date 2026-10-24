@@ -365,8 +365,8 @@ function ProviderCard({ id, active, onSelect }: { id: ProviderId; active: boolea
     >
       <ProviderMark provider={id} size={28} />
       <span className="min-w-0">
-        <span className="block truncate text-[12.5px] font-medium text-fg">{providerName(id)}</span>
-        <span className="block truncate text-[11px] text-muted">{providerTagline(id)}</span>
+        <span className="block truncate text-[12.5px] font-medium text-fg" title={providerName(id)}>{providerName(id)}</span>
+        <span className="block truncate text-[11px] text-muted" title={providerTagline(id)}>{providerTagline(id)}</span>
       </span>
       {(has || (meta.local && !meta.needsKey)) && (
         <span className="absolute right-2 top-2 size-1.5 rounded-full bg-success" title={has ? t('ai.settings.keySaved') : t('ai.settings.noKeyNeeded')} />

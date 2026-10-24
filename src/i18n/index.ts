@@ -7,7 +7,7 @@
  *
  * English (./en/*) is bundled and is the source of truth and fallback; other
  * languages live in ./locales/<code>/<namespace>.ts and load lazily (one chunk
- * per file). Strings that come from registries — command labels, template
+ * per language, ./bundles/<code>.ts). Strings that come from registries — command labels, template
  * names — are looked up by id (./catalog.ts) and fall back to the registry's
  * English text.
  *
@@ -28,8 +28,11 @@ export type LocalePreference = LocaleCode | 'auto';
 
 const STORAGE_KEY = 'opendraw:locale';
 
-/** Lazy locale modules: ./locales/<code>/<namespace>.ts */
-const MODULES = import.meta.glob<{ default: Record<string, string> }>('./locales/*/*.ts');
+/**
+ * Lazy locale bundles: ./bundles/<code>.ts gathers ./locales/<code>/<namespace>.ts,
+ * so each language is a single chunk.
+ */
+const BUNDLES = import.meta.glob<{ default: Record<string, Record<string, string>> }>('./bundles/*.ts');
 
 interface I18nState {
   /** What the user picked (Preferences). */
@@ -67,10 +70,9 @@ export function loadMessages(locale: LocaleCode): Promise<Record<string, string>
   if (locale === SOURCE_LOCALE) return Promise.resolve({});
   let p = cache.get(locale);
   if (!p) {
-    const prefix = `./locales/${locale}/`;
-    const loaders = Object.entries(MODULES).filter(([path]) => path.startsWith(prefix));
-    p = Promise.all(loaders.map(([, load]) => load().then((m) => m.default)))
-      .then((parts) => Object.assign({}, ...parts) as Record<string, string>)
+    const load = BUNDLES[`./bundles/${locale}.ts`];
+    p = (load ? load() : Promise.resolve({ default: {} }))
+      .then((m) => Object.assign({}, ...Object.values(m.default)) as Record<string, string>)
       .catch((err) => {
         cache.delete(locale);
         console.warn(`[i18n] could not load ${locale}`, err);
