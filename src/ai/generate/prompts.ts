@@ -2,7 +2,7 @@
  * System prompts and tool definitions for diagram generation / editing.
  */
 import type { ChatTool, JsonSchema } from '../providers/types';
-import { ARROW_HEADS, DIAGRAM_TYPES, DIRECTIONS, ROUTINGS } from './spec';
+import { ARROW_HEADS, DIAGRAM_TYPES, DIRECTIONS, EDGE_ANIMATIONS, NODE_ANIMATIONS, ROUTINGS } from './spec';
 import type { IconProviderInfo } from './icons';
 
 const styleSchema: JsonSchema = {
@@ -16,6 +16,29 @@ const styleSchema: JsonSchema = {
     bold: { type: 'boolean' },
   },
 };
+
+const edgeAnimationSchema: JsonSchema = {
+  type: 'object',
+  description: 'Motion along the edge: "flow" = marching dashes (requests, calls), "dots" = tokens traveling (data, events, messages), "pulse" = glowing line. kind "none" removes it.',
+  properties: {
+    kind: { type: 'string', enum: [...EDGE_ANIMATIONS, 'none'] },
+    speed: { type: 'number', description: '1 = normal, 0.5 slower, 2 faster.' },
+    reverse: { type: 'boolean', description: 'Travel from target to source (responses).' },
+  },
+  required: ['kind'],
+};
+
+const nodeAnimationSchema: JsonSchema = {
+  type: 'object',
+  description: 'Draw attention to this node: "pulse", "glow" or "bounce" (e.g. the failing or the key service). kind "none" removes it.',
+  properties: {
+    kind: { type: 'string', enum: [...NODE_ANIMATIONS, 'none'] },
+    speed: { type: 'number' },
+  },
+  required: ['kind'],
+};
+
+const stepSchema: JsonSchema = { type: 'integer', minimum: 0, description: 'Build step (1, 2, 3…) at which it appears when the diagram plays step by step; 0 removes it.' };
 
 const nodeSchema: JsonSchema = {
   type: 'object',
@@ -31,6 +54,8 @@ const nodeSchema: JsonSchema = {
     methods: { type: 'array', items: { type: 'string' }, description: 'UML class operations.' },
     external: { type: 'boolean', description: 'C4: external person/system (drawn grey).' },
     style: styleSchema,
+    animation: nodeAnimationSchema,
+    step: stepSchema,
   },
   required: ['id', 'kind', 'text'],
 };
@@ -45,6 +70,8 @@ const edgeSchema: JsonSchema = {
     startArrow: { type: 'string', enum: ARROW_HEADS },
     endArrow: { type: 'string', enum: ARROW_HEADS },
     dashed: { type: 'boolean' },
+    animation: edgeAnimationSchema,
+    step: stepSchema,
   },
   required: ['from', 'to'],
 };
@@ -57,6 +84,7 @@ const diagramSchema: JsonSchema = {
     title: { type: 'string' },
     nodes: { type: 'array', items: nodeSchema },
     edges: { type: 'array', items: edgeSchema },
+    build: { type: 'boolean', description: 'Reveal the diagram step by step following the flow (steps are numbered automatically; explicit `step` values win).' },
   },
   required: ['type', 'nodes', 'edges'],
 };
@@ -95,7 +123,7 @@ export const SUBMIT_EDITS_TOOL: ChatTool = {
         items: {
           type: 'object',
           properties: {
-            op: { type: 'string', enum: ['add_node', 'update_node', 'remove_node', 'add_edge', 'update_edge', 'remove_edge'] },
+            op: { type: 'string', enum: ['add_node', 'update_node', 'remove_node', 'add_edge', 'update_edge', 'remove_edge', 'animate_edges', 'set_build'] },
             id: { type: 'string', description: 'Existing node/edge id (update_*, remove_*).' },
             node: { ...nodeSchema, description: 'add_node: the new node (new unique id; `parent` may be an existing container id).' },
             edge: { ...edgeSchema, description: 'add_edge: endpoints are existing or newly added node ids.' },
@@ -113,6 +141,15 @@ export const SUBMIT_EDITS_TOOL: ChatTool = {
             endArrow: { type: 'string', enum: ARROW_HEADS },
             dashed: { type: 'boolean' },
             routing: { type: 'string', enum: ROUTINGS },
+            animation: {
+              type: 'object',
+              description: 'update_node / update_edge / animate_edges: the animation to set (edge kinds flow, dots, pulse; node kinds pulse, glow, bounce; "none" removes it).',
+              properties: { kind: { type: 'string' }, speed: { type: 'number' }, reverse: { type: 'boolean' } },
+              required: ['kind'],
+            },
+            step: stepSchema,
+            edges: { type: 'array', items: { type: 'string' }, description: 'animate_edges: edge ids, or ["all"] for every edge.' },
+            enabled: { type: 'boolean', description: 'set_build: true numbers build steps along the flow, false removes them.' },
           },
           required: ['op'],
         },
@@ -134,7 +171,12 @@ const CATALOG = `Shape kinds:
 Edges: from/to node ids, optional short label ("HTTPS", "reads/writes", "1. login"). Arrow heads: ${ARROW_HEADS.join(', ')}.
 - UML: inheritance endArrow triangleOpen; realization triangleOpen + dashed; composition startArrow diamond + endArrow none; aggregation startArrow diamondOpen; dependency endArrow arrow + dashed; association endArrow arrow or none.
 - ERD: crow's-foot at both ends, e.g. one-to-many = startArrow erOnlyOne, endArrow erZeroMany (or erOneMany); edge from the "one" side to the "many" side.
-- Sequence (type "sequence"): nodes are participants (uml.lifeline) in left-to-right order, edges are messages in chronological order; replies dashed:true.`;
+- Sequence (type "sequence"): nodes are participants (uml.lifeline) in left-to-right order, edges are messages in chronological order; replies dashed:true.
+
+Animation (the app plays it on the canvas and exports it as GIF): use it whenever the user asks for animation, motion, movement, flow, "show the request/data flowing", live, step by step, build-up or emphasis.
+- Edge animation: "flow" (marching dashes) for requests and calls along the main path; "dots" (traveling tokens) for data, events, queues and streams; "pulse" for a heartbeat/health link. reverse:true for responses. "Animate it" = flow on the main request path, dots on data/event edges.
+- Node animation: "pulse", "glow" or "bounce" to highlight a component ("the failing service", "the bottleneck").
+- Step by step: build:true reveals the diagram following the flow; set node/edge step (1, 2, 3…) for a custom order (e.g. numbered request steps). Edges never appear before their ends.`;
 
 const RULES = `Rules:
 - Never draw diagrams in prose or code blocks; always use the tools.
@@ -175,7 +217,7 @@ export function editSystemPrompt(providers: IconProviderInfo[]): string {
 Workflow:
 1. Work out the smallest set of changes that fulfils the request. Nodes/edges marked "selected": true are the user's current selection — "this", "these" and "the selected…" refer to them.
 2. Look up vendor icons with search_icons if you add cloud services.
-3. Call submit_edits with operations that reference existing ids exactly; new nodes need new unique ids. Removing a node also removes its edges.
+3. Call submit_edits with operations that reference existing ids exactly; new nodes need new unique ids. Removing a node also removes its edges. To animate many edges at once use one animate_edges op (edges: "all" or a list); to play the diagram step by step use set_build (enabled true / false); animation "none" or step 0 removes them.
 4. Call submit_diagram with a complete spec instead when the user asks for a new or separate diagram (something unrelated to the current one), or to redo, restructure or re-layout the whole diagram (or the change touches most of it). The user doesn't choose a mode: decide from the request.
 If a tool returns errors, fix them and call it again.
 

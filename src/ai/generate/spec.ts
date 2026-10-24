@@ -21,6 +21,20 @@ export interface SpecStyle {
   bold?: boolean;
 }
 
+/** Motion on a node or edge (docs/specs/animation.md). */
+export interface SpecAnimation<K extends string = string> {
+  kind: K;
+  /** 1 = default speed (0.25–4). */
+  speed?: number;
+  /** Edges: travel from target to source. */
+  reverse?: boolean;
+}
+
+export const EDGE_ANIMATIONS = ['flow', 'dots', 'pulse'] as const;
+export const NODE_ANIMATIONS = ['pulse', 'glow', 'bounce'] as const;
+export type EdgeAnimationKind = (typeof EDGE_ANIMATIONS)[number];
+export type NodeAnimationKind = (typeof NODE_ANIMATIONS)[number];
+
 export interface SpecNode {
   id: string;
   /** Shape kind from the registry (aliases like `process`, `decision` accepted). */
@@ -40,6 +54,10 @@ export interface SpecNode {
   /** C4: external (grey) element. */
   external?: boolean;
   style?: SpecStyle;
+  /** Emphasis animation (e.g. the failing service pulses). */
+  animation?: SpecAnimation<NodeAnimationKind>;
+  /** Build step (1, 2, 3…) at which the node appears. */
+  step?: number;
 }
 
 export interface SpecEdge {
@@ -50,6 +68,10 @@ export interface SpecEdge {
   startArrow?: ArrowHead;
   endArrow?: ArrowHead;
   dashed?: boolean;
+  /** Motion along the edge: requests flowing, data moving. */
+  animation?: SpecAnimation<EdgeAnimationKind>;
+  /** Build step at which the edge appears (never before its ends). */
+  step?: number;
 }
 
 export interface DiagramSpec {
@@ -58,6 +80,8 @@ export interface DiagramSpec {
   title?: string;
   nodes: SpecNode[];
   edges: SpecEdge[];
+  /** Reveal the diagram step by step, following the flow (explicit `step`s win). */
+  build?: boolean;
 }
 
 export const DIAGRAM_TYPES: DiagramType[] = ['flowchart', 'sequence', 'class', 'erd', 'c4', 'cloud', 'network', 'generic'];
@@ -141,6 +165,45 @@ const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 
 const str = (v: unknown): string | undefined => (typeof v === 'string' ? v : typeof v === 'number' ? String(v) : undefined);
 const strList = (v: unknown): string[] | undefined =>
   Array.isArray(v) ? v.map((x) => str(x)).filter((x): x is string => x !== undefined) : undefined;
+
+const ANIMATION_ALIASES: Record<string, string> = {
+  marching: 'flow', ants: 'flow', dash: 'flow', dashes: 'flow', dashed: 'flow', stream: 'flow', flowing: 'flow',
+  dot: 'dots', particles: 'dots', particle: 'dots', tokens: 'dots', packets: 'dots', data: 'dots',
+  blink: 'pulse', pulsing: 'pulse', highlight: 'glow', glowing: 'glow', shake: 'bounce', jump: 'bounce', bouncing: 'bounce',
+};
+
+/**
+ * Parses an `animation` value: a kind ("flow") or `{ kind, speed, reverse }`.
+ * Returns null for an explicit "none"/false (remove), undefined when absent or unusable.
+ */
+export function parseAnimation<K extends string>(raw: unknown, kinds: readonly K[], warnings: string[], where: string): SpecAnimation<K> | null | undefined {
+  if (raw === undefined) return undefined;
+  if (raw === null || raw === false) return null;
+  const obj = isObj(raw) ? raw : undefined;
+  const name = (raw === true ? kinds[0] : str(obj ? (obj.kind ?? obj.type ?? obj.effect) : raw))?.trim().toLowerCase();
+  if (!name) return undefined;
+  if (name === 'none' || name === 'off') return null;
+  const kind = (kinds as readonly string[]).includes(name) ? name : ANIMATION_ALIASES[name];
+  if (!kind || !(kinds as readonly string[]).includes(kind)) {
+    warnings.push(`${where}: unknown animation "${name}" (use ${kinds.join(', ')}).`);
+    return undefined;
+  }
+  const out: SpecAnimation<K> = { kind: kind as K };
+  const speed = typeof obj?.speed === 'number' ? obj.speed : Number(str(obj?.speed));
+  if (Number.isFinite(speed) && speed > 0) out.speed = Math.min(4, Math.max(0.25, speed));
+  if (obj?.reverse === true) out.reverse = true;
+  return out;
+}
+
+/** Parses a build `step`: a positive integer, null for an explicit 0/null (remove), undefined when absent or unusable. */
+export function parseStep(raw: unknown, warnings: string[], where: string): number | null | undefined {
+  if (raw === undefined) return undefined;
+  if (raw === null || raw === 0 || raw === '0') return null;
+  const n = typeof raw === 'number' ? raw : Number(str(raw));
+  if (Number.isInteger(n) && n > 0 && n <= 999) return n;
+  warnings.push(`${where}: step must be a whole number from 1, ignored "${String(raw)}".`);
+  return undefined;
+}
 
 export function isKnownKind(kind: string): boolean {
   return kind in SHAPES || (C4_BOX_KINDS as readonly string[]).includes(kind);
@@ -245,6 +308,10 @@ export function validateSpec(input: unknown, opts: ValidateOptions = {}): Valida
     }
     const style = normStyle(rawNode.style, warnings, where);
     if (style) node.style = style;
+    const animation = parseAnimation(rawNode.animation ?? rawNode.animate, NODE_ANIMATIONS, warnings, where);
+    if (animation) node.animation = animation;
+    const step = parseStep(rawNode.step ?? rawNode.reveal, warnings, where);
+    if (step) node.step = step;
     nodes.push(node);
   }
 
@@ -309,6 +376,10 @@ export function validateSpec(input: unknown, opts: ValidateOptions = {}): Valida
       else warnings.push(`edges[${i}]: unknown ${key} "${v}".`);
     }
     if (rawEdge.dashed === true) edge.dashed = true;
+    const animation = parseAnimation(rawEdge.animation ?? rawEdge.animate ?? rawEdge.animated, EDGE_ANIMATIONS, warnings, `edges[${i}]`);
+    if (animation) edge.animation = animation;
+    const step = parseStep(rawEdge.step ?? rawEdge.reveal, warnings, `edges[${i}]`);
+    if (step) edge.step = step;
     edges.push(edge);
   }
 
@@ -317,5 +388,6 @@ export function validateSpec(input: unknown, opts: ValidateOptions = {}): Valida
   if (direction) spec.direction = direction;
   const title = str(root.title)?.trim();
   if (title) spec.title = title;
+  if (root.build === true || root.stepByStep === true || str(root.build) === 'true') spec.build = true;
   return { ok: true, spec, warnings };
 }

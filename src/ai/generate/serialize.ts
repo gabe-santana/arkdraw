@@ -11,6 +11,10 @@ export interface CompactNode {
   parent?: string;
   /** [x, y, w, h], rounded. */
   box: [number, number, number, number];
+  /** Emphasis animation kind (pulse, glow, bounce). */
+  animation?: string;
+  /** Build step at which it appears. */
+  step?: number;
   selected?: true;
 }
 
@@ -21,6 +25,9 @@ export interface CompactEdge {
   label?: string;
   startArrow?: string;
   endArrow?: string;
+  /** Flow animation kind (flow, dots, pulse). */
+  animation?: string;
+  step?: number;
   selected?: true;
 }
 
@@ -43,6 +50,8 @@ export function compactDoc(doc: Doc, selection: string[] = []): CompactDoc {
       if (el.text) n.text = clip(el.text);
       if (el.icon) n.icon = el.icon;
       if (el.containerId && doc.elements[el.containerId]) n.parent = el.containerId;
+      if (el.animation && el.animation.kind !== 'none') n.animation = el.animation.kind;
+      if (el.reveal) n.step = el.reveal;
       if (sel.has(el.id)) n.selected = true;
       nodes.push(n);
     } else if (isConnector(el)) {
@@ -52,6 +61,8 @@ export function compactDoc(doc: Doc, selection: string[] = []): CompactDoc {
       if (el.text) e.label = clip(el.text);
       if (el.startArrow !== 'none') e.startArrow = el.startArrow;
       if (el.endArrow !== 'triangle') e.endArrow = el.endArrow;
+      if (el.animation && el.animation.kind !== 'none') e.animation = el.animation.reverse ? `${el.animation.kind} (reverse)` : el.animation.kind;
+      if (el.reveal) e.step = el.reveal;
       if (sel.has(el.id)) e.selected = true;
       edges.push(e);
     }

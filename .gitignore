@@ -32,3 +32,8 @@ public/icons/*/*
 
 # Local working notes (not published)
 docs/PARITY.md
+
+# Local credentials (never commit)
+.secrets
+.secrets.*
+*.secrets

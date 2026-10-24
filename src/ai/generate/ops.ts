@@ -10,8 +10,12 @@ import { isConnector, isShape } from '@/model/types';
 import { createConnector, createShape, DEFAULT_CONNECTOR_STYLE } from '@/model/defaults';
 import { compartmentHeight, getShapeDef } from '@/shapes/registry';
 import { c4Text, C4_COLORS, compartmentText, dominantCloud, GROUP_ICON_SIZE, resolveNode } from './resolve';
-import { ARROW_HEADS, CONTAINER_KINDS, normalizeKind, ROUTINGS, validateSpec, type DiagramType, type SpecEdge, type SpecNode, type SpecStyle } from './spec';
-import { facingPoint } from './toElements';
+import {
+  ARROW_HEADS, CONTAINER_KINDS, EDGE_ANIMATIONS, NODE_ANIMATIONS, normalizeKind, parseAnimation, parseStep, ROUTINGS, validateSpec,
+  type DiagramType, type EdgeAnimationKind, type NodeAnimationKind, type SpecAnimation, type SpecEdge, type SpecNode, type SpecStyle,
+} from './spec';
+import { connectorAnimationOf, facingPoint, shapeAnimationOf } from './toElements';
+import { buildSteps, flowDirection } from './buildSteps';
 
 export type EditOp =
   | { op: 'add_node'; node: SpecNode }
@@ -27,11 +31,28 @@ export type EditOp =
       attributes?: string[];
       methods?: string[];
       style?: SpecStyle;
+      /** null removes it. */
+      animation?: SpecAnimation<NodeAnimationKind> | null;
+      step?: number | null;
     }
   | { op: 'remove_node'; id: string }
   | { op: 'add_edge'; edge: SpecEdge }
-  | { op: 'update_edge'; id: string; label?: string; startArrow?: ArrowHead; endArrow?: ArrowHead; dashed?: boolean; routing?: Routing }
-  | { op: 'remove_edge'; id: string };
+  | {
+      op: 'update_edge';
+      id: string;
+      label?: string;
+      startArrow?: ArrowHead;
+      endArrow?: ArrowHead;
+      dashed?: boolean;
+      routing?: Routing;
+      animation?: SpecAnimation<EdgeAnimationKind> | null;
+      step?: number | null;
+    }
+  | { op: 'remove_edge'; id: string }
+  /** Same animation on many edges at once ("animate all arrows"); null removes it. */
+  | { op: 'animate_edges'; edges: string[] | 'all'; animation: SpecAnimation<EdgeAnimationKind> | null }
+  /** Number build steps along the flow (true), or clear them (false). */
+  | { op: 'set_build'; enabled: boolean };
 
 export interface OpsValidation {
   ok: boolean;
@@ -114,6 +135,10 @@ export function validateOps(input: unknown, doc: Doc, knownIcons?: Set<string>):
           const v = validateSpec({ nodes: [{ id: 'x', kind: 'rectangle', style: raw.style }], edges: [] });
           if (v.ok && v.spec.nodes[0].style) u.style = v.spec.nodes[0].style;
         }
+        const animation = parseAnimation(raw.animation ?? raw.animate, NODE_ANIMATIONS, warnings, where);
+        if (animation !== undefined) u.animation = animation;
+        const step = parseStep(raw.step ?? raw.reveal, warnings, where);
+        if (step !== undefined) u.step = step;
         ops.push(u);
         return;
       }
@@ -136,6 +161,10 @@ export function validateOps(input: unknown, doc: Doc, knownIcons?: Set<string>):
         if (ARROW_HEADS.includes(e.startArrow as ArrowHead)) edge.startArrow = e.startArrow as ArrowHead;
         if (ARROW_HEADS.includes(e.endArrow as ArrowHead)) edge.endArrow = e.endArrow as ArrowHead;
         if (e.dashed === true) edge.dashed = true;
+        const animation = parseAnimation(e.animation ?? e.animate ?? e.animated, EDGE_ANIMATIONS, warnings, where);
+        if (animation) edge.animation = animation;
+        const step = parseStep(e.step ?? e.reveal, warnings, where);
+        if (step) edge.step = step;
         ops.push({ op: 'add_edge', edge });
         return;
       }
@@ -148,6 +177,10 @@ export function validateOps(input: unknown, doc: Doc, knownIcons?: Set<string>):
         if (ARROW_HEADS.includes(raw.endArrow as ArrowHead)) u.endArrow = raw.endArrow as ArrowHead;
         if (typeof raw.dashed === 'boolean') u.dashed = raw.dashed;
         if (ROUTINGS.includes(raw.routing as Routing)) u.routing = raw.routing as Routing;
+        const animation = parseAnimation(raw.animation ?? raw.animate ?? raw.animated, EDGE_ANIMATIONS, warnings, where);
+        if (animation !== undefined) u.animation = animation;
+        const step = parseStep(raw.step ?? raw.reveal, warnings, where);
+        if (step !== undefined) u.step = step;
         ops.push(u);
         return;
       }
@@ -155,6 +188,26 @@ export function validateOps(input: unknown, doc: Doc, knownIcons?: Set<string>):
         const id = str(raw.id);
         if (!id || !edgeIds.has(id)) return void errors.push(`${where}: unknown edge id "${id}".`);
         ops.push({ op: 'remove_edge', id });
+        return;
+      }
+      case 'animate_edges': {
+        const animation = parseAnimation(raw.animation ?? raw.animate ?? raw.kind, EDGE_ANIMATIONS, warnings, where);
+        if (animation === undefined) return void errors.push(`${where}: animate_edges needs \`animation\` (${EDGE_ANIMATIONS.join(', ')} or "none").`);
+        const every = raw.edges === 'all' || raw.all === true || raw.edges === undefined || (Array.isArray(raw.edges) && raw.edges.some((x) => x === 'all' || x === '*'));
+        if (every) {
+          ops.push({ op: 'animate_edges', edges: 'all', animation });
+          return;
+        }
+        if (!Array.isArray(raw.edges)) return void errors.push(`${where}: \`edges\` must be an array of edge ids or "all".`);
+        const ids = raw.edges.map((x) => str(x)).filter((x): x is string => !!x);
+        const unknown = ids.filter((id) => !edgeIds.has(id));
+        if (unknown.length) return void errors.push(`${where}: unknown edge id "${unknown[0]}".`);
+        if (!ids.length) return void errors.push(`${where}: no edge ids given.`);
+        ops.push({ op: 'animate_edges', edges: ids, animation });
+        return;
+      }
+      case 'set_build': {
+        ops.push({ op: 'set_build', enabled: raw.enabled !== false && raw.enabled !== 'false' });
         return;
       }
       default:
@@ -213,6 +266,8 @@ export function applyOps(doc: Doc, ops: EditOp[]): ApplyResult {
   const pendingPlacement: Array<{ shape: ShapeElement; node: SpecNode }> = [];
   let updated = 0;
   let removedCount = 0;
+  /** set_build: number build steps (true) or clear them (false), once everything is placed. */
+  let build: boolean | undefined;
 
   const resolveId = (id: string) => specToEl.get(id) ?? id;
   const shape = (id: string) => {
@@ -232,6 +287,8 @@ export function applyOps(doc: Doc, ops: EditOp[]): ApplyResult {
     const s = createShape(r.kind, { x: 0, y: 0, w: r.w, h: r.h }, r.style, r.text);
     if (r.icon) s.icon = r.icon;
     if (r.kind === 'group' && r.icon) s.params = { ...s.params, iconSize: GROUP_ICON_SIZE };
+    if (op.node.animation) s.animation = shapeAnimationOf(op.node.animation);
+    if (op.node.step) s.reveal = op.node.step;
     specToEl.set(op.node.id, s.id);
     els.set(s.id, s);
     (r.container ? newContainers : newShapes).push(s);
@@ -271,6 +328,10 @@ export function applyOps(doc: Doc, ops: EditOp[]): ApplyResult {
           if (op.style.dashed !== undefined) s.style.strokeStyle = op.style.dashed ? 'dashed' : 'solid';
           if (op.style.bold !== undefined) s.style.bold = op.style.bold;
         }
+        if (op.animation === null) delete s.animation;
+        else if (op.animation) s.animation = shapeAnimationOf(op.animation);
+        if (op.step === null) delete s.reveal;
+        else if (op.step) s.reveal = op.step;
         break;
       }
       case 'remove_node': {
@@ -302,6 +363,8 @@ export function applyOps(doc: Doc, ops: EditOp[]): ApplyResult {
             endArrow: op.edge.endArrow ?? (type === 'erd' ? 'erZeroMany' : type === 'network' ? 'none' : type === 'class' ? 'arrow' : 'triangle'),
             text: op.edge.label ?? '',
             style: { ...DEFAULT_CONNECTOR_STYLE, strokeStyle: op.edge.dashed ? 'dashed' : 'solid' },
+            ...(op.edge.animation && { animation: connectorAnimationOf(op.edge.animation) }),
+            ...(op.edge.step && { reveal: op.edge.step }),
           },
         );
         els.set(c.id, c);
@@ -318,8 +381,27 @@ export function applyOps(doc: Doc, ops: EditOp[]): ApplyResult {
         if (op.endArrow) c.endArrow = op.endArrow;
         if (op.routing) c.routing = op.routing;
         if (op.dashed !== undefined) c.style.strokeStyle = op.dashed ? 'dashed' : 'solid';
+        if (op.animation === null) delete c.animation;
+        else if (op.animation) c.animation = connectorAnimationOf(op.animation);
+        if (op.step === null) delete c.reveal;
+        else if (op.step) c.reveal = op.step;
         break;
       }
+      case 'animate_edges': {
+        const ids = op.edges === 'all' ? [...els.values()].filter(isConnector).map((e) => e.id) : op.edges;
+        for (const id of ids) {
+          const cur = els.get(id);
+          if (!isConnector(cur)) continue;
+          const c = touch(cur);
+          updated++;
+          if (op.animation) c.animation = connectorAnimationOf(op.animation);
+          else delete c.animation;
+        }
+        break;
+      }
+      case 'set_build':
+        build = op.enabled;
+        break;
       case 'remove_edge': {
         if (els.delete(op.id)) removedCount++;
         break;
@@ -429,6 +511,26 @@ export function applyOps(doc: Doc, ops: EditOp[]): ApplyResult {
     const pb = facingPoint(b, { x: a.x + a.w / 2, y: a.y + a.h / 2 });
     Object.assign(c.source, { x: Math.round(pa.x), y: Math.round(pa.y) });
     Object.assign(c.target, { x: Math.round(pb.x), y: Math.round(pb.y) });
+  }
+
+  // 5. Build steps along the flow of the final layout.
+  if (build !== undefined) {
+    const shapes = [...els.values()].filter(isShape);
+    if (build) {
+      const links = [...els.values()].filter(isConnector).flatMap((c) => {
+        const from = c.source.elementId ? shape(c.source.elementId) : undefined;
+        const to = c.target.elementId ? shape(c.target.elementId) : undefined;
+        return from && to ? [{ from, to }] : [];
+      });
+      const items = shapes.map((sh) => ({ id: sh.id, parent: sh.containerId && els.has(sh.containerId) ? sh.containerId : undefined, rect: sh }));
+      for (const [id, step] of buildSteps(items, flowDirection(links), true)) {
+        const cur = shape(id);
+        if (cur && cur.reveal !== step) touch(cur).reveal = step;
+      }
+    } else {
+      for (const el of [...els.values()]) if (el.reveal) delete touch(el).reveal;
+    }
+    updated++;
   }
 
   const newIds = [...newContainers, ...newShapes, ...newConnectors].map((e) => e.id).filter((id) => els.has(id));

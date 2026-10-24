@@ -1,13 +1,14 @@
 /**
  * Diagram spec → positioned OpenDraw elements.
  */
-import type { ArrowHead, ConnectorElement, DiagramElement, ElementStyle, Endpoint, Rect, ShapeElement, Vec } from '@/model/types';
+import type { ArrowHead, ConnectorAnimation, ConnectorElement, DiagramElement, ElementStyle, Endpoint, Rect, ShapeAnimation, ShapeElement, Vec } from '@/model/types';
 import { createConnector, createShape, DEFAULT_CONNECTOR_STYLE } from '@/model/defaults';
 import { measureText } from '@/lib/text';
 import { layoutDiagram, type LayoutEdge, type LayoutOptions } from './layout';
 import { layoutRouted, type RoutedEdge, type RoutedLayout } from './elkLayout';
 import { defaultDirection, GROUP_ICON_SIZE, resolveSpec, type ResolvedNode } from './resolve';
-import type { DiagramSpec, DiagramType, SpecEdge } from './spec';
+import { buildSteps } from './buildSteps';
+import type { DiagramSpec, DiagramType, EdgeAnimationKind, NodeAnimationKind, SpecAnimation, SpecEdge } from './spec';
 
 export interface SpecConversion {
   /** Back-to-front: containers (outer first), shapes, then connectors. */
@@ -46,6 +47,14 @@ function edgeDefaults(type: DiagramType): { startArrow: ArrowHead; endArrow: Arr
       return { startArrow: 'none', endArrow: 'triangle' };
   }
 }
+
+export const shapeAnimationOf = (a: SpecAnimation<NodeAnimationKind>): ShapeAnimation => ({ kind: a.kind, speed: a.speed ?? 1 });
+
+export const connectorAnimationOf = (a: SpecAnimation<EdgeAnimationKind>): ConnectorAnimation => ({
+  kind: a.kind,
+  speed: a.speed ?? 1,
+  ...(a.reverse && { reverse: true }),
+});
 
 function connectorStyle(e: SpecEdge): ElementStyle {
   return { ...DEFAULT_CONNECTOR_STYLE, strokeStyle: e.dashed ? 'dashed' : 'solid' };
@@ -95,6 +104,11 @@ function sequenceToElements(spec: DiagramSpec, origin: Vec, anchor: 'center' | '
   });
   messages.forEach((e, i) => {
     const y = Math.round(oy + HEADER + 36 + i * STEP);
+    const motion: Partial<ConnectorElement> = {
+      ...(e.animation && { animation: connectorAnimationOf(e.animation) }),
+      // Built step by step, messages appear in order.
+      ...((e.step ?? (spec.build ? i + 1 : undefined)) && { reveal: e.step ?? i + 1 }),
+    };
     const x1 = centers.get(e.from)!;
     const x2 = centers.get(e.to)!;
     const self = e.from === e.to;
@@ -107,6 +121,7 @@ function sequenceToElements(spec: DiagramSpec, origin: Vec, anchor: 'center' | '
         endArrow: e.endArrow ?? (e.dashed ? 'arrow' : 'triangle'),
         text: e.label ?? '',
         style: connectorStyle(e),
+        ...motion,
       }),
     );
   });
@@ -238,6 +253,17 @@ export function convertSpec(spec: DiagramSpec, origin: Vec, opts: ConvertOptions
       rest,
     );
   });
+
+  // Motion: emphasis and flow animations, and the step-by-step build.
+  for (const n of spec.nodes) if (n.animation) shapes.get(n.id)!.animation = shapeAnimationOf(n.animation);
+  spec.edges.forEach((e, i) => {
+    if (e.animation) connectors[i].animation = connectorAnimationOf(e.animation);
+    if (e.step) connectors[i].reveal = e.step;
+  });
+  if (spec.build || spec.nodes.some((n) => n.step)) {
+    const items = spec.nodes.map((n) => ({ id: n.id, parent: n.parent, rect: layout.rects.get(n.id)!, step: n.step }));
+    for (const [id, step] of buildSteps(items, options.direction, !!spec.build)) shapes.get(id)!.reveal = step;
+  }
 
   const elements: DiagramElement[] = [
     ...containers.map((n) => shapes.get(n.id)!),

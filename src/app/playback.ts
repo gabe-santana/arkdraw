@@ -19,3 +19,20 @@ export function togglePlayback() {
   startClock();
   s.setPlaying(true);
 }
+
+/** Plays the animation preview from the beginning, if the document has anything to play. */
+export function startPlayback(): boolean {
+  const s = useEditor.getState();
+  if (!hasAnimation(s.doc)) return false;
+  stopClock(true);
+  startClock();
+  if (!s.playing) s.setPlaying(true);
+  return true;
+}
+
+export function stopPlayback() {
+  const s = useEditor.getState();
+  if (!s.playing) return;
+  stopClock();
+  s.setPlaying(false);
+}
