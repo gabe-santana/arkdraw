@@ -270,11 +270,25 @@ headers), which both hosts read.
 The editor at https://app.arkdraw.com is an assets-only Worker
 ([`wrangler.jsonc`](../wrangler.jsonc)), and the landing page at
 https://arkdraw.com / https://www.arkdraw.com is another one
-([`site/`](../site), plain static files). No code runs, so both fit the free plan
-(static requests are free; up to 20,000 files and 25 MiB per file per
-deployment, and the build is about 14,600 files with the icon packs). The
-[Deploy web](../.github/workflows/deploy-web.yml) workflow builds and deploys
-it on every stable version tag (`v1.2.3`), or by hand from the Actions tab.
+([`site/`](../site), static files plus a small [`worker.js`](../site/worker.js)
+that answers range requests for `/media/*`, which Safari needs to play the
+videos). Both fit the free plan (static requests are free; up to 20,000 files
+and 25 MiB per file per deployment, and the build is about 14,600 files with
+the icon packs). Preview the landing locally with `npm run site:dev`
+(http://localhost:8788).
+
+The [Deploy web](../.github/workflows/deploy-web.yml) workflow deploys both.
+A push to `main` only runs CI; nothing reaches the site until you ask for it:
+
+| You want to ship | Do this |
+| --- | --- |
+| A web-only fix | Push to `main`, wait for CI, then *Actions → Deploy web → Run workflow* |
+| A version (web and desktop) | Bump the version in `package.json`, `src-tauri/tauri.conf.json` and `src-tauri/Cargo.toml`, push, wait for CI, then push the tag: `git tag v1.2.3 && git push origin v1.2.3` |
+
+A stable tag (`v1.2.3`) also starts the [release](release.md) workflow, which
+publishes the desktop installers as a GitHub Release. After every deploy, and
+daily, the [Smoke](../.github/workflows/smoke.yml) workflow checks production;
+run the same checks locally with `npm run smoke:prod`.
 
 One-time setup (maintainers). Nothing secret goes in the repository:
 
@@ -285,13 +299,13 @@ One-time setup (maintainers). Nothing secret goes in the repository:
    template **Edit Cloudflare Workers**. Account resources: your account; zone
    resources: `arkdraw.com`. Create it and copy it once.
 3. Copy the **Account ID** (Workers & Pages overview, right-hand column).
-4. Store both as repository secrets (paste when prompted, so they never land
-   in your shell history):
-
-   ```sh
-   gh secret set CLOUDFLARE_API_TOKEN
-   gh secret set CLOUDFLARE_ACCOUNT_ID
-   ```
+4. Store both as repository secrets: *Settings → Secrets and variables →
+   Actions → New repository secret*, named `CLOUDFLARE_API_TOKEN` and
+   `CLOUDFLARE_ACCOUNT_ID`. (`gh secret set NAME` works too, but it saves an
+   empty value if the paste doesn't reach its prompt; the secret then exists
+   and the workflow still reports it as not set.)
+5. *SSL/TLS → Edge Certificates → Always Use HTTPS*: on, so `http://` links
+   redirect.
 
 Deploy by hand from a clone (uses your own `wrangler login`):
 

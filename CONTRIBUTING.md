@@ -32,6 +32,9 @@ npm run tauri dev     # desktop app
 | `npm run build` | Production build |
 | `npm run tauri build` | Desktop installers for the current OS |
 | `npm run media:gifs` | Regenerates the animated diagrams in the README |
+| `npm run media:ai` | Records the AI demos (README GIFs; `--video` for the landing page) |
+| `npm run site:dev` | Landing page at http://localhost:8788 |
+| `npm run smoke:prod` | Checks the live site and editor in a real browser |
 
 ## Project layout
 

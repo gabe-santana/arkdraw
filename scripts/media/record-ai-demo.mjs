@@ -10,7 +10,7 @@
  *   node --experimental-websocket scripts/media/record-ai-demo.mjs --video [name…]
  *
  * `--video` records in 4K (a 1280×720 window at 3× density) and writes MP4s
- * for the landing page: <name>-4k.mp4, <name>-1080p.mp4 and a <name>.webp poster. A
+ * for the landing page: <name>-4k.mp4, <name>-1080p.mp4 and a <name>-poster.webp. A
  * 4K screenshot takes ~130 ms, so the page's animations run at quarter speed
  * while it is recorded and the video is assembled on that clock: smooth
  * 30 fps at full speed.
@@ -387,7 +387,7 @@ function writeVideo(name, frames, marks, dir) {
     '-c:v', 'libx264', '-preset', 'slow', '-crf', '22', '-profile:v', 'high', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-an',
     join(OUT, `${name}-1080p.mp4`),
   ]);
-  execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', join(dir, `f${String(n - 1).padStart(5, '0')}.jpg`), '-vf', 'scale=1600:-1:flags=lanczos', '-c:v', 'libwebp', '-quality', '72', join(OUT, `${name}.webp`)]);
+  execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', join(dir, `f${String(n - 1).padStart(5, '0')}.jpg`), '-vf', 'scale=1600:-1:flags=lanczos', '-c:v', 'libwebp', '-quality', '72', join(OUT, `${name}-poster.webp`)]);
   return { out: mp4, frames: n };
 }
 
