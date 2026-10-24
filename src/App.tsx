@@ -124,7 +124,12 @@ export default function App() {
             <DockColumn side="left" />
             <DockColumn side="right" />
             <DockDragGhost />
-            <div data-od-toolbar className="absolute bottom-3.5 left-1/2 -translate-x-1/2">
+            {/* Centered in the canvas area the side panels leave free, so it never runs into the zoom controls. */}
+            <div
+              data-od-toolbar
+              className="absolute bottom-3.5 -translate-x-1/2 transition-[left] duration-300"
+              style={{ left: `calc(${leftInset}px + (100% - ${leftInset + rightInset}px) / 2)` }}
+            >
               <Toolbar />
             </div>
             <div className={cn('absolute bottom-3.5 flex flex-col items-end gap-2 transition-[right] duration-300', !rightInset && 'right-3.5')} style={rightInset ? { right: rightInset + 22 } : undefined}>

@@ -30,10 +30,10 @@ const GIF_WIDTH = 1280;
 /** The demos: a prompt typed into the AI tab, optionally after a first prompt that sets the scene. */
 const DEMOS = {
   'aws-serverless': {
-    prompts: ['Serverless image upload on AWS: users → CloudFront → API Gateway → Lambda, store images in S3 and metadata in DynamoDB. Animate the request flow.'],
+    prompts: ['Serverless image upload on AWS: CloudFront → API Gateway → Lambda, saving images to S3 and metadata to DynamoDB. One arrow per hop. Animate the request flow.'],
   },
-  'azure-microservices': {
-    prompts: ['Azure microservices: Application Gateway in front of AKS in a VNet, with Cosmos DB, Azure Cache for Redis and Service Bus. Animate the traffic.'],
+  'azure-web-app': {
+    prompts: ['Azure web app: Front Door → App Service inside a VNet, talking to Azure SQL and Key Vault. Keep it compact and animate the traffic.'],
   },
   'edit-add-cache': {
     setup: 'Simple web app on AWS: users → Application Load Balancer → two EC2 instances → RDS PostgreSQL.',
@@ -231,7 +231,7 @@ async function record(name, demo, creds) {
     await page.evaluate(`(() => {
       localStorage.setItem('opendraw:theme', JSON.stringify({ theme: 'dark' }));
       localStorage.setItem('opendraw:locale', 'en');
-      localStorage.setItem('opendraw:panels', JSON.stringify({ leftOpen: false, rightOpen: true, aiOpen: true, aiWidth: 400, leftWidth: 264, rightWidth: 268, layersOpen: true, layersHeight: 300, dock: { left: ['shapes'], right: ['format', 'layers'] } }));
+      localStorage.setItem('opendraw:panels', JSON.stringify({ leftOpen: false, rightOpen: true, aiOpen: true, aiWidth: 360, leftWidth: 264, rightWidth: 268, layersOpen: true, layersHeight: 300, dock: { left: ['shapes'], right: ['format', 'layers'] } }));
       localStorage.setItem('opendraw.ai.settings.v1', JSON.stringify({ provider: 'azure', models: { azure: ${JSON.stringify(creds.Model)} }, baseUrls: { azure: ${JSON.stringify(creds.Endpoint)} }, customAuth: 'bearer', azureAuth: 'api-key', params: {}, authorizedBaseUrls: { azure: ${JSON.stringify(creds.Endpoint)} }, rememberKeys: true }));
       return true;
     })()`);

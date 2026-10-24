@@ -22,6 +22,8 @@ const OUT = join(ROOT, 'docs/media/animated');
 const ICONS = join(ROOT, 'public/icons');
 const FPS = 15;
 const WIDTH = 1100;
+/** Dark canvas, like the app's dark theme (most developers browse GitHub in dark mode). */
+const BG = '#0e0e11';
 const HOLD = 3.5; // seconds of data flow after the build-up
 
 const DIAGRAMS = [
@@ -105,8 +107,8 @@ try {
     rmSync(dir, { recursive: true, force: true });
     mkdirSync(dir, { recursive: true });
     for (let i = 0; i < frames; i++) {
-      const r = renderSvg(doc, { background: '#ffffff', padding: 28, embedFont: false, appearance: 'light', frame: { t: i / FPS, seq } }, resolveIcon);
-      const png = await sharp(Buffer.from(r.svg), { density: 144 }).resize({ width: WIDTH }).flatten({ background: '#ffffff' }).png().toBuffer();
+      const r = renderSvg(doc, { background: BG, padding: 28, embedFont: false, appearance: 'dark', frame: { t: i / FPS, seq } }, resolveIcon);
+      const png = await sharp(Buffer.from(r.svg), { density: 144 }).resize({ width: WIDTH }).flatten({ background: BG }).png().toBuffer();
       writeFileSync(join(dir, `f${String(i).padStart(4, '0')}.png`), png);
     }
     const gif = join(OUT, `${id}.gif`);
