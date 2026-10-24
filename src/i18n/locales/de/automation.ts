@@ -114,13 +114,13 @@ export default {
   'automation.props.images': 'Bilder & Symbole',
   'automation.props.comments': 'Kommentare',
   'automation.props.docData': 'Dokumentdaten',
-  'automation.props.note': 'Titel, Autor und Beschreibung werden in der .opendraw-Datei gespeichert und können in Beschriftungen als %title%, %author% und %description% verwendet werden.',
+  'automation.props.note': 'Titel, Autor und Beschreibung werden in der .arkdraw-Datei gespeichert und können in Beschriftungen als %title%, %author% und %description% verwendet werden.',
 
   // TemplateTools (My templates, Save as template)
   'automation.templates.imported': 'Vorlage „{name}“ importiert',
   'automation.templates.importFailed': 'Vorlage konnte nicht importiert werden: {error}',
   'automation.templates.importFile': 'Vorlagendatei importieren',
-  'automation.templates.importTooltip': '.{ext}- oder .opendraw-Datei importieren',
+  'automation.templates.importTooltip': '.{ext}- oder .arkdraw-Datei importieren',
   'automation.templates.fileType': 'ArkDraw-Vorlage',
   'automation.templates.deleteTitle': '„{name}“ löschen?',
   'automation.templates.deleteMessage': 'Die Vorlage wird von diesem Gerät entfernt. Daraus erstellte Diagramme sind nicht betroffen.',

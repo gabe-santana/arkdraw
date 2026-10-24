@@ -1,16 +1,16 @@
 [package]
-name = "opendraw"
+name = "arkdraw"
 version = "0.1.0"
-description = "OpenDraw — an open-source, native desktop diagramming app"
+description = "ArkDraw — an open-source, native desktop diagramming app"
 authors = ["Gabriel Santana"]
 license = "MIT"
-repository = "https://github.com/gabe-santana/opendraw"
+repository = "https://github.com/gabe-santana/arkdraw"
 edition = "2021"
 rust-version = "1.77.2"
 
 [lib]
 # The `_lib` suffix avoids a name clash with the binary on Windows (cargo#8519).
-name = "opendraw_lib"
+name = "arkdraw_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

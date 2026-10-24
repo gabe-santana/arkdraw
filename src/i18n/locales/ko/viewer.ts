@@ -12,7 +12,7 @@ export default {
 
   // Viewer — toolbar
   'viewer.openNewTab': '새 탭에서 열기',
-  'viewer.editInOpenDraw': 'OpenDraw에서 편집',
+  'viewer.editInArkDraw': 'ArkDraw에서 편집',
   'viewer.previousPage': '이전 페이지',
   'viewer.nextPage': '다음 페이지',
   'viewer.zoomOut': '축소',

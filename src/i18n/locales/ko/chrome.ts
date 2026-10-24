@@ -26,7 +26,7 @@ export default {
   'chrome.pageTabs.insertPage': '페이지 삽입',
 
   // StartScreen
-  'chrome.start.title': 'OpenDraw에 오신 것을 환영합니다',
+  'chrome.start.title': 'ArkDraw에 오신 것을 환영합니다',
   'chrome.start.subtitle': '새 다이어그램을 시작하거나 이전 작업을 이어서 하세요.',
   'chrome.start.blank': '빈 다이어그램',
   'chrome.start.blankSub': '빈 캔버스에서 시작',
@@ -63,8 +63,8 @@ export default {
   'chrome.editStyle.title': '스타일 편집',
   'chrome.editStyle.subtitleDrawio': '스타일 문자열(key=value;) — 선택 영역 전체에 적용됩니다',
   'chrome.editStyle.styleString': '스타일 문자열',
-  'chrome.editStyle.subtitleOpendraw': 'ArkDraw 스타일 키를 한 줄에 하나씩 입력 — 선택 영역 전체에 적용됩니다',
-  'chrome.editStyle.keptKeys': 'OpenDraw에서 사용하지 않는 키는 유지되며 .drawio로 내보낼 때 다시 기록됩니다.',
+  'chrome.editStyle.subtitleArkdraw': 'ArkDraw 스타일 키를 한 줄에 하나씩 입력 — 선택 영역 전체에 적용됩니다',
+  'chrome.editStyle.keptKeys': 'ArkDraw에서 사용하지 않는 키는 유지되며 .drawio로 내보낼 때 다시 기록됩니다.',
 
   // EditDialogs — Edit diagram
   'chrome.editDiagram.title': '다이어그램 편집',

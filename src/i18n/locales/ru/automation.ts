@@ -114,13 +114,13 @@ export default {
   'automation.props.images': 'Изображения и значки',
   'automation.props.comments': 'Комментарии',
   'automation.props.docData': 'Данные документа',
-  'automation.props.note': 'Заголовок, автор и описание сохраняются в файле .opendraw и могут использоваться в подписях как %title%, %author% и %description%.',
+  'automation.props.note': 'Заголовок, автор и описание сохраняются в файле .arkdraw и могут использоваться в подписях как %title%, %author% и %description%.',
 
   // TemplateTools (My templates, Save as template)
   'automation.templates.imported': 'Импортирован шаблон «{name}»',
   'automation.templates.importFailed': 'Не удалось импортировать шаблон: {error}',
   'automation.templates.importFile': 'Импортировать файл шаблона',
-  'automation.templates.importTooltip': 'Импортировать файл .{ext} или .opendraw',
+  'automation.templates.importTooltip': 'Импортировать файл .{ext} или .arkdraw',
   'automation.templates.fileType': 'Шаблон ArkDraw',
   'automation.templates.deleteTitle': 'Удалить «{name}»?',
   'automation.templates.deleteMessage': 'Шаблон будет удалён с этого устройства. Созданные по нему диаграммы не изменятся.',

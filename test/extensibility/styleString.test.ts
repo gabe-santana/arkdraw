@@ -28,11 +28,11 @@ describe('strings for the selection', () => {
     expect(patch.removeStyle).toEqual([]);
     expect(patch.fields).toEqual({});
     expect(patch.extras).toBe('');
-    // OpenDraw-only keys (underline here) survive.
+    // ArkDraw-only keys (underline here) survive.
     expect(apply(el, formatDrawioStyle(el)).style).toEqual(el.style);
   });
 
-  it('maps edited known keys back to OpenDraw fields', () => {
+  it('maps edited known keys back to ArkDraw fields', () => {
     const el = createShape('rectangle', { x: 0, y: 0, w: 100, h: 50 }, { fill: '#ffffff' });
     const text = formatDrawioStyle(el).replace('fillColor=#ffffff', 'fillColor=#f8cecc') + '\nrotation=30;\nshadow=1;\nfontStyle=3;';
     const out = apply(el, text);

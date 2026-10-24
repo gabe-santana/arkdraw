@@ -97,12 +97,12 @@ describe('language store', () => {
     expect(t('common.cancel')).toBe('Cancel');
     await setLocalePreference('pt-BR');
     expect(useI18n.getState().locale).toBe('pt-BR');
-    expect(localStorage.getItem('opendraw:locale')).toBe('pt-BR');
+    expect(localStorage.getItem('arkdraw:locale')).toBe('pt-BR');
     expect(document.documentElement.lang).toBe('pt-BR');
     expect(t('common.cancel')).toBe('Cancelar');
     expect(t('menu.file')).toBe('Arquivo');
     expect(formatNumber(1234.5)).toBe('1.234,5');
-    localStorage.removeItem('opendraw:locale');
+    localStorage.removeItem('arkdraw:locale');
   });
 
   it('falls back to English for missing keys and unknown dynamic keys', async () => {
@@ -114,16 +114,16 @@ describe('language store', () => {
   });
 
   it('?lang= overrides the saved preference for the session only', async () => {
-    localStorage.setItem('opendraw:locale', 'fr');
+    localStorage.setItem('arkdraw:locale', 'fr');
     await initI18n('de-DE');
     expect(useI18n.getState().locale).toBe('de');
     expect(useI18n.getState().preference).toBe('fr');
-    expect(localStorage.getItem('opendraw:locale')).toBe('fr');
+    expect(localStorage.getItem('arkdraw:locale')).toBe('fr');
     await initI18n(null);
     expect(useI18n.getState().locale).toBe('fr');
     await initI18n('xx'); // unsupported: keep the preference
     expect(useI18n.getState().locale).toBe('fr');
-    localStorage.removeItem('opendraw:locale');
+    localStorage.removeItem('arkdraw:locale');
   });
 
   it('translates registry strings by id', async () => {
@@ -215,7 +215,7 @@ describe('no hard-coded English in the main UI', () => {
   // Heuristic: capitalised English in JSX text or in title/placeholder/aria-label/label/alt
   // attributes of src/chrome and src/panels must go through t().
   const SOURCES = import.meta.glob<string>(['/src/chrome/*.tsx', '/src/panels/*.tsx'], { eager: true, query: '?raw', import: 'default' });
-  const ALLOW = new Set(['Aa', 'Ctrl', 'Esc', 'OpenDraw', 'X', 'Y', 'W', 'H', 'LTR', 'RTL', 'Google Fonts']);
+  const ALLOW = new Set(['Aa', 'Ctrl', 'Esc', 'ArkDraw', 'X', 'Y', 'W', 'H', 'LTR', 'RTL', 'Google Fonts']);
   const patterns = [
     />\s*([A-Z][a-z]+(?:[ '’-][A-Za-z]+)*[.…!?]?)\s*</g,
     /\b(?:title|placeholder|aria-label|label|alt)="([A-Z][^"]*[a-z][^"]*)"/g,

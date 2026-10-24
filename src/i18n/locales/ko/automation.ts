@@ -114,13 +114,13 @@ export default {
   'automation.props.images': '이미지 및 아이콘',
   'automation.props.comments': '댓글',
   'automation.props.docData': '문서 데이터',
-  'automation.props.note': '제목, 작성자, 설명은 .opendraw 파일에 저장되며 레이블에서 %title%, %author%, %description%으로 사용할 수 있습니다.',
+  'automation.props.note': '제목, 작성자, 설명은 .arkdraw 파일에 저장되며 레이블에서 %title%, %author%, %description%으로 사용할 수 있습니다.',
 
   // TemplateTools (My templates, Save as template)
   'automation.templates.imported': '템플릿 “{name}”을(를) 가져왔습니다',
   'automation.templates.importFailed': '템플릿을 가져올 수 없습니다: {error}',
   'automation.templates.importFile': '템플릿 파일 가져오기',
-  'automation.templates.importTooltip': '.{ext} 또는 .opendraw 파일 가져오기',
+  'automation.templates.importTooltip': '.{ext} 또는 .arkdraw 파일 가져오기',
   'automation.templates.fileType': 'ArkDraw 템플릿',
   'automation.templates.deleteTitle': '“{name}”을(를) 삭제하시겠습니까?',
   'automation.templates.deleteMessage': '템플릿이 이 기기에서 제거됩니다. 이 템플릿으로 만든 다이어그램에는 영향이 없습니다.',

@@ -65,7 +65,7 @@ export function UserTemplatesRail({ active, count, onClick }: { active: boolean;
         ref={fileRef}
         type="file"
         hidden
-        accept={`.${TEMPLATE_EXTENSION},.opendraw,.json`}
+        accept={`.${TEMPLATE_EXTENSION},.arkdraw,.json`}
         onChange={(e) => {
           const f = e.target.files?.[0];
           if (f) void onFile(f);
@@ -137,7 +137,7 @@ export function SaveTemplateBody({ close }: { close: () => void }) {
   const hasSelection = useEditor((s) => s.selection.length > 0);
   const pageCount = useEditor((s) => s.pages.length);
   const fileName = useEditor((s) => s.file.name);
-  const [name, setName] = useState(fileName.replace(/\.opendraw$/i, ''));
+  const [name, setName] = useState(fileName.replace(/\.arkdraw$/i, ''));
   const [description, setDescription] = useState('');
   const [scope, setScope] = useState<TemplateScope>(hasSelection ? 'selection' : pageCount > 1 ? 'diagram' : 'page');
   const [busy, setBusy] = useState(false);

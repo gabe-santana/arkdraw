@@ -5,7 +5,7 @@
  */
 
 /** Must match RECOVERY_KEY in src/app/fileCommands.ts. */
-export const RECOVERY_KEY = 'opendraw:recovery';
+export const RECOVERY_KEY = 'arkdraw:recovery';
 
 /** Removes the draft from storage (so the editor won't auto-restore it) and returns it. */
 export function takeRecoveryDraft(): string | null {

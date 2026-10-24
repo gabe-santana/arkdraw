@@ -12,7 +12,7 @@ export default {
   'storage.empty': 'Nenhum diagrama salvo neste navegador ainda. Use “Salvar atual” ou Arquivo → Salvar no navegador.',
   'storage.openDoc': 'Abrir {name}',
   'storage.emptyThumb': 'Vazio',
-  'storage.download': 'Baixar .opendraw',
+  'storage.download': 'Baixar .arkdraw',
   'storage.docActions': 'Ações do documento',
   'storage.fileType': 'Diagrama do ArkDraw',
   'storage.opened': '“{name}” aberto',

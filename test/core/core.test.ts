@@ -116,7 +116,7 @@ describe('snapping', () => {
 describe('file format', () => {
   it('reads v1 single-page files', () => {
     const shape = createShape('rectangle', { x: 1, y: 2, w: 3, h: 4 });
-    const v1 = JSON.stringify({ format: 'opendraw', version: 1, elements: [shape] });
+    const v1 = JSON.stringify({ format: 'arkdraw', version: 1, elements: [shape] });
     const pages = parsePages(v1);
     expect(pages).toHaveLength(1);
     expect(pages[0].doc.order).toEqual([shape.id]);

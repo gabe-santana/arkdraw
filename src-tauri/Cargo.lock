@@ -68,6 +68,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "arkdraw"
+version = "0.1.0"
+dependencies = [
+ "keyring",
+ "percent-encoding",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-opener",
+ "tauri-plugin-updater",
+ "url",
+]
+
+[[package]]
 name = "async-broadcast"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2701,23 +2718,6 @@ dependencies = [
  "dunce",
  "is-wsl",
  "libc",
-]
-
-[[package]]
-name = "opendraw"
-version = "0.1.0"
-dependencies = [
- "keyring",
- "percent-encoding",
- "reqwest 0.12.28",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-opener",
- "tauri-plugin-updater",
- "url",
 ]
 
 [[package]]

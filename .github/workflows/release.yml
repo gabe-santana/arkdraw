@@ -183,13 +183,13 @@ jobs:
           MSIX_IDENTITY_NAME: ${{ vars.MSIX_IDENTITY_NAME }}
           MSIX_PUBLISHER: ${{ vars.MSIX_PUBLISHER }}
           MSIX_PUBLISHER_DISPLAY_NAME: ${{ vars.MSIX_PUBLISHER_DISPLAY_NAME }}
-        run: node scripts/msix/build-msix.mjs --exe src-tauri/target/release/opendraw.exe --out msix/OpenDraw.msix
+        run: node scripts/msix/build-msix.mjs --exe src-tauri/target/release/arkdraw.exe --out msix/ArkDraw.msix
 
       - uses: actions/upload-artifact@v4
         if: runner.os == 'Windows' && vars.MSIX_IDENTITY_NAME != ''
         with:
           name: msix
-          path: msix/OpenDraw.msix
+          path: msix/ArkDraw.msix
 
       - name: Store API credentials
         id: store
@@ -208,7 +208,7 @@ jobs:
         shell: pwsh
         run: |
           msstore reconfigure --tenantId "${{ secrets.MSSTORE_TENANT_ID }}" --sellerId "${{ secrets.MSSTORE_SELLER_ID }}" --clientId "${{ secrets.MSSTORE_CLIENT_ID }}" --clientSecret "${{ secrets.MSSTORE_CLIENT_SECRET }}"
-          msstore publish msix/OpenDraw.msix --appId "${{ vars.MSSTORE_PRODUCT_ID }}"
+          msstore publish msix/ArkDraw.msix --appId "${{ vars.MSSTORE_PRODUCT_ID }}"
 
   snap:
     name: Snap (best effort)

@@ -399,7 +399,7 @@ async function browserTests() {
         assert(s.dark, 'not dark');
         assert(s.ai, 'AI tab not open');
         assert(!s.dialog, 'a dialog covers the canvas');
-        assert(!s.oldName, 'the page still says OpenDraw');
+        assert(!s.oldName, 'the page still says ArkDraw');
       });
       await test('draws a rectangle, then undo removes it', async () => {
         const count = `document.querySelectorAll('[data-canvas] [data-el]').length`;

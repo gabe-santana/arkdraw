@@ -132,7 +132,7 @@ export function StartScreenBody({ close }: { close: () => void }) {
                     title={r.path.startsWith('web-recent:') ? r.name : r.path}
                   >
                     <Clock className="size-3.5 shrink-0 text-subtle" />
-                    <span className="truncate">{r.name.replace(/\.opendraw$/i, '')}</span>
+                    <span className="truncate">{r.name.replace(/\.arkdraw$/i, '')}</span>
                   </button>
                 ))}
               </div>

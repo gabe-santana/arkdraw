@@ -1,7 +1,7 @@
 //! Command-line export (docs/cli-export.md):
 //!
 //! ```text
-//! opendraw --export <input.opendraw|.drawio> --format png|svg|pdf|jpg|webp|html|vsdx|drawio
+//! arkdraw --export <input.arkdraw|.drawio> --format png|svg|pdf|jpg|webp|html|vsdx|drawio
 //!          --output <path> [--page N | --all-pages] [--scale 2] [--transparent] [--border 10] [--embed]
 //! ```
 //!
@@ -23,9 +23,9 @@ use tauri::State;
 const WATCHDOG_SECS: u64 = 300;
 
 pub const USAGE: &str = "\
-Usage: opendraw --export <input> [options]
+Usage: arkdraw --export <input> [options]
 
-Exports a diagram (.opendraw, .drawio, .xml) without opening the editor.
+Exports a diagram (.arkdraw, .drawio, .xml) without opening the editor.
 
 Options:
   -x, --export <input>    Diagram to export
@@ -245,14 +245,14 @@ pub fn job_from_env() -> Option<ExportJob> {
         }
         Ok(Parsed::Job(job)) => {
             if !Path::new(&job.input).is_file() {
-                eprintln!("opendraw: input file not found: {}", job.input);
+                eprintln!("arkdraw: input file not found: {}", job.input);
                 flush();
                 std::process::exit(2);
             }
             Some(job)
         }
         Err(e) => {
-            eprintln!("opendraw: {e}\n\n{USAGE}");
+            eprintln!("arkdraw: {e}\n\n{USAGE}");
             flush();
             std::process::exit(2);
         }
@@ -263,7 +263,7 @@ pub fn job_from_env() -> Option<ExportJob> {
 pub fn start_watchdog() {
     std::thread::spawn(|| {
         std::thread::sleep(std::time::Duration::from_secs(WATCHDOG_SECS));
-        eprintln!("opendraw: export timed out after {WATCHDOG_SECS}s");
+        eprintln!("arkdraw: export timed out after {WATCHDOG_SECS}s");
         flush();
         std::process::exit(3);
     });
@@ -307,15 +307,15 @@ mod tests {
 
     #[test]
     fn detects_export_mode() {
-        assert!(is_export_invocation(&args("--export a.opendraw")));
-        assert!(is_export_invocation(&args("-x a.opendraw")));
-        assert!(!is_export_invocation(&args("a.opendraw")));
+        assert!(is_export_invocation(&args("--export a.arkdraw")));
+        assert!(is_export_invocation(&args("-x a.arkdraw")));
+        assert!(!is_export_invocation(&args("a.arkdraw")));
     }
 
     #[test]
     fn parses_full_command() {
-        let j = job("--export /d/a.opendraw --format pdf --output /d/out.pdf --all-pages --scale 2 --transparent --border 10 --embed");
-        assert!(j.input.ends_with("a.opendraw"));
+        let j = job("--export /d/a.arkdraw --format pdf --output /d/out.pdf --all-pages --scale 2 --transparent --border 10 --embed");
+        assert!(j.input.ends_with("a.arkdraw"));
         assert_eq!(j.format, "pdf");
         assert!(j.output.unwrap().ends_with("out.pdf"));
         assert!(j.all_pages && j.transparent && j.embed);
@@ -336,14 +336,14 @@ mod tests {
     #[test]
     fn rejects_bad_input() {
         assert!(parse_args(args("--export")).is_err());
-        assert!(parse_args(args("--export a.opendraw --format bmp")).is_err());
-        assert!(parse_args(args("--export a.opendraw --page 0")).is_err());
-        assert!(parse_args(args("--export a.opendraw --page 2 --all-pages")).is_err());
-        assert!(parse_args(args("--export a.opendraw --scale x")).is_err());
-        assert!(parse_args(args("--export a.opendraw --bogus")).is_err());
-        assert!(parse_args(args("--export a.opendraw --enable-plugins --config c.json")).is_ok());
+        assert!(parse_args(args("--export a.arkdraw --format bmp")).is_err());
+        assert!(parse_args(args("--export a.arkdraw --page 0")).is_err());
+        assert!(parse_args(args("--export a.arkdraw --page 2 --all-pages")).is_err());
+        assert!(parse_args(args("--export a.arkdraw --scale x")).is_err());
+        assert!(parse_args(args("--export a.arkdraw --bogus")).is_err());
+        assert!(parse_args(args("--export a.arkdraw --enable-plugins --config c.json")).is_ok());
         assert_eq!(
-            parse_args(args("--export a.opendraw --help")),
+            parse_args(args("--export a.arkdraw --help")),
             Ok(Parsed::Help)
         );
     }

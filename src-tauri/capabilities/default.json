@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissions for every OpenDraw editor window (main + File → New window)",
+  "description": "Permissions for every ArkDraw editor window (main + File → New window)",
   "windows": ["main", "editor-*"],
   "permissions": [
     "core:default",

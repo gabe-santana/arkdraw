@@ -114,7 +114,7 @@ export function PropertiesBody({ close }: { close: () => void }) {
       <DialogHeader title={t('automation.props.title')} subtitle={file.path ?? file.name} onClose={close} />
       <div className="space-y-3 px-5 pb-4">
         <Field label={t('common.title')}>
-          <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={file.name.replace(/\.opendraw$/i, '')} autoFocus />
+          <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={file.name.replace(/\.arkdraw$/i, '')} autoFocus />
         </Field>
         <Field label={t('automation.props.author')}>
           <input className={inputCls} value={author} onChange={(e) => setAuthor(e.target.value)} placeholder={t('automation.props.authorPlaceholder')} />

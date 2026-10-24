@@ -32,7 +32,7 @@ export interface AppConfigInfo {
   exists?: boolean;
   /** `--enable-plugins` was given or `enablePlugins` is set. */
   pluginsEnabled: boolean;
-  /** Headless `opendraw --export` run. */
+  /** Headless `arkdraw --export` run. */
   headless: boolean;
 }
 

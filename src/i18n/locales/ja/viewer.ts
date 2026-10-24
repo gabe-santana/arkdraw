@@ -12,7 +12,7 @@ export default {
 
   // Viewer — toolbar
   'viewer.openNewTab': '新しいタブで開く',
-  'viewer.editInOpenDraw': 'ArkDraw で編集',
+  'viewer.editInArkDraw': 'ArkDraw で編集',
   'viewer.previousPage': '前のページ',
   'viewer.nextPage': '次のページ',
   'viewer.zoomOut': 'ズームアウト',

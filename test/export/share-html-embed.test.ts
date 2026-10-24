@@ -82,7 +82,7 @@ describe('editable exports (embed / extract)', () => {
     const png = setPngDpi(embedDiagramInPng(tinyPng(), json), 192);
     const chunks = readPngChunks(png).map((c) => c.type);
     expect(chunks).toEqual(['IHDR', 'pHYs', 'iTXt', 'IDAT', 'IEND']);
-    expect(readPngText(png).find((t) => t.keyword === 'opendraw')?.text).toBe(json);
+    expect(readPngText(png).find((t) => t.keyword === 'arkdraw')?.text).toBe(json);
     const res = await importEmbedded(png, 'x.png');
     expect(texts(res.pages[0].doc)).toEqual(texts(pages[0].doc));
     expect(res.pages[0].doc.elements).toEqual(pages[0].doc.elements);
@@ -92,7 +92,7 @@ describe('editable exports (embed / extract)', () => {
     const src = source(2);
     const [file] = await exportFiles(src, { ...DEFAULT_EXPORT_SETTINGS, format: 'svg', embedDiagram: true, embedFonts: false });
     const svg = file.data as string;
-    expect(svg).toMatch(/<svg [^>]*data-opendraw="[A-Za-z0-9+/=]+"/);
+    expect(svg).toMatch(/<svg [^>]*data-arkdraw="[A-Za-z0-9+/=]+"/);
     const res = await importEmbedded(svg, 'x.svg');
     expect(res.pages[0].doc.elements).toEqual(src.pages[0].doc.elements);
   });

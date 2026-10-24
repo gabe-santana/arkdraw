@@ -9,7 +9,7 @@ import { initI18n } from './i18n';
 import './index.css';
 
 // Dev-only handle for debugging and end-to-end scripting.
-if (import.meta.env.DEV) Object.assign(window, { __opendraw: { useEditor, useUi, ai: () => import('./ai'), i18n: () => import('./i18n') } });
+if (import.meta.env.DEV) Object.assign(window, { __arkdraw: { useEditor, useUi, ai: () => import('./ai'), i18n: () => import('./i18n') } });
 
 const root = createRoot(document.getElementById('root')!);
 const editor = (

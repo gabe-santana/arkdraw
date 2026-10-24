@@ -42,10 +42,10 @@ afterEach(() => setDesktop(null));
 describe('windows', () => {
   it('reads the window label synchronously and scopes keys per window', () => {
     expect(currentWindowLabel()).toBe('main');
-    expect(windowScopedKey('opendraw:recovery')).toBe('opendraw:recovery');
+    expect(windowScopedKey('arkdraw:recovery')).toBe('arkdraw:recovery');
     setDesktop('editor-3');
     expect(currentWindowLabel()).toBe('editor-3');
-    expect(windowScopedKey('opendraw:recovery')).toBe('opendraw:recovery:editor-3');
+    expect(windowScopedKey('arkdraw:recovery')).toBe('arkdraw:recovery:editor-3');
   });
 
   it('asks the backend for a new window, optionally with a file', async () => {
@@ -61,7 +61,7 @@ describe('windows', () => {
     setDesktop('main');
     const cb = vi.fn();
     await onOpenFileRequest(cb);
-    expect(h.listen).toHaveBeenCalledWith('opendraw://open-file', expect.any(Function));
+    expect(h.listen).toHaveBeenCalledWith('arkdraw://open-file', expect.any(Function));
   });
 });
 
@@ -190,12 +190,12 @@ describe('native files', () => {
   it('passes the .bkp option to write_text_file (off by default)', async () => {
     setDesktop('main');
     h.invoke.mockResolvedValue(undefined);
-    await writeTextFile('/d/a.opendraw', '{}', { backup: true });
-    expect(h.invoke).toHaveBeenLastCalledWith('write_text_file', { path: '/d/a.opendraw', contents: '{}', backup: true });
-    await saveFile('{}', { path: '/d/a.opendraw', defaultName: 'a.opendraw', filters: [], mime: 'application/json' });
-    expect(h.invoke).toHaveBeenLastCalledWith('write_text_file', { path: '/d/a.opendraw', contents: '{}', backup: false });
-    await saveFile('{}', { path: '/d/a.opendraw', defaultName: 'a.opendraw', filters: [], mime: 'application/json', backup: true });
-    expect(h.invoke).toHaveBeenLastCalledWith('write_text_file', { path: '/d/a.opendraw', contents: '{}', backup: true });
+    await writeTextFile('/d/a.arkdraw', '{}', { backup: true });
+    expect(h.invoke).toHaveBeenLastCalledWith('write_text_file', { path: '/d/a.arkdraw', contents: '{}', backup: true });
+    await saveFile('{}', { path: '/d/a.arkdraw', defaultName: 'a.arkdraw', filters: [], mime: 'application/json' });
+    expect(h.invoke).toHaveBeenLastCalledWith('write_text_file', { path: '/d/a.arkdraw', contents: '{}', backup: false });
+    await saveFile('{}', { path: '/d/a.arkdraw', defaultName: 'a.arkdraw', filters: [], mime: 'application/json', backup: true });
+    expect(h.invoke).toHaveBeenLastCalledWith('write_text_file', { path: '/d/a.arkdraw', contents: '{}', backup: true });
   });
 });
 

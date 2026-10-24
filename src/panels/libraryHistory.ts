@@ -14,8 +14,8 @@ export type LibraryRef =
   | { type: 'icon'; provider: string; iconId: string };
 
 export const RECENT_LIMIT = 12;
-const RECENT_KEY = 'opendraw:library-recent';
-const FAVORITES_KEY = 'opendraw:library-favorites';
+const RECENT_KEY = 'arkdraw:library-recent';
+const FAVORITES_KEY = 'arkdraw:library-favorites';
 
 export const refKey = (r: LibraryRef) => (r.type === 'shape' ? `shape:${r.libraryId}:${r.label}` : `icon:${r.provider}:${r.iconId}`);
 

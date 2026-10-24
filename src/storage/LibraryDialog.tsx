@@ -58,7 +58,7 @@ export function LibraryBody({ close }: { close: () => void }) {
   };
   const download = async (d: LibraryDoc) => {
     try {
-      await saveFile(d.data, { defaultName: `${d.name}.opendraw`, filters: [{ name: tNow('storage.fileType'), extensions: ['opendraw'] }], mime: 'application/json' });
+      await saveFile(d.data, { defaultName: `${d.name}.arkdraw`, filters: [{ name: tNow('storage.fileType'), extensions: ['arkdraw'] }], mime: 'application/json' });
     } catch (e) {
       ui.toast(String((e as Error)?.message ?? e), 'error');
     }
@@ -97,7 +97,7 @@ export function LibraryBody({ close }: { close: () => void }) {
         <Button size="sm" variant="primary" icon={<Save className="size-3.5" />} onClick={() => void saveHere()}>
           {currentId ? t('common.save') : t('storage.saveCurrent')}
         </Button>
-        <input ref={fileRef} type="file" hidden multiple accept=".opendraw,.json" onChange={(e) => e.target.files && void upload(e.target.files).finally(() => (e.target.value = ''))} />
+        <input ref={fileRef} type="file" hidden multiple accept=".arkdraw,.json" onChange={(e) => e.target.files && void upload(e.target.files).finally(() => (e.target.value = ''))} />
       </div>
       <div className="scroll-thin min-h-[220px] flex-1 overflow-y-auto border-t border-line px-3 py-2">
         {loaded && !shown.length && (

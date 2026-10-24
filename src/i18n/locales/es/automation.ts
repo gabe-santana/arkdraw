@@ -115,13 +115,13 @@ export default {
   'automation.props.images': 'Imágenes e iconos',
   'automation.props.comments': 'Comentarios',
   'automation.props.docData': 'Datos del doc.',
-  'automation.props.note': 'El título, el autor y la descripción se guardan en el archivo .opendraw y se pueden usar en las etiquetas como %title%, %author% y %description%.',
+  'automation.props.note': 'El título, el autor y la descripción se guardan en el archivo .arkdraw y se pueden usar en las etiquetas como %title%, %author% y %description%.',
 
   // TemplateTools (My templates, Save as template)
   'automation.templates.imported': 'Se importó la plantilla “{name}”',
   'automation.templates.importFailed': 'No se pudo importar la plantilla: {error}',
   'automation.templates.importFile': 'Importar archivo de plantilla',
-  'automation.templates.importTooltip': 'Importar un archivo .{ext} u .opendraw',
+  'automation.templates.importTooltip': 'Importar un archivo .{ext} u .arkdraw',
   'automation.templates.fileType': 'Plantilla de ArkDraw',
   'automation.templates.deleteTitle': '¿Eliminar “{name}”?',
   'automation.templates.deleteMessage': 'La plantilla se elimina de este dispositivo. Los diagramas creados a partir de ella no se ven afectados.',

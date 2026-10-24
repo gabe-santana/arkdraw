@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { deflateSync, strToU8 } from 'fflate';
 import { buildShareUrl, decodeShareHash, encodeShareHash, ShareLinkError } from '@/web/shareLink';
 
-const sample = JSON.stringify({ format: 'opendraw', version: 2, pages: [{ id: 'p1', name: 'Página ✓ 图', elements: [] }] }, null, 2);
+const sample = JSON.stringify({ format: 'arkdraw', version: 2, pages: [{ id: 'p1', name: 'Página ✓ 图', elements: [] }] }, null, 2);
 
 describe('share hash', () => {
   it('round-trips JSON, including non-ASCII text', () => {
@@ -45,8 +45,8 @@ describe('share hash', () => {
   });
 
   it('builds full share URLs', () => {
-    const url = buildShareUrl(sample, { base: 'https://draw.example.com/opendraw/?foo=1#old', viewer: true, params: { title: 'Net map' } });
-    expect(url.startsWith('https://draw.example.com/opendraw/?viewer=1&title=Net+map#R')).toBe(true);
+    const url = buildShareUrl(sample, { base: 'https://draw.example.com/arkdraw/?foo=1#old', viewer: true, params: { title: 'Net map' } });
+    expect(url.startsWith('https://draw.example.com/arkdraw/?viewer=1&title=Net+map#R')).toBe(true);
     expect(decodeShareHash(url)).toBe(sample);
   });
 });

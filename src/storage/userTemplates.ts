@@ -1,7 +1,7 @@
 /**
  * Custom templates ("My templates" in File → New from template…): the current
  * diagram, page or selection saved into a local store (IndexedDB), with
- * rename / delete and import / export as `.opendrawtemplate` files.
+ * rename / delete and import / export as `.arkdrawtemplate` files.
  */
 import { create } from 'zustand';
 import type { Doc, Page } from '@/model/types';
@@ -14,14 +14,14 @@ import { t } from '@/i18n';
 
 export const USER_CATEGORY = 'My templates';
 export const USER_TEMPLATE_PREFIX = 'user:';
-export const TEMPLATE_EXTENSION = 'opendrawtemplate';
+export const TEMPLATE_EXTENSION = 'arkdrawtemplate';
 
 export interface StoredTemplate {
   id: string;
   name: string;
   description: string;
   created: number;
-  /** `.opendraw` JSON. */
+  /** `.arkdraw` JSON. */
   data: string;
 }
 
@@ -106,18 +106,18 @@ export async function deleteTemplate(templateId: string) {
   await refresh();
 }
 
-/** `.opendrawtemplate` file contents. */
+/** `.arkdrawtemplate` file contents. */
 export async function templateFile(templateId: string): Promise<{ name: string; text: string } | null> {
   const st = await idbGet<StoredTemplate>('templates', storedId(templateId));
   if (!st) return null;
-  const text = JSON.stringify({ format: 'opendraw-template', version: 1, name: st.name, description: st.description, diagram: JSON.parse(st.data) }, null, 2) + '\n';
+  const text = JSON.stringify({ format: 'arkdraw-template', version: 1, name: st.name, description: st.description, diagram: JSON.parse(st.data) }, null, 2) + '\n';
   return { name: `${st.name.replace(/[\\/:*?"<>|]+/g, '-')}.${TEMPLATE_EXTENSION}`, text };
 }
 
-/** Imports a `.opendrawtemplate` (or a plain `.opendraw` file, named after the file). */
+/** Imports a `.arkdrawtemplate` (or a plain `.arkdraw` file, named after the file). */
 export async function importTemplateFile(text: string, fileName: string): Promise<StoredTemplate> {
   const data = JSON.parse(text) as { format?: string; name?: string; description?: string; diagram?: unknown };
-  if (data?.format === 'opendraw-template' && data.diagram) {
+  if (data?.format === 'arkdraw-template' && data.diagram) {
     const json = JSON.stringify(data.diagram);
     return saveTemplate(data.name ?? fileName.replace(/\.[^.]+$/, ''), data.description ?? '', parsePages(json));
   }

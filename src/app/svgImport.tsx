@@ -85,7 +85,7 @@ export function chooseSvgImport(name?: string): Promise<Choice | null> {
   });
 }
 
-const MODE_KEY = 'opendraw:svgImportMode';
+const MODE_KEY = 'arkdraw:svgImportMode';
 const loadMode = (): SvgImportMode => {
   try {
     return localStorage.getItem(MODE_KEY) === 'group' ? 'group' : 'path';

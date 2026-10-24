@@ -222,7 +222,7 @@ export async function takeLaunchFile(): Promise<string | null> {
 /** macOS "Open with…" while the app is running (sent to the focused window only). */
 export async function onOpenFileRequest(cb: (path: string) => void): Promise<() => void> {
   if (!isTauri()) return () => {};
-  return (await tauriWindow()).getCurrentWindow().listen<string>('opendraw://open-file', (e) => cb(e.payload));
+  return (await tauriWindow()).getCurrentWindow().listen<string>('arkdraw://open-file', (e) => cb(e.payload));
 }
 
 // ---------------------------------------------------------------------------

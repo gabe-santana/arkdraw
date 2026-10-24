@@ -1,6 +1,6 @@
 /**
  * Export pipeline shared by the Export dialog and the desktop CLI
- * (`opendraw --export …`): settings → pages in scope → files.
+ * (`arkdraw --export …`): settings → pages in scope → files.
  */
 import { deflateSync as deflateRawSync, strToU8, zipSync } from 'fflate';
 import type { Doc, Page, Rect, ShapeElement } from '@/model/types';

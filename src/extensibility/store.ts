@@ -12,7 +12,7 @@ export const UI_MODES: Array<{ id: UiMode; label: string; hint: string }> = [
   { id: 'compact', label: 'Compact', hint: 'Denser panels' },
 ];
 
-const MODE_KEY = 'opendraw:ui-mode';
+const MODE_KEY = 'arkdraw:ui-mode';
 
 function loadMode(): UiMode {
   try {

@@ -60,7 +60,7 @@ export const PALETTE = {
 
 // --- User default style (mxGraph "Set as Default Style") ------------------------
 
-const DEFAULT_KEY = 'opendraw:default-style';
+const DEFAULT_KEY = 'arkdraw:default-style';
 let userDefault: Partial<ElementStyle> = (() => {
   try {
     return JSON.parse(localStorage.getItem(DEFAULT_KEY) || '{}');

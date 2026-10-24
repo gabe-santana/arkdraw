@@ -32,7 +32,7 @@ import { t, useLocale } from '@/i18n';
 import { installPasteHandler } from '@/app/clipboard';
 import { confirmDiscard, isDirty, loadOpenedFile, openPath, restoreRecovery, startRecovery } from '@/app/fileCommands';
 import { onOpenFileRequest, takeLaunchFile, windowControls } from '@/io/native';
-import '@/app/cliExport'; // `opendraw --export …` (desktop CLI); no-op otherwise
+import '@/app/cliExport'; // `arkdraw --export …` (desktop CLI); no-op otherwise
 
 const AiSettingsHost = lazy(() => import('@/chrome/AiHost'));
 
@@ -86,7 +86,7 @@ export default function App() {
   const name = useEditor((s) => s.file.name);
   const dirty = useEditor((s) => s.doc !== s.file.savedDoc);
   useEffect(() => {
-    windowControls.setTitle(`${dirty ? '• ' : ''}${name.replace(/\.opendraw$/i, '')} — ArkDraw`);
+    windowControls.setTitle(`${dirty ? '• ' : ''}${name.replace(/\.arkdraw$/i, '')} — ArkDraw`);
   }, [name, dirty]);
 
   // Remount the UI tree when the language changes, so every string (incl. ones

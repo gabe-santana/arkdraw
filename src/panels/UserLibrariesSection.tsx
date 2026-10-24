@@ -49,7 +49,7 @@ export function UserLibrariesSection({ query }: { query: string }) {
 
 async function openLibraryFile() {
   try {
-    const f = await pickAndOpenFile([{ name: t('panels.userLib.filterName'), extensions: ['opendrawlib', 'xml', 'json'] }]);
+    const f = await pickAndOpenFile([{ name: t('panels.userLib.filterName'), extensions: ['arkdrawlib', 'xml', 'json'] }]);
     if (!f) return;
     const { name, items } = await parseLibrary(f.contents, f.name);
     useUserLibraries.getState().createLibrary(name, items);
@@ -105,7 +105,7 @@ function LibrarySection({ lib, items, forceOpen }: { lib: UserLibrary; items: Us
         </Tooltip>
         <Tooltip label={t('panels.userLib.export')} side="right">
           <button
-            onClick={() => void saveFile(serializeLibrary(lib), { defaultName: `${libraryName(lib)}.opendrawlib`, filters: [{ name: t('panels.userLib.fileType'), extensions: ['opendrawlib'] }], mime: 'application/json' })}
+            onClick={() => void saveFile(serializeLibrary(lib), { defaultName: `${libraryName(lib)}.arkdrawlib`, filters: [{ name: t('panels.userLib.fileType'), extensions: ['arkdrawlib'] }], mime: 'application/json' })}
             className="rounded p-0.5 text-subtle opacity-0 hover:bg-hover hover:text-fg group-hover:opacity-100"
             aria-label={t('panels.userLib.export')}
           >

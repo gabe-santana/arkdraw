@@ -115,13 +115,13 @@ export default {
   'automation.props.images': '图像和图标',
   'automation.props.comments': '评论',
   'automation.props.docData': '文档数据',
-  'automation.props.note': '标题、作者和描述保存在 .opendraw 文件中，可在标签中以 %title%、%author% 和 %description% 引用。',
+  'automation.props.note': '标题、作者和描述保存在 .arkdraw 文件中，可在标签中以 %title%、%author% 和 %description% 引用。',
 
   // TemplateTools (My templates, Save as template)
   'automation.templates.imported': '已导入模板“{name}”',
   'automation.templates.importFailed': '无法导入模板：{error}',
   'automation.templates.importFile': '导入模板文件',
-  'automation.templates.importTooltip': '导入 .{ext} 或 .opendraw 文件',
+  'automation.templates.importTooltip': '导入 .{ext} 或 .arkdraw 文件',
   'automation.templates.fileType': 'ArkDraw 模板',
   'automation.templates.deleteTitle': '删除“{name}”？',
   'automation.templates.deleteMessage': '模板将从此设备中删除。基于该模板创建的图表不受影响。',

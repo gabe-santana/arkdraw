@@ -147,14 +147,14 @@ export default {
   // statistic: number of document-level data properties
   'automation.props.docData': 'Doc data',
   // %title%, %author%, %description% are literal placeholders: keep them
-  'automation.props.note': 'Title, author and description are saved in the .opendraw file and can be used in labels as %title%, %author% and %description%.',
+  'automation.props.note': 'Title, author and description are saved in the .arkdraw file and can be used in labels as %title%, %author% and %description%.',
 
   // TemplateTools (My templates, Save as template)
   'automation.templates.imported': 'Imported template “{name}”',
   'automation.templates.importFailed': 'Could not import template: {error}',
   'automation.templates.importFile': 'Import template file',
   // {ext} is a file extension
-  'automation.templates.importTooltip': 'Import a .{ext} or .opendraw file',
+  'automation.templates.importTooltip': 'Import a .{ext} or .arkdraw file',
   // file-type name in the save dialog
   'automation.templates.fileType': 'ArkDraw template',
   'automation.templates.deleteTitle': 'Delete “{name}”?',

@@ -47,7 +47,7 @@ npm run preview:web    # serve dist/ on http://localhost:4173 (service worker ac
 | `?saveBtn=0`, `?exitBtn=0` (or `noSaveBtn=1`, `noExitBtn=1`) | Embed: hide the floating Save / Exit buttons. |
 
 Supported content everywhere (share links, URLs, `load` messages, drag & drop
-into the viewer): ArkDraw JSON (`.opendraw`), mxGraph XML (`.drawio`, plain
+into the viewer): ArkDraw JSON (`.arkdraw`), mxGraph XML (`.drawio`, plain
 or compressed), and PNG/SVG/PDF exports carrying an embedded mxGraph or
 ArkDraw diagram.
 
@@ -197,7 +197,7 @@ The web build is an installable PWA (`vite-plugin-pwa`, Workbox `generateSW`):
 - **Updates** use a prompt: when a new version is installed the
   `<PwaUpdatePrompt />` toast offers *Reload* (unsaved work is restored by
   crash recovery). Long-lived tabs check for updates hourly.
-- **File handling.** Installed on Chromium, the app registers for `.opendraw`
+- **File handling.** Installed on Chromium, the app registers for `.arkdraw`
   and `.drawio` files (`file_handlers` + `launchQueue`).
 - **Never in the desktop app**: the plugin is disabled for `tauri build`, and
   `registerPwa()` returns early (and unregisters any stray worker) under Tauri.
@@ -216,13 +216,13 @@ To drop the offline cache while debugging: DevTools → Application → Storage 
 ### Docker
 
 ```sh
-docker build -t opendraw .
-docker run --rm -p 8080:8080 opendraw                 # http://localhost:8080
+docker build -t arkdraw .
+docker run --rm -p 8080:8080 arkdraw                 # http://localhost:8080
 
 # restrict who may iframe the app (embed/lightbox)
-docker run --rm -p 8080:8080 -e FRAME_ANCESTORS="'self' https://wiki.example.com" opendraw
+docker run --rm -p 8080:8080 -e FRAME_ANCESTORS="'self' https://wiki.example.com" arkdraw
 # different port inside the container
-docker run --rm -p 80:3000 -e PORT=3000 opendraw
+docker run --rm -p 80:3000 -e PORT=3000 arkdraw
 ```
 
 Multi-stage: `node:22-alpine` builds (`npm ci`, `npm run build:web`), then
@@ -236,7 +236,7 @@ Multi-stage: `node:22-alpine` builds (`npm ci`, `npm run build:web`), then
 - gzip with pre-compressed `.gz` files (`gzip_static`) built into the image.
   For brotli, terminate at a CDN that compresses, or use an nginx build with
   `ngx_brotli` and uncomment the `brotli_*` lines.
-- MIME types for `.webmanifest`, `.opendraw` (`application/x-opendraw+json`)
+- MIME types for `.webmanifest`, `.arkdraw` (`application/x-arkdraw+json`)
   and `.drawio`.
 - CSP: `script-src 'self'` plus the hash of the inline theme script (computed
   from the built `index.html` by `scripts/web/csp.mjs`, so it can't drift);
@@ -248,7 +248,7 @@ Multi-stage: `node:22-alpine` builds (`npm ci`, `npm run build:web`), then
 - `/healthz` for health checks (also used by the image's `HEALTHCHECK`).
 
 Sub-path deployments behind a prefix-stripping reverse proxy:
-`docker build --build-arg BASE_PATH=/opendraw/ -t opendraw .`
+`docker build --build-arg BASE_PATH=/arkdraw/ -t arkdraw .`
 
 ### Static hosts
 

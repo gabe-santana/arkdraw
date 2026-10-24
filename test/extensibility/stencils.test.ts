@@ -204,9 +204,9 @@ describe('stencil libraries', () => {
     ]);
   });
 
-  it('reads OpenDraw shape configs (OpenDraw or mxGraph style, size, points, params)', async () => {
+  it('reads ArkDraw shape configs (ArkDraw or mxGraph style, size, points, params)', async () => {
     const cfg = {
-      format: 'opendraw-shapes',
+      format: 'arkdraw-shapes',
       name: 'Config',
       shapes: [
         { name: 'One', stencil: SAMPLE_STENCIL, w: 60, h: 30, style: { fill: '#fef3c7' }, text: 'Hi', params: { size: 3 } },
@@ -221,13 +221,13 @@ describe('stencil libraries', () => {
     expect(a.connectionPoints).toEqual([{ x: 0, y: 0.5 }, { x: 1, y: 0.5 }]);
     expect(b).toMatchObject({ w: 120, h: 60, connectionPoints: [{ x: 0, y: 0 }] });
     expect(b.style).toMatchObject({ fill: '#ff0000', stroke: '#00ff00', strokeStyle: 'dashed' });
-    expect(() => parseStencilLibrary(JSON.stringify({ format: 'opendraw-shapes', shapes: [{ name: 'x' }] }), 'f')).toThrow(/stencil/);
+    expect(() => parseStencilLibrary(JSON.stringify({ format: 'arkdraw-shapes', shapes: [{ name: 'x' }] }), 'f')).toThrow(/stencil/);
   });
 
   it('leaves other library formats to the existing parser', async () => {
-    expect(parseStencilLibrary('{"format":"opendraw-library","items":[]}', 'f')).toBeNull();
+    expect(parseStencilLibrary('{"format":"arkdraw-library","items":[]}', 'f')).toBeNull();
     expect(parseStencilLibrary('<mxlibrary>[]</mxlibrary>', 'f')).toBeNull();
-    const lib = await parseLibrary('{"format":"opendraw-library","version":1,"name":"L","items":[]}', 'L.opendrawlib');
+    const lib = await parseLibrary('{"format":"arkdraw-library","version":1,"name":"L","items":[]}', 'L.arkdrawlib');
     expect(lib.name).toBe('L');
   });
 });

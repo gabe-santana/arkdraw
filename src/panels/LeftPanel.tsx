@@ -113,7 +113,7 @@ export function LeftPanel() {
 // Shapes
 // ---------------------------------------------------------------------------
 
-const COLLAPSE_KEY = 'opendraw:collapsed-libraries';
+const COLLAPSE_KEY = 'arkdraw:collapsed-libraries';
 
 /** Shape libraries open on first run (with Favorites and Recent); the rest start collapsed so the catalog reads as an index. */
 const OPEN_BY_DEFAULT = new Set(['general', 'flowchart']);
@@ -349,7 +349,7 @@ const PROVIDER_ACCENT: Record<string, string> = {
   'bootstrap-icons': '#7952b3',
 };
 
-const ICON_COLLAPSE_KEY = 'opendraw:collapsed-icon-packs';
+const ICON_COLLAPSE_KEY = 'arkdraw:collapsed-icon-packs';
 
 /** Every installed icon pack as a section after the shape libraries (closed until opened). */
 function IconLibraries() {
@@ -387,7 +387,7 @@ function IconLibraries() {
 
 function IconPackBody({ provider }: { provider: string }) {
   const pack = useIconPacks((s) => s.packs[provider]);
-  const [collapsed, toggle] = useCollapsed(`opendraw:collapsed-icons:${provider}`);
+  const [collapsed, toggle] = useCollapsed(`arkdraw:collapsed-icons:${provider}`);
   const t = useT();
   useEffect(() => {
     loadPack(provider).catch(() => {});

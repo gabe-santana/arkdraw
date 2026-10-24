@@ -54,7 +54,7 @@ export async function noteCurrentDocument() {
   const origin = docOrigin();
   const handle = origin?.kind === 'handle' ? origin.handle : undefined;
   const libraryId = origin?.kind === 'library' ? origin.id : undefined;
-  const name = s.file.name.replace(/\.opendraw$/i, '');
+  const name = s.file.name.replace(/\.arkdraw$/i, '');
   let data: string | undefined;
   if (!handle && !libraryId) {
     data = serializePages(s.allPages(), s.docMeta, s.aiHistory);
@@ -91,8 +91,8 @@ export async function readRecentDoc(id: string): Promise<{ name: string; content
     const doc = await idbGet<{ name: string; data: string }>('documents', r.libraryId);
     if (!doc) throw new Error(t('storage.recentRemoved', { name: r.name }));
     offerOrigin({ kind: 'library', id: r.libraryId });
-    return { name: `${doc.name}.opendraw`, contents: doc.data };
+    return { name: `${doc.name}.arkdraw`, contents: doc.data };
   }
-  if (r.data) return { name: `${r.name}.opendraw`, contents: r.data };
+  if (r.data) return { name: `${r.name}.arkdraw`, contents: r.data };
   throw new Error(t('storage.recentGone'));
 }

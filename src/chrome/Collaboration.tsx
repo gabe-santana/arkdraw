@@ -214,7 +214,7 @@ function RevisionsBody({ close }: { close: () => void }) {
     const pages = parsePages(active.data);
     const s = useEditor.getState();
     const f = s.file;
-    s.loadPages(pages, asCopy ? { path: null, name: t('collab.restoredSuffix', { name: f.name.replace(/\.opendraw$/i, '') }) } : { path: f.path, name: f.name });
+    s.loadPages(pages, asCopy ? { path: null, name: t('collab.restoredSuffix', { name: f.name.replace(/\.arkdraw$/i, '') }) } : { path: f.path, name: f.name });
     markUnsaved();
     close();
   };

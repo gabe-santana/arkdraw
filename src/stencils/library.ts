@@ -3,7 +3,7 @@
  *
  * - mxGraph / mxGraph stencil sets: `<shapes name="…"><shape …/>…</shapes>`
  *   (or a single `<shape>`), one item per shape.
- * - ArkDraw shape config JSON (`"format": "opendraw-shapes"`), documented in
+ * - ArkDraw shape config JSON (`"format": "arkdraw-shapes"`), documented in
  *   docs/extensibility.md: name, stencil XML, default style (ArkDraw keys or a
  *   string), size, label, connection points and parameters.
  *
@@ -36,7 +36,7 @@ export interface ShapeConfigEntry {
 }
 
 export interface ShapeConfig {
-  format: 'opendraw-shapes';
+  format: 'arkdraw-shapes';
   version?: number;
   name?: string;
   shapes: ShapeConfigEntry[];
@@ -77,12 +77,12 @@ const toItem = (entry: ShapeConfigEntry): StencilLibraryItem => {
 /** Validates and normalizes a parsed shape config object. */
 export function readShapeConfig(data: unknown): ShapeConfig {
   const d = data as Partial<ShapeConfig> | ShapeConfigEntry[];
-  const shapes = Array.isArray(d) ? d : d?.format === 'opendraw-shapes' && Array.isArray(d.shapes) ? d.shapes : null;
-  if (!shapes) throw new Error('Not an ArkDraw shape config (expected "format": "opendraw-shapes").');
+  const shapes = Array.isArray(d) ? d : d?.format === 'arkdraw-shapes' && Array.isArray(d.shapes) ? d.shapes : null;
+  if (!shapes) throw new Error('Not an ArkDraw shape config (expected "format": "arkdraw-shapes").');
   for (const [i, s] of shapes.entries()) {
     if (!s || typeof s.stencil !== 'string') throw new Error(`Shape ${i + 1} has no "stencil" XML.`);
   }
-  return { format: 'opendraw-shapes', version: 1, name: Array.isArray(d) ? undefined : d.name, shapes };
+  return { format: 'arkdraw-shapes', version: 1, name: Array.isArray(d) ? undefined : d.name, shapes };
 }
 
 /**
@@ -98,7 +98,7 @@ export function parseStencilLibrary(text: string, fallbackName: string): { name:
     } catch {
       return null;
     }
-    const isConfig = Array.isArray(data) ? data.every((e) => e && typeof e === 'object' && 'stencil' in e) : (data as { format?: string })?.format === 'opendraw-shapes';
+    const isConfig = Array.isArray(data) ? data.every((e) => e && typeof e === 'object' && 'stencil' in e) : (data as { format?: string })?.format === 'arkdraw-shapes';
     if (!isConfig) return null;
     const cfg = readShapeConfig(data);
     return { name: cfg.name || fallbackName, items: cfg.shapes.map(toItem) };

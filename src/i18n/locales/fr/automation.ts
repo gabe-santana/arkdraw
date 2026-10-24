@@ -114,13 +114,13 @@ export default {
   'automation.props.images': 'Images et icônes',
   'automation.props.comments': 'Commentaires',
   'automation.props.docData': 'Données doc.',
-  'automation.props.note': 'Le titre, l’auteur et la description sont enregistrés dans le fichier .opendraw et peuvent être utilisés dans les étiquettes sous la forme %title%, %author% et %description%.',
+  'automation.props.note': 'Le titre, l’auteur et la description sont enregistrés dans le fichier .arkdraw et peuvent être utilisés dans les étiquettes sous la forme %title%, %author% et %description%.',
 
   // TemplateTools
   'automation.templates.imported': 'Modèle « {name} » importé',
   'automation.templates.importFailed': 'Impossible d’importer le modèle : {error}',
   'automation.templates.importFile': 'Importer un fichier de modèle',
-  'automation.templates.importTooltip': 'Importer un fichier .{ext} ou .opendraw',
+  'automation.templates.importTooltip': 'Importer un fichier .{ext} ou .arkdraw',
   'automation.templates.fileType': 'Modèle ArkDraw',
   'automation.templates.deleteTitle': 'Supprimer « {name} » ?',
   'automation.templates.deleteMessage': 'Le modèle est supprimé de cet appareil. Les diagrammes créés à partir de celui-ci ne sont pas affectés.',

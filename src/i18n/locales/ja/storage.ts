@@ -16,7 +16,7 @@ export default {
   'storage.openDoc': '{name} を開く',
   // thumbnail placeholder for a document without content
   'storage.emptyThumb': '空',
-  'storage.download': '.opendraw をダウンロード',
+  'storage.download': '.arkdraw をダウンロード',
   'storage.docActions': 'ドキュメントの操作',
   // file-type name in the save dialog
   'storage.fileType': 'ArkDraw ダイアグラム',

@@ -31,14 +31,14 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
         navigateFallback: 'index.html',
         // Direct links to diagram files/assets must reach the network, not the app shell.
-        navigateFallbackDenylist: [/\/icons\//, /\.(?:opendraw|drawio|xml|json|png|svg|pdf|txt|js|css|webmanifest)$/i],
+        navigateFallbackDenylist: [/\/icons\//, /\.(?:arkdraw|drawio|xml|json|png|svg|pdf|txt|js|css|webmanifest)$/i],
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
             urlPattern: ({ url, sameOrigin }) => sameOrigin && url.pathname.includes('/icons/'),
             handler: 'CacheFirst',
             options: {
-              cacheName: 'opendraw-icons',
+              cacheName: 'arkdraw-icons',
               expiration: { maxEntries: 6000, maxAgeSeconds: 60 * 60 * 24 * 90 },
               cacheableResponse: { statuses: [0, 200] },
             },

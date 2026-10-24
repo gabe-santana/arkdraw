@@ -1,5 +1,5 @@
 /**
- * Desktop command-line export (`opendraw --export …`, see docs/cli-export.md).
+ * Desktop command-line export (`arkdraw --export …`, see docs/cli-export.md).
  *
  * The Rust side (src-tauri/src/lib.rs) parses the arguments, keeps the window
  * hidden and hands the job to us through `take_export_job`. We load the input
@@ -73,7 +73,7 @@ export async function pagesFromText(text: string): Promise<Page[]> {
     if (!pages.length) throw new Error('No diagram pages found in the input.');
     return pages.map((p) => newPage(p.name, p.doc));
   }
-  throw new Error('Unrecognized input format (expected .opendraw or .drawio).');
+  throw new Error('Unrecognized input format (expected .arkdraw or .drawio).');
 }
 
 /** Export settings for a CLI job. Throws on invalid arguments. */
@@ -116,7 +116,7 @@ export async function runCliExport(job: CliExportJob): Promise<number> {
     await document.fonts?.ready;
     clearTextCache();
 
-    const name = baseName(job.input).replace(/(\.drawio)?\.(opendraw|drawio|xml|svg)$/i, '');
+    const name = baseName(job.input).replace(/(\.drawio)?\.(arkdraw|drawio|xml|svg)$/i, '');
     const active = pages[(job.page ?? 1) - 1] ?? pages[0];
     const files = await exportFiles({ pages, activePageId: active.id, selection: [], fileName: name }, s);
     const ext = FORMATS[s.format].ext;
@@ -128,7 +128,7 @@ export async function runCliExport(job: CliExportJob): Promise<number> {
     }
     return 0;
   } catch (e) {
-    await log(`opendraw: export failed: ${(e as Error)?.message ?? String(e)}`, true);
+    await log(`arkdraw: export failed: ${(e as Error)?.message ?? String(e)}`, true);
     return 1;
   }
 }

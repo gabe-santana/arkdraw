@@ -3,9 +3,9 @@
 # snap using the GNOME extension for WebKitGTK. Build locally with `snapcraft`
 # (Ubuntu, LXD or Multipass) or in CI (.github/workflows/release.yml, job `snap`).
 # See docs/release.md.
-name: opendraw
+name: arkdraw
 base: core22
-adopt-info: opendraw
+adopt-info: arkdraw
 summary: Open-source, offline, local-first diagram editor
 description: |
   ArkDraw is an open-source, fully offline diagramming app for flowcharts,
@@ -16,9 +16,9 @@ confinement: strict
 license: MIT
 
 apps:
-  opendraw:
-    command: usr/bin/opendraw
-    desktop: usr/share/applications/opendraw.desktop
+  arkdraw:
+    command: usr/bin/arkdraw
+    desktop: usr/share/applications/arkdraw.desktop
     extensions: [gnome]
     plugs:
       - home
@@ -27,7 +27,7 @@ apps:
       - network
 
 parts:
-  opendraw:
+  arkdraw:
     plugin: dump
     source: .
     build-snaps:
@@ -61,11 +61,11 @@ parts:
       # Normalise the binary and .desktop names (the deb uses the product name).
       cd "$CRAFT_PART_INSTALL/usr"
       bin="$(ls bin | head -n1)"
-      [ "$bin" = opendraw ] || mv "bin/$bin" bin/opendraw
+      [ "$bin" = arkdraw ] || mv "bin/$bin" bin/arkdraw
       desktop="$(ls share/applications/*.desktop | head -n1)"
-      [ "$desktop" = share/applications/opendraw.desktop ] || mv "$desktop" share/applications/opendraw.desktop
-      sed -i -e 's|^Exec=.*|Exec=opendraw %F|' \
-             -e 's|^Icon=.*|Icon=${SNAP}/usr/share/icons/hicolor/128x128/apps/opendraw.png|' \
-             share/applications/opendraw.desktop
+      [ "$desktop" = share/applications/arkdraw.desktop ] || mv "$desktop" share/applications/arkdraw.desktop
+      sed -i -e 's|^Exec=.*|Exec=arkdraw %F|' \
+             -e 's|^Icon=.*|Icon=${SNAP}/usr/share/icons/hicolor/128x128/apps/arkdraw.png|' \
+             share/applications/arkdraw.desktop
       icon="$(ls share/icons/hicolor/128x128/apps/*.png | head -n1)"
-      [ "$icon" = share/icons/hicolor/128x128/apps/opendraw.png ] || cp "$icon" share/icons/hicolor/128x128/apps/opendraw.png
+      [ "$icon" = share/icons/hicolor/128x128/apps/arkdraw.png ] || cp "$icon" share/icons/hicolor/128x128/apps/arkdraw.png

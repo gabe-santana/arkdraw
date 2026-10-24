@@ -61,7 +61,7 @@ export default {
   'chrome.editStyle.title': '编辑样式',
   'chrome.editStyle.subtitleDrawio': '样式字符串（key=value;）——应用于全部所选内容',
   'chrome.editStyle.styleString': '样式字符串',
-  'chrome.editStyle.subtitleOpendraw': 'ArkDraw 样式键，每行一个——应用于全部所选内容',
+  'chrome.editStyle.subtitleArkdraw': 'ArkDraw 样式键，每行一个——应用于全部所选内容',
   'chrome.editStyle.keptKeys': 'ArkDraw 不使用的键会被保留，并在导出 .drawio 时写回。',
 
   // EditDialogs — Edit diagram

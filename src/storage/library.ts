@@ -1,7 +1,7 @@
 /**
  * Browser file library (web build): whole documents kept in IndexedDB, with
  * File → Save to browser / Open from browser. Each entry stores the
- * `.opendraw` JSON plus a small SVG thumbnail of its first page.
+ * `.arkdraw` JSON plus a small SVG thumbnail of its first page.
  */
 import { create } from 'zustand';
 import type { Page } from '@/model/types';
@@ -63,7 +63,7 @@ export const useBrowserLibrary = create<LibraryState>((set) => ({
 }));
 
 const refresh = () => useBrowserLibrary.getState().refresh();
-const stripExt = (n: string) => n.replace(/\.opendraw$/i, '');
+const stripExt = (n: string) => n.replace(/\.arkdraw$/i, '');
 
 /** Builds a library entry from serialized data. */
 export function makeEntry(name: string, data: string, id = uid(), created = Date.now()): LibraryDoc {
@@ -151,7 +151,7 @@ export async function deleteLibraryDoc(id: string) {
   await refresh();
 }
 
-/** Adds a file's contents (e.g. an uploaded .opendraw) to the library. */
+/** Adds a file's contents (e.g. an uploaded .arkdraw) to the library. */
 export async function addToLibrary(name: string, data: string) {
   parsePages(data); // validates
   await idbPut('documents', makeEntry(name, data));

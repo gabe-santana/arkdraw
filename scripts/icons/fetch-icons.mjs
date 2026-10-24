@@ -17,7 +17,7 @@
  * Usage:
  *   node scripts/icons/fetch-icons.mjs [--cache <dir>] [--only aws,azure] [--refresh] [--out <dir>]
  *
- *   --cache <dir>   where archives are downloaded/extracted (default: <os tmp>/opendraw-icon-cache)
+ *   --cache <dir>   where archives are downloaded/extracted (default: <os tmp>/arkdraw-icon-cache)
  *   --only <ids>    comma separated provider ids to (re)build; others keep their current output
  *   --refresh       ignore cached downloads and fetch everything again
  *   --out <dir>     output directory (default: <repo>/public/icons)
@@ -44,7 +44,7 @@
 // ============================================================================
 const CONFIG = {
   userAgent:
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36 OpenDraw-icon-fetch',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36 ArkDraw-icon-fetch',
   providers: {
     aws: {
       name: 'AWS',
@@ -227,7 +227,7 @@ const MAX_SVG_BYTES = 3 * 1024 * 1024;
 // ----------------------------------------------------------------------------
 function parseArgs(argv) {
   const opts = {
-    cache: path.join(os.tmpdir(), 'opendraw-icon-cache'),
+    cache: path.join(os.tmpdir(), 'arkdraw-icon-cache'),
     out: path.join(REPO_ROOT, 'public', 'icons'),
     only: null,
     refresh: false,
@@ -552,7 +552,7 @@ function detach(node, parent) {
 }
 
 const sanitizePlugin = {
-  name: 'opendrawSanitize',
+  name: 'arkdrawSanitize',
   fn: () => ({
     element: {
       enter(node, parent) {
@@ -592,7 +592,7 @@ const num = (n) => String(+Number(n).toFixed(3));
 /** Ensures the root <svg> has a viewBox and explicit numeric width/height. */
 function sizePlugin(state) {
   return {
-    name: 'opendrawEnsureSize',
+    name: 'arkdrawEnsureSize',
     fn: () => ({
       element: {
         enter(node, parent) {

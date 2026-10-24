@@ -211,7 +211,7 @@ export function TitleBar() {
   };
 
   const dark = theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
-  const displayName = name.replace(/\.opendraw$/i, '');
+  const displayName = name.replace(/\.arkdraw$/i, '');
 
   return (
     <header

@@ -12,7 +12,7 @@ import { t } from '@/i18n';
 import { isTauri } from '@/lib/platform';
 import { useUi } from '@/store/ui';
 
-const LAST_CHECK_KEY = 'opendraw:update-last-check';
+const LAST_CHECK_KEY = 'arkdraw:update-last-check';
 export const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 export type UpdateStatus = 'idle' | 'checking' | 'available' | 'downloading' | 'installing' | 'error';

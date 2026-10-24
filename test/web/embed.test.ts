@@ -66,7 +66,7 @@ describe('embed mode', () => {
     expect(events()).toEqual([{ event: 'init' }]);
   });
 
-  it('loads OpenDraw JSON (string or object) and replies with a load event', async () => {
+  it('loads ArkDraw JSON (string or object) and replies with a load event', async () => {
     await start();
     send({ action: 'load', json: diagramJson(), title: 'Arch', id: 7 });
     await tick();

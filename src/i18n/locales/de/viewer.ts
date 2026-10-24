@@ -12,7 +12,7 @@ export default {
 
   // Viewer — toolbar
   'viewer.openNewTab': 'In neuem Tab öffnen',
-  'viewer.editInOpenDraw': 'In ArkDraw bearbeiten',
+  'viewer.editInArkDraw': 'In ArkDraw bearbeiten',
   'viewer.previousPage': 'Vorherige Seite',
   'viewer.nextPage': 'Nächste Seite',
   'viewer.zoomOut': 'Verkleinern',

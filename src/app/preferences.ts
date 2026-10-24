@@ -20,7 +20,7 @@ export interface Preferences {
   startScreen?: boolean;
 }
 
-const KEY = 'opendraw:preferences';
+const KEY = 'arkdraw:preferences';
 // No start dialog unless turned on in Preferences: a new visit opens on the canvas with the AI tab.
 const DEFAULTS: Preferences = { author: '', customColors: [], defaultFont: 'sans', recentColors: [], startScreen: false };
 

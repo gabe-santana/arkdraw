@@ -115,13 +115,13 @@ describe('plugins', () => {
     expect(useUi.getState().toasts.at(-1)).toMatchObject({ kind: 'error' });
   });
 
-  it('installs window.OpenDraw and picks up queued plugins', async () => {
+  it('installs window.ArkDraw and picks up queued plugins', async () => {
     let activated = false;
-    window.OpenDrawPlugins = [{ id: 'queued', activate: () => void (activated = true) }];
+    window.ArkDrawPlugins = [{ id: 'queued', activate: () => void (activated = true) }];
     installPluginGlobal();
-    expect(window.OpenDraw?.version).toBeTruthy();
-    expect(typeof window.OpenDraw?.registerPlugin).toBe('function');
-    expect(typeof window.OpenDraw?.loadPluginsFrom).toBe('function');
+    expect(window.ArkDraw?.version).toBeTruthy();
+    expect(typeof window.ArkDraw?.registerPlugin).toBe('function');
+    expect(typeof window.ArkDraw?.loadPluginsFrom).toBe('function');
     await Promise.resolve();
     expect(activated).toBe(true);
   });
@@ -145,7 +145,7 @@ describe('plugins', () => {
     useUi.setState({ ask: async () => 'confirm' } as never);
     await setPluginEnabled('https://example.com/p.js', false);
     expect(usePlugins.getState().entries[0].enabled).toBe(false);
-    expect(JSON.parse(localStorage.getItem('opendraw:plugins')!)[0]).toMatchObject({ source: 'https://example.com/p.js', enabled: false });
+    expect(JSON.parse(localStorage.getItem('arkdraw:plugins')!)[0]).toMatchObject({ source: 'https://example.com/p.js', enabled: false });
     removePlugin('https://example.com/p.js');
     expect(usePlugins.getState().entries).toEqual([]);
   });

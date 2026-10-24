@@ -145,14 +145,14 @@ export default {
   // statistic: number of document-level data properties
   'automation.props.docData': 'ドキュメントデータ',
   // %title%, %author%, %description% are literal placeholders: keep them
-  'automation.props.note': 'タイトル、作成者、説明は .opendraw ファイルに保存され、ラベル内で %title%、%author%、%description% として使用できます。',
+  'automation.props.note': 'タイトル、作成者、説明は .arkdraw ファイルに保存され、ラベル内で %title%、%author%、%description% として使用できます。',
 
   // TemplateTools (My templates, Save as template)
   'automation.templates.imported': 'テンプレート「{name}」をインポートしました',
   'automation.templates.importFailed': 'テンプレートをインポートできませんでした: {error}',
   'automation.templates.importFile': 'テンプレートファイルをインポート',
   // {ext} is a file extension
-  'automation.templates.importTooltip': '.{ext} または .opendraw ファイルをインポート',
+  'automation.templates.importTooltip': '.{ext} または .arkdraw ファイルをインポート',
   // file-type name in the save dialog
   'automation.templates.fileType': 'ArkDraw テンプレート',
   'automation.templates.deleteTitle': '「{name}」を削除しますか?',

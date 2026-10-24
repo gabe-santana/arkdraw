@@ -12,7 +12,7 @@ export default {
   'storage.empty': '此浏览器中还没有保存的图表。请使用“保存当前图表”或“文件 → 保存到浏览器”。',
   'storage.openDoc': '打开 {name}',
   'storage.emptyThumb': '空',
-  'storage.download': '下载 .opendraw',
+  'storage.download': '下载 .arkdraw',
   'storage.docActions': '文档操作',
   'storage.fileType': 'ArkDraw 图表',
   'storage.opened': '已打开“{name}”',

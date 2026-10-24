@@ -1,5 +1,5 @@
 /**
- * The `.opendraw` file format: pretty-printed JSON, so diagrams diff cleanly
+ * The `.arkdraw` file format: pretty-printed JSON, so diagrams diff cleanly
  * in git. Parsing is forgiving — unknown fields are kept, missing style keys
  * are filled from defaults, and invalid elements are skipped instead of
  * failing the whole file. The AI conversation travels with the file
@@ -9,9 +9,9 @@ import type { ConnectorElement, DiagramElement, Doc, DocumentMeta, Layer, Page, 
 import { uid } from '@/lib/id';
 import { DEFAULT_CONNECTOR_STYLE, DEFAULT_STYLE } from '@/model/defaults';
 
-export const FILE_FORMAT = 'opendraw';
+export const FILE_FORMAT = 'arkdraw';
 export const FILE_VERSION = 2;
-export const FILE_EXTENSION = 'opendraw';
+export const FILE_EXTENSION = 'arkdraw';
 
 interface FilePage {
   id: string;

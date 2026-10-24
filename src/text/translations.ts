@@ -1,7 +1,7 @@
 /**
  * Translated labels (mxGraph `label_<lang>` attributes on UserObject). The
  * translations live in the element's data as `label_<lang>` keys, so they
- * round-trip through .opendraw and mxGraph unchanged; the page's diagram
+ * round-trip through .arkdraw and mxGraph unchanged; the page's diagram
  * language picks which one is shown.
  */
 import type { DiagramElement } from '@/model/types';

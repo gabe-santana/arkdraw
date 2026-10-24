@@ -28,13 +28,13 @@ export interface AppConfig {
   customPresetColors?: string[];
   /** `;`-separated shape library ids to show expanded (mxGraph `libs`). */
   defaultLibraries?: string;
-  /** Custom library URLs (mxGraph `.xml` libraries or `.opendrawlib`). */
+  /** Custom library URLs (mxGraph `.xml` libraries or `.arkdrawlib`). */
   libraries?: string[];
   gridSize?: number;
   autosave?: boolean;
 }
 
-const KEY = 'opendraw:configuration';
+const KEY = 'arkdraw:configuration';
 const FONTS: FontKey[] = ['sans', 'serif', 'mono', 'hand'];
 /** Optional ElementStyle keys accepted besides those in DEFAULT_STYLE. */
 const OPTIONAL_STYLE_KEYS = [
@@ -157,7 +157,7 @@ export function resolveLibraryIds(spec: string): string[] {
   return out;
 }
 
-const COLLAPSE_KEY = 'opendraw:collapsed-libraries';
+const COLLAPSE_KEY = 'arkdraw:collapsed-libraries';
 
 /** Expands exactly these shape libraries in the Shapes panel (others collapse). Takes effect when the panel mounts. */
 export function showOnlyLibraries(ids: string[]) {
@@ -171,7 +171,7 @@ export function showOnlyLibraries(ids: string[]) {
   }
 }
 
-const LOADED_KEY = 'opendraw:loaded-library-urls';
+const LOADED_KEY = 'arkdraw:loaded-library-urls';
 
 /** Fetches custom libraries by URL into the user libraries (once per URL). Returns how many were added. */
 export async function loadLibraryUrls(urls: string[], opts: { force?: boolean } = {}): Promise<{ added: number; failed: string[] }> {

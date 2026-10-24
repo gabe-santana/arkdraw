@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { draftHasContent, RECOVERY_KEY, shieldRecoveryDraft, takeRecoveryDraft } from '@/web/recovery';
 
-const draft = (elements: unknown[]) => JSON.stringify({ name: 'Mine', path: null, data: JSON.stringify({ format: 'opendraw', pages: [{ elements }] }) });
+const draft = (elements: unknown[]) => JSON.stringify({ name: 'Mine', path: null, data: JSON.stringify({ format: 'arkdraw', pages: [{ elements }] }) });
 
 afterEach(() => localStorage.clear());
 
@@ -33,8 +33,8 @@ describe('recovery draft guard', () => {
     write(RECOVERY_KEY, draft([{ id: 'host-doc' }]));
     expect(localStorage.getItem(RECOVERY_KEY)).toBeNull();
     // Other keys are untouched.
-    write('opendraw:theme', '{"theme":"dark"}');
-    expect(localStorage.getItem('opendraw:theme')).toBe('{"theme":"dark"}');
+    write('arkdraw:theme', '{"theme":"dark"}');
+    expect(localStorage.getItem('arkdraw:theme')).toBe('{"theme":"dark"}');
 
     window.dispatchEvent(new Event('pagehide'));
     expect(localStorage.getItem(RECOVERY_KEY)).toBe(mine);

@@ -140,7 +140,7 @@ interface PluginsState {
   active: Record<string, { name: string; version?: string; source?: string }>;
 }
 
-const KEY = 'opendraw:plugins';
+const KEY = 'arkdraw:plugins';
 
 function loadEntries(): PluginEntry[] {
   try {
@@ -566,7 +566,7 @@ export function removePlugin(source: string) {
 }
 
 // ---------------------------------------------------------------------------
-// window.ArkDraw (window.OpenDraw is kept as an alias for existing plugins)
+// window.ArkDraw
 // ---------------------------------------------------------------------------
 
 export interface ArkDrawGlobal {
@@ -582,16 +582,13 @@ declare global {
     ArkDraw?: ArkDrawGlobal;
     /** Plugins queued before ArkDraw finished loading (picked up on install). */
     ArkDrawPlugins?: ArkDrawPlugin[];
-    /** The same API and queue under the project's former name. */
-    OpenDraw?: ArkDrawGlobal;
-    OpenDrawPlugins?: ArkDrawPlugin[];
   }
 }
 
-/** Installs `window.ArkDraw` and its `window.OpenDraw` alias (idempotent), and registers any queued plugins. */
+/** Installs `window.ArkDraw` (idempotent) and registers any queued plugins. */
 // The global delegates to the latest evaluation of this module, so dev hot reloads
 // (which re-run this file with a fresh registry) keep plugins attributed correctly.
-const RUNTIME_KEY = '__openDrawPluginRuntime';
+const RUNTIME_KEY = '__arkDrawPluginRuntime';
 (globalThis as Record<string, unknown>)[RUNTIME_KEY] = { registerPlugin, loadPluginsFrom, registeredPlugins };
 const runtime = () =>
   (globalThis as Record<string, unknown>)[RUNTIME_KEY] as { registerPlugin: typeof registerPlugin; loadPluginsFrom: typeof loadPluginsFrom; registeredPlugins: typeof registeredPlugins };
@@ -612,6 +609,6 @@ export function installPluginGlobal() {
     stencils: { parse: parseStencil, compress: compressStencil, decompress: decompressStencil, register: registerStencil },
   };
   const frozen = Object.freeze(api);
-  for (const name of ['ArkDraw', 'OpenDraw'] as const) Object.defineProperty(window, name, { value: frozen, configurable: false, writable: false });
-  for (const p of [...(window.ArkDrawPlugins ?? []), ...(window.OpenDrawPlugins ?? [])]) void api.registerPlugin(p).catch(() => {});
+  Object.defineProperty(window, 'ArkDraw', { value: frozen, configurable: false, writable: false });
+  for (const p of window.ArkDrawPlugins ?? []) void api.registerPlugin(p).catch(() => {});
 }

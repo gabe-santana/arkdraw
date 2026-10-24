@@ -79,7 +79,7 @@ export default {
   'chrome.editStyle.subtitleDrawio': 'スタイル文字列 (key=value;)。選択範囲全体に適用されます',
   // format option: the key=value; style string syntax (vs. "ArkDraw" keys)
   'chrome.editStyle.styleString': 'スタイル文字列',
-  'chrome.editStyle.subtitleOpendraw': 'ArkDraw のスタイルキー (1 行に 1 つ)。選択範囲全体に適用されます',
+  'chrome.editStyle.subtitleArkdraw': 'ArkDraw のスタイルキー (1 行に 1 つ)。選択範囲全体に適用されます',
   'chrome.editStyle.keptKeys': 'ArkDraw が使用しないキーも保持され、.drawio へのエクスポート時に書き戻されます。',
 
   // EditDialogs — Edit diagram

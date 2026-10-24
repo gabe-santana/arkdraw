@@ -4,7 +4,7 @@
  *   ?lang=de        UI language for the session (read by src/i18n at startup) and document language:
  *                   <html lang>, spell checking and dictation
  *   ?libs=general;uml   shape libraries to show expanded in the Shapes panel
- *   ?clibs=Uhttps%3A%2F%2F…;…   custom library URLs (mxGraph `.xml` / `.opendrawlib`) to load
+ *   ?clibs=Uhttps%3A%2F%2F…;…   custom library URLs (mxGraph `.xml` / `.arkdrawlib`) to load
  *   ?grid=0|1       grid off / on for this session
  *   ?math=1         typeset labels that contain LaTeX ($$…$$, \(…\)) in every opened diagram
  *   ?ui=dark|light|atlas|kennedy|min|simple|sketch   theme, or a minimal layout (panels hidden)

@@ -32,7 +32,7 @@ const MAX_RECENT: usize = 10;
 
 /// File extensions ArkDraw opens from the command line / file association.
 /// (.vsdx is binary: the UI reads it with `read_binary_file`.)
-const OPENABLE_EXTENSIONS: [&str; 4] = ["opendraw", "drawio", "xml", "vsdx"];
+const OPENABLE_EXTENSIONS: [&str; 4] = ["arkdraw", "drawio", "xml", "vsdx"];
 
 /// Files to open in a window once its UI is ready, keyed by window label:
 /// the file the app was launched with ("main") and files sent to new windows
@@ -89,7 +89,7 @@ fn read_text_file(path: String) -> Result<OpenedFile, String> {
     })
 }
 
-/// `diagram.opendraw` → `diagram.opendraw.bkp` (same folder).
+/// `diagram.arkdraw` → `diagram.arkdraw.bkp` (same folder).
 fn backup_path(path: &Path) -> PathBuf {
     path.with_file_name(format!("{}.bkp", file_name(path)))
 }
@@ -99,7 +99,7 @@ fn backup_path(path: &Path) -> PathBuf {
 fn write_backup(path: &Path) {
     if path.is_file() {
         if let Err(e) = fs::copy(path, backup_path(path)) {
-            eprintln!("opendraw: could not back up {}: {e}", path.display());
+            eprintln!("arkdraw: could not back up {}: {e}", path.display());
         }
     }
 }
@@ -222,7 +222,7 @@ fn launch_file_from_args(args: &[String]) -> Option<String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // `opendraw --export …` (see cli.rs): headless export, window stays hidden.
+    // `arkdraw --export …` (see cli.rs): headless export, window stays hidden.
     let export_job = cli::job_from_env();
     let exporting = export_job.is_some();
     if exporting {
@@ -310,7 +310,7 @@ pub fn run() {
                         f.insert(label.clone(), path.clone());
                     }
                 }
-                let _ = _app.emit_to(label.as_str(), "opendraw://open-file", path);
+                let _ = _app.emit_to(label.as_str(), "arkdraw://open-file", path);
             }
         }
     });
@@ -322,15 +322,15 @@ mod tests {
 
     #[test]
     fn backup_sits_next_to_the_file() {
-        let p = Path::new("/docs/flow.opendraw");
-        assert_eq!(backup_path(p), Path::new("/docs/flow.opendraw.bkp"));
+        let p = Path::new("/docs/flow.arkdraw");
+        assert_eq!(backup_path(p), Path::new("/docs/flow.arkdraw.bkp"));
     }
 
     #[test]
     fn write_with_backup_keeps_previous_contents() {
-        let dir = std::env::temp_dir().join(format!("opendraw-bkp-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("arkdraw-bkp-{}", std::process::id()));
         fs::create_dir_all(&dir).unwrap();
-        let file = dir.join("a.opendraw");
+        let file = dir.join("a.arkdraw");
         let path = file.to_string_lossy().into_owned();
         write_text_file(path.clone(), "v1".into(), Some(true)).unwrap();
         assert!(!backup_path(&file).exists(), "no backup for a new file");
@@ -344,7 +344,7 @@ mod tests {
 
     #[test]
     fn launch_file_accepts_diagrams_only() {
-        let dir = std::env::temp_dir().join(format!("opendraw-launch-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("arkdraw-launch-{}", std::process::id()));
         fs::create_dir_all(&dir).unwrap();
         let vsdx = dir.join("b.vsdx");
         fs::write(&vsdx, b"PK").unwrap();
