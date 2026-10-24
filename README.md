@@ -29,9 +29,7 @@ Get the latest version from **[Releases](https://github.com/gabe-santana/opendra
 
 | OS | File | Notes |
 | --- | --- | --- |
-| **Windows** 10/11 | `OpenDraw_x.y.z_x64_en-US.msi` | Installer for all users (IT-friendly) |
-| | `OpenDraw_x.y.z_x64-setup.exe` | Per-user install, no admin rights needed |
-| | `OpenDraw_x.y.z_x64-portable.zip` | No install; just run `OpenDraw.exe` |
+| **Windows** 10/11 | `OpenDraw_x.y.z_windows-installer.exe` | Signed by Microsoft; installs from the [Microsoft Store](https://apps.microsoft.com/detail/9PG6WQTHD78Q) with automatic updates. Or `winget install 9PG6WQTHD78Q` |
 | **macOS** 11+ | `OpenDraw_x.y.z_universal.dmg` | Apple Silicon and Intel |
 | **Linux** | `OpenDraw_x.y.z_amd64.AppImage` | Any distro: `chmod +x` and run |
 | | `OpenDraw_x.y.z_amd64.deb` / `OpenDraw-x.y.z-1.x86_64.rpm` | Debian/Ubuntu, Fedora/openSUSE (arm64 builds too) |
@@ -39,9 +37,9 @@ Get the latest version from **[Releases](https://github.com/gabe-santana/opendra
 Prefer the browser? The same app runs as an installable web app — see [self-hosting](docs/web.md). Verify downloads against `SHA256SUMS.txt` in each release.
 
 <details>
-<summary>Windows or macOS warns about an unknown developer?</summary>
+<summary>macOS says the app is from an unidentified developer?</summary>
 
-Early builds may be unsigned. On Windows, click **More info → Run anyway**. On macOS, right-click OpenDraw in Applications and choose **Open**, or run `xattr -dr com.apple.quarantine /Applications/OpenDraw.app`.
+The macOS build isn't notarized yet: right-click OpenDraw in Applications and choose **Open**, or run `xattr -dr com.apple.quarantine /Applications/OpenDraw.app`.
 
 </details>
 

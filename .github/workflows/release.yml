@@ -2,15 +2,15 @@
 # built, checksummed and published as a GitHub Release.
 #
 #   prepare  → checks the tag matches the app version, creates a draft release
-#   build    → Windows (MSI + setup.exe + portable zip), macOS (universal DMG),
-#              Linux x64 and arm64 (AppImage, .deb, .rpm); uploads to the draft
+#   build    → macOS (universal DMG) and Linux x64/arm64 (AppImage, .deb, .rpm),
+#              uploaded to the draft; Windows ships through the Microsoft Store
+#              only (MSIX, signed by Microsoft, so no SmartScreen prompt)
 #   snap     → optional snap package (best effort)
 #   publish  → SHA256SUMS.txt, then the draft becomes a public release
 #
 # Signing is optional and driven by repository secrets (see docs/release.md):
-# Windows Authenticode (WINDOWS_CERTIFICATE*), Apple Developer ID + notarization
-# (APPLE_*), and updater signatures (TAURI_SIGNING_PRIVATE_KEY*). Unsigned
-# builds still work; users just see a SmartScreen / Gatekeeper warning.
+# Apple Developer ID + notarization (APPLE_*) and updater signatures
+# (TAURI_SIGNING_PRIVATE_KEY*). The Store signs the Windows package itself.
 name: Release
 
 on:
@@ -80,9 +80,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Windows x64
+          - name: Windows x64 (Microsoft Store)
             os: windows-latest
-            args: ''
+            args: --no-bundle
           - name: macOS universal
             os: macos-latest
             args: --target universal-apple-darwin
@@ -127,25 +127,6 @@ jobs:
 
       # ---- Optional signing (each block is skipped when its secrets are absent) ----
 
-      - name: Windows code signing certificate
-        id: wincert
-        if: runner.os == 'Windows'
-        shell: pwsh
-        env:
-          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
-          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
-        run: |
-          if (-not $env:WINDOWS_CERTIFICATE) { Write-Output "::notice::WINDOWS_CERTIFICATE not set: installers will be unsigned"; exit 0 }
-          $pfx = Join-Path $env:RUNNER_TEMP 'cert.pfx'
-          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE))
-          $pw = ConvertTo-SecureString $env:WINDOWS_CERTIFICATE_PASSWORD -AsPlainText -Force
-          $cert = Import-PfxCertificate -FilePath $pfx -CertStoreLocation Cert:\CurrentUser\My -Password $pw
-          Remove-Item $pfx
-          $conf = @{ bundle = @{ windows = @{ certificateThumbprint = $cert.Thumbprint; digestAlgorithm = 'sha256'; timestampUrl = 'http://timestamp.digicert.com' } } } | ConvertTo-Json -Depth 5 -Compress
-          $file = Join-Path $env:RUNNER_TEMP 'windows-signing.json'
-          Set-Content -Path $file -Value $conf -Encoding utf8
-          "args=--config $file" >> $env:GITHUB_OUTPUT
-
       - name: Apple signing and notarization
         if: runner.os == 'macOS'
         shell: bash
@@ -186,27 +167,11 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          releaseId: ${{ needs.prepare.outputs.release_id }}
-          tagName: ${{ env.TAG }}
-          includeUpdaterJson: true
-          args: ${{ matrix.args }} ${{ steps.wincert.outputs.args }} ${{ steps.updater.outputs.args }}
-
-      # Portable Windows build: the executable in a zip, no installer (needs WebView2,
-      # which ships with Windows 10 1803+ and 11).
-      - name: Windows portable zip
-        if: runner.os == 'Windows'
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ needs.prepare.outputs.version }}
-        run: |
-          $dir = "OpenDraw-$env:VERSION-portable"
-          New-Item -ItemType Directory -Force $dir | Out-Null
-          Copy-Item src-tauri/target/release/opendraw.exe "$dir/OpenDraw.exe"
-          Copy-Item LICENSE "$dir/LICENSE.txt"
-          $zip = "OpenDraw_$($env:VERSION)_x64-portable.zip"
-          Compress-Archive -Path "$dir/*" -DestinationPath $zip -Force
-          gh release upload $env:TAG $zip --clobber
+          # Windows builds the executable only (for the MSIX); nothing is attached to the release.
+          releaseId: ${{ runner.os != 'Windows' && needs.prepare.outputs.release_id || '' }}
+          tagName: ${{ runner.os != 'Windows' && env.TAG || '' }}
+          includeUpdaterJson: ${{ runner.os != 'Windows' }}
+          args: ${{ matrix.args }} ${{ runner.os != 'Windows' && steps.updater.outputs.args || '' }}
 
       # Microsoft Store package (MSIX). Needs the identity from Partner Center as
       # repository variables; the Store signs it, so Store installs have no SmartScreen
@@ -267,6 +232,24 @@ jobs:
     if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
+      # Windows download: the Microsoft Store web installer, a small executable
+      # signed by Microsoft that installs OpenDraw from the Store (no SmartScreen
+      # prompt). It exists once the Store listing is live.
+      - name: Windows installer (Microsoft Store)
+        if: vars.MSSTORE_PRODUCT_ID != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRODUCT_ID: ${{ vars.MSSTORE_PRODUCT_ID }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          file="OpenDraw_${VERSION}_windows-installer.exe"
+          code=$(curl -sL -o "$file" -w '%{http_code}' "https://get.microsoft.com/installer/download/${PRODUCT_ID}?cid=github_release")
+          if [ "$code" = "200" ] && [ "$(head -c 2 "$file")" = "MZ" ]; then
+            gh release upload "$TAG" "$file" --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            echo "::warning::Microsoft Store installer not available yet (HTTP $code); is the Store listing live?"
+          fi
+
       - name: Checksums
         env:
           GH_TOKEN: ${{ github.token }}
@@ -285,28 +268,3 @@ jobs:
           latest="--latest"
           case "$TAG" in *-*) latest="--latest=false" ;; esac
           gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false $latest
-
-  # winget: opens the version-bump PR in microsoft/winget-pkgs for each stable
-  # release (`winget install GabrielSantana.OpenDraw`). Needs WINGET_TOKEN, a classic
-  # personal access token with the public_repo scope (forks and PRs on your behalf).
-  winget:
-    name: Update winget
-    needs: [prepare, publish]
-    if: ${{ !contains(github.event.inputs.tag || github.ref_name, '-') }}
-    runs-on: windows-latest
-    steps:
-      - name: Check token
-        id: token
-        shell: bash
-        env:
-          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
-        run: |
-          if [ -n "$WINGET_TOKEN" ]; then echo "ready=true" >> "$GITHUB_OUTPUT"; else echo "::notice::WINGET_TOKEN not set: skipping the winget update"; fi
-      - uses: vedantmgoyal9/winget-releaser@v2
-        if: steps.token.outputs.ready == 'true'
-        with:
-          identifier: GabrielSantana.OpenDraw
-          version: ${{ needs.prepare.outputs.version }}
-          release-tag: ${{ env.TAG }}
-          installers-regex: '_x64_en-US\.msi$'
-          token: ${{ secrets.WINGET_TOKEN }}

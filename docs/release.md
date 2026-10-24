@@ -7,9 +7,7 @@ How OpenDraw's desktop builds are packaged, signed and updated. The workflow is
 
 | OS | Package | Built by | Config | Auto-update |
 | --- | --- | --- | --- | --- |
-| Windows | NSIS `.exe` (per-user) | tauri-action | `tauri.windows.conf.json` | yes |
-| Windows | MSI (WiX) | tauri-action | `tauri.windows.conf.json` | yes |
-| Windows | Portable `.zip` (bare `OpenDraw.exe`) | release.yml step | — | no |
+| Windows | MSIX via the Microsoft Store; the release attaches the Store's web installer (`*_windows-installer.exe`, signed by Microsoft) | `scripts/msix/build-msix.mjs`, `msstore` CLI | `src-tauri/msix/AppxManifest.xml` | yes (Store) |
 | macOS | `.app` / `.dmg` (universal, macOS 11+) | tauri-action | `tauri.macos.conf.json` | yes (`.app.tar.gz`) |
 | Linux (x64, arm64) | AppImage | tauri-action | `tauri.linux.conf.json` | yes |
 | Linux (x64, arm64) | `.deb` | tauri-action | `tauri.linux.conf.json` | no (use the package manager) |
@@ -18,9 +16,10 @@ How OpenDraw's desktop builds are packaged, signed and updated. The workflow is
 
 Notes:
 
-- **Portable Windows build**: the zip contains the executable only. It needs the
-  WebView2 runtime, which ships with Windows 10 (1803+) and 11. It registers no
-  file associations and keeps its settings in the usual app-data folders.
+- **Windows**: no unsigned installers are published. Windows users install from the
+  Microsoft Store, either through the store link or through the small web installer
+  attached to each release, which Microsoft signs. Local MSI/NSIS builds still work
+  with `npm run tauri build`.
 - **Snap**: Tauri's bundler has no snap target, so `snap/snapcraft.yaml` builds the
   `.deb` and repacks it with the GNOME extension (WebKitGTK). Build locally with
   `snapcraft` on Ubuntu. The CI job is best effort (`continue-on-error`). To publish
@@ -164,12 +163,8 @@ To build the package locally: `npm run tauri build` then `node scripts/msix/buil
 
 ### winget
 
-The package id is `GabrielSantana.OpenDraw` (`winget install GabrielSantana.OpenDraw`).
-The `winget` job opens the version-bump pull request in
-[microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs) after each stable
-release. It needs the `WINGET_TOKEN` secret: a classic personal access token with
-the `public_repo` scope. Manifests are validated and merged by the winget team,
-usually within a day.
+Store apps are installable with winget through its `msstore` source, so no separate
+manifest is needed: `winget install 9PG6WQTHD78Q`.
 
 ## Desktop configuration file
 
