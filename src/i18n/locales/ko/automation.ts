@@ -1,0 +1,156 @@
+import type en from '../../en/automation';
+import type { Translation } from '../../types';
+
+export default {
+  // formUi (key/value editor)
+  'automation.kv.keyPlaceholder': '키',
+  'automation.kv.valuePlaceholder': '값',
+  'automation.kv.remove': '속성 제거',
+  'automation.kv.add': '속성 추가',
+
+  // ConfigurationBody
+  'automation.config.title': '구성',
+  'automation.config.subtitle': '앱 전체 설정(JSON): 기본 스타일과 글꼴, 사전 설정 색상, 도형 라이브러리, 그리드, 자동 저장.',
+  'automation.config.insertExample': '예제 삽입',
+  'automation.config.keys': '키: defaultVertexStyle, defaultEdgeStyle, defaultFont, customPresetColors, defaultLibraries, libraries, gridSize, autosave.',
+  'automation.config.applied': '구성이 적용되었습니다',
+  'automation.config.invalidJson': '잘못된 JSON: {error}',
+  'automation.config.notObject': '구성은 JSON 개체여야 합니다.',
+  'automation.config.unknownKey': '알 수 없는 키 “{key}”입니다.',
+  'automation.config.styleNotObject': '“{key}”은(는) 스타일 속성의 개체여야 합니다.',
+  'automation.config.notStyleProperty': '“{key}”은(는) 스타일 속성이 아닙니다.',
+  'automation.config.stylePrimitive': '“{key}”은(는) 문자열, 숫자 또는 부울이어야 합니다.',
+  'automation.config.styleType': '“{key}”은(는) {type} 유형이어야 합니다.',
+  'automation.config.defaultFont': '“defaultFont”는 {fonts} 중 하나여야 합니다.',
+  'automation.config.customPresetColors': '“customPresetColors”는 “#0ea5e9”와 같은 16진수 색상 목록이어야 합니다.',
+  'automation.config.defaultLibraries': '“defaultLibraries”는 “general;uml”과 같은 문자열이어야 합니다.',
+  'automation.config.libraries': '“libraries”는 http(s) URL 목록이어야 합니다.',
+  'automation.config.gridSize': '“gridSize”는 1에서 200 사이의 숫자여야 합니다.',
+  'automation.config.autosave': '“autosave”는 true 또는 false여야 합니다.',
+  'automation.config.librarySelectionNote': '도형 라이브러리 선택은 다음에 도형 패널을 열 때 적용됩니다.',
+  'automation.config.librariesLoaded': '{count, plural, other {사용자 지정 라이브러리 #개를 불러왔습니다.}}',
+  'automation.librariesFailed': '{count, plural, other {라이브러리 #개를 불러올 수 없습니다(네트워크 또는 CORS).}}',
+  'automation.urlParams.librariesLoaded': '{count, plural, other {사용자 지정 라이브러리 #개를 불러왔습니다}}',
+
+  // LayoutJsonBody
+  'automation.layoutJson.title': 'JSON으로 레이아웃 적용',
+  'automation.layoutJson.subtitle':
+    'mxGraph 레이아웃 JSON: mxHierarchicalLayout, mxCompactTreeLayout, mxRadialTreeLayout, mxFastOrganicLayout, mxCircleLayout, mxOrgChartLayout, mxParallelEdgeLayout. 선택 영역 또는 페이지 전체에 적용됩니다.',
+  'automation.layoutJson.example': '예제',
+  'automation.layoutJson.apply': '레이아웃 적용',
+  'automation.layoutJson.nothing': '배치할 항목이 없습니다',
+
+  // PrintBody
+  'automation.print.title': '인쇄',
+  'automation.print.subtitle': '이 설정으로 시스템 인쇄 대화 상자를 엽니다.',
+  'automation.print.all': '전체({count})',
+  'automation.print.current': '현재',
+  'automation.print.range': '범위',
+  'automation.print.fromTo': '{from}부터 {to}까지',
+  'automation.print.scaling': '배율 조정',
+  'automation.print.fitOne': '1장에 맞추기',
+  'automation.print.fitSheets': '여러 장에 맞추기',
+  'automation.print.scale': '배율',
+  'automation.print.sheets': '가로 {cols} × 세로 {rows}',
+  'automation.print.scaleHint': '{percent}로 인쇄 — 큰 페이지는 여러 장에 나뉘어 인쇄됩니다.',
+  'automation.print.paper': '용지',
+  'automation.print.orientation': '방향',
+  'automation.print.portrait': '세로',
+  'automation.print.landscape': '가로',
+  'automation.print.background': '페이지 배경 포함',
+  'automation.print.print': '인쇄…',
+
+  // EmbedBody
+  'automation.embed.title': '포함',
+  'automation.embed.subtitle': '웹 페이지, 위키, Markdown용 코드 조각입니다. 다이어그램이 링크 안에 담기므로 아무것도 업로드되지 않습니다.',
+  'automation.embed.allPages': '모든 페이지',
+  'automation.embed.currentPage': '현재 페이지',
+  'automation.embed.toolbar': '도구 모음',
+  'automation.embed.iframe': '대화형(iframe)',
+  'automation.embed.longLink': '긴 링크({count}천 자)',
+  'automation.embed.viewerLink': '뷰어 링크',
+  'automation.embed.markdownLink': 'Markdown 링크',
+  'automation.embed.imageHtml': '이미지(HTML, 현재 페이지)',
+  'automation.embed.imageMarkdown': '이미지(Markdown, 현재 페이지)',
+  'automation.embed.dataUriSize': '{size}KB 데이터 URI',
+  'automation.embed.copy': '{label} 복사',
+
+  // MermaidBody / mermaidRegen.ts
+  'automation.mermaid.title': 'Mermaid 편집',
+  'automation.mermaid.subtitle': '소스를 수정하고 적용하세요. 다이어그램이 제자리에서 다시 생성됩니다(실행 취소 한 번으로 되돌릴 수 있음).',
+  'automation.mermaid.noShapes': 'Mermaid 소스에서 생성된 도형이 없습니다.',
+  'automation.mermaid.gone': '이 Mermaid 다이어그램은 더 이상 페이지에 없습니다.',
+
+  // ReplayBody
+  'automation.replay.title': '다시 재생',
+  'automation.replay.subtitle': '이 문서의 수정 기록(현재 페이지)을 오래된 순서대로 보여 줍니다.',
+  'automation.replay.loading': '수정 기록 로드 중…',
+  'automation.replay.emptyPage': '이 시점에는 빈 페이지',
+  'automation.replay.first': '처음',
+  'automation.replay.last': '마지막',
+  'automation.replay.play': '재생',
+  'automation.replay.pause': '일시 중지',
+  'automation.replay.revision': '수정본',
+  'automation.replay.now': '현재',
+  'automation.replay.noRevisions': '아직 수정 기록이 없습니다. 저장할 때마다, 그리고 저장하지 않은 작업 중에는 몇 분마다 기록됩니다.',
+
+  // DataBody (Edit Data for layers, pages, the document)
+  'automation.data.layerTitle': '레이어 데이터 편집',
+  'automation.data.pageTitle': '페이지 데이터 편집',
+  'automation.data.documentTitle': '문서 데이터 편집',
+  'automation.data.id': 'ID {id}',
+  'automation.data.documentSubtitle': '모든 페이지에서 %placeholders%로 사용할 수 있는 값입니다.',
+  'automation.data.properties': '속성',
+  'automation.data.propertiesHint': '이 범위 안에서 자리 표시자가 켜진 레이블에 %key% 값이 표시됩니다',
+
+  // PropertiesBody (File → Properties)
+  'automation.props.title': '파일 속성',
+  'automation.props.author': '작성자',
+  'automation.props.authorPlaceholder': '이 다이어그램을 만든 사람',
+  'automation.props.descriptionPlaceholder': '이 다이어그램의 내용',
+  'automation.props.created': '만든 날짜',
+  'automation.props.lastSaved': '마지막 저장',
+  'automation.props.labels': '레이블',
+  'automation.props.images': '이미지 및 아이콘',
+  'automation.props.comments': '댓글',
+  'automation.props.docData': '문서 데이터',
+  'automation.props.note': '제목, 작성자, 설명은 .opendraw 파일에 저장되며 레이블에서 %title%, %author%, %description%으로 사용할 수 있습니다.',
+
+  // TemplateTools (My templates, Save as template)
+  'automation.templates.imported': '템플릿 “{name}”을(를) 가져왔습니다',
+  'automation.templates.importFailed': '템플릿을 가져올 수 없습니다: {error}',
+  'automation.templates.importFile': '템플릿 파일 가져오기',
+  'automation.templates.importTooltip': '.{ext} 또는 .opendraw 파일 가져오기',
+  'automation.templates.fileType': 'OpenDraw 템플릿',
+  'automation.templates.deleteTitle': '“{name}”을(를) 삭제하시겠습니까?',
+  'automation.templates.deleteMessage': '템플릿이 이 기기에서 제거됩니다. 이 템플릿으로 만든 다이어그램에는 영향이 없습니다.',
+  'automation.templates.nothingToSave': '템플릿으로 저장할 내용이 없습니다.',
+  'automation.templates.saved': '“{name}”을(를) 내 템플릿에 저장했습니다',
+  'automation.templates.saveFailed': '템플릿을 저장할 수 없습니다: {error}',
+  'automation.templates.saveTitle': '템플릿으로 저장',
+  'automation.templates.saveSubtitle': '이 기기의 파일 → 템플릿에서 새로 만들기… 의 내 템플릿 아래에 표시됩니다.',
+  'automation.templates.optional': '선택 사항',
+  'automation.templates.contents': '내용',
+  'automation.templates.wholeDiagram': '{count, plural, other {전체 다이어그램(#페이지)}}',
+  'automation.templates.thisPage': '이 페이지',
+  'automation.templates.save': '템플릿 저장',
+
+  // actions.tsx
+  'automation.parallelEdgesNone': '같은 두 도형을 공유하는 커넥터가 없습니다.',
+  'automation.savedToBrowser': '“{name}”을(를) 브라우저에 저장했습니다',
+
+  // plugins.ts (Explore, Anonymize, Dictate)
+  'automation.explore.selectFirst': '탐색을 시작할 요소를 선택하세요.',
+  'automation.explore.hint': '탐색: 인접 요소를 선택하여 이동하고, Esc 키를 눌러 종료하세요.',
+  'automation.anonymize.title': '이 페이지를 익명화하시겠습니까?',
+  'automation.anonymize.message':
+    '모든 레이블, 이름, 도구 설명, 데이터 값이 x/X 자리 표시자로 바뀌고 댓글이 제거되므로 내용 없이 다이어그램을 공유할 수 있습니다. 이 작업은 실행 취소할 수 있습니다.',
+  'automation.anonymize.confirm': '익명화',
+  'automation.anonymize.done': '페이지가 익명화되었습니다',
+  'automation.dictate.unavailable': '이 브라우저에서는 음성 인식을 사용할 수 없습니다.',
+  'automation.dictate.selectFirst': '레이블을 받아쓸 도형이나 커넥터를 선택하세요.',
+  'automation.dictate.said': '“{text}”',
+  'automation.dictate.denied': '마이크 액세스가 거부되었습니다.',
+  'automation.dictate.failed': '받아쓰기 실패({error}).',
+  'automation.dictate.listening': '듣는 중… 레이블을 말하세요',
+} satisfies Translation<typeof en>;

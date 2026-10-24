@@ -60,8 +60,8 @@ export function PanelResizer({ edge, width, onChange, defaultWidth, label }: {
         onChange(Math.min(PANEL_WIDTH.max, Math.max(PANEL_WIDTH.min, width + (e.key === grow ? step : -step))));
       }}
       className={cn(
-        'group pointer-events-auto absolute top-6 bottom-6 z-10 flex w-3 cursor-ew-resize justify-center outline-none',
-        edge === 'right' ? '-right-2.5' : '-left-2.5',
+        'group pointer-events-auto absolute top-6 bottom-6 z-10 flex w-4 cursor-ew-resize justify-center outline-none',
+        edge === 'right' ? '-right-3' : '-left-3',
       )}
     >
       <span

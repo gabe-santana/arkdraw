@@ -18,18 +18,39 @@ import { useEditor } from '@/store/editor';
 import { useUi } from '@/store/ui';
 import { viewportCenter } from '@/canvas/viewport';
 import { convertSvg, SVG_IMPORT_MESSAGES } from '@/io/import/svgShapes';
+import { t, tx, useT } from '@/i18n';
 
-/** User-facing strings (English; kept together for i18n). */
+/** User-facing strings, in the UI language (src/i18n/en/svgImport.ts). */
 export const SVG_IMPORT_UI = {
-  title: 'Import SVG',
-  message: (name: string) => `Insert ${name} as a single image, or convert its paths, shapes and text into editable shapes.`,
-  unnamed: 'this SVG',
-  perGroup: 'One shape per group (keeps colours, fewer shapes)',
-  cancel: 'Cancel',
-  asImage: 'Insert as image',
-  convert: 'Convert to shapes',
-  converted: (n: number) => `Converted to ${n} shape${n === 1 ? '' : 's'} (grouped).`,
-  pickTitle: 'SVG as shapes',
+  get title() {
+    return t('svgImport.title');
+  },
+  message: (name: string) => t('svgImport.message', { name }),
+  get unnamed() {
+    return t('svgImport.unnamed');
+  },
+  get perGroup() {
+    return t('svgImport.perGroup');
+  },
+  get cancel() {
+    return t('common.cancel');
+  },
+  get asImage() {
+    return t('svgImport.asImage');
+  },
+  get convert() {
+    return t('svgImport.convert');
+  },
+  converted: (n: number) => t('svgImport.converted', { count: n }),
+  get pickTitle() {
+    return t('svgImport.pickTitle');
+  },
+};
+
+/** A conversion message (an SVG_IMPORT_MESSAGES value) in the UI language. */
+const importMessage = (text: string): string => {
+  const key = (Object.keys(SVG_IMPORT_MESSAGES) as Array<keyof typeof SVG_IMPORT_MESSAGES>).find((k) => SVG_IMPORT_MESSAGES[k] === text);
+  return key ? tx(`svgImport.msg.${key}`, text) : text;
 };
 
 /** Largest side of a converted drawing, in px (bigger SVGs are scaled down). */
@@ -83,6 +104,7 @@ function ChoiceHost() {
 }
 
 function ChoiceBody({ req }: { req: NonNullable<ReturnType<typeof useChoice.getState>['req']> }) {
+  useT(); // re-render on language change
   const [perGroup, setPerGroup] = useState(() => loadMode() === 'group');
   const primary = useRef<HTMLButtonElement>(null);
   // Dialog focuses the first control (the switch); Enter should convert.
@@ -127,15 +149,15 @@ export function insertSvgAsShapes(svg: string, at?: Vec, mode: SvgImportMode = '
   try {
     result = convertSvg(svg, { mode, fit: FIT, center: at ?? viewportCenter() });
   } catch {
-    ui.toast(SVG_IMPORT_MESSAGES.invalid, 'error');
+    ui.toast(importMessage(SVG_IMPORT_MESSAGES.invalid), 'error');
     return false;
   }
   if (!result.elements.length) {
-    ui.toast(SVG_IMPORT_MESSAGES.empty, 'error');
+    ui.toast(importMessage(SVG_IMPORT_MESSAGES.empty), 'error');
     return false;
   }
   useEditor.getState().addElements(result.elements);
-  ui.toast([SVG_IMPORT_UI.converted(result.elements.length), ...result.warnings].join(' '), result.warnings.length ? 'info' : 'success');
+  ui.toast([SVG_IMPORT_UI.converted(result.elements.length), ...result.warnings.map(importMessage)].join(' '), result.warnings.length ? 'info' : 'success');
   return true;
 }
 

@@ -14,10 +14,11 @@ import { PANEL_WIDTH, PanelResizer } from '@/ui/PanelResizer';
 import { LeftPanel } from '@/panels/LeftPanel';
 import { PropertiesPanel } from '@/panels/PropertiesPanel';
 import { LayersPanel } from '@/panels/LayersPanel';
+import { t, useT } from '@/i18n';
 
 export const DEFAULT_DOCK: DockLayout = { left: ['shapes'], right: ['format', 'layers'] };
 
-const PANEL_NAMES: Record<PanelId, string> = { shapes: 'Shapes', format: 'Format', layers: 'Layers' };
+const panelName = (id: PanelId): string => t(`chrome.dock.panel.${id}`);
 const GAP = 8;
 
 // ---------------------------------------------------------------------------
@@ -81,9 +82,15 @@ function dropTarget(id: PanelId, x: number, y: number): DragState['target'] {
   return { side, index };
 }
 
-function startPanelDrag(id: PanelId, e: React.PointerEvent, onClick: (x: number, y: number) => void) {
+/**
+ * Starts a (potential) panel drag. From the grip, a click without movement
+ * opens the menu. From a panel header (`passive`), the press is left alone so
+ * header buttons keep working, and only a real drag moves the panel (the click
+ * that follows it is swallowed).
+ */
+function startPanelDrag(id: PanelId, e: React.PointerEvent, onClick: ((x: number, y: number) => void) | null, passive = false) {
   if (e.button !== 0) return;
-  e.preventDefault();
+  if (!passive) e.preventDefault();
   const sx = e.clientX;
   const sy = e.clientY;
   let dragging = false;
@@ -92,6 +99,7 @@ function startPanelDrag(id: PanelId, e: React.PointerEvent, onClick: (x: number,
     if (!dragging) {
       dragging = true;
       document.body.style.cursor = 'grabbing';
+      window.getSelection()?.removeAllRanges();
     }
     useDockDrag.setState({ id, pointer: { x: ev.clientX, y: ev.clientY }, target: dropTarget(id, ev.clientX, ev.clientY) });
   };
@@ -101,8 +109,17 @@ function startPanelDrag(id: PanelId, e: React.PointerEvent, onClick: (x: number,
     document.body.style.cursor = '';
     const { target } = useDockDrag.getState();
     useDockDrag.setState({ id: null, target: null, pointer: null });
-    if (!dragging) onClick(ev.clientX, ev.clientY);
-    else if (target) movePanel(id, target.side, target.index);
+    if (!dragging) onClick?.(ev.clientX, ev.clientY);
+    else {
+      if (target) movePanel(id, target.side, target.index);
+      // Swallow the click the browser fires after a drag that started on a header button.
+      const swallow = (ce: MouseEvent) => {
+        ce.stopPropagation();
+        ce.preventDefault();
+      };
+      window.addEventListener('click', swallow, { capture: true, once: true });
+      setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 0);
+    }
   };
   window.addEventListener('pointermove', move);
   window.addEventListener('pointerup', up);
@@ -122,16 +139,23 @@ function DockItem({ id, side, index, count, grow }: { id: PanelId; side: DockSid
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const dragging = useDockDrag((s) => s.id === id);
   const other: DockSide = side === 'left' ? 'right' : 'left';
+  const t = useT();
   const items: MenuEntry[] = [
-    { label: `Move to ${other} side`, icon: <ArrowLeftRight />, onSelect: () => movePanel(id, other, Infinity) },
-    { label: 'Move up', icon: <ArrowUp />, disabled: index === 0, onSelect: () => movePanel(id, side, index - 1) },
-    { label: 'Move down', icon: <ArrowDown />, disabled: index === count - 1, onSelect: () => movePanel(id, side, index + 1) },
+    { label: other === 'left' ? t('chrome.dock.moveLeft') : t('chrome.dock.moveRight'), icon: <ArrowLeftRight />, onSelect: () => movePanel(id, other, Infinity) },
+    { label: t('chrome.dock.moveUp'), icon: <ArrowUp />, disabled: index === 0, onSelect: () => movePanel(id, side, index - 1) },
+    { label: t('chrome.dock.moveDown'), icon: <ArrowDown />, disabled: index === count - 1, onSelect: () => movePanel(id, side, index + 1) },
     { type: 'separator' },
-    { label: 'Reset panel layout', icon: <RotateCcw />, onSelect: resetDock },
+    { label: t('chrome.dock.reset'), icon: <RotateCcw />, onSelect: resetDock },
   ];
   return (
     <div
       data-dock-item={id}
+      // Panels can also be dragged by their header (anything marked data-dock-handle).
+      onPointerDownCapture={(e) => {
+        const t = e.target as Element;
+        if (!t.closest('[data-dock-handle]') || t.closest('input, textarea, select, [contenteditable]')) return;
+        startPanelDrag(id, e, null, true);
+      }}
       className={cn(
         'group/dock relative flex min-h-0 flex-col transition-opacity',
         id === 'shapes' && 'min-h-[180px] flex-1',
@@ -142,8 +166,8 @@ function DockItem({ id, side, index, count, grow }: { id: PanelId; side: DockSid
     >
       <button
         type="button"
-        aria-label={`${PANEL_NAMES[id]} panel: drag to move, click for options`}
-        title="Drag to move · click for options"
+        aria-label={t('chrome.dock.handleAria', { panel: panelName(id) })}
+        title={t('chrome.dock.handleTitle')}
         onPointerDown={(e) => startPanelDrag(id, e, (x, y) => setMenu({ x, y }))}
         onContextMenu={(e) => {
           e.preventDefault();
@@ -151,7 +175,7 @@ function DockItem({ id, side, index, count, grow }: { id: PanelId; side: DockSid
         }}
         className={cn(
           'pointer-events-auto absolute -top-[5px] left-1/2 z-20 flex h-3 w-11 -translate-x-1/2 cursor-grab items-center justify-center rounded-full bg-panel text-subtle shadow-[0_0_0_1px_var(--line)] transition-opacity duration-150 hover:text-fg active:cursor-grabbing',
-          menu ? 'opacity-100' : 'opacity-0 focus-visible:opacity-100 group-hover/dock:opacity-100',
+          menu ? 'opacity-100' : 'opacity-60 focus-visible:opacity-100 group-hover/dock:opacity-100',
         )}
       >
         <GripHorizontal className="size-3" />
@@ -178,6 +202,7 @@ export function DockColumn({ side }: { side: DockSide }) {
   const aiOpen = useUi((s) => s.aiOpen);
   const width = useUi((s) => (side === 'left' ? s.leftWidth : s.rightWidth));
   const drag = useDockDrag();
+  const t = useT();
   const hiddenByAi = side === 'right' && aiOpen;
   const shown = open && !hiddenByAi && ids.length > 0;
   const dropping = !!drag.id && drag.target?.side === side;
@@ -215,7 +240,7 @@ export function DockColumn({ side }: { side: DockSide }) {
             dropping ? 'border-accent bg-accent/10 text-accent' : 'border-line text-subtle',
           )}
         >
-          Drop here
+          {t('chrome.dock.dropHere')}
         </div>
       )}
       {shown && (
@@ -223,7 +248,7 @@ export function DockColumn({ side }: { side: DockSide }) {
           edge={side === 'left' ? 'right' : 'left'}
           width={width}
           defaultWidth={side === 'left' ? PANEL_WIDTH.left : PANEL_WIDTH.right}
-          label={`Resize ${side} panels`}
+          label={side === 'left' ? t('chrome.dock.resizeLeft') : t('chrome.dock.resizeRight')}
           onChange={(w) => useUi.getState().set(side === 'left' ? { leftWidth: w } : { rightWidth: w })}
         />
       )}
@@ -240,7 +265,7 @@ export function DockDragGhost(): ReactNode {
       className="pointer-events-none fixed z-[200] rounded-lg bg-accent px-2.5 py-1 text-[12px] font-medium text-accent-fg shadow-pop"
       style={{ left: pointer.x + 14, top: pointer.y + 10 }}
     >
-      {PANEL_NAMES[id]}
+      {panelName(id)}
     </div>
   );
 }

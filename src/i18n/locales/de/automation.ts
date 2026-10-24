@@ -1,0 +1,156 @@
+import type en from '../../en/automation';
+import type { Translation } from '../../types';
+
+export default {
+  // formUi (key/value editor)
+  'automation.kv.keyPlaceholder': 'Schlüssel',
+  'automation.kv.valuePlaceholder': 'Wert',
+  'automation.kv.remove': 'Eigenschaft entfernen',
+  'automation.kv.add': 'Eigenschaft hinzufügen',
+
+  // ConfigurationBody
+  'automation.config.title': 'Konfiguration',
+  'automation.config.subtitle': 'App-weite Einstellungen als JSON: Standardstile und -schrift, Farbvorgaben, Formbibliotheken, Raster und automatisches Speichern.',
+  'automation.config.insertExample': 'Beispiel einfügen',
+  'automation.config.keys': 'Schlüssel: defaultVertexStyle, defaultEdgeStyle, defaultFont, customPresetColors, defaultLibraries, libraries, gridSize, autosave.',
+  'automation.config.applied': 'Konfiguration übernommen',
+  'automation.config.invalidJson': 'Ungültiges JSON: {error}',
+  'automation.config.notObject': 'Die Konfiguration muss ein JSON-Objekt sein.',
+  'automation.config.unknownKey': 'Unbekannter Schlüssel „{key}“.',
+  'automation.config.styleNotObject': '„{key}“ muss ein Objekt mit Stileigenschaften sein.',
+  'automation.config.notStyleProperty': '„{key}“ ist keine Stileigenschaft.',
+  'automation.config.stylePrimitive': '„{key}“ muss ein String, eine Zahl oder ein Boolean sein.',
+  'automation.config.styleType': '„{key}“ muss vom Typ {type} sein.',
+  'automation.config.defaultFont': '„defaultFont“ muss einer der folgenden Werte sein: {fonts}.',
+  'automation.config.customPresetColors': '„customPresetColors“ muss eine Liste von Hex-Farben wie „#0ea5e9“ sein.',
+  'automation.config.defaultLibraries': '„defaultLibraries“ muss ein String wie „general;uml“ sein.',
+  'automation.config.libraries': '„libraries“ muss eine Liste von http(s)-URLs sein.',
+  'automation.config.gridSize': '„gridSize“ muss eine Zahl zwischen 1 und 200 sein.',
+  'automation.config.autosave': '„autosave“ muss true oder false sein.',
+  'automation.config.librarySelectionNote': 'Die Auswahl der Formbibliotheken gilt ab dem nächsten Öffnen des Formenbereichs.',
+  'automation.config.librariesLoaded': '{count, plural, one {# benutzerdefinierte Bibliothek} other {# benutzerdefinierte Bibliotheken}} geladen.',
+  'automation.librariesFailed': '{count, plural, one {# Bibliothek konnte} other {# Bibliotheken konnten}} nicht geladen werden (Netzwerk oder CORS).',
+  'automation.urlParams.librariesLoaded': '{count, plural, one {# benutzerdefinierte Bibliothek} other {# benutzerdefinierte Bibliotheken}} geladen',
+
+  // LayoutJsonBody
+  'automation.layoutJson.title': 'Layout aus JSON anwenden',
+  'automation.layoutJson.subtitle':
+    'mxGraph-Layout-JSON: mxHierarchicalLayout, mxCompactTreeLayout, mxRadialTreeLayout, mxFastOrganicLayout, mxCircleLayout, mxOrgChartLayout, mxParallelEdgeLayout. Gilt für die Auswahl oder die ganze Seite.',
+  'automation.layoutJson.example': 'Beispiel',
+  'automation.layoutJson.apply': 'Layout anwenden',
+  'automation.layoutJson.nothing': 'Nichts anzuordnen',
+
+  // PrintBody
+  'automation.print.title': 'Drucken',
+  'automation.print.subtitle': 'Öffnet den Druckdialog des Systems mit diesen Einstellungen.',
+  'automation.print.all': 'Alle ({count})',
+  'automation.print.current': 'Aktuelle',
+  'automation.print.range': 'Bereich',
+  'automation.print.fromTo': 'Von {from} bis {to}',
+  'automation.print.scaling': 'Skalierung',
+  'automation.print.fitOne': 'Auf 1 Blatt anpassen',
+  'automation.print.fitSheets': 'An Blätter anpassen',
+  'automation.print.scale': 'Skalieren',
+  'automation.print.sheets': '{cols} breit × {rows} hoch',
+  'automation.print.scaleHint': 'Mit {percent} drucken – größere Seiten werden auf mehrere Blätter verteilt.',
+  'automation.print.paper': 'Papier',
+  'automation.print.orientation': 'Ausrichtung',
+  'automation.print.portrait': 'Hochformat',
+  'automation.print.landscape': 'Querformat',
+  'automation.print.background': 'Seitenhintergrund einschließen',
+  'automation.print.print': 'Drucken…',
+
+  // EmbedBody
+  'automation.embed.title': 'Einbetten',
+  'automation.embed.subtitle': 'Snippets für Webseiten, Wikis und Markdown. Das Diagramm steckt im Link – es wird nichts hochgeladen.',
+  'automation.embed.allPages': 'Alle Seiten',
+  'automation.embed.currentPage': 'Aktuelle Seite',
+  'automation.embed.toolbar': 'Werkzeugleiste',
+  'automation.embed.iframe': 'Interaktiv (iframe)',
+  'automation.embed.longLink': 'Langer Link ({count}k Zeichen)',
+  'automation.embed.viewerLink': 'Viewer-Link',
+  'automation.embed.markdownLink': 'Markdown-Link',
+  'automation.embed.imageHtml': 'Bild (HTML, aktuelle Seite)',
+  'automation.embed.imageMarkdown': 'Bild (Markdown, aktuelle Seite)',
+  'automation.embed.dataUriSize': '{size}-KB-Daten-URI',
+  'automation.embed.copy': '{label} kopieren',
+
+  // MermaidBody / mermaidRegen.ts
+  'automation.mermaid.title': 'Mermaid bearbeiten',
+  'automation.mermaid.subtitle': 'Quelltext ändern und anwenden: Das Diagramm wird an Ort und Stelle neu erzeugt (ein Rückgängig-Schritt).',
+  'automation.mermaid.noShapes': 'Der Mermaid-Quelltext hat keine Formen erzeugt.',
+  'automation.mermaid.gone': 'Dieses Mermaid-Diagramm ist nicht mehr auf der Seite.',
+
+  // ReplayBody
+  'automation.replay.title': 'Wiedergabe',
+  'automation.replay.subtitle': 'Durchläuft den Versionsverlauf dieses Dokuments (aktuelle Seite), älteste Version zuerst.',
+  'automation.replay.loading': 'Versionen werden geladen…',
+  'automation.replay.emptyPage': 'Leere Seite zu diesem Zeitpunkt',
+  'automation.replay.first': 'Erste',
+  'automation.replay.last': 'Letzte',
+  'automation.replay.play': 'Abspielen',
+  'automation.replay.pause': 'Pausieren',
+  'automation.replay.revision': 'Version',
+  'automation.replay.now': 'Jetzt',
+  'automation.replay.noRevisions': 'Noch keine Versionen: Sie werden bei jedem Speichern und alle paar Minuten ungespeicherter Arbeit aufgezeichnet.',
+
+  // DataBody (Edit Data for layers, pages, the document)
+  'automation.data.layerTitle': 'Ebenendaten bearbeiten',
+  'automation.data.pageTitle': 'Seitendaten bearbeiten',
+  'automation.data.documentTitle': 'Dokumentdaten bearbeiten',
+  'automation.data.id': 'ID {id}',
+  'automation.data.documentSubtitle': 'Werte, die jede Seite als %placeholders% nutzen kann.',
+  'automation.data.properties': 'Eigenschaften',
+  'automation.data.propertiesHint': 'Beschriftungen mit aktivierten Platzhaltern zeigen in diesem Bereich %key%-Werte an',
+
+  // PropertiesBody (File → Properties)
+  'automation.props.title': 'Dateieigenschaften',
+  'automation.props.author': 'Autor',
+  'automation.props.authorPlaceholder': 'Wer dieses Diagramm erstellt hat',
+  'automation.props.descriptionPlaceholder': 'Worum es in diesem Diagramm geht',
+  'automation.props.created': 'Erstellt',
+  'automation.props.lastSaved': 'Zuletzt gespeichert',
+  'automation.props.labels': 'Beschriftungen',
+  'automation.props.images': 'Bilder & Symbole',
+  'automation.props.comments': 'Kommentare',
+  'automation.props.docData': 'Dokumentdaten',
+  'automation.props.note': 'Titel, Autor und Beschreibung werden in der .opendraw-Datei gespeichert und können in Beschriftungen als %title%, %author% und %description% verwendet werden.',
+
+  // TemplateTools (My templates, Save as template)
+  'automation.templates.imported': 'Vorlage „{name}“ importiert',
+  'automation.templates.importFailed': 'Vorlage konnte nicht importiert werden: {error}',
+  'automation.templates.importFile': 'Vorlagendatei importieren',
+  'automation.templates.importTooltip': '.{ext}- oder .opendraw-Datei importieren',
+  'automation.templates.fileType': 'OpenDraw-Vorlage',
+  'automation.templates.deleteTitle': '„{name}“ löschen?',
+  'automation.templates.deleteMessage': 'Die Vorlage wird von diesem Gerät entfernt. Daraus erstellte Diagramme sind nicht betroffen.',
+  'automation.templates.nothingToSave': 'Es gibt nichts, was als Vorlage gespeichert werden kann.',
+  'automation.templates.saved': '„{name}“ unter „Meine Vorlagen“ gespeichert',
+  'automation.templates.saveFailed': 'Vorlage konnte nicht gespeichert werden: {error}',
+  'automation.templates.saveTitle': 'Als Vorlage speichern',
+  'automation.templates.saveSubtitle': 'Erscheint auf diesem Gerät unter „Meine Vorlagen“ in Datei → Neu aus Vorlage…',
+  'automation.templates.optional': 'Optional',
+  'automation.templates.contents': 'Inhalt',
+  'automation.templates.wholeDiagram': '{count, plural, one {Ganzes Diagramm} other {Ganzes Diagramm (# Seiten)}}',
+  'automation.templates.thisPage': 'Diese Seite',
+  'automation.templates.save': 'Vorlage speichern',
+
+  // actions.tsx
+  'automation.parallelEdgesNone': 'Keine Verbinder verbinden dieselben zwei Formen.',
+  'automation.savedToBrowser': '„{name}“ im Browser gespeichert',
+
+  // plugins.ts (Explore, Anonymize, Dictate)
+  'automation.explore.selectFirst': 'Wählen Sie ein Element als Ausgangspunkt aus.',
+  'automation.explore.hint': 'Erkunden: Nachbarelement auswählen, um weiterzugehen, Esc zum Beenden.',
+  'automation.anonymize.title': 'Diese Seite anonymisieren?',
+  'automation.anonymize.message':
+    'Alle Beschriftungen, Namen, QuickInfos und Datenwerte werden zu x/X-Platzhaltern und Kommentare werden entfernt, sodass das Diagramm ohne seinen Inhalt geteilt werden kann. Dies lässt sich rückgängig machen.',
+  'automation.anonymize.confirm': 'Anonymisieren',
+  'automation.anonymize.done': 'Seite anonymisiert',
+  'automation.dictate.unavailable': 'Spracherkennung ist in diesem Browser nicht verfügbar.',
+  'automation.dictate.selectFirst': 'Wählen Sie eine Form oder einen Verbinder aus, um die Beschriftung zu diktieren.',
+  'automation.dictate.said': '„{text}“',
+  'automation.dictate.denied': 'Der Zugriff auf das Mikrofon wurde verweigert.',
+  'automation.dictate.failed': 'Diktieren fehlgeschlagen ({error}).',
+  'automation.dictate.listening': 'Hört zu… sprechen Sie die Beschriftung',
+} satisfies Translation<typeof en>;

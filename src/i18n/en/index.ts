@@ -22,6 +22,7 @@ import viewer from './viewer';
 import web from './web';
 import desktop from './desktop';
 import app from './app';
+import svgImport from './svgImport';
 
 /** Namespace → its English strings (the coverage test walks this). */
 export const EN_NAMESPACES = {
@@ -43,6 +44,7 @@ export const EN_NAMESPACES = {
   web,
   desktop,
   app,
+  svgImport,
 } as const;
 
 export const EN = {
@@ -64,6 +66,7 @@ export const EN = {
   ...web,
   ...desktop,
   ...app,
+  ...svgImport,
 };
 
 export type MessageKey = keyof typeof EN;

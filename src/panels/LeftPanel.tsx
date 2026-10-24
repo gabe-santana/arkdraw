@@ -32,7 +32,7 @@ export function LeftPanel() {
   const t = useT();
   return (
     <aside aria-label={t('panels.left.aria')} className="animate-slide-up pointer-events-auto flex h-full w-full flex-col overflow-hidden rounded-2xl bg-panel shadow-panel">
-      <div className="p-2 pb-1.5">
+      <div data-dock-handle className="p-2 pb-1.5">
         <Segmented<LeftTab>
           value={tab}
           onChange={(leftTab) => set({ leftTab })}

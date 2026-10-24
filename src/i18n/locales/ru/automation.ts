@@ -1,0 +1,156 @@
+import type en from '../../en/automation';
+import type { Translation } from '../../types';
+
+export default {
+  // formUi (key/value editor)
+  'automation.kv.keyPlaceholder': 'ключ',
+  'automation.kv.valuePlaceholder': 'значение',
+  'automation.kv.remove': 'Удалить свойство',
+  'automation.kv.add': 'Добавить свойство',
+
+  // ConfigurationBody
+  'automation.config.title': 'Конфигурация',
+  'automation.config.subtitle': 'Настройки приложения в формате JSON: стили и шрифт по умолчанию, предустановленные цвета, библиотеки фигур, сетка и автосохранение.',
+  'automation.config.insertExample': 'Вставить пример',
+  'automation.config.keys': 'Ключи: defaultVertexStyle, defaultEdgeStyle, defaultFont, customPresetColors, defaultLibraries, libraries, gridSize, autosave.',
+  'automation.config.applied': 'Конфигурация применена',
+  'automation.config.invalidJson': 'Некорректный JSON: {error}',
+  'automation.config.notObject': 'Конфигурация должна быть объектом JSON.',
+  'automation.config.unknownKey': 'Неизвестный ключ "{key}".',
+  'automation.config.styleNotObject': '"{key}" должен быть объектом со свойствами стиля.',
+  'automation.config.notStyleProperty': '"{key}" не является свойством стиля.',
+  'automation.config.stylePrimitive': '"{key}" должен быть строкой, числом или логическим значением.',
+  'automation.config.styleType': '"{key}" должен иметь тип {type}.',
+  'automation.config.defaultFont': '"defaultFont" должен быть одним из: {fonts}.',
+  'automation.config.customPresetColors': '"customPresetColors" должен быть списком цветов в hex, например "#0ea5e9".',
+  'automation.config.defaultLibraries': '"defaultLibraries" должен быть строкой вида "general;uml".',
+  'automation.config.libraries': '"libraries" должен быть списком URL http(s).',
+  'automation.config.gridSize': '"gridSize" должен быть числом от 1 до 200.',
+  'automation.config.autosave': '"autosave" должен быть true или false.',
+  'automation.config.librarySelectionNote': 'Выбор библиотек фигур применится при следующем открытии панели «Фигуры».',
+  'automation.config.librariesLoaded': '{count, plural, one {Загружена # пользовательская библиотека} few {Загружены # пользовательские библиотеки} many {Загружено # пользовательских библиотек} other {Загружено # пользовательской библиотеки}}.',
+  'automation.librariesFailed': 'Не удалось загрузить {count, plural, one {# библиотеку} few {# библиотеки} many {# библиотек} other {# библиотеки}} (ошибка сети или CORS).',
+  'automation.urlParams.librariesLoaded': '{count, plural, one {Загружена # пользовательская библиотека} few {Загружены # пользовательские библиотеки} many {Загружено # пользовательских библиотек} other {Загружено # пользовательской библиотеки}}',
+
+  // LayoutJsonBody
+  'automation.layoutJson.title': 'Применить компоновку из JSON',
+  'automation.layoutJson.subtitle':
+    'JSON компоновки mxGraph: mxHierarchicalLayout, mxCompactTreeLayout, mxRadialTreeLayout, mxFastOrganicLayout, mxCircleLayout, mxOrgChartLayout, mxParallelEdgeLayout. Применяется к выделению или ко всей странице.',
+  'automation.layoutJson.example': 'Пример',
+  'automation.layoutJson.apply': 'Применить компоновку',
+  'automation.layoutJson.nothing': 'Нечего упорядочивать',
+
+  // PrintBody
+  'automation.print.title': 'Печать',
+  'automation.print.subtitle': 'Открывает системный диалог печати с этими параметрами.',
+  'automation.print.all': 'Все ({count})',
+  'automation.print.current': 'Текущая',
+  'automation.print.range': 'Диапазон',
+  'automation.print.fromTo': 'С {from} по {to}',
+  'automation.print.scaling': 'Масштабирование',
+  'automation.print.fitOne': 'Вписать в 1 лист',
+  'automation.print.fitSheets': 'Вписать в листы',
+  'automation.print.scale': 'Масштаб',
+  'automation.print.sheets': '{cols} в ширину × {rows} в высоту',
+  'automation.print.scaleHint': 'Печать в масштабе {percent} — большие страницы разбиваются на несколько листов.',
+  'automation.print.paper': 'Бумага',
+  'automation.print.orientation': 'Ориентация',
+  'automation.print.portrait': 'Книжная',
+  'automation.print.landscape': 'Альбомная',
+  'automation.print.background': 'Печатать фон страницы',
+  'automation.print.print': 'Печать…',
+
+  // EmbedBody
+  'automation.embed.title': 'Встроить',
+  'automation.embed.subtitle': 'Фрагменты кода для веб-страниц, вики и Markdown. Диаграмма хранится в самой ссылке — ничего не загружается на сервер.',
+  'automation.embed.allPages': 'Все страницы',
+  'automation.embed.currentPage': 'Текущая страница',
+  'automation.embed.toolbar': 'Панель инструментов',
+  'automation.embed.iframe': 'Интерактивно (iframe)',
+  'automation.embed.longLink': 'Длинная ссылка ({count} тыс. символов)',
+  'automation.embed.viewerLink': 'Ссылка на просмотр',
+  'automation.embed.markdownLink': 'Ссылка Markdown',
+  'automation.embed.imageHtml': 'Изображение (HTML, текущая страница)',
+  'automation.embed.imageMarkdown': 'Изображение (Markdown, текущая страница)',
+  'automation.embed.dataUriSize': 'Data URI {size} КБ',
+  'automation.embed.copy': 'Копировать: {label}',
+
+  // MermaidBody / mermaidRegen.ts
+  'automation.mermaid.title': 'Изменить Mermaid',
+  'automation.mermaid.subtitle': 'Измените исходный код и примените: диаграмма будет перестроена на месте (одним шагом отмены).',
+  'automation.mermaid.noShapes': 'Исходный код Mermaid не создал ни одной фигуры.',
+  'automation.mermaid.gone': 'Этой диаграммы Mermaid больше нет на странице.',
+
+  // ReplayBody
+  'automation.replay.title': 'Воспроизведение',
+  'automation.replay.subtitle': 'Пошаговый просмотр истории версий документа (текущая страница), от самых старых.',
+  'automation.replay.loading': 'Загрузка версий…',
+  'automation.replay.emptyPage': 'На этот момент страница пуста',
+  'automation.replay.first': 'Первая',
+  'automation.replay.last': 'Последняя',
+  'automation.replay.play': 'Воспроизвести',
+  'automation.replay.pause': 'Пауза',
+  'automation.replay.revision': 'Версия',
+  'automation.replay.now': 'Сейчас',
+  'automation.replay.noRevisions': 'Версий пока нет: они записываются при каждом сохранении и каждые несколько минут несохранённой работы.',
+
+  // DataBody (Edit Data for layers, pages, the document)
+  'automation.data.layerTitle': 'Изменить данные слоя',
+  'automation.data.pageTitle': 'Изменить данные страницы',
+  'automation.data.documentTitle': 'Изменить данные документа',
+  'automation.data.id': 'ID {id}',
+  'automation.data.documentSubtitle': 'Значения, которые любая страница может использовать как %placeholders%.',
+  'automation.data.properties': 'Свойства',
+  'automation.data.propertiesHint': 'Подписи с включёнными заполнителями в этой области показывают значения %key%',
+
+  // PropertiesBody (File → Properties)
+  'automation.props.title': 'Свойства файла',
+  'automation.props.author': 'Автор',
+  'automation.props.authorPlaceholder': 'Кто создал эту диаграмму',
+  'automation.props.descriptionPlaceholder': 'О чём эта диаграмма',
+  'automation.props.created': 'Создан',
+  'automation.props.lastSaved': 'Последнее сохранение',
+  'automation.props.labels': 'Подписи',
+  'automation.props.images': 'Изображения и значки',
+  'automation.props.comments': 'Комментарии',
+  'automation.props.docData': 'Данные документа',
+  'automation.props.note': 'Заголовок, автор и описание сохраняются в файле .opendraw и могут использоваться в подписях как %title%, %author% и %description%.',
+
+  // TemplateTools (My templates, Save as template)
+  'automation.templates.imported': 'Импортирован шаблон «{name}»',
+  'automation.templates.importFailed': 'Не удалось импортировать шаблон: {error}',
+  'automation.templates.importFile': 'Импортировать файл шаблона',
+  'automation.templates.importTooltip': 'Импортировать файл .{ext} или .opendraw',
+  'automation.templates.fileType': 'Шаблон OpenDraw',
+  'automation.templates.deleteTitle': 'Удалить «{name}»?',
+  'automation.templates.deleteMessage': 'Шаблон будет удалён с этого устройства. Созданные по нему диаграммы не изменятся.',
+  'automation.templates.nothingToSave': 'Нечего сохранить как шаблон.',
+  'automation.templates.saved': 'Шаблон «{name}» сохранён в «Мои шаблоны»',
+  'automation.templates.saveFailed': 'Не удалось сохранить шаблон: {error}',
+  'automation.templates.saveTitle': 'Сохранить как шаблон',
+  'automation.templates.saveSubtitle': 'Появится в разделе «Мои шаблоны» в меню Файл → Создать по шаблону… на этом устройстве.',
+  'automation.templates.optional': 'Необязательно',
+  'automation.templates.contents': 'Содержимое',
+  'automation.templates.wholeDiagram': '{count, plural, =1 {Вся диаграмма} one {Вся диаграмма (# страница)} few {Вся диаграмма (# страницы)} many {Вся диаграмма (# страниц)} other {Вся диаграмма (# страницы)}}',
+  'automation.templates.thisPage': 'Эта страница',
+  'automation.templates.save': 'Сохранить шаблон',
+
+  // actions.tsx
+  'automation.parallelEdgesNone': 'Нет соединителей между одной и той же парой фигур.',
+  'automation.savedToBrowser': '«{name}» сохранено в браузере',
+
+  // plugins.ts (Explore, Anonymize, Dictate)
+  'automation.explore.selectFirst': 'Выделите элемент, с которого начать обзор.',
+  'automation.explore.hint': 'Обзор: выделите соседний элемент, чтобы перейти к нему; Esc — выход.',
+  'automation.anonymize.title': 'Анонимизировать эту страницу?',
+  'automation.anonymize.message':
+    'Все подписи, имена, подсказки и значения данных заменятся заполнителями x/X, а комментарии будут удалены, чтобы диаграммой можно было поделиться без её содержимого. Это действие можно отменить.',
+  'automation.anonymize.confirm': 'Анонимизировать',
+  'automation.anonymize.done': 'Страница анонимизирована',
+  'automation.dictate.unavailable': 'Распознавание речи недоступно в этом браузере.',
+  'automation.dictate.selectFirst': 'Выделите фигуру или соединитель, чтобы надиктовать подпись.',
+  'automation.dictate.said': '«{text}»',
+  'automation.dictate.denied': 'Доступ к микрофону запрещён.',
+  'automation.dictate.failed': 'Ошибка диктовки ({error}).',
+  'automation.dictate.listening': 'Слушаю… произнесите подпись',
+} satisfies Translation<typeof en>;

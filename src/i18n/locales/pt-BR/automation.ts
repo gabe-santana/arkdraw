@@ -1,0 +1,156 @@
+import type en from '../../en/automation';
+import type { Translation } from '../../types';
+
+export default {
+  // formUi (key/value editor)
+  'automation.kv.keyPlaceholder': 'chave',
+  'automation.kv.valuePlaceholder': 'valor',
+  'automation.kv.remove': 'Remover propriedade',
+  'automation.kv.add': 'Adicionar propriedade',
+
+  // ConfigurationBody
+  'automation.config.title': 'Configuração',
+  'automation.config.subtitle': 'Configurações gerais do aplicativo em JSON: estilos e fonte padrão, cores predefinidas, bibliotecas de formas, grade e salvamento automático.',
+  'automation.config.insertExample': 'Inserir exemplo',
+  'automation.config.keys': 'Chaves: defaultVertexStyle, defaultEdgeStyle, defaultFont, customPresetColors, defaultLibraries, libraries, gridSize, autosave.',
+  'automation.config.applied': 'Configuração aplicada',
+  'automation.config.invalidJson': 'JSON inválido: {error}',
+  'automation.config.notObject': 'A configuração deve ser um objeto JSON.',
+  'automation.config.unknownKey': 'Chave desconhecida "{key}".',
+  'automation.config.styleNotObject': '"{key}" deve ser um objeto de propriedades de estilo.',
+  'automation.config.notStyleProperty': '"{key}" não é uma propriedade de estilo.',
+  'automation.config.stylePrimitive': '"{key}" deve ser uma string, um número ou um booleano.',
+  'automation.config.styleType': '"{key}" deve ser do tipo {type}.',
+  'automation.config.defaultFont': '"defaultFont" deve ser uma destas: {fonts}.',
+  'automation.config.customPresetColors': '"customPresetColors" deve ser uma lista de cores hex, como "#0ea5e9".',
+  'automation.config.defaultLibraries': '"defaultLibraries" deve ser uma string como "general;uml".',
+  'automation.config.libraries': '"libraries" deve ser uma lista de URLs http(s).',
+  'automation.config.gridSize': '"gridSize" deve ser um número entre 1 e 200.',
+  'automation.config.autosave': '"autosave" deve ser true ou false.',
+  'automation.config.librarySelectionNote': 'A seleção de bibliotecas de formas será aplicada na próxima vez que o painel Formas for aberto.',
+  'automation.config.librariesLoaded': '{count, plural, =0 {Nenhuma biblioteca personalizada carregada.} one {# biblioteca personalizada carregada.} other {# bibliotecas personalizadas carregadas.}}',
+  'automation.librariesFailed': '{count, plural, =0 {Nenhuma biblioteca deixou de carregar.} one {Não foi possível carregar # biblioteca (rede ou CORS).} other {Não foi possível carregar # bibliotecas (rede ou CORS).}}',
+  'automation.urlParams.librariesLoaded': '{count, plural, =0 {Nenhuma biblioteca personalizada carregada} one {# biblioteca personalizada carregada} other {# bibliotecas personalizadas carregadas}}',
+
+  // LayoutJsonBody
+  'automation.layoutJson.title': 'Aplicar layout a partir de JSON',
+  'automation.layoutJson.subtitle':
+    'JSON de layout do mxGraph: mxHierarchicalLayout, mxCompactTreeLayout, mxRadialTreeLayout, mxFastOrganicLayout, mxCircleLayout, mxOrgChartLayout, mxParallelEdgeLayout. Aplica-se à seleção ou à página inteira.',
+  'automation.layoutJson.example': 'Exemplo',
+  'automation.layoutJson.apply': 'Aplicar layout',
+  'automation.layoutJson.nothing': 'Nada para organizar',
+
+  // PrintBody
+  'automation.print.title': 'Imprimir',
+  'automation.print.subtitle': 'Abre a caixa de diálogo de impressão do sistema com estas configurações.',
+  'automation.print.all': 'Todas ({count})',
+  'automation.print.current': 'Atual',
+  'automation.print.range': 'Intervalo',
+  'automation.print.fromTo': 'De {from} até {to}',
+  'automation.print.scaling': 'Dimensionamento',
+  'automation.print.fitOne': 'Ajustar a 1 folha',
+  'automation.print.fitSheets': 'Ajustar a folhas',
+  'automation.print.scale': 'Escala',
+  'automation.print.sheets': '{cols} de largura × {rows} de altura',
+  'automation.print.scaleHint': 'Imprimir a {percent} — páginas maiores são divididas em várias folhas.',
+  'automation.print.paper': 'Papel',
+  'automation.print.orientation': 'Orientação',
+  'automation.print.portrait': 'Retrato',
+  'automation.print.landscape': 'Paisagem',
+  'automation.print.background': 'Incluir plano de fundo da página',
+  'automation.print.print': 'Imprimir…',
+
+  // EmbedBody
+  'automation.embed.title': 'Incorporar',
+  'automation.embed.subtitle': 'Trechos de código para páginas web, wikis e Markdown. O diagrama vai dentro do link — nada é enviado.',
+  'automation.embed.allPages': 'Todas as páginas',
+  'automation.embed.currentPage': 'Página atual',
+  'automation.embed.toolbar': 'Barra de ferramentas',
+  'automation.embed.iframe': 'Interativo (iframe)',
+  'automation.embed.longLink': 'Link longo ({count} mil caracteres)',
+  'automation.embed.viewerLink': 'Link do visualizador',
+  'automation.embed.markdownLink': 'Link Markdown',
+  'automation.embed.imageHtml': 'Imagem (HTML, página atual)',
+  'automation.embed.imageMarkdown': 'Imagem (Markdown, página atual)',
+  'automation.embed.dataUriSize': 'Data URI de {size} KB',
+  'automation.embed.copy': 'Copiar {label}',
+
+  // MermaidBody / mermaidRegen.ts
+  'automation.mermaid.title': 'Editar Mermaid',
+  'automation.mermaid.subtitle': 'Altere o código-fonte e aplique: o diagrama é regenerado no lugar (uma única etapa de desfazer).',
+  'automation.mermaid.noShapes': 'O código Mermaid não gerou nenhuma forma.',
+  'automation.mermaid.gone': 'Este diagrama Mermaid não está mais na página.',
+
+  // ReplayBody
+  'automation.replay.title': 'Reproduzir histórico',
+  'automation.replay.subtitle': 'Percorre o histórico de revisões deste documento (página atual), da mais antiga para a mais recente.',
+  'automation.replay.loading': 'Carregando revisões…',
+  'automation.replay.emptyPage': 'Página vazia neste ponto',
+  'automation.replay.first': 'Primeira',
+  'automation.replay.last': 'Última',
+  'automation.replay.play': 'Reproduzir',
+  'automation.replay.pause': 'Pausar',
+  'automation.replay.revision': 'Revisão',
+  'automation.replay.now': 'Agora',
+  'automation.replay.noRevisions': 'Nenhuma revisão ainda: elas são registradas a cada salvamento e a cada poucos minutos de trabalho não salvo.',
+
+  // DataBody (Edit Data for layers, pages, the document)
+  'automation.data.layerTitle': 'Editar dados da camada',
+  'automation.data.pageTitle': 'Editar dados da página',
+  'automation.data.documentTitle': 'Editar dados do documento',
+  'automation.data.id': 'ID {id}',
+  'automation.data.documentSubtitle': 'Valores que todas as páginas podem usar como %placeholders%.',
+  'automation.data.properties': 'Propriedades',
+  'automation.data.propertiesHint': 'Rótulos com espaços reservados ativados, dentro deste escopo, mostram os valores de %key%',
+
+  // PropertiesBody (File → Properties)
+  'automation.props.title': 'Propriedades do arquivo',
+  'automation.props.author': 'Autor',
+  'automation.props.authorPlaceholder': 'Quem criou este diagrama',
+  'automation.props.descriptionPlaceholder': 'Do que se trata este diagrama',
+  'automation.props.created': 'Criado em',
+  'automation.props.lastSaved': 'Salvo pela última vez',
+  'automation.props.labels': 'Rótulos',
+  'automation.props.images': 'Imagens e ícones',
+  'automation.props.comments': 'Comentários',
+  'automation.props.docData': 'Dados do doc.',
+  'automation.props.note': 'Título, autor e descrição são salvos no arquivo .opendraw e podem ser usados em rótulos como %title%, %author% e %description%.',
+
+  // TemplateTools (My templates, Save as template)
+  'automation.templates.imported': 'Modelo “{name}” importado',
+  'automation.templates.importFailed': 'Não foi possível importar o modelo: {error}',
+  'automation.templates.importFile': 'Importar arquivo de modelo',
+  'automation.templates.importTooltip': 'Importar um arquivo .{ext} ou .opendraw',
+  'automation.templates.fileType': 'Modelo do OpenDraw',
+  'automation.templates.deleteTitle': 'Excluir “{name}”?',
+  'automation.templates.deleteMessage': 'O modelo será removido deste dispositivo. Os diagramas criados a partir dele não são afetados.',
+  'automation.templates.nothingToSave': 'Não há nada para salvar como modelo.',
+  'automation.templates.saved': '“{name}” salvo em Meus modelos',
+  'automation.templates.saveFailed': 'Não foi possível salvar o modelo: {error}',
+  'automation.templates.saveTitle': 'Salvar como modelo',
+  'automation.templates.saveSubtitle': 'Aparece em Meus modelos, em Arquivo → Novo a partir de modelo…, neste dispositivo.',
+  'automation.templates.optional': 'Opcional',
+  'automation.templates.contents': 'Conteúdo',
+  'automation.templates.wholeDiagram': '{count, plural, one {Diagrama inteiro} other {Diagrama inteiro (# páginas)}}',
+  'automation.templates.thisPage': 'Esta página',
+  'automation.templates.save': 'Salvar modelo',
+
+  // actions.tsx
+  'automation.parallelEdgesNone': 'Nenhum conector liga as mesmas duas formas.',
+  'automation.savedToBrowser': '“{name}” salvo no navegador',
+
+  // plugins.ts (Explore, Anonymize, Dictate)
+  'automation.explore.selectFirst': 'Selecione um elemento a partir do qual explorar.',
+  'automation.explore.hint': 'Explorar: selecione um vizinho para avançar, Esc para sair.',
+  'automation.anonymize.title': 'Anonimizar esta página?',
+  'automation.anonymize.message':
+    'Todos os rótulos, nomes, dicas e valores de dados viram espaços reservados x/X, e os comentários são removidos, para que o diagrama possa ser compartilhado sem o conteúdo. É possível desfazer.',
+  'automation.anonymize.confirm': 'Anonimizar',
+  'automation.anonymize.done': 'Página anonimizada',
+  'automation.dictate.unavailable': 'O reconhecimento de fala não está disponível neste navegador.',
+  'automation.dictate.selectFirst': 'Selecione uma forma ou conector para ditar o rótulo.',
+  'automation.dictate.said': '“{text}”',
+  'automation.dictate.denied': 'O acesso ao microfone foi negado.',
+  'automation.dictate.failed': 'Falha no ditado ({error}).',
+  'automation.dictate.listening': 'Ouvindo… diga o rótulo',
+} satisfies Translation<typeof en>;

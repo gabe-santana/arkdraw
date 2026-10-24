@@ -60,7 +60,7 @@ export function LayersPanel() {
           className="absolute inset-x-8 top-0 z-10 h-1.5 cursor-ns-resize rounded-full transition-colors hover:bg-accent/40"
         />
       )}
-      <button onClick={() => set({ layersOpen: !open })} aria-expanded={open} className="flex h-10 shrink-0 items-center gap-2 px-3 text-left text-fg">
+      <button data-dock-handle onClick={() => set({ layersOpen: !open })} aria-expanded={open} className="flex h-10 shrink-0 items-center gap-2 px-3 text-left text-fg">
         <Layers3 className="size-3.5 text-muted" />
         <span className="flex-1 text-[13px] font-semibold">{t('common.layers')}</span>
         <span className="text-[11px] tabular-nums text-subtle">{count}</span>

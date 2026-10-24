@@ -11,7 +11,7 @@
  * (AND); if nothing matches everything, partial matches are returned with a
  * lower score so the user still sees the closest results.
  */
-import { SPELLING, SYNONYM_GROUPS } from './synonyms';
+import { SPELLING, SYNONYM_GROUPS, TRANSLATED_TERMS } from './synonyms';
 
 export interface SearchField {
   text: string;
@@ -104,6 +104,14 @@ const synPenalty = (a: Phrase, b: Phrase) => Math.max(0.7, 0.9 - 0.015 * Math.ab
 /** Longest phrases first, so "load balancer" wins over "load". */
 PHRASES.sort((a, b) => b.tokens.length - a.tokens.length);
 
+/** Portuguese/Spanish words → the English phrase (and its synonym group, if any). Longest first. */
+const TRANSLATED = Object.entries(TRANSLATED_TERMS)
+  .map(([term, en]) => {
+    const english = tokenize(en).map(stem);
+    return { tokens: tokenize(term).map(stem), english, phrase: PHRASES.find((p) => p.tokens.join(' ') === english.join(' ')) };
+  })
+  .sort((a, b) => b.tokens.length - a.tokens.length);
+
 /** "vnet" abbreviates "virtual network": built from a prefix of each word, in order. */
 function isAbbreviation(abbr: string, words: string[]): boolean {
   if (words.length < 2 || abbr.length < 2) return false;
@@ -134,6 +142,20 @@ function querySlots(query: string): Slot[] {
   const slots: Slot[] = [];
   let i = 0;
   while (i < tokens.length) {
+    // A Portuguese/Spanish term: what was typed, its English meaning, and that meaning's synonyms.
+    const tr = TRANSLATED.find((p) => p.tokens.every((t, k) => tokens[i + k] === t));
+    if (tr) {
+      const group = tr.phrase ? PHRASES.filter((p) => p.group === tr.phrase!.group && p !== tr.phrase) : [];
+      slots.push({
+        alts: [
+          { tokens: tr.tokens, penalty: 1, direct: true },
+          { tokens: tr.english, penalty: 0.98, direct: true },
+          ...group.map((p) => ({ tokens: p.tokens, penalty: 0.9 * synPenalty(tr.phrase!, p) })),
+        ],
+      });
+      i += tr.tokens.length;
+      continue;
+    }
     // Recognise known phrases inside the query (exact words only).
     const phrase = PHRASES.find((p) => p.tokens.length > 0 && p.tokens.every((t, k) => tokens[i + k] === t));
     if (phrase) {

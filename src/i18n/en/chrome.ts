@@ -103,4 +103,21 @@ export default {
   'chrome.import.none': 'No text importers are installed.',
   'chrome.import.fromText': 'Import from text',
   'chrome.import.asNewPage': 'As new page',
+
+  // Dock — movable side panels
+  'chrome.dock.panel.shapes': 'Shapes',
+  'chrome.dock.panel.format': 'Format',
+  'chrome.dock.panel.layers': 'Layers',
+  'chrome.dock.moveLeft': 'Move to left side',
+  'chrome.dock.moveRight': 'Move to right side',
+  'chrome.dock.moveUp': 'Move up',
+  'chrome.dock.moveDown': 'Move down',
+  'chrome.dock.reset': 'Reset panel layout',
+  // {panel} is a panel name: Shapes, Format or Layers.
+  'chrome.dock.handleAria': '{panel} panel: drag to move, click for options',
+  'chrome.dock.handleTitle': 'Drag to move · click for options',
+  // Drop zone for a dragged panel.
+  'chrome.dock.dropHere': 'Drop here',
+  'chrome.dock.resizeLeft': 'Resize left panels',
+  'chrome.dock.resizeRight': 'Resize right panels',
 } as const;

@@ -91,7 +91,7 @@ function Header({ selected }: { selected: DiagramElement[] }) {
     sub = [s && t('common.shapeCount', { count: s }), c && t('panels.header.connectorCount', { count: c })].filter(Boolean).join(' · ');
   }
   return (
-    <div className="flex items-center gap-2 px-3 pb-2 pt-3">
+    <div data-dock-handle className="flex items-center gap-2 px-3 pb-2 pt-3">
       <div className="min-w-0 flex-1">
         <div className="truncate text-[13px] font-semibold text-fg">{title}</div>
         <div className="truncate text-[11.5px] text-subtle">{sub}</div>

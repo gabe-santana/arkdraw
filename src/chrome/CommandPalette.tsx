@@ -29,7 +29,7 @@ interface Item {
 
 let actionIndex: SearchIndex<(typeof ACTIONS)[number]> | null = null;
 let indexedVersion = '';
-const searchActions = (q: string) => {
+export const searchActions = (q: string) => {
   // Re-index when plugins/extensions register actions at runtime, or the language changes.
   const version = `${actionsVersion}:${currentLocale()}`;
   if (indexedVersion !== version) actionIndex = null;
