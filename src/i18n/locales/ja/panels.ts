@@ -440,11 +440,11 @@ export default {
 
   // LeftPanel
   'panels.left.aria': '図形パネル',
-  // Tab: cloud & vendor icon packs (AWS, Azure…).
-  'panels.left.cloud': 'クラウド',
-  'panels.left.searchShapes': '図形を検索',
+  // Heading over the cloud & vendor icon packs (AWS, Azure…), and their search results.
+  'panels.left.cloud': 'クラウドとブランドのアイコン',
+  'panels.left.searchShapes': '図形とアイコンを検索',
   'panels.left.bestMatches': '最も一致',
-  'panels.left.noShapes': '「{query}」に一致する図形はありません。',
+  'panels.left.noShapes': '「{query}」に一致するものはありません。',
   'panels.left.hintConnect': 'クリックで選択中の図形に接続して追加 (Alt+クリック: 接続なし) · 図形の上で Shift+ドロップして置き換え',
   'panels.left.hintInsert': 'キャンバスにドラッグ、またはクリックして挿入 · 図形の上で Shift+ドロップして置き換え',
   'panels.left.removeFavorite': 'お気に入りから削除',
@@ -452,9 +452,6 @@ export default {
   'panels.left.favorites': 'お気に入り',
   'panels.left.recent': '最近使用した項目',
   'panels.icons.none': 'アイコンパックがインストールされていません。',
-  // {count} is a rounded number such as "4,000".
-  'panels.icons.searchPlaceholder': '{count} 以上のアイコンを検索',
-  'panels.icons.noMatch': '「{query}」に一致するアイコンはありません。',
   // Hover-card fallback; {provider} is a vendor (AWS…), {category} an icon category.
   'panels.icons.description': 'アーキテクチャ図用の {provider} {category} アイコン。',
   // {name} is the icon pack (AWS…), {version} its version.

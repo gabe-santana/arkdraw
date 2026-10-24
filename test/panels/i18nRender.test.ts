@@ -61,7 +61,7 @@ describe('panels i18n', () => {
   });
 
   it('renders the Shapes and Layers panels and the connection-points dialog', async () => {
-    act(() => useUi.getState().set({ leftTab: 'shapes', layersOpen: true }));
+    act(() => useUi.getState().set({ layersOpen: true }));
     let text = await render(createElement(LeftPanel));
     expect(text).toContain('General');
     expect(text).toContain('New library');

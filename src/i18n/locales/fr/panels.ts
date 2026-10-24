@@ -345,10 +345,10 @@ export default {
 
   // LeftPanel
   'panels.left.aria': 'Panneau Formes',
-  'panels.left.cloud': 'Cloud',
-  'panels.left.searchShapes': 'Rechercher des formes',
+  'panels.left.cloud': 'Icônes cloud et marques',
+  'panels.left.searchShapes': 'Rechercher formes et icônes',
   'panels.left.bestMatches': 'Meilleurs résultats',
-  'panels.left.noShapes': 'Aucune forme ne correspond à « {query} ».',
+  'panels.left.noShapes': 'Aucun résultat pour « {query} ».',
   'panels.left.hintConnect': 'Cliquez pour l’ajouter connectée à la forme sélectionnée (Alt+clic : sans connexion) · Shift+déposer sur une forme pour la remplacer',
   'panels.left.hintInsert': 'Faites glisser sur le canevas ou cliquez pour insérer · Shift+déposer sur une forme pour la remplacer',
   'panels.left.removeFavorite': 'Retirer des favoris',
@@ -356,8 +356,6 @@ export default {
   'panels.left.favorites': 'Favoris',
   'panels.left.recent': 'Récentes',
   'panels.icons.none': 'Aucun pack d’icônes installé.',
-  'panels.icons.searchPlaceholder': 'Rechercher parmi plus de {count} icônes',
-  'panels.icons.noMatch': 'Aucune icône ne correspond à « {query} ».',
   'panels.icons.description': 'Icône {provider} {category} pour diagrammes d’architecture.',
   'panels.icons.footer': 'Icônes {name} · {version}. Marques déposées de leurs propriétaires respectifs ; fournies pour les diagrammes d’architecture.',
   'panels.libraryDrag.replace': 'Remplacer',

@@ -40,7 +40,6 @@ export default {
   'menu.units.m': 'Metri',
 
   // Title bar
-  'titlebar.generate': 'Genera',
   'titlebar.export': 'Esporta',
   'titlebar.undo': 'Annulla',
   'titlebar.redo': 'Ripeti',

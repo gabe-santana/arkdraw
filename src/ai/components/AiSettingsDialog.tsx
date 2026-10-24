@@ -5,14 +5,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  Check, ChevronDown, CircleAlert, CircleCheck, Eye, EyeOff, KeyRound, LoaderCircle, Lock, ShieldCheck, Trash,
+  Check, ChevronDown, CircleAlert, CircleCheck, ExternalLink, Eye, EyeOff, KeyRound, LoaderCircle, Lock, ShieldCheck, Trash,
   TriangleAlert, X, Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { t as tNow, useT } from '@/i18n';
-import { PROVIDERS, PROVIDER_META, type ModelInfo, type ProviderId } from '../providers';
-import { baseUrlFor, modelFor, providerConfig, updateAiSettings, useAiSettings, type CustomAuthStyle } from '../settings';
-import { deleteKey, isTauri, saveKey, testConnection } from '../transport';
+import { t as tNow, useT, type MessageKey } from '@/i18n';
+import { ADAPTERS, AiError, checkKeyPrefix, PROVIDERS, PROVIDER_META, type ModelInfo, type ProviderField, type ProviderId, type ProviderMeta } from '../providers';
+import { azureBase, normalizeBaseUrl } from '../providers/openai';
+import { authStyleFor, baseUrlFor, modelFor, paramFor, providerConfig, updateAiSettings, useAiSettings, type CustomAuthStyle } from '../settings';
+import { deleteKey, hasKey, isTauri, saveKey, testConnection } from '../transport';
 import { Btn, IconBtn, inputClass, modelHint, ProviderMark, providerKeyPlaceholder, providerName, providerTagline, stopKeys } from './ui';
 import { notifyKeysChanged, useHasKey } from './useAiReady';
 
@@ -21,9 +22,39 @@ export interface AiSettingsDialogProps {
   onClose: () => void;
 }
 
-type TestState = { kind: 'idle' } | { kind: 'testing' } | { kind: 'ok'; models: number } | { kind: 'error'; message: string };
+type TestState = { kind: 'idle' } | { kind: 'testing' } | { kind: 'ok'; models: number } | { kind: 'error'; message: string; detail?: string };
 
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : typeof e === 'string' ? e : tNow('ai.settings.somethingWrong'));
+
+/** Opens a provider's key page in the system browser. */
+async function openLink(url: string) {
+  if (isTauri()) {
+    const { openUrl } = await import('@tauri-apps/plugin-opener');
+    await openUrl(url);
+  } else {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+}
+
+const GROUPS: Array<{ id: ProviderMeta['group']; label: MessageKey }> = [
+  { id: 'popular', label: 'ai.settings.group.popular' },
+  { id: 'more', label: 'ai.settings.group.more' },
+  { id: 'cloud', label: 'ai.settings.group.cloud' },
+  { id: 'local', label: 'ai.settings.group.local' },
+];
+
+/** One-line setup help under the cloud platforms' fields. */
+const CLOUD_HELP: Partial<Record<ProviderId, MessageKey>> = {
+  azure: 'ai.provider.azure.help',
+  bedrock: 'ai.provider.bedrock.help',
+  vertex: 'ai.provider.vertex.help',
+  cloudflare: 'ai.provider.cloudflare.help',
+};
+
+const FIELD_LABEL: Record<ProviderField['id'], MessageKey> = {
+  region: 'ai.settings.field.region',
+  accountId: 'ai.settings.field.accountId',
+};
 
 export function AiSettingsDialog({ open, onClose }: AiSettingsDialogProps) {
   useEffect(() => {
@@ -67,9 +98,14 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const [keyError, setKeyError] = useState<string | null>(null);
   const [test, setTest] = useState<TestState>({ kind: 'idle' });
+  const [showMore, setShowMore] = useState(false);
   const [fetched, setFetched] = useState<Partial<Record<ProviderId, ModelInfo[]>>>({});
   const [urlDraft, setUrlDraft] = useState(baseUrlFor(settings) ?? '');
   const keyInput = useRef<HTMLInputElement>(null);
+  /** A key save in flight (from blur), so "Test connection" waits for it instead of saving twice. */
+  const saving = useRef<Promise<boolean> | null>(null);
+  /** Azure's endpoint was copied from the custom provider (its key can't be: keys are write-only). */
+  const [prefilled, setPrefilled] = useState(false);
 
   // Reset per-provider UI state when switching providers.
   useEffect(() => {
@@ -78,7 +114,20 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
     setReplacing(false);
     setKeyError(null);
     setTest({ kind: 'idle' });
-    setUrlDraft(baseUrlFor(settings, provider) ?? '');
+    setPrefilled(false);
+    let url = baseUrlFor(settings, provider) ?? '';
+    const custom = settings.baseUrls.custom;
+    if (provider === 'azure' && !url && custom) {
+      try {
+        azureBase(custom);
+        url = custom;
+        updateAiSettings({ baseUrls: { ...settings.baseUrls, azure: custom } });
+        setPrefilled(true);
+      } catch {
+        /* not an Azure resource */
+      }
+    }
+    setUrlDraft(url);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [provider]);
 
@@ -87,45 +136,65 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
   const showKeyInput = has === false || replacing || endpointChanged;
 
   const authorize = async (key: string) => {
-    await saveKey(provider, key, { baseUrl: meta.needsBaseUrl ? baseUrl : undefined, auth: provider === 'custom' ? settings.customAuth : undefined });
+    await saveKey(provider, key, { baseUrl: meta.needsBaseUrl ? baseUrl : undefined, auth: authStyleFor(settings, provider) });
     if (meta.needsBaseUrl && baseUrl) updateAiSettings({ authorizedBaseUrls: { ...settings.authorizedBaseUrls, [provider]: baseUrl } });
     notifyKeysChanged();
     refreshHas();
   };
 
+  /** Saves what's typed in the key field (on blur, Enter, Save or before a test). Resolves false when it failed. */
+  const saveDraft = (): Promise<boolean> => {
+    const k = keyDraft.trim();
+    if (!k) return saving.current ?? Promise.resolve(true);
+    if (saving.current) return saving.current;
+    if (meta.needsBaseUrl && !baseUrl) {
+      setKeyError(t('ai.settings.setEndpointFirst'));
+      return Promise.resolve(false);
+    }
+    setBusy(true);
+    setKeyError(null);
+    saving.current = authorize(k)
+      .then(() => {
+        setKeyDraft('');
+        setReplacing(false);
+        setShowKey(false);
+        return true;
+      })
+      .catch((e: unknown) => {
+        setKeyError(errMsg(e));
+        return false;
+      })
+      .finally(() => {
+        setBusy(false);
+        saving.current = null;
+      });
+    return saving.current;
+  };
+
   const runTest = async () => {
+    if (!(await saveDraft())) return;
+    // Never call the provider without a key: say so and point at the field.
+    if (meta.needsKey && !(await hasKey(provider).catch(() => false))) {
+      setTest({ kind: 'idle' });
+      setKeyError(t('ai.settings.saveKeyFirst'));
+      keyInput.current?.focus();
+      return;
+    }
     setTest({ kind: 'testing' });
     try {
       // Ollama / custom without a key: make sure the endpoint is authorized first.
-      if (meta.needsBaseUrl && !has && baseUrl && settings.authorizedBaseUrls[provider] !== baseUrl) await authorize('');
+      if (!meta.needsKey && meta.needsBaseUrl && !has && baseUrl && settings.authorizedBaseUrls[provider] !== baseUrl) await authorize('');
       const models = await testConnection(providerConfig(settings));
       setFetched((f) => ({ ...f, [provider]: models }));
       setTest({ kind: 'ok', models: models.length });
     } catch (e) {
-      setTest({ kind: 'error', message: errMsg(e) });
+      setTest({ kind: 'error', message: errMsg(e), detail: e instanceof AiError ? e.detail : undefined });
     }
   };
 
   const onSaveKey = async () => {
-    const k = keyDraft.trim();
-    if (!k) return;
-    if (meta.needsBaseUrl && !baseUrl) {
-      setKeyError(t('ai.settings.setEndpointFirst'));
-      return;
-    }
-    setBusy(true);
-    setKeyError(null);
-    try {
-      await authorize(k);
-      setKeyDraft('');
-      setReplacing(false);
-      setShowKey(false);
-      void runTest();
-    } catch (e) {
-      setKeyError(errMsg(e));
-    } finally {
-      setBusy(false);
-    }
+    if (!keyDraft.trim()) return;
+    if (await saveDraft()) void runTest();
   };
 
   const onDeleteKey = async () => {
@@ -150,8 +219,16 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
     try {
       if (v) new URL(v);
     } catch {
-      setKeyError(t('ai.settings.enterFullUrl', { example: 'https://openrouter.ai/api/v1' }));
+      setKeyError(t('ai.settings.enterFullUrl', { example: provider === 'azure' ? 'https://<resource>.services.ai.azure.com' : 'https://openrouter.ai/api/v1' }));
       return;
+    }
+    if (provider === 'azure' && v) {
+      try {
+        azureBase(v);
+      } catch (e) {
+        setKeyError(errMsg(e));
+        return;
+      }
     }
     setKeyError(null);
     setTest({ kind: 'idle' });
@@ -159,9 +236,14 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
   };
 
   const setAuthStyle = (auth: CustomAuthStyle) => {
-    if (auth === settings.customAuth) return;
-    updateAiSettings({ customAuth: auth });
+    if (auth === authStyleFor(settings, provider)) return;
+    updateAiSettings(provider === 'azure' ? { azureAuth: auth } : { customAuth: auth });
     if (has) setReplacing(true); // the auth style is stored with the key
+  };
+
+  const setParam = (field: string, value: string) => {
+    setTest({ kind: 'idle' });
+    updateAiSettings({ params: { ...settings.params, [provider]: { ...settings.params[provider], [field]: value } } });
   };
 
   const models = useMemo(() => {
@@ -171,7 +253,8 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
     return [...suggested, ...extra];
   }, [meta, fetched, provider, t]);
 
-  const canTest = (!meta.needsKey || !!has) && (!meta.needsBaseUrl || !!baseUrl) && !endpointChanged;
+  // Providers that can't list models are tested with a tiny chat, which needs a model.
+  const canTest = (!meta.needsBaseUrl || !!baseUrl) && (!endpointChanged || !!keyDraft.trim()) && (!!ADAPTERS[provider].buildListModels || !!modelFor(settings));
 
   return (
     <>
@@ -189,23 +272,42 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
       </header>
 
       <div className="scroll-thin flex-1 overflow-y-auto px-5 py-4">
-        {!isTauri() && (
-          <div className="mb-4 flex gap-2 rounded-lg bg-[#f5a524]/12 px-3 py-2 text-[12px] text-fg ring-1 ring-[#f5a524]/30">
-            <TriangleAlert className="mt-px size-3.5 shrink-0 text-[#d48806]" />
-            <span>{t('ai.settings.browserWarning')}</span>
-          </div>
-        )}
-
         <SectionLabel>{t('ai.settings.provider')}</SectionLabel>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {PROVIDERS.map((p) => (
-            <ProviderCard key={p.id} id={p.id} active={p.id === provider} onSelect={() => updateAiSettings({ provider: p.id })} />
-          ))}
+        <div className="space-y-3">
+          {GROUPS.map((g) => {
+            const items = PROVIDERS.filter((p) => p.group === g.id);
+            const folded = g.id === 'more' && !showMore && meta.group !== 'more';
+            return (
+              <div key={g.id}>
+                <button
+                  type="button"
+                  disabled={g.id !== 'more'}
+                  onClick={() => setShowMore((v) => !v)}
+                  aria-expanded={g.id === 'more' ? !folded : undefined}
+                  className="mb-1.5 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-subtle enabled:hover:text-fg"
+                >
+                  {g.id === 'more' && <ChevronDown className={cn('size-3 transition-transform', folded && '-rotate-90')} />}
+                  {t(g.label)}
+                  {g.id === 'more' && <span className="font-normal normal-case tracking-normal">· {items.length}</span>}
+                </button>
+                {!folded && (
+                  <div className="animate-fade grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {items.map((p) => (
+                      <ProviderCard key={p.id} id={p.id} active={p.id === provider} onSelect={() => updateAiSettings({ provider: p.id })} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         <div key={provider} className="animate-slide-up mt-5 space-y-4">
           {meta.needsBaseUrl && (
-            <Field label={provider === 'ollama' ? t('ai.settings.ollamaUrl') : t('ai.settings.baseUrl')} hint={provider === 'custom' ? t('ai.settings.customHint') : undefined}>
+            <Field
+              label={provider === 'ollama' ? t('ai.settings.ollamaUrl') : provider === 'azure' ? t('ai.settings.azureEndpoint') : t('ai.settings.baseUrl')}
+              hint={provider === 'custom' ? t('ai.settings.customHint') : undefined}
+            >
               <input
                 value={urlDraft}
                 onChange={(e) => setUrlDraft(e.target.value)}
@@ -218,23 +320,73 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
                 spellCheck={false}
                 className={inputClass}
               />
-              {provider === 'custom' && (
+              <ResolvedEndpoint provider={provider} url={urlDraft} />
+              {(provider === 'custom' || provider === 'azure') && (
                 <div className="mt-2 flex items-center gap-2 text-[12px] text-muted">
                   <span>{t('ai.settings.authHeader')}</span>
                   <Segmented
-                    value={settings.customAuth}
+                    value={authStyleFor(settings, provider)!}
                     onChange={setAuthStyle}
-                    options={[
-                      { value: 'bearer', label: 'Authorization: Bearer' },
-                      { value: 'api-key', label: 'api-key (Azure)' },
-                    ]}
+                    options={
+                      provider === 'azure'
+                        ? [
+                            { value: 'api-key', label: 'api-key' },
+                            { value: 'bearer', label: 'Authorization: Bearer' },
+                          ]
+                        : [
+                            { value: 'bearer', label: 'Authorization: Bearer' },
+                            { value: 'api-key', label: 'api-key (Azure)' },
+                          ]
+                    }
                   />
                 </div>
               )}
             </Field>
           )}
 
-          <Field label={meta.needsKey ? t('ai.settings.apiKey') : t('ai.settings.apiKeyOptional')}>
+          {meta.fields?.map((f) => (
+            <Field key={f.id} label={t(FIELD_LABEL[f.id])}>
+              {f.options ? (
+                <select value={paramFor(settings, provider, f.id)} onChange={(e) => setParam(f.id, e.target.value)} className={cn(inputClass, 'font-mono text-[12px]')}>
+                  {f.options.map((o) => (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  defaultValue={paramFor(settings, provider, f.id)}
+                  onBlur={(e) => e.target.value.trim() !== paramFor(settings, provider, f.id) && setParam(f.id, e.target.value.trim())}
+                  onKeyDown={(e) => {
+                    stopKeys(e);
+                    if (e.key === 'Enter') e.currentTarget.blur();
+                  }}
+                  placeholder={f.placeholder}
+                  spellCheck={false}
+                  className={cn(inputClass, 'font-mono text-[12px]')}
+                />
+              )}
+            </Field>
+          ))}
+
+          {CLOUD_HELP[provider] && <p className="-mt-1 text-[11.5px] leading-relaxed text-subtle">{t(CLOUD_HELP[provider]!)}</p>}
+
+          <Field
+            label={meta.needsKey ? t('ai.settings.apiKey') : t('ai.settings.apiKeyOptional')}
+            aside={
+              meta.keyHelpUrl && (
+                <button
+                  type="button"
+                  onClick={() => void openLink(meta.keyHelpUrl!)}
+                  title={meta.keyHelpUrl}
+                  className="flex items-center gap-1 text-[11.5px] font-medium text-accent hover:underline"
+                >
+                  {t('ai.settings.getKey')} <ExternalLink className="size-3" />
+                </button>
+              )
+            }
+          >
             {has === null ? (
               <div className="flex h-8 items-center gap-2 text-[12px] text-muted">
                 <LoaderCircle className="size-3.5 animate-spin" /> {t('ai.settings.checking')}
@@ -253,7 +405,11 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
                       autoFocus={replacing}
                       type={showKey ? 'text' : 'password'}
                       value={keyDraft}
-                      onChange={(e) => setKeyDraft(e.target.value)}
+                      onChange={(e) => {
+                        setKeyDraft(e.target.value);
+                        setKeyError(null);
+                      }}
+                      onBlur={() => void saveDraft()}
                       onKeyDown={(e) => {
                         stopKeys(e);
                         if (e.key === 'Enter') void onSaveKey();
@@ -282,7 +438,8 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
                     </Btn>
                   )}
                 </div>
-                {meta.keyHelpUrl && <p className="text-[11.5px] text-subtle">{t('ai.settings.createKeyAt', { url: meta.keyHelpUrl.replace(/^https:\/\//, '') })}</p>}
+                <KeyHint provider={provider} draft={keyDraft} />
+                {prefilled && !keyDraft && <p className="text-[11.5px] leading-snug text-muted">{t('ai.settings.azureKeyNeeded')}</p>}
               </div>
             ) : (
               <div className="flex h-9 items-center gap-2.5 rounded-lg bg-panel-2 px-3 ring-1 ring-line">
@@ -304,7 +461,10 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
             )}
           </Field>
 
-          <Field label={t('ai.settings.model')}>
+          <Field
+            label={t('ai.settings.model')}
+            hint={provider === 'azure' ? t('ai.settings.modelHintAzure') : provider === 'bedrock' ? t('ai.settings.modelHintBedrock') : t('ai.settings.modelHint')}
+          >
             <ModelPicker value={modelFor(settings)} options={models} onChange={(m) => updateAiSettings({ models: { ...settings.models, [provider]: m } })} placeholder={provider === 'custom' ? t('ai.settings.customModelPlaceholder', { model: 'anthropic/claude-opus-5-5' }) : t('ai.settings.modelPlaceholder')} />
           </Field>
 
@@ -339,10 +499,13 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return <div className="mb-2 text-[11.5px] font-medium uppercase tracking-wide text-subtle">{children}</div>;
 }
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Field({ label, hint, aside, children }: { label: string; hint?: string; aside?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div>
-      <div className="mb-1.5 text-[12px] font-medium text-fg">{label}</div>
+      <div className="mb-1.5 flex items-center justify-between gap-2 text-[12px] font-medium text-fg">
+        <span>{label}</span>
+        {aside}
+      </div>
       {children}
       {hint && <p className="mt-1.5 text-[11.5px] text-subtle">{hint}</p>}
     </div>
@@ -408,6 +571,8 @@ function ModelPicker({
     window.addEventListener('pointerdown', close, true);
     return () => window.removeEventListener('pointerdown', close, true);
   }, [open]);
+  const q = draft.trim().toLowerCase();
+  const shown = q && draft !== value ? options.filter((o) => o.id.toLowerCase().includes(q) || o.label.toLowerCase().includes(q)) : options;
   const commit = (v: string) => {
     const t = v.trim();
     if (t && t !== value) onChange(t);
@@ -418,7 +583,10 @@ function ModelPicker({
       <div className="relative">
         <input
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            if (options.length) setOpen(true);
+          }}
           onFocus={() => options.length && setOpen(true)}
           onBlur={() => commit(draft)}
           onKeyDown={(e) => {
@@ -445,9 +613,9 @@ function ModelPicker({
           </button>
         )}
       </div>
-      {open && options.length > 0 && (
+      {open && shown.length > 0 && (
         <div className="animate-pop scroll-thin absolute inset-x-0 top-[calc(100%+4px)] z-10 max-h-60 overflow-y-auto rounded-lg bg-panel p-1 shadow-pop">
-          {options.map((o) => (
+          {shown.map((o) => (
             <button
               key={o.id}
               type="button"
@@ -475,6 +643,45 @@ function ModelPicker({
   );
 }
 
+/** "Requests go to …" when a pasted URL is cleaned up (".../v1/responses" → ".../v1"). */
+function ResolvedEndpoint({ provider, url }: { provider: ProviderId; url: string }) {
+  const t = useT();
+  const raw = url.trim();
+  if (!raw || (provider !== 'azure' && provider !== 'custom')) return null;
+  let resolved: string;
+  try {
+    resolved = provider === 'azure' ? azureBase(raw) : normalizeBaseUrl(raw);
+  } catch {
+    return null;
+  }
+  if (resolved === raw.replace(/\/+$/, '')) return null;
+  return (
+    <p className="mt-1.5 truncate text-[11.5px] text-subtle" title={resolved}>
+      {t('ai.settings.usingEndpoint', { url: resolved })}
+    </p>
+  );
+}
+
+/** Gentle warning when the typed key doesn't look like this provider's (saving still works). */
+function KeyHint({ provider, draft }: { provider: ProviderId; draft: string }) {
+  const t = useT();
+  const check = checkKeyPrefix(provider, draft);
+  if (!check) return null;
+  const meta = PROVIDER_META[provider];
+  const url = meta.keyHelpUrl?.replace(/^https:\/\//, '') ?? '';
+  const text =
+    check.kind === 'grokApp'
+      ? t('ai.settings.keyGrokApp', { url })
+      : check.kind === 'otherProvider'
+        ? t('ai.settings.keyOtherProvider', { other: providerName(check.other), provider: providerName(provider), url })
+        : t('ai.settings.keyUnexpected', { provider: providerName(provider), prefix: check.prefix, url });
+  return (
+    <p role="status" className="animate-fade flex items-start gap-1.5 text-[11.5px] leading-snug text-[#d48806]">
+      <TriangleAlert className="mt-px size-3.5 shrink-0" /> <span>{text}</span>
+    </p>
+  );
+}
+
 function TestStatus({ state }: { state: TestState }) {
   const t = useT();
   if (state.kind === 'idle') return null;
@@ -487,7 +694,15 @@ function TestStatus({ state }: { state: TestState }) {
     );
   return (
     <span className="animate-fade flex min-w-0 items-start gap-1.5 text-[12px] text-danger">
-      <CircleAlert className="mt-px size-3.5 shrink-0" /> <span className="line-clamp-3 break-words">{state.message}</span>
+      <CircleAlert className="mt-px size-3.5 shrink-0" />
+      <span className="min-w-0">
+        <span className="line-clamp-3 break-words">{state.message}</span>
+        {state.detail && (
+          <span className="mt-0.5 block truncate text-[11px] text-subtle" title={state.detail}>
+            {t('ai.settings.errorDetails')}: {state.detail}
+          </span>
+        )}
+      </span>
     </span>
   );
 }

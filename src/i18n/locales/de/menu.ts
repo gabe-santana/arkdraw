@@ -40,7 +40,6 @@ export default {
   'menu.units.m': 'Meter',
 
   // Title bar
-  'titlebar.generate': 'Generieren',
   'titlebar.export': 'Exportieren',
   'titlebar.undo': 'Rückgängig',
   'titlebar.redo': 'Wiederholen',

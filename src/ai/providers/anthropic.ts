@@ -15,7 +15,7 @@ import type {
   ChatResponse,
   HttpRequest,
   ModelInfo,
-  ProviderAdapter,
+  ListingAdapter,
   ProviderConfig,
   StopReason,
   ToolCall,
@@ -62,7 +62,7 @@ function toAnthropicMessages(messages: ChatMessage[]) {
   return out;
 }
 
-export const anthropic: ProviderAdapter = {
+export const anthropic: ListingAdapter = {
   buildChat(config: ProviderConfig, req): HttpRequest {
     const body: Record<string, unknown> = {
       model: config.model,

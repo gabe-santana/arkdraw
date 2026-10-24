@@ -99,4 +99,10 @@ export default {
   'chrome.dock.dropHere': 'Déposer ici',
   'chrome.dock.resizeLeft': 'Redimensionner les panneaux de gauche',
   'chrome.dock.resizeRight': 'Redimensionner les panneaux de droite',
+  'chrome.rightTabs.aria': 'Panneau de droite',
+  'chrome.rightTabs.design': 'Design',
+  'chrome.rightTabs.designHint': 'Style et calques de la sélection',
+  'chrome.rightTabs.ai': 'IA',
+  'chrome.rightTabs.aiHint': 'Dites ce que vous voulez : l\'assistant le dessine ou le modifie',
+  'chrome.dock.resizeAi': 'Redimensionner le panneau IA',
 } satisfies Translation<typeof en>;

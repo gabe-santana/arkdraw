@@ -122,4 +122,10 @@ export default {
   'chrome.dock.dropHere': 'ここにドロップ',
   'chrome.dock.resizeLeft': '左パネルのサイズを変更',
   'chrome.dock.resizeRight': '右パネルのサイズを変更',
+  'chrome.rightTabs.aria': '右パネル',
+  'chrome.rightTabs.design': 'デザイン',
+  'chrome.rightTabs.designHint': '選択したもののスタイルとレイヤー',
+  'chrome.rightTabs.ai': 'AI',
+  'chrome.rightTabs.aiHint': '望むことを伝えるだけで、アシスタントが描画や編集をします',
+  'chrome.dock.resizeAi': 'AI パネルのサイズを変更',
 } satisfies Translation<typeof en>;

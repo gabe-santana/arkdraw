@@ -40,7 +40,6 @@ export default {
   'menu.units.m': 'Metros',
 
   // Title bar
-  'titlebar.generate': 'Gerar',
   'titlebar.export': 'Exportar',
   'titlebar.undo': 'Desfazer',
   'titlebar.redo': 'Refazer',

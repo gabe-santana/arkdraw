@@ -4,7 +4,11 @@ import { openai } from '@/ai/providers/openai';
 import { gemini } from '@/ai/providers/gemini';
 import { ollama } from '@/ai/providers/ollama';
 import type { ChatMessage, ChatRequest, ChatTool } from '@/ai/providers/types';
-import { chat, deleteKey, hasKey, saveKey, testConnection } from '@/ai/transport';
+import { chat, deleteKey, hasKey, keyRejectedError, saveKey, testConnection } from '@/ai/transport';
+import { checkKeyPrefix } from '@/ai/providers';
+import { bedrock } from '@/ai/providers/bedrock';
+import { vertex } from '@/ai/providers/gemini';
+import { azureBase, cloudflare, normalizeBaseUrl } from '@/ai/providers/openai';
 
 const tool: ChatTool = {
   name: 'submit_diagram',
@@ -186,12 +190,119 @@ describe('browser transport (no Tauri)', () => {
   it('surfaces readable HTTP errors', async () => {
     await saveKey('openai', 'bad');
     fetchMock.mockResolvedValue(new Response(JSON.stringify({ error: { message: 'Incorrect API key provided' } }), { status: 401 }));
-    await expect(testConnection({ provider: 'openai', model: 'gpt-5' })).rejects.toThrow(/rejected: Incorrect API key/);
+    await expect(testConnection({ provider: 'openai', model: 'gpt-5' })).rejects.toThrow(/rejected by OpenAI/);
+  });
+
+  it('tests providers that cannot list models with a one-word chat', async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ output: { message: { content: [{ text: 'OK' }] } }, stopReason: 'end_turn' }), { status: 200 }));
+    await saveKey('bedrock', 'ABSKkey');
+    expect(await testConnection({ provider: 'bedrock', model: 'us.amazon.nova-pro-v1:0', params: { region: 'eu-west-1' } })).toEqual([]);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('https://bedrock-runtime.eu-west-1.amazonaws.com/model/us.amazon.nova-pro-v1%3A0/converse');
+    expect(init.headers.Authorization).toBe('Bearer ABSKkey');
+    expect(JSON.parse(init.body).toolConfig).toBeUndefined();
   });
 
   it('requires a key for hosted providers', async () => {
     await deleteKey('gemini');
     await expect(chat({ provider: 'gemini', model: 'gemini-2.5-pro' }, req)).rejects.toThrow(/Gemini API key/);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('hosted OpenAI-compatible providers', () => {
+  it('send each provider to its official base URL', () => {
+    expect(openai.buildChat({ provider: 'xai', model: 'grok-4' }, req).url).toBe('https://api.x.ai/v1/chat/completions');
+    expect(openai.buildChat({ provider: 'groq', model: 'm' }, req).url).toBe('https://api.groq.com/openai/v1/chat/completions');
+    expect(openai.buildChat({ provider: 'zai', model: 'glm-4.6' }, req).url).toBe('https://api.z.ai/api/paas/v4/chat/completions');
+    // A base URL in the settings can't redirect a hosted provider elsewhere.
+    expect(openai.buildChat({ provider: 'deepseek', model: 'm', baseUrl: 'https://evil.example' }, req).url).toBe('https://api.deepseek.com/v1/chat/completions');
+  });
+});
+
+describe('key checks', () => {
+  it('flags keys pasted for the wrong service, without judging unknown formats', () => {
+    expect(checkKeyPrefix('xai', 'xai-abc')).toBeNull();
+    expect(checkKeyPrefix('xai', 'grok_abc')).toEqual({ kind: 'grokApp' });
+    expect(checkKeyPrefix('openai', 'sk-ant-abc')).toEqual({ kind: 'otherProvider', other: 'anthropic' });
+    expect(checkKeyPrefix('anthropic', 'sk-ant-abc')).toBeNull();
+    expect(checkKeyPrefix('deepseek', 'sk-abc')).toBeNull();
+    expect(checkKeyPrefix('gemini', 'hello')).toEqual({ kind: 'unexpected', prefix: 'AIza' });
+    expect(checkKeyPrefix('together', 'anything')).toBeNull();
+    expect(checkKeyPrefix('openai', '')).toBeNull();
+  });
+
+  it('turns an invalid-key response into a friendly message and keeps the raw text', () => {
+    const err = keyRejectedError('xai', 400, JSON.stringify({ error: 'Incorrect API key provided: gr***wk.' }));
+    expect(err?.message).toContain('console.x.ai');
+    expect(err?.detail).toContain('Incorrect API key');
+    expect(keyRejectedError('xai', 429, 'Incorrect API key')).toBeNull();
+    expect(keyRejectedError('openai', 400, '{"error":{"message":"Bad tool schema"}}')).toBeNull();
+  });
+});
+
+describe('pasted base URLs', () => {
+  it('drops endpoints copied along with the base', () => {
+    expect(normalizeBaseUrl('https://r.services.ai.azure.com/openai/v1/responses')).toBe('https://r.services.ai.azure.com/openai/v1');
+    expect(normalizeBaseUrl('https://openrouter.ai/api/v1/chat/completions/')).toBe('https://openrouter.ai/api/v1');
+    expect(normalizeBaseUrl('http://localhost:1234/v1/')).toBe('http://localhost:1234/v1');
+    expect(normalizeBaseUrl('https://x.example/v1/models?api-version=1')).toBe('https://x.example/v1?api-version=1');
+  });
+
+  it('lists models and chats at the right URLs for a pasted /responses endpoint', () => {
+    const cfg = { provider: 'custom' as const, model: 'm', baseUrl: 'https://r.services.ai.azure.com/openai/v1/responses' };
+    expect(openai.buildListModels(cfg).url).toBe('https://r.services.ai.azure.com/openai/v1/models');
+    expect(openai.buildChat(cfg, req).url).toBe('https://r.services.ai.azure.com/openai/v1/chat/completions');
+  });
+});
+
+describe('cloud platforms', () => {
+  it('Azure: any resource URL becomes its OpenAI-compatible v1 base', () => {
+    expect(azureBase('https://r.services.ai.azure.com/openai/v1/responses')).toBe('https://r.services.ai.azure.com/openai/v1');
+    expect(azureBase('https://r.openai.azure.com')).toBe('https://r.openai.azure.com/openai/v1');
+    expect(azureBase('https://r.cognitiveservices.azure.com/openai/deployments/x/chat/completions?api-version=1')).toBe('https://r.cognitiveservices.azure.com/openai/v1');
+    expect(() => azureBase('https://example.com')).toThrow();
+    expect(() => azureBase('http://r.openai.azure.com')).toThrow();
+    expect(openai.buildChat({ provider: 'azure', model: 'my-gpt5', baseUrl: 'https://r.openai.azure.com/' }, req).url).toBe('https://r.openai.azure.com/openai/v1/chat/completions');
+  });
+
+  it('Cloudflare: account-scoped OpenAI-compatible base', () => {
+    const id = '0123456789abcdef0123456789abcdef';
+    expect(cloudflare.buildChat({ provider: 'cloudflare', model: '@cf/openai/gpt-oss-120b', params: { accountId: id } }, req).url).toBe(
+      `https://api.cloudflare.com/client/v4/accounts/${id}/ai/v1/chat/completions`,
+    );
+    expect(() => cloudflare.buildChat({ provider: 'cloudflare', model: 'm', params: { accountId: 'nope' } }, req)).toThrow(/account ID/);
+    expect(cloudflare.buildListModels).toBeUndefined();
+  });
+
+  it('Vertex: Gemini wire format at the publisher-model endpoint', () => {
+    const r = vertex.buildChat({ provider: 'vertex', model: 'gemini-2.5-pro' }, req);
+    expect(r.url).toBe('https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-pro:generateContent');
+    expect((r.body as { contents: unknown[] }).contents).toHaveLength(3);
+  });
+
+  it('Bedrock: builds a Converse request', () => {
+    const r = bedrock.buildChat({ provider: 'bedrock', model: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0', params: { region: 'us-west-2' } }, req);
+    expect(r.url).toBe('https://bedrock-runtime.us-west-2.amazonaws.com/model/us.anthropic.claude-sonnet-4-5-20250929-v1%3A0/converse');
+    const body = r.body as { system: unknown; messages: Array<{ role: string; content: unknown[] }>; toolConfig: { tools: unknown[] }; inferenceConfig?: unknown };
+    expect(body.system).toEqual([{ text: 'SYS' }]);
+    expect(body.messages).toEqual([
+      { role: 'user', content: [{ text: 'Draw a login flow' }] },
+      { role: 'assistant', content: [{ toolUse: { toolUseId: 'call_1', name: 'submit_diagram', input: { nodes: [] } } }] },
+      { role: 'user', content: [{ toolResult: { toolUseId: 'call_1', content: [{ text: 'Invalid' }], status: 'error' } }] },
+    ]);
+    expect(body.toolConfig.tools).toEqual([{ toolSpec: { name: 'submit_diagram', description: 'Submit', inputSchema: { json: tool.parameters } } }]);
+    expect(body.inferenceConfig).toEqual({ maxTokens: 16000 });
+    expect(() => bedrock.buildChat({ provider: 'bedrock', model: 'm', params: { region: 'mars' } }, req)).toThrow(/region/);
+  });
+
+  it('Bedrock: parses tool use and replays the message natively', () => {
+    const content = [{ reasoningContent: { reasoningText: { text: 'hmm' } } }, { text: 'Here.' }, { toolUse: { toolUseId: 'tu1', name: 'submit_diagram', input: { nodes: [] } } }];
+    const res = bedrock.parseChat({ output: { message: { role: 'assistant', content } }, stopReason: 'tool_use' });
+    expect(res).toMatchObject({ text: 'Here.', stopReason: 'tool_use', toolCalls: [{ id: 'tu1', name: 'submit_diagram', args: { nodes: [] } }] });
+    const next = bedrock.buildChat({ provider: 'bedrock', model: 'm' }, { ...req, messages: [{ role: 'assistant', text: 'Here.', toolCalls: res.toolCalls, native: res.native }] });
+    expect((next.body as { messages: Array<{ content: unknown }> }).messages[0].content).toBe(content);
+    expect(bedrock.parseChat({ output: { message: { content: [{ text: 'Done' }] } }, stopReason: 'max_tokens' }).stopReason).toBe('max_tokens');
+    expect(() => bedrock.parseChat({ message: 'Bad' })).toThrow();
   });
 });

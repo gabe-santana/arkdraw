@@ -101,4 +101,10 @@ export default {
   'chrome.dock.dropHere': 'Soltar aquí',
   'chrome.dock.resizeLeft': 'Cambiar tamaño de los paneles izquierdos',
   'chrome.dock.resizeRight': 'Cambiar tamaño de los paneles derechos',
+  'chrome.rightTabs.aria': 'Panel derecho',
+  'chrome.rightTabs.design': 'Diseño',
+  'chrome.rightTabs.designHint': 'Estilo y capas de lo que selecciones',
+  'chrome.rightTabs.ai': 'IA',
+  'chrome.rightTabs.aiHint': 'Di lo que quieres: el asistente lo dibuja o lo edita',
+  'chrome.dock.resizeAi': 'Cambiar tamaño del panel de IA',
 } satisfies Translation<typeof en>;

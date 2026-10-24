@@ -32,6 +32,7 @@ import { clientToWorld } from './viewport';
 import { followLink } from './links';
 import { endpointFromPointMarker, resolveDrop, useEndpointDrag } from './connectorDrop';
 import { moveExtraLabel, openExtraLabelEditorAt } from './ExtraLabelEditor';
+import { canDragSegment, dragSegment, segmentAt, segmentCursor, snapSegment } from '@/interaction/segmentDrag';
 import { canPick, finishFreehandStroke, handleDoubleClick, isContainerShape, keepsAspect, pickMembers, strokePoint } from '@/interaction/canvasHooks';
 
 const DRAG_THRESHOLD = 3;
@@ -59,9 +60,33 @@ type Drag =
   | { type: 'freehand'; points: Vec[] }
   | { type: 'connect'; from: Endpoint; origin: Vec; quick: { side: AnchorSide; shapeId: string } | null; moved: boolean }
   | { type: 'endpoint'; connId: string; end: 'source' | 'target' }
-  | { type: 'segment'; connId: string; index: number; base: Vec[]; origin: Vec; horizontal: boolean; mode: 'ortho' | 'insert' }
+  | { type: 'segment'; connId: string; index: number; base: Vec[]; origin: Vec; horizontal: boolean; mode: 'ortho' | 'insert'; started?: boolean }
   | { type: 'waypoint'; connId: string; index: number }
   | { type: 'label'; connId: string; index?: number };
+
+/** How close (screen px) the pointer must be to a connector segment to grab it. */
+const SEGMENT_HIT_PX = 7;
+
+/** Resize cursor when hovering a draggable segment of an orthogonal connector. */
+function segmentHoverCursor(target: Element, p: Vec): string | null {
+  const s = useEditor.getState();
+  const id = target.closest('[data-segment]')?.getAttribute('data-conn') ?? target.closest('[data-el]')?.getAttribute('data-el');
+  const conn = id ? s.doc.elements[id] : undefined;
+  if (!isConnector(conn) || conn.routing !== 'orthogonal' || isLocked(s.doc, conn)) return null;
+  const g = connectorGeometryInDoc(conn, s.doc.elements);
+  const hit = segmentAt(g.points, p, SEGMENT_HIT_PX / s.camera.z);
+  return hit && canDragSegment(conn, g.points, hit.index, s.doc.elements) ? segmentCursor(hit.horizontal) : null;
+}
+
+/** After a segment drag: keep only the bends the route really has, so it stays clean when shapes move. */
+function tidyRoute(connId: string) {
+  const s = useEditor.getState();
+  const conn = s.doc.elements[connId];
+  if (!isConnector(conn)) return;
+  const pts = connectorGeometryInDoc(conn, s.doc.elements).points;
+  const inner = pts.slice(1, -1);
+  s.updateElements({ [connId]: { waypoints: inner.length ? inner : undefined } });
+}
 
 function snapOptions(alt: boolean) {
   const { settings, camera } = useEditor.getState();
@@ -129,6 +154,7 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
   const [panning, setPanning] = useState(false);
   const [spaceHeld, setSpaceHeld] = useState(false);
   const [freehand, setFreehand] = useState<Vec[] | null>(null);
+  const [hoverCursor, setHoverCursor] = useState<string | null>(null);
 
   // --- wheel: pan, Ctrl/⌘ (and trackpad pinch) zooms around the cursor -----
   useEffect(() => {
@@ -337,6 +363,18 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
         return;
       }
 
+      // Pressing a segment of an orthogonal connector drags that segment sideways.
+      if (el && isConnector(el) && !isLocked(s.doc, el) && !e.altKey && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        const g = connectorGeometryInDoc(el, s.doc.elements);
+        const hit = segmentAt(g.points, p, SEGMENT_HIT_PX / s.camera.z);
+        if (hit && canDragSegment(el, g.points, hit.index, s.doc.elements)) {
+          if (s.selection.length !== 1 || s.selection[0] !== el.id) s.select([el.id]);
+          s.beginInteraction();
+          drag.current = { type: 'segment', connId: el.id, index: hit.index, base: g.points, origin: p, horizontal: hit.horizontal, mode: 'ortho' };
+          return;
+        }
+      }
+
       // Alt+drag always starts a marquee, even on top of a shape.
       if (el && !isLocked(s.doc, el) && !e.altKey) {
         const ids = e.ctrlKey || e.metaKey ? [el.id] : pickMembers(s.doc, el.id);
@@ -378,6 +416,7 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
         const id = attr(t, 'data-anchor-el') ?? attr(t, 'data-quick-el') ?? t.closest('[data-el]')?.getAttribute('data-el') ?? null;
         const hover = id && isShape(s.doc.elements[id]) ? id : null;
         if (hover !== s.hoverId) useEditor.setState({ hoverId: hover });
+        setHoverCursor(s.tool === 'select' ? segmentHoverCursor(t, p) : null);
       }
       return;
     }
@@ -539,23 +578,23 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
         return;
       }
       case 'segment': {
-        const o = snapOptions(e.altKey);
-        const pts = d.base.map((v) => ({ ...v }));
-        const a = pts[d.index];
-        const b = pts[d.index + 1];
-        if (d.horizontal) {
-          let y = a.y + (p.y - d.origin.y);
-          if (o.grid) y = Math.round(y / o.grid) * o.grid;
-          a.y = y;
-          b.y = y;
-        } else {
-          let x = a.x + (p.x - d.origin.x);
-          if (o.grid) x = Math.round(x / o.grid) * o.grid;
-          a.x = x;
-          b.x = x;
+        if (!d.started) {
+          if (dist(d.origin, p) * s.camera.z < DRAG_THRESHOLD) return;
+          d.started = true;
         }
-        // Interior points become manual waypoints (the router re-adds stubs).
-        s.updateElements({ [d.connId]: { waypoints: pts.slice(1, -1) } });
+        const conn = s.doc.elements[d.connId];
+        if (!isConnector(conn)) return;
+        const o = snapOptions(e.altKey);
+        const axis = d.horizontal ? 'y' : 'x';
+        let at = d.base[d.index][axis] + (p[axis] - d.origin[axis]);
+        // Line up with the ends, the shapes' centers or a parallel segment first; otherwise the grid.
+        const smart = o.threshold ? snapSegment(conn, d.base, d.index, d.horizontal, at, s.doc.elements, o.threshold) : { at };
+        if (smart.guide) at = smart.at;
+        else if (o.grid) at = Math.round(at / o.grid) * o.grid;
+        const moved = dragSegment(conn, d.base, d.index, d.horizontal, at, s.doc.elements);
+        if (!moved) return;
+        s.updateElements({ [d.connId]: moved.patch });
+        useEditor.setState({ guides: smart.guide && o.guides && moved.at === smart.at ? [smart.guide] : [] });
         return;
       }
       case 'label': {
@@ -604,10 +643,14 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
           s.endInteraction();
           return;
         }
+        case 'segment':
+          if (d.started) tidyRoute(d.connId);
+          useEditor.setState({ guides: [] });
+          s.endInteraction();
+          return;
         case 'resize':
         case 'rotate':
         case 'waypoint':
-        case 'segment':
         case 'label':
           useEditor.setState({ guides: [] });
           s.endInteraction();
@@ -730,7 +773,7 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
     lastContextWorld = w;
   }, []);
 
-  return { onPointerDown, onPointerMove, onPointerUp, onDoubleClick, onContextMenu, panning, spaceHeld, freehand };
+  return { onPointerDown, onPointerMove, onPointerUp, onDoubleClick, onContextMenu, panning, spaceHeld, freehand, hoverCursor };
 }
 
 /** World point of the last context menu (for "Paste here"). */

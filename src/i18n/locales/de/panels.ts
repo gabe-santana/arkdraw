@@ -348,10 +348,10 @@ export default {
 
   // LeftPanel
   'panels.left.aria': 'Formenbereich',
-  'panels.left.cloud': 'Cloud',
-  'panels.left.searchShapes': 'Formen suchen',
+  'panels.left.cloud': 'Cloud- und Markensymbole',
+  'panels.left.searchShapes': 'Formen und Symbole suchen',
   'panels.left.bestMatches': 'Beste Treffer',
-  'panels.left.noShapes': 'Keine Formen für „{query}“.',
+  'panels.left.noShapes': 'Nichts passt zu „{query}“.',
   'panels.left.hintConnect': 'Klicken, um sie verbunden mit der ausgewählten Form hinzuzufügen (Alt-Klick: unverbunden) · Shift beim Ablegen auf einer Form ersetzt diese',
   'panels.left.hintInsert': 'Auf die Zeichenfläche ziehen oder zum Einfügen klicken · Shift beim Ablegen auf einer Form ersetzt diese',
   'panels.left.removeFavorite': 'Aus Favoriten entfernen',
@@ -359,8 +359,6 @@ export default {
   'panels.left.favorites': 'Favoriten',
   'panels.left.recent': 'Zuletzt verwendet',
   'panels.icons.none': 'Keine Symbolpakete installiert.',
-  'panels.icons.searchPlaceholder': 'Über {count} Symbole durchsuchen',
-  'panels.icons.noMatch': 'Keine Symbole für „{query}“.',
   'panels.icons.description': '{provider}-Symbol ({category}) für Architekturdiagramme.',
   'panels.icons.footer': '{name}-Symbole · {version}. Marken der jeweiligen Inhaber; bereitgestellt für Architekturdiagramme.',
   'panels.libraryDrag.replace': 'Ersetzen',

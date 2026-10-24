@@ -1,19 +1,20 @@
 /**
  * The AI assistant panel: prompt → tool-calling run with live progress →
- * result card (Insert / Replace, or Apply for edits).
+ * result card (Insert / Replace, or Apply for edits). There is no mode to pick:
+ * on an empty canvas the assistant draws; otherwise it sees the diagram and
+ * decides between changing it and drawing a new one.
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
-  ArrowUp, Check, ChevronDown, CircleAlert, CircleCheck, LoaderCircle, Plus, Replace, RotateCcw, Settings, Sparkles,
-  Square, SquarePen, TriangleAlert, Wand, X,
+  ArrowUp, Check, ChevronDown, CircleAlert, CircleCheck, LoaderCircle, MessageSquarePlus, Plus, Replace, RotateCcw, Settings, Sparkles,
+  Square, Undo2, X,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useT, type MessageKey } from '@/i18n';
-import { isConnector, isShape } from '@/model/types';
+import { isConnector, isShape, type Doc } from '@/model/types';
 import type { AiHostApi } from '../host';
-import { PROVIDER_META } from '../providers';
+import { AiError, PROVIDER_META } from '../providers';
 import { modelFor, providerConfig, useAiSettings } from '../settings';
-import { isTauri } from '../transport';
 import { runAssistant, type AgentEvent, type AgentResult, type AssistantMode, type StepState } from '../generate/agent';
 import { applyOps } from '../generate/ops';
 import { convertSpec } from '../generate/toElements';
@@ -46,7 +47,11 @@ interface Run {
   steps: Step[];
   result?: AgentResult;
   error?: string;
+  /** The provider's own error text, when `error` is a friendlier rewrite of it. */
+  errorDetail?: string;
   applied?: 'insert' | 'replace' | 'edit';
+  /** The new diagram went next to existing content (so "Replace diagram" stays on offer). */
+  beside?: boolean;
 }
 
 const GENERATE_EXAMPLES: MessageKey[] = [
@@ -67,23 +72,19 @@ export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelPro
   const { ready, reason } = useAiReady();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
-  const [mode, setMode] = useState<AssistantMode>('generate');
   const [runs, setRuns] = useState<Run[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
 
-  const doc = host.getDoc();
-  const docCount = doc.order.length;
+  const docCount = host.getDoc().order.length;
+  // The canvas decides: empty → draw a diagram; otherwise the assistant sees it and edits (or draws anew).
+  const mode: AssistantMode = docCount ? 'edit' : 'generate';
   const selectionCount = host.getSelection().length;
   const running = runs.some((r) => r.status === 'running');
   const meta = PROVIDER_META[settings.provider];
   const model = modelFor(settings);
   const modelLabel = meta.models.find((m) => m.id === model)?.label ?? model;
-
-  useEffect(() => {
-    if (docCount === 0 && mode === 'edit') setMode('generate');
-  }, [docCount, mode]);
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
@@ -113,7 +114,7 @@ export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelPro
       return;
     }
     const id = ++runSeq;
-    const runMode: AssistantMode = mode === 'edit' && host.getDoc().order.length ? 'edit' : 'generate';
+    const runMode: AssistantMode = host.getDoc().order.length ? 'edit' : 'generate';
     setRuns((rs) => [...rs.slice(-9), { id, prompt: p, mode: runMode, model: modelLabel, status: 'running', steps: [] }]);
     setPrompt('');
     const ac = new AbortController();
@@ -138,12 +139,15 @@ export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelPro
         signal: ac.signal,
       });
       patchRun(id, (r) => ({ ...r, status: 'done', result }));
+      // The assistant does what was asked: the result goes straight onto the canvas (one undo step).
+      applyResult(id, result, result.kind === 'spec' ? 'insert' : 'edit');
     } catch (e) {
       const aborted = (e as Error)?.name === 'AbortError';
       patchRun(id, (r) => ({
         ...r,
         status: aborted ? 'cancelled' : 'error',
         error: aborted ? undefined : e instanceof Error ? e.message : String(e),
+        errorDetail: e instanceof AiError ? e.detail : undefined,
         steps: r.steps.map((s) => (s.state === 'running' ? { ...s, state: aborted ? 'done' : 'error' } : s)),
       }));
     } finally {
@@ -153,40 +157,67 @@ export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelPro
 
   const stop = () => abortRef.current?.abort();
 
-  const apply = (run: Run, how: 'insert' | 'replace' | 'edit') => {
-    const res = run.result;
-    if (!res) return;
+  const applyResult = (id: number, res: AgentResult, how: 'insert' | 'replace' | 'edit') => {
+    let beside = false;
     if (res.kind === 'spec') {
-      const els = convertSpec(res.spec, host.getViewportCenter()).elements;
-      if (how === 'insert') host.insertElements(els);
-      else host.replaceDoc(els);
+      if (how === 'insert') {
+        // Next to what's already there, never on top of it.
+        const right = contentRight(host.getDoc());
+        beside = right !== null;
+        const els = right ? convertSpec(res.spec, right, { anchor: 'topLeft' }).elements : convertSpec(res.spec, host.getViewportCenter()).elements;
+        host.insertElements(els);
+      } else {
+        host.replaceDoc(convertSpec(res.spec, host.getViewportCenter()).elements);
+      }
     } else {
       host.replaceDoc(applyOps(host.getDoc(), res.ops).elements);
     }
-    patchRun(run.id, (r) => ({ ...r, applied: how }));
+    patchRun(id, (r) => ({ ...r, applied: how, beside }));
   };
+
+  const undo = (run: Run) => {
+    host.undo?.();
+    patchRun(run.id, (r) => ({ ...r, applied: undefined, beside: false }));
+  };
+
+  // Tell the host what's happening, so the whole window shows the assistant at work.
+  const active = runs.find((r) => r.status === 'running');
+  const activityLabel = active ? ([...active.steps].reverse().find((s) => s.state === 'running') ?? active.steps.at(-1))?.label ?? t('ai.run.starting') : null;
+  useEffect(() => {
+    host.setActivity?.(activityLabel === null ? null : { label: activityLabel, stop: () => abortRef.current?.abort() });
+  }, [host, activityLabel]);
+  useEffect(() => () => host.setActivity?.(null), [host]);
 
   const examples = (mode === 'edit' ? EDIT_EXAMPLES : GENERATE_EXAMPLES).map((k) => t(k));
 
   return (
     <div className={cn('flex h-full min-h-0 w-full flex-col bg-panel text-[13px] text-fg', className)} onKeyDown={stopKeys}>
       {/* Header */}
-      <div className="flex h-12 shrink-0 items-center gap-2 border-b border-line pl-3.5 pr-2">
-        <div className="flex size-6 items-center justify-center rounded-md bg-accent-soft text-accent">
-          <Sparkles className="size-3.5" />
-        </div>
-        <span className="font-semibold">{t('ai.panel.title')}</span>
+      <div className="flex h-11 shrink-0 items-center gap-1 border-b border-line pl-2.5 pr-2">
         <button
           type="button"
           onClick={openSettings}
           title={t('ai.panel.modelSettings')}
-          className="ml-1 flex min-w-0 items-center gap-1.5 rounded-md py-1 pl-1 pr-1.5 text-[11.5px] text-muted ring-1 ring-line transition-colors hover:bg-hover hover:text-fg"
+          className="flex min-w-0 items-center gap-1.5 rounded-md py-1 pl-1 pr-1.5 text-[11.5px] text-muted ring-1 ring-line transition-colors hover:bg-hover hover:text-fg"
         >
           <ProviderMark provider={settings.provider} size={16} className="rounded" />
           <span className="truncate">{modelLabel || t('ai.panel.noModel')}</span>
           <ChevronDown className="size-3 shrink-0" />
         </button>
         <div className="flex-1" />
+        {runs.length > 0 && (
+          <IconBtn
+            label={t('ai.panel.newChat')}
+            size="sm"
+            disabled={running}
+            onClick={() => {
+              setRuns([]);
+              textRef.current?.focus();
+            }}
+          >
+            <MessageSquarePlus />
+          </IconBtn>
+        )}
         <IconBtn label={t('ai.settings.title')} size="sm" onClick={openSettings}>
           <Settings />
         </IconBtn>
@@ -197,27 +228,8 @@ export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelPro
         )}
       </div>
 
-      {/* Mode switch */}
-      <div className="flex shrink-0 items-center gap-2 px-3 pt-3">
-        <div className="grid flex-1 grid-cols-2 rounded-lg bg-panel-2 p-0.5 ring-1 ring-line">
-          <ModeTab active={mode === 'generate'} onClick={() => setMode('generate')} icon={<Wand className="size-3.5" />}>
-            {t('ai.panel.modeCreate')}
-          </ModeTab>
-          <ModeTab active={mode === 'edit'} disabled={docCount === 0} onClick={() => setMode('edit')} icon={<SquarePen className="size-3.5" />} title={docCount === 0 ? t('ai.panel.canvasEmpty') : undefined}>
-            {t('ai.panel.modeEdit')}
-          </ModeTab>
-        </div>
-      </div>
-
       {/* Activity */}
       <div ref={scrollRef} className="scroll-thin min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-3">
-        {!isTauri() && (
-          <div className="flex gap-2 rounded-lg bg-[#f5a524]/12 px-2.5 py-2 text-[11.5px] leading-snug text-muted ring-1 ring-[#f5a524]/30">
-            <TriangleAlert className="mt-px size-3.5 shrink-0 text-[#d48806]" />
-            {t('ai.panel.browserWarning')}
-          </div>
-        )}
-
         {ready === false && (
           <div className="animate-slide-up rounded-xl bg-panel-2 p-4 ring-1 ring-line">
             <div className="flex items-center gap-2 font-medium">
@@ -249,7 +261,15 @@ export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelPro
         )}
 
         {runs.map((run) => (
-          <RunCard key={run.id} run={run} docEmpty={docCount === 0} onApply={(how) => apply(run, how)} onRetry={() => send(run.prompt)} />
+          <RunCard
+            key={run.id}
+            run={run}
+            docEmpty={docCount === 0}
+            onApply={(how) => run.result && applyResult(run.id, run.result, how)}
+            onUndo={host.undo && run.id === runs.at(-1)?.id ? () => undo(run) : undefined}
+            onRetry={() => send(run.prompt)}
+            onOpenSettings={openSettings}
+          />
         ))}
       </div>
 
@@ -322,39 +342,25 @@ export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelPro
   );
 }
 
-function ModeTab({
-  active, disabled, onClick, icon, title, children,
-}: { active: boolean; disabled?: boolean; onClick: () => void; icon: React.ReactNode; title?: string; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      title={title}
-      className={cn(
-        'flex h-7 min-w-0 items-center justify-center gap-1.5 rounded-md px-1 text-[12px] font-medium transition-[background,color,box-shadow] duration-150 disabled:opacity-40',
-        active ? 'bg-panel text-fg shadow-[0_0_0_1px_var(--line),0_1px_2px_rgb(0_0_0/0.06)]' : 'text-muted hover:text-fg',
-      )}
-    >
-      {icon}
-      <span className="min-w-0 truncate">{children}</span>
-    </button>
-  );
-}
-
 function StepIcon({ state }: { state: StepState }) {
   if (state === 'running') return <LoaderCircle className="size-3.5 animate-spin text-accent" />;
   if (state === 'error') return <CircleAlert className="size-3.5 text-[#d48806]" />;
   return <Check className="size-3.5 text-success" />;
 }
 
-function RunCard({ run, docEmpty, onApply, onRetry }: { run: Run; docEmpty: boolean; onApply: (how: 'insert' | 'replace' | 'edit') => void; onRetry: () => void }) {
+interface ApplyProps {
+  docEmpty: boolean;
+  onApply: (how: 'insert' | 'replace' | 'edit') => void;
+  /** Only for the latest run: undo what it just applied. */
+  onUndo?: () => void;
+}
+
+function RunCard({ run, onRetry, onOpenSettings, ...apply }: { run: Run; onRetry: () => void; onOpenSettings: () => void } & ApplyProps) {
   const t = useT();
   return (
     <div className="animate-slide-up space-y-2">
       <div className="ml-6 rounded-xl rounded-tr-sm bg-accent-soft px-3 py-2 text-[12.5px] leading-relaxed text-fg">
         <div className="whitespace-pre-wrap break-words">{run.prompt}</div>
-        {run.mode === 'edit' && <div className="mt-1 text-[10.5px] font-medium uppercase tracking-wide text-accent">{t('ai.run.editBadge')}</div>}
       </div>
 
       {run.steps.length > 0 && (
@@ -381,20 +387,33 @@ function RunCard({ run, docEmpty, onApply, onRetry }: { run: Run; docEmpty: bool
         <div className="animate-pop rounded-xl bg-danger/8 p-3 ring-1 ring-danger/25">
           <div className="flex items-start gap-2 text-[12px] text-fg">
             <CircleAlert className="mt-px size-3.5 shrink-0 text-danger" />
-            <span className="line-clamp-6 break-words">{run.error}</span>
+            <span className="min-w-0">
+              <span className="line-clamp-6 break-words">{run.error}</span>
+              {run.errorDetail && (
+                <span title={run.errorDetail} className="mt-1 line-clamp-2 block break-words text-[11px] text-subtle">
+                  {run.errorDetail}
+                </span>
+              )}
+            </span>
           </div>
-          <Btn size="sm" variant="ghost" className="mt-2" icon={<RotateCcw />} onClick={onRetry}>
-            {t('ai.run.tryAgain')}
-          </Btn>
+          <div className="mt-2 flex flex-wrap gap-1">
+            <Btn size="sm" variant="ghost" icon={<RotateCcw />} onClick={onRetry}>
+              {t('ai.run.tryAgain')}
+            </Btn>
+            {/* Most failures (missing or rejected key, wrong endpoint or model) are fixed in settings. */}
+            <Btn size="sm" variant="ghost" icon={<Settings />} onClick={onOpenSettings}>
+              {t('ai.settings.title')}
+            </Btn>
+          </div>
         </div>
       )}
 
-      {run.status === 'done' && run.result && <ResultCard run={run} result={run.result} docEmpty={docEmpty} onApply={onApply} />}
+      {run.status === 'done' && run.result && <ResultCard run={run} result={run.result} {...apply} />}
     </div>
   );
 }
 
-function ResultCard({ run, result, docEmpty, onApply }: { run: Run; result: AgentResult; docEmpty: boolean; onApply: (how: 'insert' | 'replace' | 'edit') => void }) {
+function ResultCard({ run, result, docEmpty, onApply, onUndo }: { run: Run; result: AgentResult } & ApplyProps) {
   const t = useT();
   const [showNotes, setShowNotes] = useState(false);
   const stats = useMemo(() => {
@@ -454,11 +473,23 @@ function ResultCard({ run, result, docEmpty, onApply }: { run: Run; result: Agen
 
         <div className="mt-3 flex items-center gap-2">
           {run.applied ? (
-            <span className="animate-fade flex items-center gap-1.5 text-[12px] text-success">
-              <Check className="size-3.5" />
-              {run.applied === 'insert' ? t('ai.result.inserted') : run.applied === 'replace' ? t('ai.result.replaced') : t('ai.result.applied')}
-              <span className="text-subtle">{t('ai.result.undoHint', { shortcut: `${IS_MAC ? '⌘' : 'Ctrl'}Z` })}</span>
-            </span>
+            <>
+              <span className="animate-fade flex min-w-0 items-center gap-1.5 text-[12px] text-success">
+                <Check className="size-3.5 shrink-0" />
+                <span className="truncate">{run.applied === 'insert' ? t('ai.result.inserted') : run.applied === 'replace' ? t('ai.result.replaced') : t('ai.result.applied')}</span>
+              </span>
+              <div className="flex-1" />
+              {run.beside && result.kind === 'spec' && (
+                <Btn size="sm" variant="ghost" icon={<Replace />} onClick={() => onApply('replace')}>
+                  {t('ai.result.replaceDiagram')}
+                </Btn>
+              )}
+              {onUndo && (
+                <Btn size="sm" variant="ghost" icon={<Undo2 />} onClick={onUndo} title={`${IS_MAC ? '⌘' : 'Ctrl'}Z`}>
+                  {t('ai.result.undo')}
+                </Btn>
+              )}
+            </>
           ) : result.kind === 'spec' ? (
             <>
               <Btn variant="primary" size="sm" icon={<Plus />} onClick={() => onApply('insert')}>
@@ -529,4 +560,17 @@ function MiniPreview({ result }: { result: Extract<AgentResult, { kind: 'spec' }
       </svg>
     </div>
   );
+}
+
+/** Top-left point just right of the existing content, or null on an empty canvas. */
+function contentRight(doc: Doc): { x: number; y: number } | null {
+  let maxX = -Infinity;
+  let minY = Infinity;
+  for (const id of doc.order) {
+    const el = doc.elements[id];
+    if (!el || !isShape(el)) continue;
+    maxX = Math.max(maxX, el.x + el.w);
+    minY = Math.min(minY, el.y);
+  }
+  return Number.isFinite(maxX) ? { x: maxX + 160, y: minY } : null;
 }

@@ -4,6 +4,7 @@
  * and quick-connect arrows, smart guides, the marquee and the connect preview.
  * Sizes are divided by zoom so they stay constant on screen.
  */
+import { canDragSegment, segmentCursor } from '@/interaction/segmentDrag';
 import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { AnchorSide, ConnectorElement, DiagramElement, ShapeElement, Vec } from '@/model/types';
@@ -317,7 +318,7 @@ function ConnectorSelection({
       <path d={g.path} fill="none" stroke={ACCENT} strokeOpacity={0.35} strokeWidth={conn.style.strokeWidth + 4} strokeLinejoin="round" />
       {!editing && !locked && single && editableRoute &&
         segments
-          .filter((s) => s.len * z > 28 && (conn.routing === 'straight' || conn.routing === 'curved' || (s.i > 0 && s.i < control.length - 2)))
+          .filter((s) => s.len * z > 28 && (conn.routing === 'straight' || conn.routing === 'curved' || canDragSegment(conn, control, s.i, elements)))
           .map((s) => (
             <rect
               key={`s${s.i}`}
@@ -332,7 +333,10 @@ function ConnectorSelection({
               stroke={ACCENT}
               strokeWidth={1.25 * px}
               opacity={0.85}
-              style={{ pointerEvents: 'all', cursor: conn.routing === 'straight' || conn.routing === 'curved' ? 'copy' : 'move' }}
+              style={{
+                pointerEvents: 'all',
+                cursor: conn.routing === 'straight' || conn.routing === 'curved' ? 'copy' : segmentCursor(Math.abs(control[s.i].y - control[s.i + 1].y) < 0.5),
+              }}
             />
           ))}
       {!editing && !locked && single &&

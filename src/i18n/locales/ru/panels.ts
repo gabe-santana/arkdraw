@@ -349,10 +349,10 @@ export default {
 
   // LeftPanel
   'panels.left.aria': 'Панель фигур',
-  'panels.left.cloud': 'Облако',
-  'panels.left.searchShapes': 'Поиск фигур',
+  'panels.left.cloud': 'Значки облаков и брендов',
+  'panels.left.searchShapes': 'Поиск фигур и значков',
   'panels.left.bestMatches': 'Лучшие совпадения',
-  'panels.left.noShapes': 'Нет фигур по запросу «{query}».',
+  'panels.left.noShapes': 'Ничего не найдено по запросу «{query}».',
   'panels.left.hintConnect': 'Щёлкните, чтобы добавить с соединением к выделенной фигуре (Alt+щелчок — без соединения) · Shift+перетаскивание на фигуру заменяет её',
   'panels.left.hintInsert': 'Перетащите на холст или щёлкните, чтобы вставить · Shift+перетаскивание на фигуру заменяет её',
   'panels.left.removeFavorite': 'Удалить из избранного',
@@ -360,8 +360,6 @@ export default {
   'panels.left.favorites': 'Избранное',
   'panels.left.recent': 'Недавние',
   'panels.icons.none': 'Наборы значков не установлены.',
-  'panels.icons.searchPlaceholder': 'Поиск среди {count}+ значков',
-  'panels.icons.noMatch': 'Нет значков по запросу «{query}».',
   'panels.icons.description': 'Значок {provider} ({category}) для архитектурных диаграмм.',
   'panels.icons.footer': 'Значки {name} · {version}. Товарные знаки принадлежат их владельцам; предоставлены для архитектурных диаграмм.',
   'panels.libraryDrag.replace': 'Заменить',

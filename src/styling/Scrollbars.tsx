@@ -21,11 +21,10 @@ export function Scrollbars() {
   const viewport = useEditor((s) => s.viewport);
   const leftInset = useUi((s) => columnInset(s, 'left'));
   const rightInset = useUi((s) => columnInset(s, 'right'));
-  const aiOpen = useUi((s) => s.aiOpen);
   const content = useMemo(() => selectionBounds(doc, doc.order), [doc]);
 
   const left = leftInset ? leftInset + PANEL_GAP : EDGE;
-  const right = aiOpen ? 396 : rightInset ? rightInset + PANEL_GAP : EDGE;
+  const right = rightInset ? rightInset + PANEL_GAP : EDGE;
   const top = 8;
   const bottom = 4;
   const track = { w: Math.max(40, viewport.w - left - right - 14), h: Math.max(40, viewport.h - top - bottom - 14) };

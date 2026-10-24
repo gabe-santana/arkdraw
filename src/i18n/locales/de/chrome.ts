@@ -99,4 +99,10 @@ export default {
   'chrome.dock.dropHere': 'Hier ablegen',
   'chrome.dock.resizeLeft': 'Linke Bereiche skalieren',
   'chrome.dock.resizeRight': 'Rechte Bereiche skalieren',
+  'chrome.rightTabs.aria': 'Rechter Bereich',
+  'chrome.rightTabs.design': 'Design',
+  'chrome.rightTabs.designHint': 'Stil und Ebenen der Auswahl',
+  'chrome.rightTabs.ai': 'KI',
+  'chrome.rightTabs.aiHint': 'Sagen Sie, was Sie möchten: Der Assistent zeichnet oder bearbeitet es',
+  'chrome.dock.resizeAi': 'KI-Bereich skalieren',
 } satisfies Translation<typeof en>;

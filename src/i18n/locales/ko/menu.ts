@@ -40,7 +40,6 @@ export default {
   'menu.units.m': '미터',
 
   // Title bar
-  'titlebar.generate': '생성',
   'titlebar.export': '내보내기',
   'titlebar.undo': '실행 취소',
   'titlebar.redo': '다시 실행',

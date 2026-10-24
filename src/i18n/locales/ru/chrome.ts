@@ -101,4 +101,10 @@ export default {
   'chrome.dock.dropHere': 'Перетащите сюда',
   'chrome.dock.resizeLeft': 'Изменить ширину левых панелей',
   'chrome.dock.resizeRight': 'Изменить ширину правых панелей',
+  'chrome.rightTabs.aria': 'Правая панель',
+  'chrome.rightTabs.design': 'Дизайн',
+  'chrome.rightTabs.designHint': 'Стиль и слои выделенного',
+  'chrome.rightTabs.ai': 'ИИ',
+  'chrome.rightTabs.aiHint': 'Скажите, что нужно: ассистент нарисует или изменит',
+  'chrome.dock.resizeAi': 'Изменить ширину панели ИИ',
 } satisfies Translation<typeof en>;

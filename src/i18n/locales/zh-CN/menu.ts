@@ -40,7 +40,6 @@ export default {
   'menu.units.m': '米',
 
   // Title bar
-  'titlebar.generate': '生成',
   'titlebar.export': '导出',
   'titlebar.undo': '撤销',
   'titlebar.redo': '重做',

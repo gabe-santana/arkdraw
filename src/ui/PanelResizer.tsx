@@ -6,14 +6,18 @@ import { useState } from 'react';
 import { cn } from '@/lib/cn';
 
 export const PANEL_WIDTH = { min: 220, max: 520, left: 264, right: 268 } as const;
+/** The AI tab of the right column: a chat reads better a little wider. */
+export const AI_WIDTH = { min: 300, max: 720, default: 380 } as const;
 
-export function PanelResizer({ edge, width, onChange, defaultWidth, label }: {
+export function PanelResizer({ edge, width, onChange, defaultWidth, label, min = PANEL_WIDTH.min, max = PANEL_WIDTH.max }: {
   /** Which edge of the panel the handle sits on (the one facing the canvas). */
   edge: 'left' | 'right';
   width: number;
   onChange: (width: number) => void;
   defaultWidth: number;
   label: string;
+  min?: number;
+  max?: number;
 }) {
   const [dragging, setDragging] = useState(false);
 
@@ -27,7 +31,7 @@ export function PanelResizer({ edge, width, onChange, defaultWidth, label }: {
     document.body.style.cursor = 'ew-resize';
     const move = (ev: PointerEvent) => {
       const w = startW + (ev.clientX - startX) * dir;
-      onChange(Math.round(Math.min(PANEL_WIDTH.max, Math.max(PANEL_WIDTH.min, w))));
+      onChange(Math.round(Math.min(max, Math.max(min, w))));
     };
     const up = () => {
       setDragging(false);
@@ -45,8 +49,8 @@ export function PanelResizer({ edge, width, onChange, defaultWidth, label }: {
       aria-orientation="vertical"
       aria-label={label}
       aria-valuenow={width}
-      aria-valuemin={PANEL_WIDTH.min}
-      aria-valuemax={PANEL_WIDTH.max}
+      aria-valuemin={min}
+      aria-valuemax={max}
       tabIndex={0}
       onPointerDown={start}
       onDoubleClick={() => onChange(defaultWidth)}
@@ -57,7 +61,7 @@ export function PanelResizer({ edge, width, onChange, defaultWidth, label }: {
         if (e.key !== grow && e.key !== shrink) return;
         e.preventDefault();
         e.stopPropagation();
-        onChange(Math.min(PANEL_WIDTH.max, Math.max(PANEL_WIDTH.min, width + (e.key === grow ? step : -step))));
+        onChange(Math.min(max, Math.max(min, width + (e.key === grow ? step : -step))));
       }}
       className={cn(
         'group pointer-events-auto absolute top-6 bottom-6 z-10 flex w-4 cursor-ew-resize justify-center outline-none',

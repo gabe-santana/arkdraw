@@ -13,20 +13,26 @@ export interface AiSettings {
   models: Partial<Record<ProviderId, string>>;
   /** Endpoint per provider (Ollama / custom). */
   baseUrls: Partial<Record<ProviderId, string>>;
-  /** Auth header style for the custom endpoint (`api-key` for Azure). */
+  /** Auth header style for the custom endpoint. */
   customAuth: CustomAuthStyle;
+  /** Auth header style for Azure (`api-key` unless the resource uses Entra ID tokens). */
+  azureAuth: CustomAuthStyle;
+  /** Extra per-provider settings (ProviderMeta.fields): Bedrock `region`, Cloudflare `accountId`. */
+  params: Partial<Record<ProviderId, Record<string, string>>>;
   /** Endpoint each Ollama/custom key entry was saved for (UI hint only; Rust enforces it). */
   authorizedBaseUrls: Partial<Record<ProviderId, string>>;
 }
 
 const STORAGE_KEY = 'opendraw.ai.settings.v1';
-const PROVIDER_IDS: ProviderId[] = ['anthropic', 'openai', 'gemini', 'ollama', 'custom'];
+const PROVIDER_IDS: ProviderId[] = ['anthropic', 'openai', 'gemini', 'xai', 'deepseek', 'mistral', 'openrouter', 'groq', 'moonshot', 'qwen', 'zai', 'together', 'fireworks', 'cerebras', 'azure', 'bedrock', 'vertex', 'cloudflare', 'ollama', 'custom'];
 
 export const DEFAULT_AI_SETTINGS: AiSettings = {
   provider: 'anthropic',
   models: {},
   baseUrls: {},
   customAuth: 'bearer',
+  azureAuth: 'api-key',
+  params: {},
   authorizedBaseUrls: {},
 };
 
@@ -40,6 +46,8 @@ function load(): AiSettings {
       models: typeof parsed.models === 'object' && parsed.models ? parsed.models : {},
       baseUrls: typeof parsed.baseUrls === 'object' && parsed.baseUrls ? parsed.baseUrls : {},
       customAuth: parsed.customAuth === 'api-key' ? 'api-key' : 'bearer',
+      azureAuth: parsed.azureAuth === 'bearer' ? 'bearer' : 'api-key',
+      params: typeof parsed.params === 'object' && parsed.params ? parsed.params : {},
       authorizedBaseUrls: typeof parsed.authorizedBaseUrls === 'object' && parsed.authorizedBaseUrls ? parsed.authorizedBaseUrls : {},
     };
   } catch {
@@ -83,6 +91,18 @@ export function baseUrlFor(s: AiSettings, provider: ProviderId = s.provider): st
   return s.baseUrls[provider] || PROVIDER_META[provider].defaultBaseUrl;
 }
 
+/** A provider field's value (ProviderMeta.fields), falling back to its default. */
+export function paramFor(s: AiSettings, provider: ProviderId, field: string): string {
+  return s.params[provider]?.[field] || PROVIDER_META[provider].fields?.find((f) => f.id === field)?.default || '';
+}
+
+/** Header style used with the stored key (custom endpoints and Azure let the user choose). */
+export function authStyleFor(s: AiSettings, provider: ProviderId = s.provider): CustomAuthStyle | undefined {
+  return provider === 'custom' ? s.customAuth : provider === 'azure' ? s.azureAuth : undefined;
+}
+
 export function providerConfig(s: AiSettings, provider: ProviderId = s.provider): ProviderConfig {
-  return { provider, model: modelFor(s, provider), baseUrl: baseUrlFor(s, provider) };
+  const fields = PROVIDER_META[provider].fields;
+  const params = fields ? Object.fromEntries(fields.map((f) => [f.id, paramFor(s, provider, f.id)])) : undefined;
+  return { provider, model: modelFor(s, provider), baseUrl: baseUrlFor(s, provider), ...(params ? { params } : {}) };
 }

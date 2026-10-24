@@ -5,7 +5,7 @@
  */
 import { TABLE_MENU_IDS } from '@/interaction/actions';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Copy, Minus, Redo2, Sparkles, Square, Undo2, X, FileDown, Sun, Moon, Clock, Trash } from 'lucide-react';
+import { Copy, Minus, Redo2, Square, Undo2, X, FileDown, Sun, Moon, Clock, Trash } from 'lucide-react';
 import { useEditor, useIsDirty } from '@/store/editor';
 import { useUi } from '@/store/ui';
 import { IS_MAC, isTauri } from '@/lib/platform';
@@ -198,7 +198,6 @@ export function TitleBar() {
   const canRedo = useEditor((s) => s.future.length > 0);
   const theme = useUi((s) => s.theme);
   const setUi = useUi((s) => s.set);
-  const aiOpen = useUi((s) => s.aiOpen);
   const [open, setOpen] = useState<{ label: string; x: number; y: number } | null>(null);
   const [recent, setRecent] = useState<RecentFile[]>([]);
   const barRef = useRef<HTMLDivElement>(null);
@@ -279,16 +278,6 @@ export function TitleBar() {
           {dark ? <Sun /> : <Moon />}
         </IconButton>
         <div className="mx-1.5 h-5 w-px bg-line" />
-        <button
-          onClick={() => setUi({ aiOpen: !aiOpen })}
-          className={cn(
-            'group relative mr-1 flex h-7 items-center gap-1.5 overflow-hidden rounded-lg px-2.5 text-[12.5px] font-medium transition-all',
-            aiOpen ? 'bg-accent-soft text-accent' : 'text-fg hover:bg-hover',
-          )}
-        >
-          <Sparkles className="size-[15px] text-accent transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110" />
-          {t('titlebar.generate')}
-        </button>
         <Button variant="primary" size="sm" icon={<FileDown className="size-3.5" />} onClick={() => runAction('file.export')}>
           {t('titlebar.export')}
         </Button>

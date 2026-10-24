@@ -442,11 +442,11 @@ export default {
 
   // LeftPanel
   'panels.left.aria': 'Shapes panel',
-  // Tab: cloud & vendor icon packs (AWS, Azure…).
-  'panels.left.cloud': 'Cloud',
-  'panels.left.searchShapes': 'Search shapes',
+  // Heading over the cloud & vendor icon packs (AWS, Azure…), and their search results.
+  'panels.left.cloud': 'Cloud & brand icons',
+  'panels.left.searchShapes': 'Search shapes and icons',
   'panels.left.bestMatches': 'Best matches',
-  'panels.left.noShapes': 'No shapes match “{query}”.',
+  'panels.left.noShapes': 'Nothing matches “{query}”.',
   'panels.left.hintConnect': 'Click to add it connected to the selected shape (Alt-click: unconnected) · Shift-drop on a shape to replace it',
   'panels.left.hintInsert': 'Drag onto the canvas, or click to insert · Shift-drop on a shape to replace it',
   'panels.left.removeFavorite': 'Remove from favorites',
@@ -454,9 +454,6 @@ export default {
   'panels.left.favorites': 'Favorites',
   'panels.left.recent': 'Recent',
   'panels.icons.none': 'No icon packs installed.',
-  // {count} is a rounded number such as "4,000".
-  'panels.icons.searchPlaceholder': 'Search {count}+ icons',
-  'panels.icons.noMatch': 'No icons match “{query}”.',
   // Hover-card fallback; {provider} is a vendor (AWS…), {category} an icon category.
   'panels.icons.description': '{provider} {category} icon for architecture diagrams.',
   // {name} is the icon pack (AWS…), {version} its version.

@@ -101,4 +101,10 @@ export default {
   'chrome.dock.dropHere': 'Solte aqui',
   'chrome.dock.resizeLeft': 'Redimensionar painéis à esquerda',
   'chrome.dock.resizeRight': 'Redimensionar painéis à direita',
+  'chrome.rightTabs.aria': 'Painel direito',
+  'chrome.rightTabs.design': 'Design',
+  'chrome.rightTabs.designHint': 'Estilo e camadas do que você seleciona',
+  'chrome.rightTabs.ai': 'IA',
+  'chrome.rightTabs.aiHint': 'Diga o que você quer: o assistente desenha ou edita',
+  'chrome.dock.resizeAi': 'Redimensionar o painel de IA',
 } satisfies Translation<typeof en>;

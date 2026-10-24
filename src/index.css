@@ -305,6 +305,92 @@
   }
 }
 
+/* AI assistant at work (src/chrome/AiActivity.tsx): a glow in the brand
+ * color around the window during a run, and a pop on each element it adds or changes. */
+.od-ai-glow {
+  box-shadow:
+    inset 0 0 0 2px color-mix(in oklab, var(--accent) 75%, transparent),
+    inset 0 0 28px 6px color-mix(in oklab, var(--accent) 40%, transparent);
+  animation:
+    fade-in 300ms ease-out both,
+    od-ai-breathe 2.2s ease-in-out 300ms infinite;
+}
+@keyframes od-ai-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+.od-ai-sparkle {
+  animation: od-ai-twinkle 1.6s ease-in-out infinite;
+}
+@keyframes od-ai-twinkle {
+  0%,
+  100% {
+    rotate: 0deg;
+    scale: 1;
+  }
+  50% {
+    rotate: 14deg;
+    scale: 1.15;
+  }
+}
+@keyframes od-ai-in {
+  0% {
+    scale: 0.4;
+    opacity: 0;
+  }
+  60% {
+    scale: 1.08;
+    opacity: 1;
+  }
+  100% {
+    scale: 1;
+    opacity: 1;
+  }
+}
+@keyframes od-ai-bump {
+  0%,
+  100% {
+    scale: 1;
+  }
+  40% {
+    scale: 1.1;
+  }
+}
+@keyframes od-ai-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes od-ai-glow {
+  0% {
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  30% {
+    filter: drop-shadow(0 0 7px color-mix(in oklab, var(--accent) 90%, transparent));
+  }
+  100% {
+    filter: drop-shadow(0 0 0 transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .od-ai-glow,
+  .od-ai-sparkle {
+    animation: none;
+  }
+  [data-canvas] [data-el] {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+}
+
 /* ===========================================================================
  * Editor UI modes (Extras → Appearance; src/extensibility/store.ts).
  * <html data-ui-mode="minimal | sketch | compact">; Default has no attribute.

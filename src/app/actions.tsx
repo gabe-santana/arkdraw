@@ -41,7 +41,7 @@ import { showConfigFile } from '@/desktop/startup';
 import { STYLING_ACTIONS } from '@/styling/actions';
 import { INTERACTION_ACTIONS } from '@/interaction/actions';
 import { CONNECTOR_ACTIONS } from '@/panels/connectorActions';
-import { columnInset, panelColumnOpen, resetDock, togglePanelColumn } from '@/chrome/Dock';
+import { columnInset, panelColumnOpen, resetDock, toggleAiTab, togglePanelColumn } from '@/chrome/Dock';
 
 export type ActionGroup = 'File' | 'Edit' | 'View' | 'Arrange' | 'Tools' | 'Help' | 'AI' | 'Layout';
 
@@ -341,7 +341,7 @@ export const ACTIONS: Action[] = [
   tool('freehand', 'Freehand', <Pencil />, ['P']),
 
   // --- AI -------------------------------------------------------------------
-  { id: 'ai.open', label: 'Generate with AI…', group: 'AI', icon: <Sparkles />, shortcuts: ['Mod+I'], run: () => ui().set({ aiOpen: !ui().aiOpen }), keywords: 'assistant llm claude gpt' },
+  { id: 'ai.open', label: 'Generate with AI…', group: 'AI', icon: <Sparkles />, shortcuts: ['Mod+I'], run: toggleAiTab, keywords: 'assistant llm claude gpt agent chat' },
   { id: 'extras.preferences', label: 'Preferences…', group: 'AI', icon: <SlidersHorizontal />, shortcuts: ['Mod+,'], run: () => ui().set({ prefsOpen: true }), keywords: 'settings configuration palette author' },
   { id: 'ai.settings', label: 'AI provider & API key…', group: 'AI', icon: <Settings2 />, run: () => ui().set({ aiSettingsOpen: true }), keywords: 'byok openai anthropic ollama key' },
 

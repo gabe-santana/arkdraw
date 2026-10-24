@@ -3,7 +3,7 @@
  * feature doesn't depend on in-flux core UI files). Visual language matches
  * the app: 13px Inter, rounded-lg, subtle rings, quick transitions.
  */
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { forwardRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { Laptop, LoaderCircle, Plug } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { t, type MessageKey } from '@/i18n';
@@ -73,8 +73,72 @@ export const IconBtn = forwardRef<HTMLButtonElement, IconBtnProps>(function Icon
   );
 });
 
-/** Monogram / glyph identifying a provider (no vendor logos bundled). */
+/**
+ * Provider logos, resolved at runtime from the icon packs `npm run icons:fetch`
+ * installs (vendor marks are never committed): official service icons for the
+ * cloud platforms, the Tech Logos pack for the rest.
+ */
+const PROVIDER_LOGOS: Partial<Record<ProviderId, string>> = {
+  azure: 'azure/ai-machine-learning/ai-foundry.svg',
+  bedrock: 'aws/artificial-intelligence/amazon-bedrock.svg',
+  vertex: 'gcp/products/vertex-ai.svg',
+  cloudflare: 'logos/icons/cloudflare.svg',
+  anthropic: 'logos/icons/anthropic.svg',
+  openai: 'logos/icons/openai.svg',
+  gemini: 'logos/icons/google-gemini.svg',
+  xai: 'logos/icons/grok.svg',
+  deepseek: 'logos/icons/deepseek.svg',
+  mistral: 'logos/icons/mistral-ai.svg',
+  openrouter: 'logos/icons/openrouter.svg',
+  moonshot: 'logos/icons/moonshot-ai.svg',
+  qwen: 'logos/icons/qwen.svg',
+  together: 'logos/icons/togetherai.svg',
+  cerebras: 'logos/icons/cerebras.svg',
+};
+
+/** Logo files that loaded / failed, so remounts don't flash the monogram. */
+const logoState = new Map<string, 'ok' | 'failed'>();
+
+/** A provider's logo on a neutral tile; the monogram shows while it loads or when the icon pack isn't installed. */
 export function ProviderMark({ provider, size = 28, className }: { provider: ProviderId; size?: number; className?: string }) {
+  const path = PROVIDER_LOGOS[provider];
+  const [, rerender] = useState(0);
+  const state = path ? logoState.get(path) : 'failed';
+  if (!path || state === 'failed') return <ProviderMonogram provider={provider} size={size} className={className} />;
+  const settle = (result: 'ok' | 'failed') => {
+    logoState.set(path, result);
+    rerender((n) => n + 1);
+  };
+  const logo = (
+    <img
+      src={`${import.meta.env.BASE_URL}icons/${path}`}
+      alt=""
+      draggable={false}
+      onLoad={() => state !== 'ok' && settle('ok')}
+      onError={() => settle('failed')}
+      className={state === 'ok' ? 'size-full object-contain' : 'hidden'}
+    />
+  );
+  if (state !== 'ok') {
+    return (
+      <>
+        <ProviderMonogram provider={provider} size={size} className={className} />
+        {logo}
+      </>
+    );
+  }
+  return (
+    <span
+      className={cn('inline-flex shrink-0 items-center justify-center rounded-lg bg-white ring-1 ring-line', className)}
+      style={{ width: size, height: size, padding: Math.max(2, Math.round(size * 0.16)) }}
+    >
+      {logo}
+    </span>
+  );
+}
+
+/** Monogram / glyph identifying a provider, when its logo isn't available. */
+function ProviderMonogram({ provider, size = 28, className }: { provider: ProviderId; size?: number; className?: string }) {
   const base = 'inline-flex shrink-0 items-center justify-center rounded-lg font-semibold text-white';
   const style = { width: size, height: size, fontSize: Math.round(size * 0.46) };
   switch (provider) {
@@ -84,6 +148,36 @@ export function ProviderMark({ provider, size = 28, className }: { provider: Pro
       return <span className={cn(base, 'bg-[#10a37f]', className)} style={style}>O</span>;
     case 'gemini':
       return <span className={cn(base, 'bg-gradient-to-br from-[#4285f4] to-[#9b72cb]', className)} style={style}>G</span>;
+    case 'xai':
+      return <span className={cn(base, 'bg-[#111111] ring-1 ring-white/15', className)} style={style}>X</span>;
+    case 'deepseek':
+      return <span className={cn(base, 'bg-[#4d6bfe]', className)} style={style}>D</span>;
+    case 'mistral':
+      return <span className={cn(base, 'bg-gradient-to-br from-[#ffd800] via-[#ff8205] to-[#e10500]', className)} style={style}>M</span>;
+    case 'openrouter':
+      return <span className={cn(base, 'bg-[#6467f2]', className)} style={style}>R</span>;
+    case 'groq':
+      return <span className={cn(base, 'bg-[#f55036]', className)} style={style}>Q</span>;
+    case 'moonshot':
+      return <span className={cn(base, 'bg-[#1a1a2e]', className)} style={style}>K</span>;
+    case 'qwen':
+      return <span className={cn(base, 'bg-[#615ced]', className)} style={style}>Q</span>;
+    case 'zai':
+      return <span className={cn(base, 'bg-[#2d2d2d]', className)} style={style}>Z</span>;
+    case 'together':
+      return <span className={cn(base, 'bg-[#0f6fff]', className)} style={style}>T</span>;
+    case 'fireworks':
+      return <span className={cn(base, 'bg-[#6720ff]', className)} style={style}>F</span>;
+    case 'cerebras':
+      return <span className={cn(base, 'bg-[#f05a28]', className)} style={style}>C</span>;
+    case 'azure':
+      return <span className={cn(base, 'bg-gradient-to-br from-[#0078d4] to-[#50e6ff]', className)} style={style}>Az</span>;
+    case 'bedrock':
+      return <span className={cn(base, 'bg-[#232f3e] text-[#ff9900]', className)} style={style}>B</span>;
+    case 'vertex':
+      return <span className={cn(base, 'bg-gradient-to-br from-[#4285f4] to-[#34a853]', className)} style={style}>V</span>;
+    case 'cloudflare':
+      return <span className={cn(base, 'bg-[#f38020]', className)} style={style}>CF</span>;
     case 'ollama':
       return (
         <span className={cn(base, 'bg-fg text-panel', className)} style={style}>
@@ -103,6 +197,21 @@ const TAGLINES: Record<ProviderId, MessageKey> = {
   anthropic: 'ai.provider.anthropic.tagline',
   openai: 'ai.provider.openai.tagline',
   gemini: 'ai.provider.gemini.tagline',
+  xai: 'ai.provider.xai.tagline',
+  deepseek: 'ai.provider.deepseek.tagline',
+  mistral: 'ai.provider.mistral.tagline',
+  openrouter: 'ai.provider.openrouter.tagline',
+  groq: 'ai.provider.groq.tagline',
+  moonshot: 'ai.provider.moonshot.tagline',
+  qwen: 'ai.provider.qwen.tagline',
+  zai: 'ai.provider.zai.tagline',
+  together: 'ai.provider.together.tagline',
+  fireworks: 'ai.provider.fireworks.tagline',
+  cerebras: 'ai.provider.cerebras.tagline',
+  azure: 'ai.provider.azure.tagline',
+  bedrock: 'ai.provider.bedrock.tagline',
+  vertex: 'ai.provider.vertex.tagline',
+  cloudflare: 'ai.provider.cloudflare.tagline',
   ollama: 'ai.provider.ollama.tagline',
   custom: 'ai.provider.custom.tagline',
 };

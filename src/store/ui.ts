@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 
-export type LeftTab = 'shapes' | 'icons';
 /** Floating panels and where they're docked (src/chrome/Dock.tsx). */
 export type PanelId = 'shapes' | 'format' | 'layers';
 export type DockSide = 'left' | 'right';
@@ -29,8 +28,9 @@ interface UiState {
   /** Floating panel widths in px (user-resizable). */
   leftWidth: number;
   rightWidth: number;
+  /** Width of the right column while its AI tab is showing (chat wants more room). */
+  aiWidth: number;
   dock: DockLayout;
-  leftTab: LeftTab;
   /** Layers dock (right, under Format): expanded, and its height. */
   layersOpen: boolean;
   layersHeight: number;
@@ -39,6 +39,7 @@ interface UiState {
   paletteOpen: boolean;
   exportOpen: boolean;
   shortcutsOpen: boolean;
+  /** The right column shows the AI tab (instead of Design: Format + Layers). */
   aiOpen: boolean;
   aiSettingsOpen: boolean;
   /** Quick shape picker (double-click on empty canvas). */
@@ -76,14 +77,12 @@ function load<T>(key: string, fallback: T): T {
   }
 }
 
-const panels = load(PANELS_KEY, { leftOpen: true, rightOpen: true, leftTab: 'shapes' as LeftTab, layersOpen: true, layersHeight: 300, leftWidth: 264, rightWidth: 268, dock: { left: ['shapes'], right: ['format', 'layers'] } as DockLayout });
+const panels = load(PANELS_KEY, { leftOpen: true, rightOpen: true, layersOpen: true, layersHeight: 300, leftWidth: 264, rightWidth: 268, aiWidth: 380, aiOpen: false, dock: { left: ['shapes'], right: ['format', 'layers'] } as DockLayout });
 // A saved layout must still contain each panel exactly once.
 {
   const all = [...panels.dock.left, ...panels.dock.right];
   if (all.length !== 3 || new Set(all).size !== 3) panels.dock = { left: ['shapes'], right: ['format', 'layers'] };
 }
-// Layers used to be a left tab.
-if ((panels.leftTab as string) === 'layers') panels.leftTab = 'shapes';
 
 let toastId = 0;
 
@@ -94,7 +93,6 @@ export const useUi = create<UiState>((set, get) => ({
   paletteOpen: false,
   exportOpen: false,
   shortcutsOpen: false,
-  aiOpen: false,
   aiSettingsOpen: false,
   shapePicker: null,
   findOpen: false,
@@ -120,9 +118,9 @@ export const useUi = create<UiState>((set, get) => ({
       if ('theme' in patch) localStorage.setItem(THEME_KEY, JSON.stringify({ theme: s.theme }));
       if ('rulers' in patch) localStorage.setItem('opendraw:rulers', JSON.stringify({ rulers: s.rulers }));
       if ('units' in patch) localStorage.setItem('opendraw:units', JSON.stringify({ units: s.units }));
-      if ('leftOpen' in patch || 'rightOpen' in patch || 'leftTab' in patch || 'layersOpen' in patch || 'layersHeight' in patch || 'leftWidth' in patch || 'rightWidth' in patch || 'dock' in patch) {
-        const { leftOpen, rightOpen, leftTab, layersOpen, layersHeight, leftWidth, rightWidth, dock } = s;
-        localStorage.setItem(PANELS_KEY, JSON.stringify({ leftOpen, rightOpen, leftTab, layersOpen, layersHeight, leftWidth, rightWidth, dock }));
+      if ('leftOpen' in patch || 'rightOpen' in patch || 'layersOpen' in patch || 'layersHeight' in patch || 'leftWidth' in patch || 'rightWidth' in patch || 'aiWidth' in patch || 'aiOpen' in patch || 'dock' in patch) {
+        const { leftOpen, rightOpen, layersOpen, layersHeight, leftWidth, rightWidth, aiWidth, aiOpen, dock } = s;
+        localStorage.setItem(PANELS_KEY, JSON.stringify({ leftOpen, rightOpen, layersOpen, layersHeight, leftWidth, rightWidth, aiWidth, aiOpen, dock }));
       }
     } catch {
       /* storage unavailable */

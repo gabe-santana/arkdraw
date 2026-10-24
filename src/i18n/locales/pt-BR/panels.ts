@@ -349,10 +349,10 @@ export default {
 
   // LeftPanel
   'panels.left.aria': 'Painel Formas',
-  'panels.left.cloud': 'Nuvem',
-  'panels.left.searchShapes': 'Pesquisar formas',
+  'panels.left.cloud': 'Ícones de nuvem e marcas',
+  'panels.left.searchShapes': 'Pesquisar formas e ícones',
   'panels.left.bestMatches': 'Melhores resultados',
-  'panels.left.noShapes': 'Nenhuma forma corresponde a “{query}”.',
+  'panels.left.noShapes': 'Nada corresponde a “{query}”.',
   'panels.left.hintConnect': 'Clique para adicioná-la conectada à forma selecionada (Alt+clique: sem conexão) · Shift ao soltar sobre uma forma para substituí-la',
   'panels.left.hintInsert': 'Arraste para a tela ou clique para inserir · Shift ao soltar sobre uma forma para substituí-la',
   'panels.left.removeFavorite': 'Remover dos favoritos',
@@ -360,8 +360,6 @@ export default {
   'panels.left.favorites': 'Favoritos',
   'panels.left.recent': 'Recentes',
   'panels.icons.none': 'Nenhum pacote de ícones instalado.',
-  'panels.icons.searchPlaceholder': 'Pesquisar mais de {count} ícones',
-  'panels.icons.noMatch': 'Nenhum ícone corresponde a “{query}”.',
   'panels.icons.description': 'Ícone {provider} de {category} para diagramas de arquitetura.',
   'panels.icons.footer': 'Ícones {name} · {version}. Marcas registradas de seus respectivos proprietários; fornecidos para diagramas de arquitetura.',
   'panels.libraryDrag.replace': 'Substituir',

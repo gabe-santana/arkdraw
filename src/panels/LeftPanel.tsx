@@ -1,49 +1,109 @@
 import { memo, useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { ChevronRight, Cloud, Shapes, Star } from 'lucide-react';
+import { ChevronRight, Star } from 'lucide-react';
 import { createShape } from '@/model/defaults';
 import { LIBRARIES } from '@/shapes/libraries';
 import { getShapeDef } from '@/shapes/registry';
 import type { LibraryItem } from '@/shapes/types';
 import { useEditor } from '@/store/editor';
-import { useUi, type LeftTab } from '@/store/ui';
 import { cn } from '@/lib/cn';
 import { iconUrl } from '@/shapes/IconImage';
 import {
-  createIconElement, ICON_STYLE, iconPath, loadPack, loadProviders, searchIcons, useIconPacks, ICON_SIZE, type IconEntry, type IconPack,
+  createIconElement, ICON_STYLE, iconPath, loadPack, loadProviders, useIconPacks, ICON_SIZE, type IconEntry, type IconPack,
 } from '@/icons/iconPacks';
-import { SearchInput, Segmented } from '@/ui/controls';
+import { SearchInput } from '@/ui/controls';
 import { ShapePreview } from './ShapePreview';
 import { HoverCard } from '@/ui/HoverCard';
 import { loadIconDescriptions, shapeDescription, useIconDescriptions } from '@/icons/descriptions';
-import { searchShapes } from '@/search/indexes';
+import { searchLibrary } from '@/search/indexes';
 import { UserLibrariesSection } from './UserLibrariesSection';
 import { connectableSelection, startLibraryDrag } from './libraryDrag';
 import { hasRef, refKey, useLibraryHistory, type LibraryRef } from './libraryHistory';
 import { ContextMenu } from '@/ui/Menu';
 import { t, tx, useT } from '@/i18n';
-import { segLabel } from './sections';
 
 /** A built-in library's display name; unknown (plugin / stencil) libraries keep their own name. */
 const libraryName = (id: string, name: string) => tx(`panels.library.${id}`, name);
 
+/**
+ * The library: shapes and cloud/brand icons in one list with one search.
+ * Browsing shows favorites and recent items, the shape libraries, then one
+ * section per icon pack (opened on demand).
+ */
 export function LeftPanel() {
-  const tab = useUi((s) => s.leftTab);
-  const set = useUi((s) => s.set);
   const t = useT();
+  const [query, setQuery] = useState('');
+  const [collapsed, toggle] = useCollapsed(COLLAPSE_KEY, (id) => !id.startsWith('__') && !OPEN_BY_DEFAULT.has(id));
+  const providers = useIconPacks((s) => s.providers);
+  const packs = useIconPacks((s) => s.packs);
+  const q = query.trim().toLowerCase();
+  const deferredQ = useDeferredValue(q);
+
+  useEffect(() => {
+    loadProviders();
+  }, []);
+  // Searching spans every icon pack (and their descriptions, for hover cards).
+  useEffect(() => {
+    if (!deferredQ || !providers) return;
+    for (const p of providers) {
+      loadPack(p.id).catch(() => {});
+      loadIconDescriptions(p.id);
+    }
+  }, [deferredQ, providers]);
+
+  const found = useMemo(() => (deferredQ ? searchLibrary(deferredQ, Object.values(packs)) : null), [deferredQ, packs]);
+  const shapeHits = found?.shapes;
+  const iconHits = found?.icons;
+  const iconsFirst = !!found?.iconsFirst;
+
+  const shapeResults = shapeHits && shapeHits.length > 0 && (
+    <Section title={t('panels.left.bestMatches')} count={shapeHits.length} open onToggle={() => {}}>
+      <div className="grid grid-cols-4 gap-1">
+        {shapeHits.map((h, i) => (
+          <ShapeTile key={`${h.libraryId}-${i}-${h.item.label}`} item={h.item} libraryId={h.libraryId} library={h.library} />
+        ))}
+      </div>
+    </Section>
+  );
+  const iconResults = iconHits && iconHits.length > 0 && (
+    <Section title={t('panels.left.cloud')} count={iconHits.length} open onToggle={() => {}}>
+      <div className="grid grid-cols-4 gap-1">
+        {iconHits.map(({ provider, icon }) => (
+          <IconTile key={`${provider}:${icon.id}`} provider={provider} icon={icon} />
+        ))}
+      </div>
+    </Section>
+  );
+
   return (
     <aside aria-label={t('panels.left.aria')} className="animate-slide-up pointer-events-auto flex h-full w-full flex-col overflow-hidden rounded-2xl bg-panel shadow-panel">
-      <div data-dock-handle className="p-2 pb-1.5">
-        <Segmented<LeftTab>
-          value={tab}
-          onChange={(leftTab) => set({ leftTab })}
-          options={[
-            { value: 'shapes', label: <><Shapes className="shrink-0" /> {segLabel(t('common.shapes'))}</>, title: t('common.shapes') },
-            { value: 'icons', label: <><Cloud className="shrink-0" /> {segLabel(t('panels.left.cloud'))}</>, title: t('panels.left.cloud') },
-          ]}
-        />
+      <div data-dock-handle className="p-2">
+        <SearchInput value={query} onChange={setQuery} placeholder={t('panels.left.searchShapes')} />
       </div>
-      {tab === 'shapes' && <ShapesTab />}
-      {tab === 'icons' && <IconsTab />}
+      <div className="scroll-thin flex-1 overflow-y-auto px-2 pb-3">
+        {q ? (
+          <>
+            <UserLibrariesSection query={query} />
+            {iconsFirst ? iconResults : shapeResults}
+            {iconsFirst ? shapeResults : iconResults}
+            {shapeHits && iconHits && !shapeHits.length && !iconHits.length && <Empty>{t('panels.left.noShapes', { query })}</Empty>}
+          </>
+        ) : (
+          <>
+            <HistorySections collapsed={collapsed} toggle={toggle} />
+            <UserLibrariesSection query={query} />
+            {LIBRARIES.map((lib) => (
+              <Section key={lib.id} title={libraryName(lib.id, lib.name)} count={lib.items.length} open={!collapsed(lib.id)} onToggle={() => toggle(lib.id)}>
+                <div className="grid grid-cols-4 gap-1">
+                  {lib.items.map((item, i) => (
+                    <ShapeTile key={i} item={item} libraryId={lib.id} library={lib.name} />
+                  ))}
+                </div>
+              </Section>
+            ))}
+            <IconLibraries />
+          </>
+        )}
+      </div>
     </aside>
   );
 }
@@ -54,7 +114,11 @@ export function LeftPanel() {
 
 const COLLAPSE_KEY = 'opendraw:collapsed-libraries';
 
-function useCollapsed(key: string) {
+/** Shape libraries open on first run (with Favorites and Recent); the rest start collapsed so the catalog reads as an index. */
+const OPEN_BY_DEFAULT = new Set(['general', 'flowchart']);
+
+/** Collapsed flags per section id, persisted under `key`; `defaultCollapsed` applies until the user toggles one. */
+function useCollapsed(key: string, defaultCollapsed: (id: string) => boolean = () => false) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
     try {
       return JSON.parse(localStorage.getItem(key) || '{}');
@@ -64,7 +128,7 @@ function useCollapsed(key: string) {
   });
   const toggle = (id: string) =>
     setCollapsed((c) => {
-      const next = { ...c, [id]: !c[id] };
+      const next = { ...c, [id]: !(c[id] ?? defaultCollapsed(id)) };
       try {
         localStorage.setItem(key, JSON.stringify(next));
       } catch {
@@ -72,57 +136,19 @@ function useCollapsed(key: string) {
       }
       return next;
     });
-  return [collapsed, toggle] as const;
-}
-
-function ShapesTab() {
-  const [query, setQuery] = useState('');
-  const [collapsed, toggle] = useCollapsed(COLLAPSE_KEY);
-  const t = useT();
-  const q = query.trim().toLowerCase();
-  const deferredQ = useDeferredValue(q);
-  const results = useMemo(() => (deferredQ ? searchShapes(deferredQ, 96) : null), [deferredQ]);
-  const libs = useMemo(() => (results ? [] : LIBRARIES), [results]);
-  return (
-    <>
-      <div className="px-2 pb-2">
-        <SearchInput value={query} onChange={setQuery} placeholder={t('panels.left.searchShapes')} />
-      </div>
-      <div className="scroll-thin flex-1 overflow-y-auto px-2 pb-3">
-        {!q && <HistorySections collapsed={collapsed} toggle={toggle} />}
-        <UserLibrariesSection query={query} />
-        {results && results.length > 0 && (
-          <Section title={t('panels.left.bestMatches')} count={results.length} open onToggle={() => {}}>
-            <div className="grid grid-cols-4 gap-1">
-              {results.map((h, i) => (
-                <ShapeTile key={`${h.libraryId}-${i}-${h.item.label}`} item={h.item} libraryId={h.libraryId} library={h.library} />
-              ))}
-            </div>
-          </Section>
-        )}
-        {libs.map((lib) => (
-          <Section key={lib.id} title={libraryName(lib.id, lib.name)} count={lib.items.length} open={!!q || !collapsed[lib.id]} onToggle={() => toggle(lib.id)}>
-            <div className="grid grid-cols-4 gap-1">
-              {lib.items.map((item, i) => (
-                <ShapeTile key={i} item={item} libraryId={lib.id} library={lib.name} />
-              ))}
-            </div>
-          </Section>
-        ))}
-        {results && !results.length && <Empty>{t('panels.left.noShapes', { query })}</Empty>}
-      </div>
-    </>
-  );
+  const isCollapsed = (id: string) => collapsed[id] ?? defaultCollapsed(id);
+  return [isCollapsed, toggle] as const;
 }
 
 function Section({
-  title, count, open, onToggle, action, children,
-}: { title: string; count?: number; open: boolean; onToggle: () => void; action?: React.ReactNode; children: React.ReactNode }) {
+  title, count, open, onToggle, action, dot, minor, children,
+}: { title: string; count?: number; open: boolean; onToggle: () => void; action?: React.ReactNode; dot?: string; minor?: boolean; children: React.ReactNode }) {
   return (
     <section className="mb-1" style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 200px' }}>
       <div className="group flex h-8 w-full items-center rounded-lg hover:bg-hover">
-        <button onClick={onToggle} className="flex h-full min-w-0 flex-1 items-center gap-1 px-1.5 text-[12px] font-semibold text-fg">
+        <button onClick={onToggle} aria-expanded={open} className={cn('flex h-full min-w-0 flex-1 items-center gap-1 px-1.5 text-[12px] text-fg', minor ? 'font-medium' : 'font-semibold')}>
           <ChevronRight className={cn('size-3.5 text-subtle transition-transform duration-200', open && 'rotate-90')} />
+          {dot && <span className="mr-0.5 size-1.5 shrink-0 rounded-full" style={{ background: dot }} />}
           <span className="flex-1 truncate text-left" title={title}>{title}</span>
           {count !== undefined && <span className="text-[11px] font-normal tabular-nums text-subtle">{count}</span>}
         </button>
@@ -238,7 +264,7 @@ function resolveRefs(refs: LibraryRef[], packs: Record<string, IconPack>): Resol
 }
 
 /** Favorites + Recent (), shown at the top of the Shapes tab when non-empty. */
-function HistorySections({ collapsed, toggle }: { collapsed: Record<string, boolean>; toggle: (id: string) => void }) {
+function HistorySections({ collapsed, toggle }: { collapsed: (id: string) => boolean; toggle: (id: string) => void }) {
   const favorites = useLibraryHistory((s) => s.favorites);
   const recent = useLibraryHistory((s) => s.recent);
   const packs = useIconPacks((s) => s.packs);
@@ -272,7 +298,7 @@ function HistorySections({ collapsed, toggle }: { collapsed: Record<string, bool
   return (
     <>
       {favItems.length > 0 && (
-        <Section title={t('panels.left.favorites')} count={favItems.length} open={!collapsed['__favorites']} onToggle={() => toggle('__favorites')}>
+        <Section title={t('panels.left.favorites')} count={favItems.length} open={!collapsed('__favorites')} onToggle={() => toggle('__favorites')}>
           {grid(favItems)}
         </Section>
       )}
@@ -280,7 +306,7 @@ function HistorySections({ collapsed, toggle }: { collapsed: Record<string, bool
         <Section
           title={t('panels.left.recent')}
           count={recentItems.length}
-          open={!collapsed['__recent']}
+          open={!collapsed('__recent')}
           onToggle={() => toggle('__recent')}
           action={
             <button
@@ -322,39 +348,49 @@ const PROVIDER_ACCENT: Record<string, string> = {
   'bootstrap-icons': '#7952b3',
 };
 
-function IconsTab() {
+const ICON_COLLAPSE_KEY = 'opendraw:collapsed-icon-packs';
+
+/** Every installed icon pack as a section after the shape libraries (closed until opened). */
+function IconLibraries() {
   const providers = useIconPacks((s) => s.providers);
-  const packs = useIconPacks((s) => s.packs);
   const error = useIconPacks((s) => s.error);
-  const [provider, setProvider] = useState<string>(() => localStorage.getItem('opendraw:icon-provider') ?? 'aws');
-  const [query, setQuery] = useState('');
-  const deferred = useDeferredValue(query);
-  const [collapsed, toggle] = useCollapsed(`opendraw:collapsed-icons:${provider}`);
+  // Packs are big: they start closed.
+  const [collapsed, toggle] = useCollapsed(ICON_COLLAPSE_KEY, () => true);
   const t = useT();
+  if (!providers) return null;
+  if (!providers.length) {
+    return (
+      <p className="px-1.5 pt-3 text-[11px] leading-relaxed text-subtle">
+        {error ?? t('panels.icons.none')} <span className="font-mono">npm run icons:fetch</span>
+      </p>
+    );
+  }
+  return (
+    <>
+      <div className="px-1.5 pb-1 pt-3 text-[10.5px] font-semibold uppercase tracking-wide text-subtle">{t('panels.left.cloud')}</div>
+      {providers.map((p) => (
+        <Section
+          key={p.id}
+          title={p.name}
+          count={p.count}
+          open={!collapsed(p.id)}
+          onToggle={() => toggle(p.id)}
+          dot={PROVIDER_ACCENT[p.id] ?? 'var(--accent)'}
+        >
+          <IconPackBody provider={p.id} />
+        </Section>
+      ))}
+    </>
+  );
+}
 
+function IconPackBody({ provider }: { provider: string }) {
+  const pack = useIconPacks((s) => s.packs[provider]);
+  const [collapsed, toggle] = useCollapsed(`opendraw:collapsed-icons:${provider}`);
   useEffect(() => {
-    loadProviders();
-  }, []);
-  useEffect(() => {
-    if (providers?.some((p) => p.id === provider)) loadPack(provider);
-    try {
-      localStorage.setItem('opendraw:icon-provider', provider);
-    } catch {
-      /* ignore */
-    }
-  }, [provider, providers]);
-  // Searching spans every provider.
-  useEffect(() => {
-    if (deferred && providers) providers.forEach((p) => loadPack(p.id));
-  }, [deferred, providers]);
-  // Descriptions for hover cards (small JSON per provider, loaded on demand).
-  useEffect(() => {
-    if (deferred && providers) providers.forEach((p) => loadIconDescriptions(p.id));
-    else loadIconDescriptions(provider);
-  }, [deferred, providers, provider]);
-
-  const pack = packs[provider];
-  const results = useMemo(() => (deferred ? searchIcons(Object.values(packs), deferred) : null), [deferred, packs]);
+    loadPack(provider).catch(() => {});
+    loadIconDescriptions(provider);
+  }, [provider]);
   const categories = useMemo(() => {
     if (!pack) return [];
     const map = new Map<string, IconEntry[]>();
@@ -364,71 +400,20 @@ function IconsTab() {
     }
     return [...map];
   }, [pack]);
-
-  if (providers && !providers.length) {
-    return (
-      <Empty>
-        <Cloud className="mx-auto mb-2 size-6 text-subtle" />
-        {error ?? t('panels.icons.none')}
-        <div className="mt-2 font-mono text-[11px] text-subtle">npm run icons:fetch</div>
-      </Empty>
-    );
-  }
-
+  if (!pack) return <IconSkeleton />;
   return (
-    <>
-      <div className="px-2 pb-2">
-        <SearchInput value={query} onChange={setQuery} placeholder={t('panels.icons.searchPlaceholder', { count: Math.max(4, Math.floor((providers ?? []).reduce((n, p) => n + p.count, 0) / 1000)) * 1000 })} />
-      </div>
-      {!query && (
-        <div className="no-scrollbar flex gap-1 overflow-x-auto px-2 pb-2 [mask-image:linear-gradient(to_right,transparent,black_10px,black_calc(100%-18px),transparent)]">
-          {(providers ?? []).map((p) => (
-            <button
-              key={p.id}
-              ref={(el) => {
-                if (el && p.id === provider) el.scrollIntoView({ inline: 'nearest', block: 'nearest' });
-              }}
-              onClick={() => setProvider(p.id)}
-              className={cn(
-                'flex h-7 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-medium transition-colors',
-                p.id === provider ? 'bg-fg text-panel' : 'bg-panel-2 text-muted hover:bg-hover hover:text-fg',
-              )}
-            >
-              <span className="size-1.5 rounded-full" style={{ background: PROVIDER_ACCENT[p.id] ?? 'var(--accent)' }} />
-              {p.name}
-            </button>
-          ))}
-        </div>
-      )}
-      <div className="scroll-thin flex-1 overflow-y-auto px-2 pb-3">
-        {results ? (
-          results.length ? (
-            <div className="grid grid-cols-4 gap-1 pt-1">
-              {results.map(({ provider: pv, icon }) => (
-                <IconTile key={icon.id} provider={pv} icon={icon} />
-              ))}
-            </div>
-          ) : (
-            <Empty>{t('panels.icons.noMatch', { query })}</Empty>
-          )
-        ) : !pack ? (
-          <IconSkeleton />
-        ) : (
-          <>
-            {categories.map(([cat, icons]) => (
-              <Section key={cat} title={cat} count={icons.length} open={!collapsed[cat]} onToggle={() => toggle(cat)}>
-                <div className="grid grid-cols-4 gap-1">
-                  {icons.map((icon) => (
-                    <IconTile key={icon.id} provider={provider} icon={icon} />
-                  ))}
-                </div>
-              </Section>
+    <div className="pl-2">
+      {categories.map(([cat, icons]) => (
+        <Section key={cat} title={cat} count={icons.length} open={!collapsed(cat)} onToggle={() => toggle(cat)} minor>
+          <div className="grid grid-cols-4 gap-1">
+            {icons.map((icon) => (
+              <IconTile key={icon.id} provider={provider} icon={icon} />
             ))}
-            <PackFooter pack={pack} />
-          </>
-        )}
-      </div>
-    </>
+          </div>
+        </Section>
+      ))}
+      <PackFooter pack={pack} />
+    </div>
   );
 }
 

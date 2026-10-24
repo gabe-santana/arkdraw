@@ -7,7 +7,7 @@
  * signatures must round-trip unchanged.
  */
 
-export type ProviderId = 'anthropic' | 'openai' | 'gemini' | 'ollama' | 'custom';
+export type ProviderId = 'anthropic' | 'openai' | 'gemini' | 'xai' | 'deepseek' | 'mistral' | 'openrouter' | 'groq' | 'moonshot' | 'qwen' | 'zai' | 'together' | 'fireworks' | 'cerebras' | 'azure' | 'bedrock' | 'vertex' | 'cloudflare' | 'ollama' | 'custom';
 
 /** A JSON Schema object (the subset every provider understands). */
 export type JsonSchema = Record<string, unknown>;
@@ -57,8 +57,10 @@ export interface ChatResponse {
 export interface ProviderConfig {
   provider: ProviderId;
   model: string;
-  /** Required for `ollama` and `custom`; ignored by hosted providers. */
+  /** Required for `ollama`, `custom` and `azure`; ignored by hosted providers. */
   baseUrl?: string;
+  /** Extra provider settings, e.g. the AWS `region` (Bedrock) or Cloudflare `accountId`. */
+  params?: Record<string, string>;
 }
 
 export interface HttpRequest {
@@ -82,14 +84,20 @@ export interface ModelInfo {
 export interface ProviderAdapter {
   buildChat(config: ProviderConfig, req: ChatRequest): HttpRequest;
   parseChat(json: unknown): ChatResponse;
-  buildListModels(config: ProviderConfig): HttpRequest;
-  parseListModels(json: unknown): ModelInfo[];
+  /** Absent when the API can't list models with the user's credentials: "Test connection" then sends a tiny chat instead. */
+  buildListModels?(config: ProviderConfig): HttpRequest;
+  parseListModels?(json: unknown): ModelInfo[];
 }
+
+/** An adapter that can list models. */
+export type ListingAdapter = Required<ProviderAdapter>;
 
 export class AiError extends Error {
   constructor(
     message: string,
     readonly status?: number,
+    /** The provider's own error text, when `message` is a friendlier rewrite of it. */
+    readonly detail?: string,
   ) {
     super(message);
     this.name = 'AiError';

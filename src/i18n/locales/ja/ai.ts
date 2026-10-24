@@ -2,25 +2,19 @@ import type en from '../../en/ai';
 import type { Translation } from '../../types';
 
 export default {
-  // AiPanel — header and mode switch
-  'ai.panel.title': 'アシスタント',
+  // AiPanel — header
   'ai.panel.modelSettings': 'モデルの設定',
   'ai.panel.noModel': 'モデルなし',
-  // Tab: generate a new diagram from a prompt
-  'ai.panel.modeCreate': '作成',
-  // Tab: let the AI modify the diagram on the canvas
-  'ai.panel.modeEdit': 'ダイアグラムを編集',
-  'ai.panel.canvasEmpty': 'キャンバスは空です',
-  'ai.panel.browserWarning': 'ブラウザー版プレビュー: API キーはこのタブのメモリ内にのみ保持され、リクエストはページから直接送信されます。',
+  'ai.panel.newChat': '新しい会話',
 
   // AiPanel — setup / empty state
   'ai.panel.connectTitle': 'モデルを接続',
-  'ai.panel.connectBody': 'Anthropic、OpenAI、Gemini の独自のキーを使用するか、Ollama で完全オフラインで実行できます。',
+  'ai.panel.connectBody': 'Anthropic、OpenAI、Gemini、Grok、DeepSeek、Mistral などの独自のキーを使用するか、Ollama で完全オフラインで実行できます。',
   'ai.panel.setUp': 'AI をセットアップ',
-  'ai.panel.emptyEditTitle': '何を変更しますか?',
+  'ai.panel.emptyEditTitle': '何をしますか?',
   'ai.panel.emptyGenerateTitle': '何を描きますか?',
-  'ai.panel.emptyEditSelection': '変更内容を説明してください。「これ」は{count, plural, other {選択中の # 個の項目}}を指します。',
-  'ai.panel.emptyEdit': '現在のダイアグラムへの変更内容を説明してください。',
+  'ai.panel.emptyEditSelection': '変更や新しいダイアグラムを依頼してください。「これ」は{count, plural, other {選択中の # 個の項目}}を指します。',
+  'ai.panel.emptyEdit': 'このダイアグラムへの変更を依頼するか、新しいダイアグラムを説明してください。',
   'ai.panel.emptyGenerate': 'システム、プロセス、スキーマを説明してください。クラウド図には実際の AWS、Azure、GCP アイコンが使われます。',
 
   // AiPanel — example prompts (clickable chips that fill the prompt box)
@@ -42,12 +36,12 @@ export default {
   'ai.panel.sendHint': '{key} ↵ で送信',
   // Verb: stop the running request
   'ai.panel.stop': '停止',
+  'ai.activity.stopHint': 'アシスタントを停止 (Esc)',
   // Verb: send the prompt
   'ai.panel.send': '送信',
 
   // AiPanel — run card
   // Badge on a prompt that edited the existing diagram (noun)
-  'ai.run.editBadge': '編集',
   'ai.run.starting': '開始中…',
   'ai.run.stopped': '停止しました。',
   'ai.run.tryAgain': 'もう一度試す',
@@ -66,8 +60,7 @@ export default {
   'ai.result.inserted': '挿入しました',
   'ai.result.replaced': 'ダイアグラムを置き換えました',
   'ai.result.applied': '適用しました',
-  // {shortcut} is ⌘Z or CtrlZ
-  'ai.result.undoHint': '· {shortcut} で元に戻す',
+  'ai.result.undo': '元に戻す',
   // Button: replace the whole canvas with the generated diagram
   'ai.result.replaceDiagram': 'ダイアグラムを置き換え',
   'ai.result.applyChanges': '変更を適用',
@@ -89,6 +82,7 @@ export default {
   // useAiReady — why the assistant can't run yet
   'ai.ready.chooseModel': 'モデルを選択して開始してください。',
   'ai.ready.setEndpoint': 'エンドポイント URL を設定して開始してください。',
+  'ai.ready.completeSettings': 'AI 設定で {provider} の設定を完了してください。',
   'ai.ready.addKey': '{provider} の API キーを追加して開始してください。',
 
   // Errors shown in the panel / settings (agent, transport, provider adapters)
@@ -98,12 +92,17 @@ export default {
   'ai.error.notFinished': 'モデルがダイアグラムを完成させませんでした。もう一度試すか、リクエストを簡単にしてください。',
   'ai.error.invalidUrl': '無効な URL: {url}',
   'ai.error.addKey': 'AI 設定で {provider} の API キーを追加してください。',
+  'ai.error.keyRejected': '{provider} がキーを拒否しました。{url} からキー全体をコピーしたか確認してください。',
+  'ai.error.keyRejectedNoUrl': '{provider} がキーを拒否しました。キー全体をコピーしたか確認してください。',
   'ai.error.requestFailed': 'リクエストに失敗しました。',
   'ai.error.unreachable': '{host} に接続できませんでした。',
   'ai.error.unreachableOllama': '{host} に接続できませんでした。Ollama は起動していますか?',
   'ai.error.invalidResponse': 'プロバイダーから無効な応答が返されました。',
   'ai.error.chooseModel': 'AI 設定でモデルを選択してください。',
   'ai.error.customBaseUrl': 'AI 設定でカスタムエンドポイントのベース URL を設定してください。',
+  'ai.error.azureEndpoint': 'Azure リソースのエンドポイントを使用してください (例: https://<resource>.services.ai.azure.com)。',
+  'ai.error.cloudflareAccount': 'AI 設定に Cloudflare のアカウント ID (32 文字) を追加してください。',
+  'ai.error.bedrockRegion': 'AI 設定で有効な AWS リージョンを選んでください。',
   'ai.error.unexpectedResponse': '{provider} から予期しない応答がありました。',
   'ai.error.unexpectedEndpointResponse': 'モデルのエンドポイントから予期しない応答がありました。',
   'ai.error.declined': 'モデルがこのリクエストを拒否しました。表現を変えてお試しください。',
@@ -124,9 +123,15 @@ export default {
   // AiSettingsDialog
   'ai.settings.title': 'AI 設定',
   'ai.settings.subtitle': 'ご自身のキーを使用します。ダイアグラムは選択したプロバイダーにのみ送信されます。',
-  'ai.settings.browserWarning': 'ブラウザー版プレビュー: キーはこのタブのメモリ内にのみ保持され、リクエストはページから直接送信されます。キーをシステムのキーチェーンに保存するにはデスクトップアプリを使用してください。',
   // Section heading: the AI service (Anthropic, OpenAI…)
   'ai.settings.provider': 'プロバイダー',
+  'ai.settings.group.popular': '人気',
+  'ai.settings.group.more': 'その他のプロバイダー',
+  'ai.settings.group.cloud': 'クラウド プラットフォーム',
+  'ai.settings.group.local': 'ローカルとカスタム',
+  'ai.settings.azureEndpoint': 'リソースのエンドポイント',
+  'ai.settings.field.region': 'リージョン',
+  'ai.settings.field.accountId': 'アカウント ID',
   'ai.settings.ollamaUrl': 'Ollama の URL',
   'ai.settings.baseUrl': 'ベース URL',
   'ai.settings.customHint': 'OpenRouter、Azure OpenAI (…/openai/v1)、LM Studio、vLLM など。OpenAI Chat Completions API に対応している必要があります。',
@@ -137,11 +142,17 @@ export default {
   'ai.settings.checking': '確認中…',
   'ai.settings.endpointChanged': 'エンドポイントが変更されました。新しい URL で使用するには、キーを再入力してください。',
   'ai.settings.apiKeyPlaceholder': 'API キーを貼り付け',
+  'ai.settings.getKey': 'キーを取得',
+  'ai.settings.saveKeyFirst': 'まず API キーを貼り付けて保存してください。',
+  'ai.settings.azureKeyNeeded': 'カスタム プロバイダーからエンドポイントをコピーしました。キーはプロバイダーごとに保存されるため、ここにもキーを貼り付けてください。',
+  'ai.settings.usingEndpoint': 'リクエスト先: {url}',
+  'ai.settings.keyUnexpected': '{provider} の API キーではないようです ({prefix} で始まります)。{url} で取得できます。',
+  'ai.settings.keyOtherProvider': '{other} のキーのようです。上で {other} を選ぶか、{url} で {provider} のキーを取得してください。',
+  'ai.settings.keyGrokApp': 'これは grok.com のキーで、Grok アプリでのみ使え、API では使えません。{url} で API キーを作成してください。',
+  'ai.settings.errorDetails': '詳細',
   'ai.settings.hideKey': 'キーを隠す',
   'ai.settings.showKey': 'キーを表示',
   'ai.settings.saveKey': 'キーを保存',
-  // {url} is a website address, e.g. console.anthropic.com/settings/keys
-  'ai.settings.createKeyAt': '{url} でキーを作成',
   'ai.settings.storedKeychain': 'システムのキーチェーンに保存済み',
   'ai.settings.keptInMemory': 'このタブのメモリ内に保持',
   // Verb: replace the stored API key with a new one
@@ -150,6 +161,9 @@ export default {
   // Field label: the AI model to use
   'ai.settings.model': 'モデル',
   'ai.settings.modelPlaceholder': 'モデル ID',
+  'ai.settings.modelHint': '候補から選ぶか、任意のモデル ID を入力してください。接続テストでプロバイダーの全モデルを読み込みます。',
+  'ai.settings.modelHintAzure': 'デプロイ名を入力してください (多くはモデル名と同じです。例: gpt-5)。',
+  'ai.settings.modelHintBedrock': '候補から選ぶか、モデル ID またはクロスリージョン推論プロファイル ID (us.…、eu.…、apac.…) を入力してください。',
   // {model} is a model id, e.g. anthropic/claude-opus-5-5
   'ai.settings.customModelPlaceholder': '例: {model}',
   'ai.settings.testConnection': '接続をテスト',
@@ -172,6 +186,25 @@ export default {
   'ai.provider.anthropic.tagline': 'Claude モデル',
   'ai.provider.openai.tagline': 'GPT モデル',
   'ai.provider.gemini.tagline': 'Gemini モデル',
+  'ai.provider.xai.tagline': 'Grok モデル',
+  'ai.provider.deepseek.tagline': 'DeepSeek モデル',
+  'ai.provider.mistral.tagline': 'Mistral モデル',
+  'ai.provider.openrouter.tagline': '多数のモデルを 1 つのキーで',
+  'ai.provider.groq.tagline': '高速なオープンモデル',
+  'ai.provider.moonshot.tagline': 'Kimi モデル',
+  'ai.provider.qwen.tagline': 'Alibaba Cloud Model Studio',
+  'ai.provider.zai.tagline': 'GLM モデル',
+  'ai.provider.together.tagline': 'ホスト型オープンモデル',
+  'ai.provider.fireworks.tagline': 'ホスト型オープンモデル',
+  'ai.provider.cerebras.tagline': '超高速な推論',
+  'ai.provider.azure.tagline': 'Azure OpenAI と Foundry モデル',
+  'ai.provider.bedrock.tagline': 'AWS 上の Claude、Nova、Llama など',
+  'ai.provider.vertex.tagline': 'Google Cloud 上の Gemini',
+  'ai.provider.cloudflare.tagline': 'エッジで動くオープンモデル',
+  'ai.provider.azure.help': 'Azure リソースのエンドポイント (キーとエンドポイント) を貼り付けてください。モデルにはデプロイ名を指定します。',
+  'ai.provider.bedrock.help': 'Bedrock コンソール (API keys) で長期 API キーを作成し、モデルを有効にしたリージョンを選んでください。',
+  'ai.provider.vertex.help': 'Google Cloud コンソールで作成した Vertex AI エクスプレス モードの API キーを使います。',
+  'ai.provider.cloudflare.help': 'Workers AI 権限付きの API トークンを作成してください。アカウント ID はダッシュボードの概要にあります。',
   'ai.provider.ollama.tagline': 'ローカル & オフライン',
   'ai.provider.custom.tagline': 'OpenAI 互換 API',
   // Provider choice for any self-configured, OpenAI-compatible server

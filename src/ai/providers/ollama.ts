@@ -3,7 +3,7 @@
  * against a local model; pick one that supports tool calling
  * (e.g. qwen3, llama3.1+, mistral-small).
  */
-import type { ChatMessage, ChatResponse, HttpRequest, ModelInfo, ProviderAdapter, ProviderConfig, StopReason, ToolCall } from './types';
+import type { ChatMessage, ChatResponse, HttpRequest, ModelInfo, ListingAdapter, ProviderConfig, StopReason, ToolCall } from './types';
 import { joinUrl, parseArgs } from './openai';
 import { AiError } from './types';
 
@@ -34,7 +34,7 @@ function toOllamaMessages(system: string, messages: ChatMessage[]) {
   return out;
 }
 
-export const ollama: ProviderAdapter = {
+export const ollama: ListingAdapter = {
   buildChat(config, req): HttpRequest {
     return {
       method: 'POST',

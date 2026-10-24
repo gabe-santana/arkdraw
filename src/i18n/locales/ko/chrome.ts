@@ -102,4 +102,10 @@ export default {
   'chrome.dock.dropHere': '여기에 놓기',
   'chrome.dock.resizeLeft': '왼쪽 패널 크기 조정',
   'chrome.dock.resizeRight': '오른쪽 패널 크기 조정',
+  'chrome.rightTabs.aria': '오른쪽 패널',
+  'chrome.rightTabs.design': '디자인',
+  'chrome.rightTabs.designHint': '선택한 항목의 스타일과 레이어',
+  'chrome.rightTabs.ai': 'AI',
+  'chrome.rightTabs.aiHint': '원하는 것을 말하면 어시스턴트가 그리거나 편집합니다',
+  'chrome.dock.resizeAi': 'AI 패널 크기 조정',
 } satisfies Translation<typeof en>;

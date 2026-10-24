@@ -40,7 +40,6 @@ export default {
   'menu.units.m': 'メートル',
 
   // Title bar
-  'titlebar.generate': '生成',
   'titlebar.export': 'エクスポート',
   'titlebar.undo': '元に戻す',
   'titlebar.redo': 'やり直し',

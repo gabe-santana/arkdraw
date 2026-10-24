@@ -120,4 +120,10 @@ export default {
   'chrome.dock.dropHere': 'Drop here',
   'chrome.dock.resizeLeft': 'Resize left panels',
   'chrome.dock.resizeRight': 'Resize right panels',
+  'chrome.rightTabs.aria': 'Right panel',
+  'chrome.rightTabs.design': 'Design',
+  'chrome.rightTabs.designHint': 'Style and layers of what you select',
+  'chrome.rightTabs.ai': 'AI',
+  'chrome.rightTabs.aiHint': 'Say what you want: the assistant draws or edits it',
+  'chrome.dock.resizeAi': 'Resize the AI panel',
 } as const;

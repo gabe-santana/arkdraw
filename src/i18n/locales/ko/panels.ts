@@ -347,10 +347,10 @@ export default {
 
   // LeftPanel
   'panels.left.aria': '도형 패널',
-  'panels.left.cloud': '클라우드',
-  'panels.left.searchShapes': '도형 검색',
+  'panels.left.cloud': '클라우드 및 브랜드 아이콘',
+  'panels.left.searchShapes': '도형 및 아이콘 검색',
   'panels.left.bestMatches': '가장 일치하는 항목',
-  'panels.left.noShapes': '“{query}”와(과) 일치하는 도형이 없습니다.',
+  'panels.left.noShapes': '“{query}”와(과) 일치하는 항목이 없습니다.',
   'panels.left.hintConnect': '클릭하면 선택한 도형에 연결하여 추가합니다(Alt+클릭: 연결 없이) · 도형 위에 Shift+놓기로 바꾸기',
   'panels.left.hintInsert': '캔버스로 드래그하거나 클릭하여 삽입 · 도형 위에 Shift+놓기로 바꾸기',
   'panels.left.removeFavorite': '즐겨찾기에서 제거',
@@ -358,8 +358,6 @@ export default {
   'panels.left.favorites': '즐겨찾기',
   'panels.left.recent': '최근 사용',
   'panels.icons.none': '설치된 아이콘 팩이 없습니다.',
-  'panels.icons.searchPlaceholder': '아이콘 {count}개 이상 검색',
-  'panels.icons.noMatch': '“{query}”와(과) 일치하는 아이콘이 없습니다.',
   'panels.icons.description': '아키텍처 다이어그램용 {provider} {category} 아이콘입니다.',
   'panels.icons.footer': '{name} 아이콘 · {version}. 각 소유자의 상표이며 아키텍처 다이어그램용으로 제공됩니다.',
   'panels.libraryDrag.replace': '바꾸기',

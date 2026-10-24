@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useT } from '@/i18n';
 import { PROVIDER_META, type ProviderId } from '../providers';
-import { baseUrlFor, modelFor, useAiSettings } from '../settings';
+import { baseUrlFor, modelFor, paramFor, useAiSettings } from '../settings';
 import { hasKey } from '../transport';
 
 const listeners = new Set<() => void>();
@@ -43,6 +43,7 @@ export function useAiReady(): { ready: boolean | null; reason?: string } {
   const [has] = useHasKey(s.provider);
   if (!modelFor(s)) return { ready: false, reason: t('ai.ready.chooseModel') };
   if (meta.needsBaseUrl && !baseUrlFor(s)) return { ready: false, reason: t('ai.ready.setEndpoint') };
+  if (meta.fields?.some((f) => !paramFor(s, s.provider, f.id))) return { ready: false, reason: t('ai.ready.completeSettings', { provider: meta.name }) };
   if (meta.needsKey) {
     if (has === null) return { ready: null };
     if (!has) return { ready: false, reason: t('ai.ready.addKey', { provider: meta.name }) };

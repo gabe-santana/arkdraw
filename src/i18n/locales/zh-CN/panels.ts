@@ -346,10 +346,10 @@ export default {
 
   // LeftPanel
   'panels.left.aria': '图形面板',
-  'panels.left.cloud': '云',
-  'panels.left.searchShapes': '搜索图形',
+  'panels.left.cloud': '云与品牌图标',
+  'panels.left.searchShapes': '搜索图形和图标',
   'panels.left.bestMatches': '最佳匹配',
-  'panels.left.noShapes': '没有与“{query}”匹配的图形。',
+  'panels.left.noShapes': '没有与“{query}”匹配的结果。',
   'panels.left.hintConnect': '点击可添加并连接到所选图形（Alt+点击：不连接）· 按住 Shift 拖放到图形上可替换该图形',
   'panels.left.hintInsert': '拖到画布上，或点击插入 · 按住 Shift 拖放到图形上可替换该图形',
   'panels.left.removeFavorite': '从收藏夹中移除',
@@ -357,8 +357,6 @@ export default {
   'panels.left.favorites': '收藏夹',
   'panels.left.recent': '最近使用',
   'panels.icons.none': '未安装图标包。',
-  'panels.icons.searchPlaceholder': '搜索 {count}+ 个图标',
-  'panels.icons.noMatch': '没有与“{query}”匹配的图标。',
   'panels.icons.description': '用于架构图的 {provider} {category} 图标。',
   'panels.icons.footer': '{name} 图标 · {version}。商标归其各自所有者所有；仅供绘制架构图使用。',
   'panels.libraryDrag.replace': '替换',

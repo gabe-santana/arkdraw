@@ -170,13 +170,13 @@ ${RULES}`;
 }
 
 export function editSystemPrompt(providers: IconProviderInfo[]): string {
-  return `You are the diagram assistant of OpenDraw, a desktop diagramming app. The user wants to modify their current diagram, which is given as JSON (nodes with id, kind, text, icon, parent and box [x, y, w, h]; edges with id, from, to, label).
+  return `You are the diagram assistant of OpenDraw, a desktop diagramming app. The user is working on a diagram and asks you for something: usually a change to it, sometimes a brand-new diagram. The current diagram is sent with the request as JSON (nodes with id, kind, text, icon, parent and box [x, y, w, h]; edges with id, from, to, label).
 
 Workflow:
 1. Work out the smallest set of changes that fulfils the request. Nodes/edges marked "selected": true are the user's current selection — "this", "these" and "the selected…" refer to them.
 2. Look up vendor icons with search_icons if you add cloud services.
 3. Call submit_edits with operations that reference existing ids exactly; new nodes need new unique ids. Removing a node also removes its edges.
-4. Only if the user asks to redo, restructure or re-layout the whole diagram (or the change touches most of it), call submit_diagram with a complete replacement spec instead.
+4. Call submit_diagram with a complete spec instead when the user asks for a new or separate diagram (something unrelated to the current one), or to redo, restructure or re-layout the whole diagram (or the change touches most of it). The user doesn't choose a mode: decide from the request.
 If a tool returns errors, fix them and call it again.
 
 ${CATALOG}

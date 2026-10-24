@@ -34,7 +34,7 @@ import { confirmDiscard, isDirty, loadOpenedFile, openPath, restoreRecovery, sta
 import { onOpenFileRequest, takeLaunchFile, windowControls } from '@/io/native';
 import '@/app/cliExport'; // `opendraw --export …` (desktop CLI); no-op otherwise
 
-const AiHost = lazy(() => import('@/chrome/AiHost'));
+const AiSettingsHost = lazy(() => import('@/chrome/AiHost'));
 
 /** Whether a dropped PNG/SVG carries a diagram (mxGraph or OpenDraw "editable" image). */
 async function hasEmbeddedDiagram(bytes: Uint8Array, ext: string): Promise<boolean> {
@@ -48,7 +48,6 @@ export default function App() {
   const dark = useTheme();
   const leftInset = useUi((s) => columnInset(s, 'left'));
   const rightInset = useUi((s) => columnInset(s, 'right'));
-  const aiOpen = useUi((s) => s.aiOpen);
   const aiSettingsOpen = useUi((s) => s.aiSettingsOpen);
   const [fontsVersion, setFontsVersion] = useState(0);
   useShortcuts();
@@ -128,7 +127,7 @@ export default function App() {
             <div data-od-toolbar className="absolute bottom-3.5 left-1/2 -translate-x-1/2">
               <Toolbar />
             </div>
-            <div className={cn('absolute bottom-3.5 flex flex-col items-end gap-2 transition-[right] duration-300', aiOpen ? 'right-[402px]' : !rightInset && 'right-3.5')} style={rightInset && !aiOpen ? { right: rightInset + 22 } : undefined}>
+            <div className={cn('absolute bottom-3.5 flex flex-col items-end gap-2 transition-[right] duration-300', !rightInset && 'right-3.5')} style={rightInset ? { right: rightInset + 22 } : undefined}>
               <Outline />
               <ZoomControls />
             </div>
@@ -139,9 +138,9 @@ export default function App() {
             <CommentsPanel />
           </div>
 
-          {(aiOpen || aiSettingsOpen) && (
+          {aiSettingsOpen && (
             <Suspense fallback={null}>
-              <AiHost />
+              <AiSettingsHost />
             </Suspense>
           )}
         </div>

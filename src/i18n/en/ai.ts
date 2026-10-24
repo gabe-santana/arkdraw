@@ -1,24 +1,18 @@
 /** English UI strings — ai. Keys are globally unique: 'ai.<key>'. */
 export default {
-  // AiPanel — header and mode switch
-  'ai.panel.title': 'Assistant',
+  // AiPanel — header
   'ai.panel.modelSettings': 'Model settings',
   'ai.panel.noModel': 'No model',
-  // Tab: generate a new diagram from a prompt
-  'ai.panel.modeCreate': 'Create',
-  // Tab: let the AI modify the diagram on the canvas
-  'ai.panel.modeEdit': 'Edit diagram',
-  'ai.panel.canvasEmpty': 'The canvas is empty',
-  'ai.panel.browserWarning': 'Browser preview: API keys stay in memory for this tab and requests go straight from the page.',
+  'ai.panel.newChat': 'New conversation',
 
   // AiPanel — setup / empty state
   'ai.panel.connectTitle': 'Connect a model',
-  'ai.panel.connectBody': 'Use your own key for Anthropic, OpenAI or Gemini — or run fully offline with Ollama.',
+  'ai.panel.connectBody': 'Use your own key for Anthropic, OpenAI, Gemini, Grok, DeepSeek, Mistral and more — or run fully offline with Ollama.',
   'ai.panel.setUp': 'Set up AI',
-  'ai.panel.emptyEditTitle': 'What should change?',
+  'ai.panel.emptyEditTitle': 'What would you like to do?',
   'ai.panel.emptyGenerateTitle': 'What should we draw?',
-  'ai.panel.emptyEditSelection': 'Describe a change. “This” refers to the {count, plural, one {# selected item} other {# selected items}}.',
-  'ai.panel.emptyEdit': 'Describe a change to the current diagram.',
+  'ai.panel.emptyEditSelection': 'Ask for a change or a new diagram. “This” refers to the {count, plural, one {# selected item} other {# selected items}}.',
+  'ai.panel.emptyEdit': 'Ask for a change to this diagram, or describe a new one.',
   'ai.panel.emptyGenerate': 'Describe a system, process or schema. Cloud diagrams use real AWS, Azure and GCP icons.',
 
   // AiPanel — example prompts (clickable chips that fill the prompt box)
@@ -40,12 +34,12 @@ export default {
   'ai.panel.sendHint': '{key} ↵ to send',
   // Verb: stop the running request
   'ai.panel.stop': 'Stop',
+  'ai.activity.stopHint': 'Stop the assistant (Esc)',
   // Verb: send the prompt
   'ai.panel.send': 'Send',
 
   // AiPanel — run card
   // Badge on a prompt that edited the existing diagram (noun)
-  'ai.run.editBadge': 'Edit',
   'ai.run.starting': 'Starting…',
   'ai.run.stopped': 'Stopped.',
   'ai.run.tryAgain': 'Try again',
@@ -64,8 +58,7 @@ export default {
   'ai.result.inserted': 'Inserted',
   'ai.result.replaced': 'Replaced the diagram',
   'ai.result.applied': 'Applied',
-  // {shortcut} is ⌘Z or CtrlZ
-  'ai.result.undoHint': '· {shortcut} to undo',
+  'ai.result.undo': 'Undo',
   // Button: replace the whole canvas with the generated diagram
   'ai.result.replaceDiagram': 'Replace diagram',
   'ai.result.applyChanges': 'Apply changes',
@@ -87,6 +80,7 @@ export default {
   // useAiReady — why the assistant can't run yet
   'ai.ready.chooseModel': 'Choose a model to get started.',
   'ai.ready.setEndpoint': 'Set the endpoint URL to get started.',
+  'ai.ready.completeSettings': 'Finish setting up {provider} in AI settings.',
   'ai.ready.addKey': 'Add your {provider} API key to get started.',
 
   // Errors shown in the panel / settings (agent, transport, provider adapters)
@@ -96,12 +90,17 @@ export default {
   'ai.error.notFinished': 'The model did not finish the diagram. Try again or simplify the request.',
   'ai.error.invalidUrl': 'Invalid URL: {url}',
   'ai.error.addKey': 'Add your {provider} API key in AI settings.',
+  'ai.error.keyRejected': 'The key was rejected by {provider}. Check that you copied the whole key from {url}.',
+  'ai.error.keyRejectedNoUrl': 'The key was rejected by {provider}. Check that you copied the whole key.',
   'ai.error.requestFailed': 'Request failed.',
   'ai.error.unreachable': 'Could not reach {host}.',
   'ai.error.unreachableOllama': 'Could not reach {host}. Is Ollama running?',
   'ai.error.invalidResponse': 'The provider returned an invalid response.',
   'ai.error.chooseModel': 'Choose a model in AI settings.',
   'ai.error.customBaseUrl': 'Set a base URL for the custom endpoint in AI settings.',
+  'ai.error.azureEndpoint': 'Use your Azure resource endpoint, e.g. https://<resource>.services.ai.azure.com.',
+  'ai.error.cloudflareAccount': 'Add your Cloudflare account ID (32 characters) in AI settings.',
+  'ai.error.bedrockRegion': 'Choose a valid AWS region in AI settings.',
   'ai.error.unexpectedResponse': 'Unexpected response from {provider}.',
   'ai.error.unexpectedEndpointResponse': 'Unexpected response from the model endpoint.',
   'ai.error.declined': 'The model declined this request. Try rephrasing it.',
@@ -122,9 +121,15 @@ export default {
   // AiSettingsDialog
   'ai.settings.title': 'AI settings',
   'ai.settings.subtitle': 'Bring your own key. Diagrams are sent only to the provider you choose.',
-  'ai.settings.browserWarning': 'Browser preview: keys are kept in memory for this tab only and requests go directly from the page. Use the desktop app to store keys in the system keychain.',
   // Section heading: the AI service (Anthropic, OpenAI…)
   'ai.settings.provider': 'Provider',
+  'ai.settings.group.popular': 'Popular',
+  'ai.settings.group.more': 'More providers',
+  'ai.settings.group.cloud': 'Cloud platforms',
+  'ai.settings.group.local': 'Local & custom',
+  'ai.settings.azureEndpoint': 'Resource endpoint',
+  'ai.settings.field.region': 'Region',
+  'ai.settings.field.accountId': 'Account ID',
   'ai.settings.ollamaUrl': 'Ollama URL',
   'ai.settings.baseUrl': 'Base URL',
   'ai.settings.customHint': 'OpenRouter, Azure OpenAI (…/openai/v1), LM Studio, vLLM… Must speak the OpenAI Chat Completions API.',
@@ -135,11 +140,17 @@ export default {
   'ai.settings.checking': 'Checking…',
   'ai.settings.endpointChanged': 'The endpoint changed. Re-enter the key to use it with the new URL.',
   'ai.settings.apiKeyPlaceholder': 'Paste your API key',
+  'ai.settings.getKey': 'Get a key',
+  'ai.settings.saveKeyFirst': 'Paste your API key and save it first.',
+  'ai.settings.azureKeyNeeded': 'Endpoint copied from your custom provider. Keys are stored per provider, so paste the key here too.',
+  'ai.settings.usingEndpoint': 'Requests go to {url}',
+  'ai.settings.keyUnexpected': 'This doesn’t look like a {provider} API key (they start with {prefix}). Get one at {url}.',
+  'ai.settings.keyOtherProvider': 'This looks like a {other} key. Choose {other} above, or get a {provider} key at {url}.',
+  'ai.settings.keyGrokApp': 'This is a grok.com key, which only works in the Grok app, not with the API. Create an API key at {url}.',
+  'ai.settings.errorDetails': 'Details',
   'ai.settings.hideKey': 'Hide key',
   'ai.settings.showKey': 'Show key',
   'ai.settings.saveKey': 'Save key',
-  // {url} is a website address, e.g. console.anthropic.com/settings/keys
-  'ai.settings.createKeyAt': 'Create a key at {url}',
   'ai.settings.storedKeychain': 'Stored in the system keychain',
   'ai.settings.keptInMemory': 'Kept in memory for this tab',
   // Verb: replace the stored API key with a new one
@@ -148,6 +159,9 @@ export default {
   // Field label: the AI model to use
   'ai.settings.model': 'Model',
   'ai.settings.modelPlaceholder': 'Model id',
+  'ai.settings.modelHint': 'Pick a suggestion or type any model id. Test connection loads every model this provider offers.',
+  'ai.settings.modelHintAzure': 'Type the name of your deployment (it often matches the model, e.g. gpt-5).',
+  'ai.settings.modelHintBedrock': 'Pick a suggestion or type any model id or cross-region inference profile id (us.…, eu.…, apac.…).',
   // {model} is a model id, e.g. anthropic/claude-opus-5-5
   'ai.settings.customModelPlaceholder': 'e.g. {model}',
   'ai.settings.testConnection': 'Test connection',
@@ -170,6 +184,25 @@ export default {
   'ai.provider.anthropic.tagline': 'Claude models',
   'ai.provider.openai.tagline': 'GPT models',
   'ai.provider.gemini.tagline': 'Gemini models',
+  'ai.provider.xai.tagline': 'Grok models',
+  'ai.provider.deepseek.tagline': 'DeepSeek models',
+  'ai.provider.mistral.tagline': 'Mistral models',
+  'ai.provider.openrouter.tagline': 'Many models, one key',
+  'ai.provider.groq.tagline': 'Fast open models',
+  'ai.provider.moonshot.tagline': 'Kimi models',
+  'ai.provider.qwen.tagline': 'Alibaba Cloud Model Studio',
+  'ai.provider.zai.tagline': 'GLM models',
+  'ai.provider.together.tagline': 'Open models, hosted',
+  'ai.provider.fireworks.tagline': 'Open models, hosted',
+  'ai.provider.cerebras.tagline': 'Very fast inference',
+  'ai.provider.azure.tagline': 'Azure OpenAI & Foundry models',
+  'ai.provider.bedrock.tagline': 'Claude, Nova, Llama & more on AWS',
+  'ai.provider.vertex.tagline': 'Gemini on Google Cloud',
+  'ai.provider.cloudflare.tagline': 'Open models at the edge',
+  'ai.provider.azure.help': 'Paste the endpoint from your Azure resource (Keys and Endpoint). The model is your deployment name.',
+  'ai.provider.bedrock.help': 'Create a long-term API key in the Bedrock console (API keys) and pick the region where your models are enabled.',
+  'ai.provider.vertex.help': 'Uses a Vertex AI express mode API key from the Google Cloud console.',
+  'ai.provider.cloudflare.help': 'Create an API token with Workers AI permission. Your account ID is on the dashboard overview.',
   'ai.provider.ollama.tagline': 'Local & offline',
   'ai.provider.custom.tagline': 'OpenAI-compatible API',
   // Provider choice for any self-configured, OpenAI-compatible server

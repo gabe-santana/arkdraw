@@ -18,7 +18,7 @@ import { useT } from '@/i18n';
 export function Canvas({ dark }: { dark: boolean }) {
   const t = useT();
   const ref = useRef<HTMLDivElement>(null);
-  const { onPointerDown, onPointerMove, onPointerUp, onDoubleClick, onContextMenu, panning, spaceHeld, freehand } =
+  const { onPointerDown, onPointerMove, onPointerUp, onDoubleClick, onContextMenu, panning, spaceHeld, freehand, hoverCursor } =
     useCanvasInteractions(ref);
   const tool = useEditor((s) => s.tool);
   const camera = useEditor((s) => s.camera);
@@ -57,7 +57,7 @@ export function Canvas({ dark }: { dark: boolean }) {
       ? 'grab'
       : tool.startsWith('shape:') || tool === 'connector' || tool === 'freehand'
         ? 'crosshair'
-        : 'default';
+        : (hoverCursor ?? 'default');
 
   return (
     <div

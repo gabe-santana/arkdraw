@@ -3,7 +3,7 @@
  * The key travels in the `x-goog-api-key` header (injected by the transport),
  * never in the query string.
  */
-import type { ChatMessage, ChatResponse, HttpRequest, JsonSchema, ModelInfo, ProviderAdapter, StopReason, ToolCall } from './types';
+import type { ChatMessage, ChatResponse, HttpRequest, JsonSchema, ModelInfo, ListingAdapter, ProviderAdapter, StopReason, ToolCall } from './types';
 import { AiError } from './types';
 import { t } from '@/i18n';
 
@@ -57,7 +57,7 @@ function toContents(messages: ChatMessage[]) {
   return out;
 }
 
-export const gemini: ProviderAdapter = {
+export const gemini: ListingAdapter = {
   buildChat(config, req): HttpRequest {
     const model = config.model.replace(/^models\//, '');
     return {
@@ -66,16 +66,20 @@ export const gemini: ProviderAdapter = {
       body: {
         systemInstruction: { parts: [{ text: req.system }] },
         contents: toContents(req.messages),
-        tools: [
-          {
-            functionDeclarations: req.tools.map((t) => ({
-              name: t.name,
-              description: t.description,
-              parameters: geminiSchema(t.parameters),
-            })),
-          },
-        ],
-        toolConfig: { functionCallingConfig: { mode: 'AUTO' } },
+        ...(req.tools.length
+          ? {
+              tools: [
+                {
+                  functionDeclarations: req.tools.map((t) => ({
+                    name: t.name,
+                    description: t.description,
+                    parameters: geminiSchema(t.parameters),
+                  })),
+                },
+              ],
+              toolConfig: { functionCallingConfig: { mode: 'AUTO' } },
+            }
+          : {}),
       },
     };
   },
@@ -112,4 +116,19 @@ export const gemini: ProviderAdapter = {
       .filter((m) => !m.supportedGenerationMethods || m.supportedGenerationMethods.includes('generateContent'))
       .map((m) => ({ id: m.name.replace(/^models\//, ''), label: m.displayName }));
   },
+};
+
+export const VERTEX_BASE = 'https://aiplatform.googleapis.com/v1';
+
+/**
+ * Google Vertex AI in express mode (API key): the same wire format as Gemini at
+ * Vertex's publisher-model endpoint. Express keys can't list models, so
+ * "Test connection" pings instead.
+ */
+export const vertex: ProviderAdapter = {
+  buildChat(config, req): HttpRequest {
+    const model = config.model.replace(/^(publishers\/google\/)?models\//, '');
+    return { ...gemini.buildChat(config, req), url: `${VERTEX_BASE}/publishers/google/models/${encodeURIComponent(model)}:generateContent` };
+  },
+  parseChat: gemini.parseChat,
 };

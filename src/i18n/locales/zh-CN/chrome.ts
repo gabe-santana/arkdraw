@@ -99,4 +99,10 @@ export default {
   'chrome.dock.dropHere': '拖放到此处',
   'chrome.dock.resizeLeft': '调整左侧面板大小',
   'chrome.dock.resizeRight': '调整右侧面板大小',
+  'chrome.rightTabs.aria': '右侧面板',
+  'chrome.rightTabs.design': '设计',
+  'chrome.rightTabs.designHint': '所选内容的样式和图层',
+  'chrome.rightTabs.ai': 'AI',
+  'chrome.rightTabs.aiHint': '说出你想要的：助手会绘制或修改',
+  'chrome.dock.resizeAi': '调整 AI 面板大小',
 } satisfies Translation<typeof en>;

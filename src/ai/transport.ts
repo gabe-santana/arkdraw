@@ -10,7 +10,7 @@
  * only and requests go straight from the page. The UI shows a warning.
  */
 import { invoke } from '@tauri-apps/api/core';
-import { ADAPTERS, AiError, type HttpRequest, type HttpResponse, type ModelInfo, type ProviderConfig, type ProviderId, type ChatRequest, type ChatResponse } from './providers';
+import { ADAPTERS, AiError, PROVIDER_META, type HttpRequest, type HttpResponse, type ModelInfo, type ProviderConfig, type ProviderId, type ChatRequest, type ChatResponse } from './providers';
 import { ANTHROPIC_VERSION } from './providers/anthropic';
 import type { CustomAuthStyle } from './settings';
 import { t } from '@/i18n';
@@ -71,8 +71,24 @@ function authHeaders(provider: ProviderId, mk: MemoryKey | undefined): Record<st
       if (!key) throw new AiError(t('ai.error.addKey', { provider: 'OpenAI' }));
       return { Authorization: `Bearer ${key}` };
     case 'gemini':
-      if (!key) throw new AiError(t('ai.error.addKey', { provider: 'Gemini' }));
+    case 'vertex':
+      if (!key) throw new AiError(t('ai.error.addKey', { provider: PROVIDER_META[provider].name }));
       return { 'x-goog-api-key': key };
+    case 'xai':
+    case 'deepseek':
+    case 'mistral':
+    case 'openrouter':
+    case 'groq':
+    case 'moonshot':
+    case 'qwen':
+    case 'zai':
+    case 'together':
+    case 'fireworks':
+    case 'cerebras':
+    case 'bedrock':
+    case 'cloudflare':
+      if (!key) throw new AiError(t('ai.error.addKey', { provider: PROVIDER_META[provider].name }));
+      return { Authorization: `Bearer ${key}` };
     default:
       if (!key) return {};
       return mk?.auth === 'api-key' ? { 'api-key': key } : { Authorization: `Bearer ${key}` };
@@ -151,9 +167,21 @@ export function describeHttpError(status: number, body: string): string {
   return detail ? t('ai.http.withDetail', { message: prefix, detail }) : t('ai.http.noDetail', { message: prefix });
 }
 
+const INVALID_KEY = /incorrect api key|invalid[ _-]?api[ _-]?key|invalid[ _-]?x-api-key|api key not valid|invalid authentication|unauthori[sz]ed/i;
+
+/** A rejected key, in plain words with where to get a good one; the provider's own text stays in `detail`. */
+export function keyRejectedError(provider: ProviderId, status: number, body: string): AiError | null {
+  if (status !== 400 && status !== 401 && status !== 403) return null;
+  if (!INVALID_KEY.test(body)) return null;
+  const name = provider === 'custom' ? t('ai.provider.custom.name') : PROVIDER_META[provider].name;
+  const url = PROVIDER_META[provider].keyHelpUrl?.replace(/^https:\/\//, '');
+  const message = url ? t('ai.error.keyRejected', { provider: name, url }) : t('ai.error.keyRejectedNoUrl', { provider: name });
+  return new AiError(message, status, describeHttpError(status, body));
+}
+
 export async function requestJson(provider: ProviderId, req: HttpRequest, signal?: AbortSignal): Promise<unknown> {
   const res = await sendRequest(provider, req, signal);
-  if (res.status < 200 || res.status >= 300) throw new AiError(describeHttpError(res.status, res.body), res.status);
+  if (res.status < 200 || res.status >= 300) throw keyRejectedError(provider, res.status, res.body) ?? new AiError(describeHttpError(res.status, res.body), res.status);
   try {
     return JSON.parse(res.body);
   } catch {
@@ -168,9 +196,17 @@ export async function chat(config: ProviderConfig, req: ChatRequest, signal?: Ab
   return adapter.parseChat(json);
 }
 
-/** Verifies the key/endpoint by listing models. Resolves with the available models. */
+/**
+ * Verifies the key/endpoint by listing models, or — where the API can't list
+ * them with this kind of key (Bedrock, Vertex express, Workers AI) — with a
+ * one-word chat to the chosen model. Resolves with the available models.
+ */
 export async function testConnection(config: ProviderConfig, signal?: AbortSignal): Promise<ModelInfo[]> {
   const adapter = ADAPTERS[config.provider];
+  if (!adapter.buildListModels || !adapter.parseListModels) {
+    await chat(config, { system: 'Reply with OK.', messages: [{ role: 'user', text: 'Ping' }], tools: [] }, signal);
+    return [];
+  }
   const json = await requestJson(config.provider, adapter.buildListModels(config), signal);
   return adapter.parseListModels(json);
 }
