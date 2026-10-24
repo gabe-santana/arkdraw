@@ -5,10 +5,12 @@
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const big = matchMedia('(min-width: 1100px) and (min-resolution: 1.5dppx), (min-width: 2200px)').matches;
 const videos = [...document.querySelectorAll('video[data-video]')];
+// /media is cached as immutable: bump this (and the posters' ?v= in index.html) after re-recording.
+const MEDIA_VERSION = 2;
 
 function load(v) {
   if (v.dataset.poster && !v.getAttribute('poster')) v.poster = v.dataset.poster;
-  if (!v.getAttribute('src')) v.src = `/media/${v.dataset.video}-${big ? '4k' : '1080p'}.mp4`;
+  if (!v.getAttribute('src')) v.src = `/media/${v.dataset.video}-${big ? '4k' : '1080p'}.mp4?v=${MEDIA_VERSION}`;
 }
 
 if (reduce) {
