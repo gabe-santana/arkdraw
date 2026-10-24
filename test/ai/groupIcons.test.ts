@@ -42,12 +42,13 @@ describe('group logos', () => {
 
   it('only names icons that exist in the installed packs', () => {
     const root = join(process.cwd(), 'public/icons');
-    if (!existsSync(join(root, 'azure'))) return; // packs not fetched
+    // A pack is installed once `npm run icons:fetch` wrote its index (the folders hold committed descriptions only).
+    const installed = (icon: string) => existsSync(join(root, icon.split('/')[0], 'index.json'));
     const labels = ['Public Subnet', 'Private Subnet', 'VNet', 'VPC', 'Resource Group', 'Subscription', 'Management Group', 'Region', 'AWS Account', 'AWS Cloud', 'Azure', 'Google Cloud', 'Project', 'Compartment', 'Namespace', 'EKS cluster', 'On-premises', 'Auto Scaling group'];
     for (const cloud of ['aws', 'azure', 'gcp', 'oci', undefined]) {
       for (const label of labels) {
         const icon = groupIcon(label, cloud);
-        if (icon) expect(existsSync(join(root, icon)), `${label} (${cloud}) → ${icon}`).toBe(true);
+        if (icon && installed(icon)) expect(existsSync(join(root, icon)), `${label} (${cloud}) → ${icon}`).toBe(true);
       }
     }
   });
