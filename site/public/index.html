@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ArkDraw: describe a system, watch it being drawn</title>
+  <meta name="description" content="ArkDraw is an open-source diagram editor with an AI assistant that draws, edits and animates real architecture diagrams with official AWS, Azure and Google Cloud icons. Bring your own model; your files stay on your disk.">
+  <meta name="theme-color" content="#0b0b12">
+  <link rel="canonical" href="https://arkdraw.com/">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://arkdraw.com/">
+  <meta property="og:title" content="ArkDraw: describe a system, watch it being drawn">
+  <meta property="og:description" content="Open-source diagram editor with an AI assistant. Official cloud icons, clean routing, animated flows. Your model, your keys, your files.">
+  <meta property="og:image" content="https://arkdraw.com/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/main.js" defer></script>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <header class="nav">
+    <a class="brand" href="/" aria-label="ArkDraw home">
+      <img src="/favicon.svg" alt="" width="30" height="30">
+      <span>Ark<b>Draw</b></span>
+    </a>
+    <nav class="nav-links" aria-label="Sections">
+      <a href="#ai">AI assistant</a>
+      <a href="#features">Features</a>
+      <a href="#start">Get started</a>
+      <a href="https://github.com/gabe-santana/arkdraw">GitHub</a>
+    </nav>
+    <a class="btn btn-primary btn-sm" href="https://app.arkdraw.com">Open the editor</a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <p class="eyebrow"><span class="dot"></span>Open source · Local-first · Bring your own model</p>
+      <h1>Describe a system.<br><span class="gradient">Watch it being drawn.</span></h1>
+      <p class="lede">ArkDraw is a diagram editor with an AI assistant that draws, edits and animates real architecture diagrams, with the official cloud icons, clean connectors and nothing to clean up afterwards.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="https://app.arkdraw.com">Open the editor <span aria-hidden="true">→</span></a>
+        <a class="btn btn-ghost" href="#ai">See it in action</a>
+      </div>
+      <p class="fineprint">Free and open source. Runs in your browser: no install, no account, no servers.</p>
+
+      <figure class="window hero-window">
+        <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i><span>app.arkdraw.com</span></div>
+        <video class="demo" src="/media/aws-serverless.mp4" poster="/media/aws-serverless.jpg" autoplay muted loop playsinline preload="auto" width="1280" height="760"
+          aria-label="Typing a prompt into ArkDraw's AI tab: it picks the official AWS icons, draws CloudFront, API Gateway, Lambda, S3 and DynamoDB, and the request flow starts moving along the arrows"></video>
+        <figcaption>A real recording: one prompt, official AWS icons, routed arrows, animated request flow.</figcaption>
+      </figure>
+    </section>
+
+    <section class="models" aria-label="Supported models">
+      <p>Works with the model you already pay for, or one that runs on your laptop</p>
+      <ul>
+        <li>Claude</li><li>GPT</li><li>Gemini</li><li>Grok</li><li>DeepSeek</li><li>Mistral</li>
+        <li>Azure AI Foundry</li><li>Amazon Bedrock</li><li>Vertex AI</li><li>OpenRouter</li><li>Groq</li><li class="local">Ollama · offline</li>
+      </ul>
+    </section>
+
+    <section id="ai" class="section">
+      <header class="section-head">
+        <p class="kicker">The AI assistant</p>
+        <h2>Say what you need. It does the drawing.</h2>
+        <p>No mode to pick and no template to fight. On an empty canvas it draws; on your diagram it edits. Every change pops in place and is one undo away.</p>
+      </header>
+
+      <div class="showcase">
+        <article class="show">
+          <div class="show-copy">
+            <h3>Edits your diagram, not a copy of it</h3>
+            <p>"Add a Redis cache between the instances and the database, and animate the data flow." It reads what's on the canvas, changes only what you asked, and shows you exactly what moved.</p>
+            <ul class="ticks"><li>Understands "this" as your selection</li><li>Adds, rewires and restyles in one step</li><li>Undo with <kbd>Ctrl</kbd> <kbd>Z</kbd></li></ul>
+          </div>
+          <figure class="window"><video class="demo" data-src="/media/edit-add-cache.mp4" poster="/media/edit-add-cache.jpg" muted loop playsinline preload="none" width="1280" height="760" aria-label="The assistant adds an ElastiCache Redis node to an existing AWS diagram and animates the data flow"></video></figure>
+        </article>
+
+        <article class="show reverse">
+          <div class="show-copy">
+            <h3>Diagrams that move</h3>
+            <p>"Show the events moving as dots." Ask for flow and it animates the connectors: marching dashes for requests, travelling dots for data, a pulse for the service that's on fire. Export it as a GIF for your README or slides.</p>
+            <ul class="ticks"><li>Flow, dots and pulse effects</li><li>Step-by-step build sequences</li><li>Animated GIF export</li></ul>
+          </div>
+          <figure class="window"><video class="demo" data-src="/media/gcp-pipeline.mp4" poster="/media/gcp-pipeline.jpg" muted loop playsinline preload="none" width="1280" height="760" aria-label="The assistant draws a Google Cloud streaming pipeline with events moving along the arrows as dots"></video></figure>
+        </article>
+
+        <article class="show">
+          <div class="show-copy">
+            <h3>Every cloud, the right icons</h3>
+            <p>Official AWS, Azure, Google Cloud, Oracle and Kubernetes icons, grouped in VPCs, VNets, subnets and resource groups with their own logos, and laid out so arrows never cross a box.</p>
+            <ul class="ticks"><li>14,000+ icons, searchable with typos and acronyms</li><li>Connectors routed together, one port each</li><li>Groups with the provider's logo</li></ul>
+          </div>
+          <figure class="window"><video class="demo" data-src="/media/azure-web-app.mp4" poster="/media/azure-web-app.jpg" muted loop playsinline preload="none" width="1280" height="760" aria-label="The assistant draws an Azure web app with Front Door, App Service in a VNet, Azure SQL and Key Vault"></video></figure>
+        </article>
+      </div>
+    </section>
+
+    <section id="features" class="section">
+      <header class="section-head">
+        <p class="kicker">And a serious editor underneath</p>
+        <h2>Everything you expect, done properly.</h2>
+      </header>
+      <div class="grid">
+        <article class="card">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h10l6 6v10H4z"/><path d="M14 4v6h6"/><path d="M8 14h8M8 17h5"/></svg>
+          <h3>Your files, your disk</h3>
+          <p>Open and save diagrams as plain JSON files that diff in git. No account, no cloud storage.</p>
+        </article>
+        <article class="card">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v10H7z"/><path d="M3 12h4M17 12h4M12 3v4M12 17v4"/></svg>
+          <h3>Open formats</h3>
+          <p>Opens and saves <code>.drawio</code> and <code>.vsdx</code>; imports Mermaid, Graphviz, CSV and SQL.</p>
+        </article>
+        <article class="card">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h7v10h9"/><path d="M17 14l3 3-3 3"/><circle cx="4" cy="7" r="1.5"/></svg>
+          <h3>Straight connectors</h3>
+          <p>Hover a segment and drag it: it snaps into line with the shapes, and leftover bends disappear.</p>
+        </article>
+        <article class="card">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+          <h3>Installs as an app</h3>
+          <p>Add it to your dock or start menu from the browser, and keep working offline.</p>
+        </article>
+        <article class="card">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg>
+          <h3>Keys stay with you</h3>
+          <p>Your API key is encrypted in your browser and sent only to your provider. ArkDraw has no servers.</p>
+        </article>
+        <article class="card">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>
+          <h3>10 languages</h3>
+          <p>English, Português, Español, Français, Deutsch, Italiano, 日本語, 한국어, Русский, 中文.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="start" class="oss">
+      <div class="oss-inner">
+        <h2>Your next diagram is one sentence away.</h2>
+        <p>Open the editor, connect the model you already use, and describe what you're building. ArkDraw is MIT licensed and built in the open on GitHub.</p>
+        <div class="cta">
+          <a class="btn btn-primary" href="https://app.arkdraw.com">Open the editor <span aria-hidden="true">→</span></a>
+          <a class="btn btn-ghost" href="https://github.com/gabe-santana/arkdraw">Star on GitHub</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>© 2026 Gabriel Santana · MIT License</span>
+    <nav aria-label="Footer">
+      <a href="https://app.arkdraw.com">Editor</a>
+      <a href="https://github.com/gabe-santana/arkdraw">GitHub</a>
+      <a href="https://github.com/gabe-santana/arkdraw/blob/main/PRIVACY.md">Privacy</a>
+    </nav>
+  </footer>
+</body>
+</html>

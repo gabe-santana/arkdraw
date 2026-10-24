@@ -1,6 +1,6 @@
-# Web deployment: push a version tag (v1.2.3) and the web app is built and
-# published to Cloudflare Workers (https://arkdraw.com), next to the desktop
-# release (release.yml).
+# Web deployment: push a version tag (v1.2.3) and the web editor
+# (https://app.arkdraw.com) and the landing page (https://arkdraw.com, site/)
+# are published to Cloudflare Workers, next to the desktop release (release.yml).
 #
 # Needs two repository secrets, set by a maintainer (never committed):
 #   CLOUDFLARE_API_TOKEN   token from the "Edit Cloudflare Workers" template
@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: https://arkdraw.com
+      url: https://app.arkdraw.com
     steps:
       - uses: actions/checkout@v4
 
@@ -66,11 +66,22 @@ jobs:
             echo "::notice::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID not set: built, not deployed"
           fi
 
-      - name: Deploy
+      - name: Deploy the editor (app.arkdraw.com)
         if: steps.creds.outputs.ready == 'true'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: '4'
+          command: deploy
+
+      # Static files, no build step.
+      - name: Deploy the landing page (arkdraw.com)
+        if: steps.creds.outputs.ready == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: '4'
+          workingDirectory: site
           command: deploy

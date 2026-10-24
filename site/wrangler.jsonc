@@ -1,0 +1,21 @@
+// Cloudflare Workers deployment of the landing page (https://arkdraw.com and
+// https://www.arkdraw.com). The editor itself is a separate Worker at
+// https://app.arkdraw.com (../wrangler.jsonc).
+//
+// Assets-only (no code runs), so requests don't count against the free plan.
+// Deployed by .github/workflows/deploy-web.yml; credentials are repository
+// secrets, never stored in the repo.
+{
+  "name": "arkdraw-site",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./public",
+    "not_found_handling": "404-page"
+  },
+  "routes": [
+    { "pattern": "arkdraw.com", "custom_domain": true },
+    { "pattern": "www.arkdraw.com", "custom_domain": true }
+  ],
+  "workers_dev": false,
+  "preview_urls": false
+}

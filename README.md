@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://arkdraw.com"><b>Open it in your browser at arkdraw.com</b></a> · <a href="#download">Download for Windows, macOS and Linux</a>
+  <a href="https://app.arkdraw.com"><b>Open it in your browser</b></a> · <a href="https://arkdraw.com">arkdraw.com</a> · <a href="#download">Download for Windows, macOS and Linux</a>
 </p>
 
 <p align="center">
@@ -70,7 +70,7 @@ Open the **AI** tab (<kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>I</kbd>) and say what
 | **Windows** 10/11 | [Microsoft Store](https://apps.microsoft.com/detail/9PG6WQTHD78Q), `winget install 9PG6WQTHD78Q`, or the `windows-installer.exe` from [Releases](https://github.com/gabe-santana/opendraw/releases/latest). Signed by Microsoft, updates automatically |
 | **macOS** 11+ | Universal `.dmg` (Apple Silicon and Intel) |
 | **Linux** | `.AppImage` (any distro), `.deb`, `.rpm`, x64 and arm64 |
-| **Web** | **[arkdraw.com](https://arkdraw.com)**, installable as an app, or [self-host it](docs/web.md) |
+| **Web** | **[app.arkdraw.com](https://app.arkdraw.com)**, installable as an app, or [self-host it](docs/web.md) |
 
 Checksums are in `SHA256SUMS.txt` on every release.
 

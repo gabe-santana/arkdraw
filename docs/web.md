@@ -267,8 +267,10 @@ headers), which both hosts read.
 
 ### Cloudflare Workers
 
-The official site, https://arkdraw.com, is an assets-only Worker
-([`wrangler.jsonc`](../wrangler.jsonc)): no code runs, so it fits the free plan
+The editor at https://app.arkdraw.com is an assets-only Worker
+([`wrangler.jsonc`](../wrangler.jsonc)), and the landing page at
+https://arkdraw.com / https://www.arkdraw.com is another one
+([`site/`](../site), plain static files). No code runs, so both fit the free plan
 (static requests are free; up to 20,000 files and 25 MiB per file per
 deployment, and the build is about 14,600 files with the icon packs). The
 [Deploy web](../.github/workflows/deploy-web.yml) workflow builds and deploys
@@ -277,8 +279,8 @@ it on every stable version tag (`v1.2.3`), or by hand from the Actions tab.
 One-time setup (maintainers). Nothing secret goes in the repository:
 
 1. The domain's zone (`arkdraw.com`) must be active in the Cloudflare account.
-   If it has an `A`/`AAAA`/`CNAME` record for the apex, delete it: the first
-   deploy creates the record and the certificate for the Worker.
+   If it has `A`/`AAAA`/`CNAME` records for `arkdraw.com`, `www` or `app`,
+   delete them: the first deploy creates the records and certificates.
 2. Cloudflare dashboard → *My Profile* → *API Tokens* → *Create Token* →
    template **Edit Cloudflare Workers**. Account resources: your account; zone
    resources: `arkdraw.com`. Create it and copy it once.
@@ -291,14 +293,12 @@ One-time setup (maintainers). Nothing secret goes in the repository:
    gh secret set CLOUDFLARE_ACCOUNT_ID
    ```
 
-5. Optional: *Rules* → *Redirect Rules* → template **Redirect from WWW to root**,
-   so `www.arkdraw.com` lands on `arkdraw.com`.
-
 Deploy by hand from a clone (uses your own `wrangler login`):
 
 ```sh
 npm run icons:fetch && npm run build:web
-npx wrangler@4 deploy
+npx wrangler@4 deploy                # editor → app.arkdraw.com
+cd site && npx wrangler@4 deploy     # landing → arkdraw.com, www.arkdraw.com
 ```
 
 Forks without the secrets still build in the workflow; the upload step is

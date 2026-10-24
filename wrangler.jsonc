@@ -1,4 +1,5 @@
-// Cloudflare Workers deployment of the web app (https://arkdraw.com).
+// Cloudflare Workers deployment of the web editor (https://app.arkdraw.com).
+// The landing page at https://arkdraw.com is a separate Worker (site/wrangler.jsonc).
 //
 // An assets-only Worker: no code runs, Cloudflare serves the static build
 // from its edge, so requests don't count against the Workers free-plan
@@ -16,7 +17,7 @@
     // Unknown paths load the app, which handles its own routes (share links, ?embed=1…).
     "not_found_handling": "single-page-application"
   },
-  "routes": [{ "pattern": "arkdraw.com", "custom_domain": true }],
+  "routes": [{ "pattern": "app.arkdraw.com", "custom_domain": true }],
   // Keep the *.workers.dev preview URL off: the site lives on the custom domain only.
   "workers_dev": false,
   "preview_urls": false
