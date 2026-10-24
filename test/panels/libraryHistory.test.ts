@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { hasRef, parseRefs, pushRecent, refKey, toggleRef, RECENT_LIMIT, type LibraryRef } from '@/panels/libraryHistory';
+import { createShape } from '@/model/defaults';
+import { LIBRARIES } from '@/shapes/libraries';
+import { hasRef, parseRefs, pushRecent, refKey, toggleRef, RECENT_LIMIT, type LibraryRef, recordElementsUse, useLibraryHistory } from '@/panels/libraryHistory';
 import { placeBeside } from '@/panels/libraryPlacement';
 
 const shape = (label: string, libraryId = 'general'): LibraryRef => ({ type: 'shape', libraryId, label });
@@ -105,5 +107,21 @@ describe('placeBeside', () => {
   it('ignores containers enclosing the source', () => {
     const container = { x: -20, y: -20, w: 600, h: 400 };
     expect(placeBeside(src, size, [container])).toEqual({ x: 180, y: 10, w: 100, h: 40 });
+  });
+});
+
+describe('recordElementsUse', () => {
+  it('puts the shapes a generated diagram used in Recent, first element first', async () => {
+    useLibraryHistory.getState().clearRecent();
+    const els = [
+      createShape('cylinder', { x: 0, y: 0, w: 80, h: 80 }, {}, 'DB'),
+      createShape('rectangle', { x: 0, y: 0, w: 80, h: 40 }, {}, 'API'),
+      createShape('cylinder', { x: 0, y: 0, w: 80, h: 80 }, {}, 'Cache'),
+      createShape('text', { x: 0, y: 0, w: 80, h: 20 }, {}, 'note'),
+    ];
+    await recordElementsUse(els);
+    const recent = useLibraryHistory.getState().recent;
+    expect(recent).toHaveLength(2);
+    expect(recent[0]).toMatchObject({ type: 'shape', label: LIBRARIES.flatMap((l) => l.items).find((i) => i.kind === 'cylinder')!.label });
   });
 });

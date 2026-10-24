@@ -5,6 +5,9 @@
  * skipped). Persisted locally, like user libraries.
  */
 import { create } from 'zustand';
+import type { DiagramElement } from '@/model/types';
+import { LIBRARIES } from '@/shapes/libraries';
+import { loadPack } from '@/icons/iconPacks';
 
 export type LibraryRef =
   | { type: 'shape'; libraryId: string; label: string }
@@ -95,3 +98,39 @@ export const useLibraryHistory = create<HistoryState>((set, get) => ({
     write(FAVORITES_KEY, favorites);
   },
 }));
+
+/** Kinds that aren't worth a Recent entry (plain text, group boxes). */
+const UNTRACKED_KINDS = new Set(['text', 'group', 'container']);
+
+/**
+ * Records what a batch of new elements used (e.g. a diagram the AI drew),
+ * so its icons and shapes show up in Recent like ones the user dragged in.
+ * The first element ends up first.
+ */
+export async function recordElementsUse(elements: DiagramElement[]): Promise<void> {
+  const refs: LibraryRef[] = [];
+  const seen = new Set<string>();
+  const add = (ref: LibraryRef) => {
+    const key = refKey(ref);
+    if (!seen.has(key)) {
+      seen.add(key);
+      refs.push(ref);
+    }
+  };
+  for (const el of elements) {
+    if (el.type !== 'shape' || UNTRACKED_KINDS.has(el.kind)) continue;
+    if (el.kind === 'icon' && el.icon && !/^(data|https?|blob):/.test(el.icon)) {
+      const slash = el.icon.indexOf('/');
+      const provider = el.icon.slice(0, slash);
+      const pack = await loadPack(provider).catch(() => null);
+      const entry = pack?.icons.find((i) => i.file === el.icon!.slice(slash + 1));
+      if (entry) add({ type: 'icon', provider, iconId: entry.id });
+    } else if (el.kind !== 'icon') {
+      const lib = LIBRARIES.find((l) => l.items.some((i) => i.kind === el.kind));
+      const item = lib?.items.find((i) => i.kind === el.kind);
+      if (lib && item) add({ type: 'shape', libraryId: lib.id, label: item.label });
+    }
+  }
+  const { recordUse } = useLibraryHistory.getState();
+  for (const ref of refs.slice(0, RECENT_LIMIT).reverse()) recordUse(ref);
+}

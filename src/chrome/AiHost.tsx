@@ -8,6 +8,7 @@ import { useEditor } from '@/store/editor';
 import { useUi } from '@/store/ui';
 import { viewportCenter } from '@/canvas/viewport';
 import { AgentGlow, animateChanges, useAiActivity } from './AiActivity';
+import { recordElementsUse } from '@/panels/libraryHistory';
 
 const host: AiHostApi = {
   getDoc: () => useEditor.getState().doc,
@@ -17,6 +18,7 @@ const host: AiHostApi = {
     const before = s.doc;
     s.addElements(elements);
     animateChanges(before, useEditor.getState().doc);
+    void recordElementsUse(elements);
     requestAnimationFrame(() => useEditor.getState().zoomToFit(elements.map((e) => e.id)));
   },
   replaceDoc: (elements) => {
@@ -28,6 +30,7 @@ const host: AiHostApi = {
     s.addElements(elements, { select: false });
     s.endInteraction();
     animateChanges(before, useEditor.getState().doc);
+    void recordElementsUse(elements.filter((e) => !before.elements[e.id]));
     requestAnimationFrame(() => useEditor.getState().zoomToFit());
   },
   getViewportCenter: viewportCenter,
