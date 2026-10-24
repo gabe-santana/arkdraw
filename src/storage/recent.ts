@@ -57,7 +57,7 @@ export async function noteCurrentDocument() {
   const name = s.file.name.replace(/\.opendraw$/i, '');
   let data: string | undefined;
   if (!handle && !libraryId) {
-    data = serializePages(s.allPages(), s.docMeta);
+    data = serializePages(s.allPages(), s.docMeta, s.aiHistory);
     if (data.length > MAX_COPY) return;
   }
   try {

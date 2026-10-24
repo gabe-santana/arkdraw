@@ -27,6 +27,11 @@ Linux, including the Microsoft Store version) or the web app.
 | **Images or diagrams opened from a URL** | A request for that URL | The website you entered |
 | **Share links** | Nothing: the diagram is encoded in the link itself, in the part of the URL that browsers never send to servers | — |
 
+The AI conversation (your prompts and the assistant's replies) is saved inside
+the diagram file, so it is still there when you reopen it. Anyone you send the
+file to can read it; **New conversation** in the AI tab clears it from the file.
+Exports (PNG, SVG, PDF, HTML…) and share links never include it.
+
 Plugins you choose to install run with full access to the editor; only install
 plugins you trust.
 

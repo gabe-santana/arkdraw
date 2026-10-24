@@ -2,7 +2,8 @@
  * The `.opendraw` file format: pretty-printed JSON, so diagrams diff cleanly
  * in git. Parsing is forgiving — unknown fields are kept, missing style keys
  * are filled from defaults, and invalid elements are skipped instead of
- * failing the whole file.
+ * failing the whole file. The AI conversation travels with the file
+ * (`assistant`), but never into exports or share links.
  */
 import type { ConnectorElement, DiagramElement, Doc, DocumentMeta, Layer, Page, PageSettings, ShapeElement } from '@/model/types';
 import { uid } from '@/lib/id';
@@ -30,18 +31,21 @@ export interface ArkDrawFile {
   savedAt: string;
   /** File properties (title, author, description, timestamps, document data). */
   meta?: DocumentMeta;
+  /** The AI assistant conversation, owned and validated by src/ai (opaque here). */
+  assistant?: { runs: unknown[] };
   pages: FilePage[];
 }
 
 const DEFAULT_SETTINGS: PageSettings = { background: null, paper: 'A4', landscape: false, pageView: false };
 
-export function serializePages(pages: Page[], meta?: DocumentMeta): string {
+export function serializePages(pages: Page[], meta?: DocumentMeta, assistant?: unknown[]): string {
   const file: ArkDrawFile = {
     format: FILE_FORMAT,
     version: FILE_VERSION,
     generator: `ArkDraw ${__APP_VERSION__}`,
     savedAt: new Date().toISOString(),
     ...(meta && Object.keys(meta).length ? { meta } : {}),
+    ...(assistant?.length ? { assistant: { runs: assistant } } : {}),
     pages: pages.map((p) => ({
       id: p.id,
       name: p.name,
@@ -172,6 +176,16 @@ export function parseMeta(text: string): DocumentMeta | undefined {
   try {
     const meta = (JSON.parse(text) as Partial<ArkDrawFile>)?.meta;
     return meta && typeof meta === 'object' ? meta : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The saved AI conversation of a serialized diagram (undefined when it has none). */
+export function parseAssistant(text: string): unknown[] | undefined {
+  try {
+    const runs = (JSON.parse(text) as Partial<ArkDrawFile>)?.assistant?.runs;
+    return Array.isArray(runs) ? runs : undefined;
   } catch {
     return undefined;
   }

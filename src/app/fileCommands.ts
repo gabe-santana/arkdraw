@@ -7,7 +7,7 @@ import type { Page } from '@/model/types';
 import { saveTarget } from './saveTarget';
 import { isDirtyState, newPage, useEditor } from '@/store/editor';
 import { useUi } from '@/store/ui';
-import { FILE_EXTENSION, FileFormatError, parseMeta, parsePages, serializePages } from '@/io/fileFormat';
+import { FILE_EXTENSION, FileFormatError, parseAssistant, parseMeta, parsePages, serializePages } from '@/io/fileFormat';
 import type { DocumentMeta } from '@/model/types';
 import { commitSavedMeta, metaForSave } from '@/automation/fileProperties';
 import { importDrawioPages } from '@/io/drawio';
@@ -67,12 +67,14 @@ export async function newDocument() {
 type IncomingFile = OpenedFile | { name: string; bytes: Uint8Array; path: null };
 
 /** Turns any supported file into pages. `native` = an ArkDraw file (keeps its path). */
-async function pagesFromFile(f: IncomingFile): Promise<{ pages: Page[]; native: boolean; warnings?: string[]; meta?: DocumentMeta }> {
+async function pagesFromFile(
+  f: IncomingFile,
+): Promise<{ pages: Page[]; native: boolean; warnings?: string[]; meta?: DocumentMeta; assistant?: unknown[] }> {
   const lower = f.name.toLowerCase();
   const ext = lower.split('.').pop() ?? '';
   const text = 'contents' in f ? f.contents : null;
   const asText = () => text ?? new TextDecoder().decode((f as { bytes: Uint8Array }).bytes);
-  if (ext === FILE_EXTENSION) return { pages: parsePages(asText()), native: true, meta: parseMeta(asText()) };
+  if (ext === FILE_EXTENSION) return { pages: parsePages(asText()), native: true, meta: parseMeta(asText()), assistant: parseAssistant(asText()) };
   const importer = importerFor(lower);
   if (importer) {
     const res = await importer.run('bytes' in f ? f.bytes : asText(), f.name);
@@ -82,16 +84,16 @@ async function pagesFromFile(f: IncomingFile): Promise<{ pages: Page[]; native: 
   if (ext === 'drawio' || ext === 'xml' || body.trimStart().startsWith('<')) {
     return { pages: (await importDrawioPages(body)).map((p) => newPage(p.name, p.doc)), native: false };
   }
-  return { pages: parsePages(body), native: true, meta: parseMeta(body) };
+  return { pages: parsePages(body), native: true, meta: parseMeta(body), assistant: parseAssistant(body) };
 }
 
 export async function loadOpenedFile(f: IncomingFile) {
   const ui = useUi.getState();
   try {
-    const { pages, native, warnings, meta } = await pagesFromFile(f);
+    const { pages, native, warnings, meta, assistant } = await pagesFromFile(f);
     const s = useEditor.getState();
     if (native) {
-      s.loadPages(pages, { path: f.path, name: f.name, meta });
+      s.loadPages(pages, { path: f.path, name: f.name, meta, assistant });
       void import('@/storage/recent').then((r) => r.noteCurrentDocument());
       if (f.path) addRecentFile(f.path).catch(() => {});
     } else {
@@ -158,7 +160,7 @@ export async function saveDocument(saveAs = false): Promise<boolean> {
   }
   const s = useEditor.getState();
   const meta = metaForSave();
-  const contents = serializePages(s.allPages(), meta);
+  const contents = serializePages(s.allPages(), meta, s.aiHistory);
   const name = s.file.name.endsWith(`.${FILE_EXTENSION}`) ? s.file.name : `${s.file.name}.${FILE_EXTENSION}`;
   try {
     const res = await saveFile(contents, {
@@ -194,13 +196,13 @@ const RECOVERY_KEY = windowScopedKey('opendraw:recovery');
 export function startRecovery() {
   let timer = 0;
   return useEditor.subscribe((s, prev) => {
-    if (s.doc === prev.doc && s.pages === prev.pages) return;
+    if (s.doc === prev.doc && s.pages === prev.pages && s.aiHistory === prev.aiHistory) return;
     window.clearTimeout(timer);
     timer = window.setTimeout(() => {
       if (!isDirty()) return clearRecovery();
       const cur = useEditor.getState();
       try {
-        localStorage.setItem(RECOVERY_KEY, JSON.stringify({ name: cur.file.name, path: cur.file.path, data: serializePages(cur.allPages(), cur.docMeta) }));
+        localStorage.setItem(RECOVERY_KEY, JSON.stringify({ name: cur.file.name, path: cur.file.path, data: serializePages(cur.allPages(), cur.docMeta, cur.aiHistory) }));
       } catch {
         /* quota exceeded — ignore */
       }
@@ -224,7 +226,7 @@ export function restoreRecovery(): boolean {
     const { name, path, data } = JSON.parse(raw) as { name: string; path: string | null; data: string };
     const pages = parsePages(data);
     if (!pages.some((p) => p.doc.order.length)) return false;
-    useEditor.getState().loadPages(pages, { path, name, meta: parseMeta(data) });
+    useEditor.getState().loadPages(pages, { path, name, meta: parseMeta(data), assistant: parseAssistant(data) });
     markUnsaved();
     return true;
   } catch {

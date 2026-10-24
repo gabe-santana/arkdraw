@@ -78,10 +78,16 @@ export function AiTab() {
   // Re-render on canvas and selection changes: the panel adapts its hints to them.
   useEditor((s) => s.doc.order.length);
   useEditor((s) => s.selection.length);
+  const history = useEditor((s) => s.aiHistory);
   const set = useUi((s) => s.set);
   return (
     <>
-      <AiPanel host={host} onOpenSettings={() => set({ aiSettingsOpen: true })} />
+      <AiPanel
+        host={host}
+        onOpenSettings={() => set({ aiSettingsOpen: true })}
+        history={history}
+        onHistoryChange={(h) => useEditor.getState().setAiHistory(h)}
+      />
       <AgentGlow />
     </>
   );

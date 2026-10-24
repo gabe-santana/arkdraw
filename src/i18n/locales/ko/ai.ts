@@ -6,6 +6,7 @@ export default {
   'ai.panel.modelSettings': '모델 설정',
   'ai.panel.noModel': '모델 없음',
   'ai.panel.newChat': '새 대화',
+  'ai.panel.savedHistory': '이 파일에 저장된 대화',
 
   // AiPanel — setup / empty state
   'ai.panel.connectTitle': '모델 연결',

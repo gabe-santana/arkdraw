@@ -116,6 +116,8 @@ export interface EditorState {
   pageHistory: Record<string, PageHistory>;
   /** File properties (File → Properties); replaced whenever a document is loaded. */
   docMeta: DocumentMeta;
+  /** The AI conversation saved with the file (src/ai owns its shape); replaced whenever a document is loaded. */
+  aiHistory: unknown[];
   /** View filter: when non-empty, only shapes carrying one of these tags are shown. */
   tagFilter: string[];
   /** Brief visual feedback after group / ungroup (cleared automatically). */
@@ -177,7 +179,9 @@ export interface EditorState {
   // --- pages
   /** Pages with the live doc merged in (for saving/exporting). */
   allPages: () => Page[];
-  loadPages: (pages: Page[], file: { path: string | null; name: string; meta?: DocumentMeta }) => void;
+  loadPages: (pages: Page[], file: { path: string | null; name: string; meta?: DocumentMeta; assistant?: unknown[] }) => void;
+  /** Replace the saved AI conversation (marks the file unsaved). */
+  setAiHistory: (runs: unknown[]) => void;
   addPage: (name?: string, doc?: Doc) => void;
   duplicatePage: (id: string) => void;
   deletePage: (id: string) => void;
@@ -387,6 +391,7 @@ export const useEditor = create<EditorState>((set, get) => {
     activeLayerId: null,
     pageHistory: {},
     docMeta: {},
+    aiHistory: [],
     tagFilter: [],
     flash: null,
 
@@ -770,6 +775,7 @@ export const useEditor = create<EditorState>((set, get) => {
         activeLayerId: null,
         pageHistory: {},
         docMeta: file.meta ?? {},
+        aiHistory: file.assistant ?? [],
         past: [],
         future: [],
         selection: [],
@@ -783,6 +789,7 @@ export const useEditor = create<EditorState>((set, get) => {
         },
       });
     },
+    setAiHistory: (runs) => set({ aiHistory: runs, file: { ...get().file, savedMeta: '' } }),
     addPage: (name, doc) => {
       const pages = get().allPages();
       const page = newPage(name ?? `Page ${pages.length + 1}`, doc);

@@ -6,6 +6,7 @@ export default {
   'ai.panel.modelSettings': 'モデルの設定',
   'ai.panel.noModel': 'モデルなし',
   'ai.panel.newChat': '新しい会話',
+  'ai.panel.savedHistory': 'このファイルに保存された会話',
 
   // AiPanel — setup / empty state
   'ai.panel.connectTitle': 'モデルを接続',

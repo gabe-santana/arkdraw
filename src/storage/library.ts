@@ -8,7 +8,7 @@ import type { Page } from '@/model/types';
 import { uid } from '@/lib/id';
 import { useEditor } from '@/store/editor';
 import { useUi } from '@/store/ui';
-import { parseMeta, parsePages, serializePages } from '@/io/fileFormat';
+import { parseAssistant, parseMeta, parsePages, serializePages } from '@/io/fileFormat';
 import { renderSvg } from '@/io/export/svg';
 import { commitSavedMeta, metaForSave } from '@/automation/fileProperties';
 import { idbAll, idbDelete, idbGet, idbPut } from './idb';
@@ -96,7 +96,7 @@ export async function saveCurrentToLibrary(opts: { name?: string; asNew?: boolea
   const existing = !opts.asNew && origin?.kind === 'library' ? await idbGet<LibraryDoc>('documents', origin.id).catch(() => undefined) : undefined;
   const meta = metaForSave();
   const name = opts.name ?? existing?.name ?? stripExt(s.file.name);
-  const entry = makeEntry(name, serializePages(s.allPages(), meta), existing?.id, existing?.created);
+  const entry = makeEntry(name, serializePages(s.allPages(), meta, s.aiHistory), existing?.id, existing?.created);
   try {
     await idbPut('documents', entry);
   } catch (e) {
@@ -119,7 +119,7 @@ export async function openLibraryDoc(id: string): Promise<boolean> {
     return false;
   }
   offerOrigin({ kind: 'library', id });
-  useEditor.getState().loadPages(parsePages(entry.data), { path: null, name: entry.name, meta: parseMeta(entry.data) });
+  useEditor.getState().loadPages(parsePages(entry.data), { path: null, name: entry.name, meta: parseMeta(entry.data), assistant: parseAssistant(entry.data) });
   requestAnimationFrame(() => useEditor.getState().zoomToFit());
   void import('./recent').then((r) => r.noteCurrentDocument());
   return true;

@@ -43,7 +43,7 @@ export async function autosaveNow(): Promise<boolean> {
       return !!(await saveCurrentToLibrary());
     }
     const meta = metaForSave();
-    const data = serializePages(s.allPages(), meta);
+    const data = serializePages(s.allPages(), meta, s.aiHistory);
     if (target === 'path') {
       const { backupsEnabled } = await import('@/desktop/config');
       await writeTextFile(s.file.path!, data, { backup: backupsEnabled() });
@@ -69,7 +69,7 @@ export async function autosaveNow(): Promise<boolean> {
 export function startAutosave(): () => void {
   let timer = 0;
   const off = useEditor.subscribe((s, prev) => {
-    if (s.doc === prev.doc && s.pages === prev.pages && s.docMeta === prev.docMeta) return;
+    if (s.doc === prev.doc && s.pages === prev.pages && s.docMeta === prev.docMeta && s.aiHistory === prev.aiHistory) return;
     if (!usePreferences.getState().autosave || s.interactionBase) return;
     window.clearTimeout(timer);
     timer = window.setTimeout(() => void autosaveNow(), DELAY);

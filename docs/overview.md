@@ -48,7 +48,7 @@ npm run docker:build && npm run docker:run  # http://localhost:8080
 
 | Format | Import | Export | Notes |
 | --- | :---: | :---: | --- |
-| ArkDraw `.opendraw` | ✓ | ✓ | Pretty-printed JSON, git-friendly |
+| ArkDraw `.opendraw` | ✓ | ✓ | Pretty-printed JSON, git-friendly; keeps the AI conversation (never exported) |
 | mxGraph XML `.drawio`, `.xml` | ✓ | ✓ | Compressed or plain; `flow` animation survives as `flowAnimation=1` |
 | PNG / SVG / PDF with an embedded diagram | ✓ | ✓ | "Include a copy of the diagram" makes the image re-editable |
 | PNG, JPEG, WebP | | ✓ | Scale, border, transparent background, selection only |

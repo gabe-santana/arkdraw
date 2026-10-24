@@ -7,7 +7,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity, ArrowRight, ArrowRightLeft, ArrowUp, Boxes, Check, ChevronDown, CircleAlert, CircleCheck, Cloud, Database, DatabaseZap,
-  LoaderCircle, MessageSquarePlus, Palette, Plus, Replace, RotateCcw, Settings, ShieldCheck, Sparkles, Square, Tag, Undo2, Workflow, X,
+  History, LoaderCircle, MessageSquarePlus, Palette, Plus, Replace, RotateCcw, Settings, ShieldCheck, Sparkles, Square, Tag, Undo2, Workflow, X,
   Zap, type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -19,6 +19,7 @@ import { modelFor, providerConfig, updateAiSettings, useAiSettings } from '../se
 import { runAssistant, type AgentEvent, type AgentResult, type AssistantMode, type StepKind, type StepState } from '../generate/agent';
 import { applyOps } from '../generate/ops';
 import { convertSpec } from '../generate/toElements';
+import { loadRuns, MAX_SAVED_RUNS, saveRuns } from '../history';
 import { AiSettingsDialog } from './AiSettingsDialog';
 import { Btn, IconBtn, IS_MAC, ProviderMark, stopKeys } from './ui';
 import { useAiReady, type AiSetupNeed } from './useAiReady';
@@ -29,6 +30,13 @@ export interface AiPanelProps {
   onClose?: () => void;
   /** Open settings yourself; when omitted the panel shows its own `AiSettingsDialog`. */
   onOpenSettings?: () => void;
+  /**
+   * The conversation saved with the document (see src/ai/history.ts). A new value
+   * from outside (another file opened) replaces the one on screen.
+   */
+  history?: unknown[];
+  /** Called with the finished requests whenever they change, to save them with the document. */
+  onHistoryChange?: (history: unknown[]) => void;
   className?: string;
 }
 
@@ -56,6 +64,10 @@ interface Run {
   applied?: 'insert' | 'replace' | 'edit';
   /** The new diagram went next to existing content (so "Replace diagram" stays on offer). */
   beside?: boolean;
+  /** ISO time the request was sent. */
+  at?: string;
+  /** Read back from the file: shown as a record, its result is never applied again. */
+  restored?: boolean;
 }
 
 interface Example {
@@ -83,13 +95,18 @@ const SETUP_PROVIDERS: ProviderId[] = ['anthropic', 'openai', 'gemini', 'xai', '
 
 let runSeq = 0;
 
-export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelProps) {
+export function AiPanel({ host, onClose, onOpenSettings, history, onHistoryChange, className }: AiPanelProps) {
   const t = useT();
   const settings = useAiSettings();
   const { ready, reason, need } = useAiReady();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
-  const [runs, setRuns] = useState<Run[]>([]);
+  // The document's saved conversation: restored when a file is opened, saved back as requests finish.
+  const shownHistory = useRef(history);
+  const restored = useRef<Run[] | null>(null);
+  const restore = (h: unknown[] | undefined): Run[] =>
+    (restored.current = loadRuns(h).map((r) => ({ ...r, id: ++runSeq, restored: true })));
+  const [runs, setRuns] = useState<Run[]>(() => restore(history));
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
@@ -104,6 +121,23 @@ export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelPro
   const modelLabel = meta.models.find((m) => m.id === model)?.label ?? model;
 
   useEffect(() => () => abortRef.current?.abort(), []);
+
+  useEffect(() => {
+    if (history === shownHistory.current) return;
+    shownHistory.current = history;
+    abortRef.current?.abort();
+    setRuns(restore(history));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- a new document is the only trigger
+  }, [history]);
+  useEffect(() => {
+    // Showing what the file holds is not a change to it.
+    if (runs === restored.current || !onHistoryChange) return;
+    const saved = saveRuns(runs);
+    if (JSON.stringify(saved) === JSON.stringify(shownHistory.current ?? [])) return;
+    shownHistory.current = saved;
+    onHistoryChange(saved);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only the conversation itself triggers a save
+  }, [runs]);
 
   // Keep the newest activity in view.
   useLayoutEffect(() => {
@@ -132,7 +166,7 @@ export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelPro
     }
     const id = ++runSeq;
     const runMode: AssistantMode = host.getDoc().order.length ? 'edit' : 'generate';
-    setRuns((rs) => [...rs.slice(-9), { id, prompt: p, mode: runMode, model: modelLabel, status: 'running', steps: [] }]);
+    setRuns((rs) => [...rs.slice(1 - MAX_SAVED_RUNS), { id, prompt: p, mode: runMode, model: modelLabel, status: 'running', steps: [], at: new Date().toISOString() }]);
     setPrompt('');
     const ac = new AbortController();
     abortRef.current = ac;
@@ -307,13 +341,20 @@ export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelPro
           </div>
         )}
 
+        {runs[0]?.restored && (
+          <div className="flex items-center justify-center gap-1.5 text-[11px] text-subtle">
+            <History className="size-3.5" />
+            {t('ai.panel.savedHistory')}
+          </div>
+        )}
+
         {runs.map((run) => (
           <RunCard
             key={run.id}
             run={run}
             docEmpty={docCount === 0}
             onApply={(how) => run.result && applyResult(run.id, run.result, how)}
-            onUndo={host.undo && run.id === runs.at(-1)?.id ? () => undo(run) : undefined}
+            onUndo={host.undo && !run.restored && run.id === runs.at(-1)?.id ? () => undo(run) : undefined}
             onRetry={() => send(run.prompt)}
             onOpenSettings={openSettings}
           />
@@ -654,42 +695,44 @@ function ResultCard({ run, result, docEmpty, onApply, onUndo }: { run: Run; resu
           </div>
         )}
 
-        <div className="mt-3 flex items-center gap-2">
-          {run.applied ? (
-            <>
-              <span className="animate-fade flex min-w-0 items-center gap-1.5 text-[12px] text-success">
-                <Check className="size-3.5 shrink-0" />
-                <span className="truncate">{run.applied === 'insert' ? t('ai.result.inserted') : run.applied === 'replace' ? t('ai.result.replaced') : t('ai.result.applied')}</span>
-              </span>
-              <div className="flex-1" />
-              {run.beside && result.kind === 'spec' && (
-                <Btn size="sm" variant="ghost" icon={<Replace />} onClick={() => onApply('replace')}>
-                  {t('ai.result.replaceDiagram')}
+        {(!run.restored || run.applied) && (
+          <div className="mt-3 flex items-center gap-2">
+            {run.applied ? (
+              <>
+                <span className="animate-fade flex min-w-0 items-center gap-1.5 text-[12px] text-success">
+                  <Check className="size-3.5 shrink-0" />
+                  <span className="truncate">{run.applied === 'insert' ? t('ai.result.inserted') : run.applied === 'replace' ? t('ai.result.replaced') : t('ai.result.applied')}</span>
+                </span>
+                <div className="flex-1" />
+                {run.beside && !run.restored && result.kind === 'spec' && (
+                  <Btn size="sm" variant="ghost" icon={<Replace />} onClick={() => onApply('replace')}>
+                    {t('ai.result.replaceDiagram')}
+                  </Btn>
+                )}
+                {onUndo && (
+                  <Btn size="sm" variant="ghost" icon={<Undo2 />} onClick={onUndo} title={`${IS_MAC ? '⌘' : 'Ctrl'}Z`}>
+                    {t('ai.result.undo')}
+                  </Btn>
+                )}
+              </>
+            ) : result.kind === 'spec' ? (
+              <>
+                <Btn variant="primary" size="sm" icon={<Plus />} onClick={() => onApply('insert')}>
+                  {t('common.insert')}
                 </Btn>
-              )}
-              {onUndo && (
-                <Btn size="sm" variant="ghost" icon={<Undo2 />} onClick={onUndo} title={`${IS_MAC ? '⌘' : 'Ctrl'}Z`}>
-                  {t('ai.result.undo')}
-                </Btn>
-              )}
-            </>
-          ) : result.kind === 'spec' ? (
-            <>
-              <Btn variant="primary" size="sm" icon={<Plus />} onClick={() => onApply('insert')}>
-                {t('common.insert')}
+                {!docEmpty && (
+                  <Btn size="sm" icon={<Replace />} onClick={() => onApply('replace')}>
+                    {t('ai.result.replaceDiagram')}
+                  </Btn>
+                )}
+              </>
+            ) : (
+              <Btn variant="primary" size="sm" icon={<Check />} onClick={() => onApply(result.kind === 'ops' ? 'edit' : 'replace')}>
+                {t('ai.result.applyChanges')}
               </Btn>
-              {!docEmpty && (
-                <Btn size="sm" icon={<Replace />} onClick={() => onApply('replace')}>
-                  {t('ai.result.replaceDiagram')}
-                </Btn>
-              )}
-            </>
-          ) : (
-            <Btn variant="primary" size="sm" icon={<Check />} onClick={() => onApply(result.kind === 'ops' ? 'edit' : 'replace')}>
-              {t('ai.result.applyChanges')}
-            </Btn>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

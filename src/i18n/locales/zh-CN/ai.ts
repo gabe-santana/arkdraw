@@ -6,6 +6,7 @@ export default {
   'ai.panel.modelSettings': '模型设置',
   'ai.panel.noModel': '未选择模型',
   'ai.panel.newChat': '新对话',
+  'ai.panel.savedHistory': '对话已保存在此文件中',
 
   // AiPanel — setup / empty state
   'ai.panel.connectTitle': '连接模型',
