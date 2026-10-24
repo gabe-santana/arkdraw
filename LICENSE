@@ -19,10 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----------------------------------------------------------------------------
-Third-party vendor icons in public/icons/ (AWS, Azure, Google Cloud, Oracle,
-Alibaba Cloud, IBM, Kubernetes and technology logos) are NOT covered by this
-license. They are trademarks of their respective owners and are provided under
-the owners' own terms for use in architecture diagrams. See
-public/icons/LICENSES.md.
