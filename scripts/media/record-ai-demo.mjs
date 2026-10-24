@@ -84,6 +84,7 @@ function findBrowser() {
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const log = (...a) => process.env.DEBUG && console.log(new Date().toISOString().slice(11, 19), ...a);
 
 async function launch() {
   const profile = mkdtempSync(join(tmpdir(), 'opendraw-demo-'));
@@ -121,10 +122,15 @@ async function launch() {
       msg.error ? fail(new Error(msg.error.message)) : ok(msg.result);
     }
   };
+  // Every call gets an answer or an error: a lost reply must not hang the recording.
   const send = (method, params = {}) =>
     new Promise((ok, fail) => {
       const id = ++seq;
-      pending.set(id, { ok, fail });
+      const timer = setTimeout(() => {
+        pending.delete(id);
+        fail(new Error(`${method} timed out`));
+      }, 60000);
+      pending.set(id, { ok: (v) => (clearTimeout(timer), ok(v)), fail: (e) => (clearTimeout(timer), fail(e)) });
       ws.send(JSON.stringify({ id, method, params }));
     });
   const close = () => {
@@ -203,14 +209,14 @@ const RUNNING = `!!document.querySelector('[role="tabpanel"] button[aria-label="
 async function runPrompt(page, prompt, marks, rec) {
   await page.click(PROMPT_BOX);
   marks.push({ at: rec?.now(), what: "type" });
-  if (process.env.DEBUG) console.log("typing");
+  log("typing");
   await page.type(prompt, rec ? 22 : 0);
   await sleep(rec ? 500 : 0);
   await page.key('Enter', 'Enter', 13, 2 /* Ctrl */);
   marks.push({ at: rec?.now(), what: 'sent' });
-  if (process.env.DEBUG) console.log('sent');
+  log("sent");
   await page.waitFor(RUNNING, 15000);
-  if (process.env.DEBUG) console.log('running');
+  log("running");
   await page.waitFor(`!(${RUNNING})`, 300000);
   marks.push({ at: rec?.now(), what: 'applied' });
   const failed = await page.evaluate(`[...document.querySelectorAll('[role="tabpanel"] button')].some((b) => b.textContent.includes('Try again'))`);
@@ -226,8 +232,10 @@ async function record(name, demo, creds) {
     await send('Emulation.setDeviceMetricsOverride', { width: VIEW.width, height: VIEW.height, deviceScaleFactor: 1, mobile: false });
     await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'dark' }] });
     // Settings first (same origin), then the key into the encrypted vault, then a clean load.
+    log('open');
     await send('Page.navigate', { url: `${APP}/?lang=en` });
     await page.waitFor(`document.readyState === 'complete'`);
+    log('settings');
     await page.evaluate(`(() => {
       localStorage.setItem('opendraw:theme', JSON.stringify({ theme: 'dark' }));
       localStorage.setItem('opendraw:locale', 'en');
@@ -236,6 +244,7 @@ async function record(name, demo, creds) {
       return true;
     })()`);
     await page.evaluate(`import('/src/ai/keyVault.ts').then((v) => v.vaultPut('azure', { key: ${JSON.stringify(creds.Key)}, origin: new URL(${JSON.stringify(creds.Endpoint)}).origin, auth: 'api-key' })).then(() => true)`);
+    log('key stored, reloading');
     await send('Page.navigate', { url: `${APP}/?lang=en` });
     await page.waitFor(`!!document.querySelector('[data-canvas]') && !!document.querySelector(${JSON.stringify(PROMPT_BOX)})`);
     await sleep(1500);
