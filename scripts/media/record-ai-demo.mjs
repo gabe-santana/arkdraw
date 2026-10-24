@@ -7,6 +7,13 @@
  *
  *   npm run dev -- --port 1422            # in another terminal
  *   node --experimental-websocket scripts/media/record-ai-demo.mjs [name…]
+ *   node --experimental-websocket scripts/media/record-ai-demo.mjs --video [name…]
+ *
+ * `--video` records in 4K (a 1280×720 window at 3× density) and writes MP4s
+ * plus poster frames for the landing page (site/public/media/<name>.mp4). A
+ * 4K screenshot takes ~130 ms, so the page's animations run at quarter speed
+ * while it is recorded and the video is assembled on that clock: smooth
+ * 30 fps at full speed.
  *
  * Credentials come from `.secrets` (Endpoint=, Key=, Model= for Azure AI
  * Foundry; git-ignored) or OPENDRAW_AI_ENDPOINT / _KEY / _MODEL. They are
@@ -16,15 +23,19 @@
  * ffmpeg; no extra packages.
  */
 import { spawn, execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 const ROOT = resolve(import.meta.dirname, '../..');
 const APP = process.env.OPENDRAW_DEMO_URL ?? 'http://localhost:1422';
-const OUT = join(ROOT, 'docs/media/ai');
-const VIEW = { width: 1280, height: 760 };
-const FPS = 12;
+const VIDEO = process.argv.includes('--video');
+const OUT = join(ROOT, VIDEO ? 'site/public/media' : 'docs/media/ai');
+/** GIFs: 1280×760 at 1×. Videos: 4K, i.e. 1280×720 at 3×. */
+const VIEW = VIDEO ? { width: 1280, height: 720, scale: 3 } : { width: 1280, height: 760, scale: 1 };
+const FPS = VIDEO ? 30 : 12;
+/** Page clock speed while recording (1 = real time). */
+const SLOWMO = VIDEO ? 0.25 : 1;
 const GIF_WIDTH = 1280;
 
 /** The demos: a prompt typed into the AI tab, optionally after a first prompt that sets the scene. */
@@ -117,8 +128,10 @@ async function launch() {
   });
   let seq = 0;
   const pending = new Map();
+  const listeners = new Map();
   ws.onmessage = (ev) => {
     const msg = JSON.parse(ev.data);
+    if (msg.method) listeners.get(msg.method)?.(msg.params);
     if (msg.id && pending.has(msg.id)) {
       const { ok, fail } = pending.get(msg.id);
       pending.delete(msg.id);
@@ -141,7 +154,8 @@ async function launch() {
     proc.kill();
     setTimeout(() => rmSync(profile, { recursive: true, force: true }), 1500);
   };
-  return { send, close };
+  const on = (method, fn) => listeners.set(method, fn);
+  return { send, on, close };
 }
 
 // ---------------------------------------------------------------------------
@@ -179,27 +193,47 @@ function pageApi(send) {
   return { evaluate, waitFor, click, type, key };
 }
 
-/** Captures frames until stopped; returns [{ t, data }] with t in ms. */
+/**
+ * Captures frames until stopped, straight to disk; returns [{ t, file }] with
+ * t in ms on the page clock (real time × SLOWMO). Screenshots, not the
+ * screencast: only screenshots honor the device scale factor (true 4K).
+ */
 function recorder(send) {
+  const dir = mkdtempSync(join(tmpdir(), 'opendraw-frames-'));
   const frames = [];
   let running = true;
   const start = Date.now();
+  const now = () => (Date.now() - start) * SLOWMO;
   const loop = (async () => {
     while (running) {
       const t0 = Date.now();
-      const { data } = await send('Page.captureScreenshot', { format: 'jpeg', quality: 88 });
-      frames.push({ t: t0 - start, data });
-      await sleep(Math.max(0, 1000 / FPS - (Date.now() - t0)));
+      const { data } = await send('Page.captureScreenshot', { format: 'jpeg', quality: VIDEO ? 93 : 88 });
+      const file = join(dir, `r${String(frames.length).padStart(6, '0')}.jpg`);
+      writeFileSync(file, Buffer.from(data, 'base64'));
+      frames.push({ t: (t0 - start) * SLOWMO, file });
+      if (!VIDEO) await sleep(Math.max(0, 1000 / FPS - (Date.now() - t0)));
     }
   })();
   return {
-    now: () => Date.now() - start,
+    dir,
+    now,
     stop: async () => {
       running = false;
       await loop;
       return frames;
     },
   };
+}
+
+/**
+ * Slow motion without touching the page's code: the document's animation
+ * timeline runs at `k` (DevTools), which drives CSS and Web Animations and
+ * the frame timestamps the diagram animations are timed on.
+ */
+async function slowMotion(send, k) {
+  if (k === 1) return;
+  await send('Animation.enable');
+  await send('Animation.setPlaybackRate', { playbackRate: k });
 }
 
 // ---------------------------------------------------------------------------
@@ -210,15 +244,20 @@ const PROMPT_BOX = '[role="tabpanel"] textarea';
 const RUNNING = `!!document.querySelector('[role="tabpanel"] button[aria-label="Stop"]')`;
 
 async function runPrompt(page, prompt, marks, rec) {
-  await page.click(PROMPT_BOX);
+  // Focus directly: a synthetic click can miss while 4K screenshots are being taken.
+  await page.evaluate(`document.querySelector(${JSON.stringify(PROMPT_BOX)}).focus()`);
   marks.push({ at: rec?.now(), what: "type" });
   log("typing");
-  await page.type(prompt, rec ? 22 : 0);
-  await sleep(rec ? 500 : 0);
+  await page.type(prompt, rec ? 22 / SLOWMO : 0);
+  await sleep(rec ? 500 / SLOWMO : 0);
   await page.key('Enter', 'Enter', 13, 2 /* Ctrl */);
   marks.push({ at: rec?.now(), what: 'sent' });
   log("sent");
-  await page.waitFor(RUNNING, 15000);
+  await page.waitFor(RUNNING, 15000).catch(async (e) => {
+    log('panel:', await page.evaluate(`document.querySelector('[role="tabpanel"]')?.innerText.slice(0, 600)`));
+    log('textarea:', await page.evaluate(`document.querySelector(${JSON.stringify(PROMPT_BOX)})?.value.slice(0, 80)`));
+    throw e;
+  });
   log("running");
   await page.waitFor(`!(${RUNNING})`, 300000);
   marks.push({ at: rec?.now(), what: 'applied' });
@@ -227,12 +266,12 @@ async function runPrompt(page, prompt, marks, rec) {
 }
 
 async function record(name, demo, creds) {
-  const { send, close } = await launch();
+  const { send, on, close } = await launch();
   const page = pageApi(send);
   try {
     await send('Page.enable');
     await send('Runtime.enable');
-    await send('Emulation.setDeviceMetricsOverride', { width: VIEW.width, height: VIEW.height, deviceScaleFactor: 1, mobile: false });
+    await send('Emulation.setDeviceMetricsOverride', { width: VIEW.width, height: VIEW.height, deviceScaleFactor: VIEW.scale, mobile: false });
     await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'dark' }] });
     // Settings first (same origin), then the key into the encrypted vault, then a clean load.
     log('open');
@@ -242,6 +281,7 @@ async function record(name, demo, creds) {
     await page.evaluate(`(() => {
       localStorage.setItem('opendraw:theme', JSON.stringify({ theme: 'dark' }));
       localStorage.setItem('opendraw:locale', 'en');
+      localStorage.setItem('opendraw:preferences', JSON.stringify({ startScreen: false }));
       localStorage.setItem('opendraw:panels', JSON.stringify({ leftOpen: false, rightOpen: true, aiOpen: true, aiWidth: 360, leftWidth: 264, rightWidth: 268, layersOpen: true, layersHeight: 300, dock: { left: ['shapes'], right: ['format', 'layers'] } }));
       localStorage.setItem('opendraw.ai.settings.v1', JSON.stringify({ provider: 'azure', models: { azure: ${JSON.stringify(creds.Model)} }, baseUrls: { azure: ${JSON.stringify(creds.Endpoint)} }, customAuth: 'bearer', azureAuth: 'api-key', params: {}, authorizedBaseUrls: { azure: ${JSON.stringify(creds.Endpoint)} }, rememberKeys: true }));
       return true;
@@ -257,15 +297,16 @@ async function record(name, demo, creds) {
       await runPrompt(page, demo.setup, [], null);
       await sleep(2500);
     }
+    await slowMotion(send, SLOWMO);
     const rec = recorder(send);
-    await sleep(900);
+    await sleep(900 / SLOWMO);
     for (const prompt of demo.prompts) {
       await runPrompt(page, prompt, marks, rec);
-      await sleep(7000); // the reveal, then the animations playing
+      await sleep(7000 / SLOWMO); // the reveal, then the animations playing
     }
     marks.push({ at: rec.now(), what: 'end' });
     const frames = await rec.stop();
-    return { frames, marks };
+    return { frames, marks, dir: rec.dir };
   } finally {
     close();
   }
@@ -295,21 +336,25 @@ function timeline(marks) {
   };
 }
 
-function writeGif(name, frames, marks) {
-  const dir = mkdtempSync(join(tmpdir(), `opendraw-gif-${name}-`));
+/** Resamples the recorded frames to FPS on the squeezed timeline, as f00000.jpg… in `dir`. */
+function resample(frames, marks, dir) {
   const map = timeline(marks);
   const step = 1000 / FPS;
-  // Resample to a fixed frame rate on the squeezed timeline.
-  const out = [];
   let next = 0;
-  for (const f of frames) {
-    const t = map(f.t);
-    while (t >= next) {
-      out.push(f);
+  let n = 0;
+  for (let i = 0; i < frames.length; i++) {
+    // A frame lasts until the next one is painted.
+    const until = map(frames[i + 1]?.t ?? frames[i].t + 1000);
+    while (next < until) {
+      copyFileSync(frames[i].file, join(dir, `f${String(n++).padStart(5, '0')}.jpg`));
       next += step;
     }
   }
-  out.forEach((f, i) => writeFileSync(join(dir, `f${String(i).padStart(5, '0')}.jpg`), Buffer.from(f.data, 'base64')));
+  return n;
+}
+
+function writeGif(name, frames, marks, dir) {
+  const n = resample(frames, marks, dir);
   mkdirSync(OUT, { recursive: true });
   const gif = join(OUT, `${name}.gif`);
   execFileSync('ffmpeg', [
@@ -318,19 +363,36 @@ function writeGif(name, frames, marks) {
     '-vf', `scale=${GIF_WIDTH}:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=192:stats_mode=diff[p];[b][p]paletteuse=dither=sierra2_4a:diff_mode=rectangle`,
     '-loop', '0', gif,
   ]);
-  rmSync(dir, { recursive: true, force: true });
-  return { gif, frames: out.length };
+  return { out: gif, frames: n };
+}
+
+/** 4K H.264 for the web (plays everywhere), plus the last frame as the poster. */
+function writeVideo(name, frames, marks, dir) {
+  const n = resample(frames, marks, dir);
+  mkdirSync(OUT, { recursive: true });
+  const mp4 = join(OUT, `${name}.mp4`);
+  execFileSync('ffmpeg', [
+    '-y', '-loglevel', 'error',
+    '-framerate', String(FPS), '-i', join(dir, 'f%05d.jpg'),
+    '-vf', `scale=${VIEW.width * VIEW.scale}:${VIEW.height * VIEW.scale}:flags=lanczos`,
+    '-c:v', 'libx264', '-preset', 'slow', '-crf', '20', '-profile:v', 'high', '-level', '5.1',
+    '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-an', mp4,
+  ]);
+  execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', join(dir, `f${String(n - 1).padStart(5, '0')}.jpg`), '-q:v', '3', join(OUT, `${name}.jpg`)]);
+  return { out: mp4, frames: n };
 }
 
 // ---------------------------------------------------------------------------
 
 const creds = credentials();
-const names = process.argv.slice(2).length ? process.argv.slice(2) : Object.keys(DEMOS);
+const args = process.argv.slice(2).filter((a) => !a.startsWith('--'));
+const names = args.length ? args : Object.keys(DEMOS);
 for (const name of names) {
   const demo = DEMOS[name];
   if (!demo) throw new Error(`Unknown demo ${name}; one of ${Object.keys(DEMOS).join(', ')}`);
   process.stdout.write(`${name}: recording… `);
-  const { frames, marks } = await record(name, demo, creds);
-  const { gif, frames: n } = writeGif(name, frames, marks);
-  console.log(`${n} frames → ${gif}`);
+  const { frames, marks, dir } = await record(name, demo, creds);
+  const { out, frames: n } = (VIDEO ? writeVideo : writeGif)(name, frames, marks, dir);
+  rmSync(dir, { recursive: true, force: true });
+  console.log(`${n} frames → ${out}`);
 }

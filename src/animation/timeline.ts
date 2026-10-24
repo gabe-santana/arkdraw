@@ -195,12 +195,13 @@ export function loopDuration(doc: Doc, sampleLengths: (c: ConnectorElement) => n
 export const useClock = create<{ t: number }>(() => ({ t: 0 }));
 
 let raf = 0;
-let last = 0;
 export function startClock() {
   cancelAnimationFrame(raf);
-  last = performance.now();
+  // Frame timestamps only: they follow the document's animation timeline, which can run slower or faster than performance.now().
+  let last: number | undefined;
   const tick = (now: number) => {
-    useClock.setState((s) => ({ t: s.t + (now - last) / 1000 }));
+    last ??= now;
+    useClock.setState((s) => ({ t: s.t + (now - last!) / 1000 }));
     last = now;
     raf = requestAnimationFrame(tick);
   };

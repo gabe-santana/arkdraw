@@ -30,7 +30,9 @@ const STYLE_ID = 'od-ai-changes';
 const STEP_MS = 55;
 const MAX_STAGGER_MS = 1400;
 const ANIM_MS = 650;
-let cleanupTimer = 0;
+/** The window glow lasts at least this long, so it reads as "the AI is editing". */
+const MIN_GLOW_MS = 1600;
+let run = 0;
 
 /**
  * Animates what changed between two versions of the document: new elements
@@ -62,14 +64,24 @@ export function animateChanges(before: Doc, after: Doc) {
   style.textContent = rules.join('\n');
   document.head.append(style);
 
-  // The glow stays a little longer than the reveal, so it reads as "the AI is editing".
-  const total = Math.max(1600, ids.length * step + 1100);
+  // Done when the animations really are: they follow the document's animation
+  // timeline (slowed down or sped up, e.g. by DevTools), unlike a fixed timer.
+  const mine = ++run;
   useAiActivity.setState({ applying: true });
-  window.clearTimeout(cleanupTimer);
-  cleanupTimer = window.setTimeout(() => {
+  const finish = () => {
+    if (mine !== run) return;
     style.remove();
     useAiActivity.setState({ applying: false });
-  }, total + 150);
+  };
+  // Wait two frames so the changed elements are on the canvas with their animations.
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      const nodes = ids.flatMap((id) => [...document.querySelectorAll(`[data-canvas] [data-el="${CSS.escape(id)}"]`)]);
+      const hold = document.documentElement.animate([], { duration: MIN_GLOW_MS });
+      void Promise.allSettled([hold, ...nodes.flatMap((n) => n.getAnimations())].map((a) => a.finished)).then(finish);
+    }),
+  );
+  window.setTimeout(finish, 30000); // safety net
 }
 
 /** Status pill while the assistant works; glow around the window while it edits the canvas. */

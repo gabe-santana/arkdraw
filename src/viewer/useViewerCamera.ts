@@ -36,8 +36,10 @@ export function useCameraState(size: { w: number; h: number }): CameraApi {
       return;
     }
     const from = ref.current;
-    const start = performance.now();
+    // Timed on the frame clock alone (see the editor's animateCamera).
+    let start: number | undefined;
     const step = (now: number) => {
+      start ??= now;
       const t = Math.min(1, (now - start) / ms);
       const k = 1 - Math.pow(1 - t, 3);
       // Interpolate zoom geometrically so it feels uniform.

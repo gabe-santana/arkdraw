@@ -411,9 +411,11 @@ export const useEditor = create<EditorState>((set, get) => {
     animateCamera: (target) => {
       cancelAnimationFrame(cameraAnim);
       const from = get().camera;
-      const t0 = performance.now();
+      // Timed on the frame clock alone: it can differ from performance.now() (e.g. animations slowed down in DevTools).
+      let t0: number | undefined;
       const duration = 260;
       const step = (now: number) => {
+        t0 ??= now;
         const t = Math.min(1, (now - t0) / duration);
         const k = 1 - Math.pow(1 - t, 3); // ease-out cubic
         // Interpolate zoom geometrically so it feels uniform.
