@@ -9,8 +9,12 @@ export default {
 
   // AiPanel — setup / empty state
   'ai.panel.connectTitle': '모델 연결',
-  'ai.panel.connectBody': 'Anthropic, OpenAI, Gemini, Grok, DeepSeek, Mistral 등의 개인 키를 사용하거나 Ollama로 완전히 오프라인에서 실행하세요.',
+  'ai.panel.connectBody': '제공자를 고르고 API 키를 붙여 넣거나, Ollama로 완전히 오프라인에서 사용하세요.',
   'ai.panel.setUp': 'AI 설정',
+  'ai.panel.setUpProvider': '{provider} 설정',
+  'ai.panel.moreProviders': '모든 제공자 보기',
+  'ai.panel.tryOne': '이렇게 물어보세요',
+  'ai.panel.keyPrivacy': '키는 이 기기에만 저장됩니다. 요청은 ArkDraw를 거치지 않고 제공자에게 바로 전송됩니다.',
   'ai.panel.emptyEditTitle': '무엇을 할까요?',
   'ai.panel.emptyGenerateTitle': '무엇을 그릴까요?',
   'ai.panel.emptyEditSelection': '변경이나 새 다이어그램을 요청하세요. “이것”은 {count, plural, other {선택한 항목 #개}}를 가리킵니다.',

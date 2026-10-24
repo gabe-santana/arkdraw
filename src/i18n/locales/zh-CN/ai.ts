@@ -9,8 +9,12 @@ export default {
 
   // AiPanel — setup / empty state
   'ai.panel.connectTitle': '连接模型',
-  'ai.panel.connectBody': '使用你自己的 Anthropic、OpenAI、Gemini、Grok、DeepSeek、Mistral 等密钥，或通过 Ollama 完全离线运行。',
+  'ai.panel.connectBody': '选择一个提供商并粘贴 API 密钥，或使用 Ollama 完全离线运行。',
   'ai.panel.setUp': '设置 AI',
+  'ai.panel.setUpProvider': '设置 {provider}',
+  'ai.panel.moreProviders': '查看所有提供商',
+  'ai.panel.tryOne': '试试这些',
+  'ai.panel.keyPrivacy': '密钥只保存在此设备上。请求直接发送给提供商，不经过 ArkDraw。',
   'ai.panel.emptyEditTitle': '想做什么？',
   'ai.panel.emptyGenerateTitle': '想画点什么？',
   'ai.panel.emptyEditSelection': '让我修改或画一张新图表。“这个”指{count, plural, other {所选的 # 项}}。',

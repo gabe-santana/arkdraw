@@ -7,8 +7,12 @@ export default {
 
   // AiPanel — setup / empty state
   'ai.panel.connectTitle': 'Connect a model',
-  'ai.panel.connectBody': 'Use your own key for Anthropic, OpenAI, Gemini, Grok, DeepSeek, Mistral and more — or run fully offline with Ollama.',
+  'ai.panel.connectBody': 'Pick a provider and paste your API key, or run fully offline with Ollama.',
   'ai.panel.setUp': 'Set up AI',
+  'ai.panel.setUpProvider': 'Set up {provider}',
+  'ai.panel.moreProviders': 'See all providers',
+  'ai.panel.tryOne': 'Try asking',
+  'ai.panel.keyPrivacy': 'Your key stays on this device. Requests go straight to the provider, never through ArkDraw.',
   'ai.panel.emptyEditTitle': 'What would you like to do?',
   'ai.panel.emptyGenerateTitle': 'What should we draw?',
   'ai.panel.emptyEditSelection': 'Ask for a change or a new diagram. “This” refers to the {count, plural, one {# selected item} other {# selected items}}.',

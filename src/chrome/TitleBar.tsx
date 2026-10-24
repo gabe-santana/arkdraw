@@ -249,7 +249,7 @@ export function TitleBar() {
           </button>
         ))}
       </nav>
-      {open && <MenuList key={open.label} items={withMenuExtensions(open.label, buildMenu(open.label, recent), toEntry, { type: 'separator' } as MenuEntry, (id) => !!ACTION_MAP[id])} onClose={close} x={open.x} y={open.y} />}
+      {open && <MenuList key={open.label} items={withMenuExtensions(open.label, buildMenu(open.label, recent), toEntry, { type: 'separator' } as MenuEntry, (id) => !!ACTION_MAP[id])} onClose={close} x={open.x} y={open.y} anchored />}
 
       {/* Document name (centered) */}
       <div className="pointer-events-none absolute inset-x-0 flex justify-center" data-tauri-drag-region>

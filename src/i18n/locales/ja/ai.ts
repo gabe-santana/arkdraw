@@ -9,8 +9,12 @@ export default {
 
   // AiPanel — setup / empty state
   'ai.panel.connectTitle': 'モデルを接続',
-  'ai.panel.connectBody': 'Anthropic、OpenAI、Gemini、Grok、DeepSeek、Mistral などの独自のキーを使用するか、Ollama で完全オフラインで実行できます。',
+  'ai.panel.connectBody': 'プロバイダーを選んで API キーを貼り付けるか、Ollama で完全オフラインで使えます。',
   'ai.panel.setUp': 'AI をセットアップ',
+  'ai.panel.setUpProvider': '{provider} を設定',
+  'ai.panel.moreProviders': 'すべてのプロバイダーを表示',
+  'ai.panel.tryOne': '試してみる',
+  'ai.panel.keyPrivacy': 'キーはこのデバイスに保存されます。リクエストはプロバイダーへ直接送られ、ArkDraw を経由しません。',
   'ai.panel.emptyEditTitle': '何をしますか?',
   'ai.panel.emptyGenerateTitle': '何を描きますか?',
   'ai.panel.emptyEditSelection': '変更や新しいダイアグラムを依頼してください。「これ」は{count, plural, other {選択中の # 個の項目}}を指します。',

@@ -9,8 +9,12 @@ export default {
 
   // AiPanel — setup / empty state
   'ai.panel.connectTitle': 'Conectar um modelo',
-  'ai.panel.connectBody': 'Use sua própria chave da Anthropic, OpenAI, Gemini, Grok, DeepSeek, Mistral e outros — ou trabalhe totalmente offline com o Ollama.',
+  'ai.panel.connectBody': 'Escolha um provedor e cole sua chave de API, ou rode totalmente offline com o Ollama.',
   'ai.panel.setUp': 'Configurar IA',
+  'ai.panel.setUpProvider': 'Configurar {provider}',
+  'ai.panel.moreProviders': 'Ver todos os provedores',
+  'ai.panel.tryOne': 'Experimente',
+  'ai.panel.keyPrivacy': 'Sua chave fica neste dispositivo. As requisições vão direto ao provedor, nunca passam pelo ArkDraw.',
   'ai.panel.emptyEditTitle': 'O que você quer fazer?',
   'ai.panel.emptyGenerateTitle': 'O que vamos desenhar?',
   'ai.panel.emptyEditSelection': 'Peça uma alteração ou um novo diagrama. “Isto” se refere {count, plural, =0 {aos 0 itens selecionados} one {ao # item selecionado} other {aos # itens selecionados}}.',

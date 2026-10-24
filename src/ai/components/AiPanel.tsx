@@ -6,21 +6,22 @@
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
-  ArrowUp, Check, ChevronDown, CircleAlert, CircleCheck, LoaderCircle, MessageSquarePlus, Plus, Replace, RotateCcw, Settings, Sparkles,
-  Square, Undo2, X,
+  Activity, ArrowRight, ArrowRightLeft, ArrowUp, Boxes, Check, ChevronDown, CircleAlert, CircleCheck, Cloud, Database, DatabaseZap,
+  LoaderCircle, MessageSquarePlus, Palette, Plus, Replace, RotateCcw, Settings, ShieldCheck, Sparkles, Square, Tag, Undo2, Workflow, X,
+  Zap, type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useT, type MessageKey } from '@/i18n';
 import { isConnector, isShape, type Doc } from '@/model/types';
 import type { AiHostApi } from '../host';
-import { AiError, PROVIDER_META } from '../providers';
-import { modelFor, providerConfig, useAiSettings } from '../settings';
+import { AiError, PROVIDER_META, type ProviderId } from '../providers';
+import { modelFor, providerConfig, updateAiSettings, useAiSettings } from '../settings';
 import { runAssistant, type AgentEvent, type AgentResult, type AssistantMode, type StepKind, type StepState } from '../generate/agent';
 import { applyOps } from '../generate/ops';
 import { convertSpec } from '../generate/toElements';
 import { AiSettingsDialog } from './AiSettingsDialog';
 import { Btn, IconBtn, IS_MAC, ProviderMark, stopKeys } from './ui';
-import { useAiReady } from './useAiReady';
+import { useAiReady, type AiSetupNeed } from './useAiReady';
 
 export interface AiPanelProps {
   host: AiHostApi;
@@ -57,22 +58,35 @@ interface Run {
   beside?: boolean;
 }
 
-const GENERATE_EXAMPLES: MessageKey[] = [
-  'ai.example.generate1',
-  'ai.example.generate2',
-  'ai.example.generate3',
-  'ai.example.generate4',
-  'ai.example.generate5',
-  'ai.example.generate6',
+interface Example {
+  key: MessageKey;
+  icon: LucideIcon;
+}
+
+const GENERATE_EXAMPLES: Example[] = [
+  { key: 'ai.example.generate1', icon: Cloud },
+  { key: 'ai.example.generate6', icon: Zap },
+  { key: 'ai.example.generate4', icon: Workflow },
+  { key: 'ai.example.generate3', icon: Database },
+  { key: 'ai.example.generate2', icon: Boxes },
+  { key: 'ai.example.generate5', icon: ArrowRightLeft },
 ];
-const EDIT_EXAMPLES: MessageKey[] = ['ai.example.edit1', 'ai.example.edit2', 'ai.example.edit3', 'ai.example.edit4'];
+const EDIT_EXAMPLES: Example[] = [
+  { key: 'ai.example.edit1', icon: DatabaseZap },
+  { key: 'ai.example.edit2', icon: Tag },
+  { key: 'ai.example.edit3', icon: Activity },
+  { key: 'ai.example.edit4', icon: Palette },
+];
+
+/** The providers offered as one-click starting points before anything is set up. */
+const SETUP_PROVIDERS: ProviderId[] = ['anthropic', 'openai', 'gemini', 'xai', 'deepseek', 'ollama'];
 
 let runSeq = 0;
 
 export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelProps) {
   const t = useT();
   const settings = useAiSettings();
-  const { ready, reason } = useAiReady();
+  const { ready, reason, need } = useAiReady();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [runs, setRuns] = useState<Run[]>([]);
@@ -191,7 +205,19 @@ export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelPro
   }, [host, activityLabel]);
   useEffect(() => () => host.setActivity?.(null), [host]);
 
-  const examples = (mode === 'edit' ? EDIT_EXAMPLES : GENERATE_EXAMPLES).map((k) => t(k));
+  const examples = mode === 'edit' ? EDIT_EXAMPLES : GENERATE_EXAMPLES;
+  const useExample = (text: string) => {
+    setPrompt(text);
+    requestAnimationFrame(() => {
+      const el = textRef.current;
+      el?.focus();
+      el?.setSelectionRange(text.length, text.length);
+    });
+  };
+  const chooseProvider = (provider: ProviderId) => {
+    updateAiSettings({ provider });
+    openSettings();
+  };
 
   return (
     <div className={cn('flex h-full min-h-0 w-full flex-col bg-panel text-[13px] text-fg', className)} onKeyDown={stopKeys}>
@@ -233,33 +259,51 @@ export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelPro
 
       {/* Activity */}
       <div ref={scrollRef} className="scroll-thin min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-3">
-        {ready === false && (
-          <div className="animate-slide-up rounded-xl bg-panel-2 p-4 ring-1 ring-line">
-            <div className="flex items-center gap-2 font-medium">
-              <Sparkles className="size-4 text-accent" /> {t('ai.panel.connectTitle')}
-            </div>
-            <p className="mt-1.5 text-[12px] leading-relaxed text-muted">
-              {t('ai.panel.connectBody')} {reason ?? ''}
-            </p>
-            <Btn variant="primary" size="sm" className="mt-3" onClick={openSettings}>
-              {t('ai.panel.setUp')}
+        {ready === false && runs.length === 0 && (
+          <SetupState provider={settings.provider} need={need} onChoose={chooseProvider} onSetUp={openSettings} />
+        )}
+
+        {ready === false && runs.length > 0 && (
+          <div className="animate-slide-up flex items-center gap-3 rounded-xl bg-panel-2 px-3 py-2.5 ring-1 ring-line">
+            <p className="min-w-0 flex-1 text-[12px] leading-snug text-muted">{reason}</p>
+            <Btn variant="primary" size="sm" onClick={openSettings}>
+              {setupLabel(t, need, meta.name)}
             </Btn>
           </div>
         )}
 
         {runs.length === 0 && ready !== false && (
-          <div className="animate-fade px-1 pt-6 text-center">
-            <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-accent-soft text-accent">
-              <Sparkles className="size-5" />
+          <div className="animate-fade px-1 pt-5">
+            <div className="text-center">
+              <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-accent-soft text-accent">
+                <Sparkles className="size-5" />
+              </div>
+              <div className="mt-3 text-[14px] font-semibold">{mode === 'edit' ? t('ai.panel.emptyEditTitle') : t('ai.panel.emptyGenerateTitle')}</div>
+              <p className="mx-auto mt-1 max-w-[260px] text-[12px] text-muted">
+                {mode === 'edit'
+                  ? selectionCount
+                    ? t('ai.panel.emptyEditSelection', { count: selectionCount })
+                    : t('ai.panel.emptyEdit')
+                  : t('ai.panel.emptyGenerate')}
+              </p>
             </div>
-            <div className="mt-3 text-[14px] font-semibold">{mode === 'edit' ? t('ai.panel.emptyEditTitle') : t('ai.panel.emptyGenerateTitle')}</div>
-            <p className="mx-auto mt-1 max-w-[260px] text-[12px] text-muted">
-              {mode === 'edit'
-                ? selectionCount
-                  ? t('ai.panel.emptyEditSelection', { count: selectionCount })
-                  : t('ai.panel.emptyEdit')
-                : t('ai.panel.emptyGenerate')}
-            </p>
+            {ready && (
+              <div className="mt-5">
+                <div className="px-2.5 pb-1 text-[10.5px] font-medium uppercase tracking-wider text-subtle">{t('ai.panel.tryOne')}</div>
+                {examples.slice(0, 4).map(({ key, icon: Icon }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => useExample(t(key))}
+                    className="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[12.5px] text-muted transition-colors hover:bg-hover hover:text-fg"
+                  >
+                    <Icon className="size-4 shrink-0 text-subtle transition-colors group-hover:text-accent" />
+                    <span className="min-w-0 flex-1 truncate">{t(key)}</span>
+                    <ArrowRight className="size-3.5 shrink-0 -translate-x-1 opacity-0 transition-[opacity,transform] group-hover:translate-x-0 group-hover:opacity-100" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -278,16 +322,13 @@ export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelPro
 
       {/* Composer */}
       <div className="shrink-0 border-t border-line p-3">
-        {(runs.length === 0 || !prompt) && !running && (
+        {runs.length > 0 && ready && !prompt && !running && (
           <div className="mb-2 flex flex-wrap gap-1.5">
-            {examples.slice(0, runs.length ? 3 : 6).map((ex) => (
+            {examples.slice(0, 3).map(({ key }) => t(key)).map((ex) => (
               <button
                 key={ex}
                 type="button"
-                onClick={() => {
-                  setPrompt(ex);
-                  textRef.current?.focus();
-                }}
+                onClick={() => useExample(ex)}
                 className="animate-fade rounded-full bg-panel-2 px-2.5 py-1 text-[11.5px] text-muted ring-1 ring-line transition-[background,color,transform] hover:bg-hover hover:text-fg active:scale-[0.97]"
               >
                 {ex}
@@ -341,6 +382,59 @@ export function AiPanel({ host, onClose, onOpenSettings, className }: AiPanelPro
       </div>
 
       {!onOpenSettings && <AiSettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />}
+    </div>
+  );
+}
+
+function setupLabel(t: ReturnType<typeof useT>, need: AiSetupNeed | undefined, provider: string): string {
+  return need === 'key' ? t('ai.panel.setUpProvider', { provider }) : t('ai.panel.setUp');
+}
+
+/** Before any model is connected: pick a provider in one click, or finish the one already chosen. */
+function SetupState({ provider, need, onChoose, onSetUp }: {
+  provider: ProviderId;
+  need?: AiSetupNeed;
+  onChoose: (p: ProviderId) => void;
+  onSetUp: () => void;
+}) {
+  const t = useT();
+  return (
+    <div className="animate-fade px-2 pt-5 text-center">
+      <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-accent-soft text-accent">
+        <Sparkles className="size-5" />
+      </div>
+      <div className="mt-3 text-[14px] font-semibold">{t('ai.panel.connectTitle')}</div>
+      <p className="mx-auto mt-1 max-w-[270px] text-[12px] leading-relaxed text-muted">{t('ai.panel.connectBody')}</p>
+      <div className="mt-4 flex flex-wrap justify-center gap-2">
+        {SETUP_PROVIDERS.map((id) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => onChoose(id)}
+            title={PROVIDER_META[id].name}
+            aria-label={PROVIDER_META[id].name}
+            aria-pressed={id === provider}
+            className={cn(
+              'flex size-10 items-center justify-center rounded-xl bg-panel-2 ring-1 transition-[box-shadow,transform,background] hover:bg-hover active:scale-95',
+              id === provider ? 'ring-2 ring-accent' : 'ring-line hover:ring-line-strong',
+            )}
+          >
+            <ProviderMark provider={id} size={20} className="rounded" />
+          </button>
+        ))}
+      </div>
+      <div className="mx-auto mt-4 max-w-[260px]">
+        <Btn variant="primary" className="h-9 w-full" onClick={onSetUp}>
+          {setupLabel(t, need, PROVIDER_META[provider].name)}
+        </Btn>
+        <button type="button" onClick={onSetUp} className="mt-2 text-[11.5px] text-muted underline-offset-2 transition-colors hover:text-fg hover:underline">
+          {t('ai.panel.moreProviders')}
+        </button>
+      </div>
+      <p className="mx-auto mt-5 max-w-[260px] text-[11px] leading-snug text-subtle">
+        <ShieldCheck className="mr-1 inline size-3.5 -translate-y-px" />
+        {t('ai.panel.keyPrivacy')}
+      </p>
     </div>
   );
 }

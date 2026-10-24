@@ -37,11 +37,16 @@ interface MenuListProps {
   autoFocus?: boolean;
   /** Open upwards from `y` (menus anchored to bottom-docked controls). */
   above?: boolean;
+  /**
+   * Keep the top edge at `y` and scroll when the window is too short, instead of
+   * moving up over whatever opened it (the menu bar).
+   */
+  anchored?: boolean;
 }
 
-export function MenuList({ items, onClose, x, y, flipX, minWidth = 220, autoFocus = true, above = false }: MenuListProps) {
+export function MenuList({ items, onClose, x, y, flipX, minWidth = 220, autoFocus = true, above = false, anchored = false }: MenuListProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState({ left: x, top: y, ready: false });
+  const [pos, setPos] = useState<{ left: number; top: number; maxHeight?: number; ready: boolean }>({ left: x, top: y, ready: false });
   const [active, setActive] = useState(-1);
   const [sub, setSub] = useState<{ index: number; x: number; y: number; flip: number } | null>(null);
 
@@ -52,10 +57,14 @@ export function MenuList({ items, onClose, x, y, flipX, minWidth = 220, autoFocu
     let left = x;
     let top = above ? y - r.height : y;
     if (left + r.width > window.innerWidth - 8) left = flipX !== undefined ? flipX - r.width : window.innerWidth - r.width - 8;
-    if (top + r.height > window.innerHeight - 8) top = Math.max(8, window.innerHeight - r.height - 8);
-    setPos({ left: Math.max(8, left), top, ready: true });
+    let maxHeight: number | undefined;
+    if (top + r.height > window.innerHeight - 8) {
+      if (anchored) maxHeight = window.innerHeight - top - 8;
+      else top = Math.max(8, window.innerHeight - r.height - 8);
+    }
+    setPos({ left: Math.max(8, left), top, maxHeight, ready: true });
     if (autoFocus) el.focus();
-  }, [x, y, flipX, autoFocus, above]);
+  }, [x, y, flipX, autoFocus, above, anchored]);
 
   const selectable = items.map((it, i) => ((!it.type || it.type === 'item') && !it.disabled ? i : -1)).filter((i) => i >= 0);
 
@@ -94,46 +103,53 @@ export function MenuList({ items, onClose, x, y, flipX, minWidth = 220, autoFocu
       tabIndex={-1}
       onKeyDown={onKeyDown}
       onContextMenu={(e) => e.preventDefault()}
-      className="animate-pop fixed z-[90] rounded-xl bg-panel p-1 shadow-pop outline-none"
+      className="animate-pop fixed z-[90] rounded-xl bg-panel shadow-pop outline-none"
       style={{ left: pos.left, top: pos.top, minWidth, visibility: pos.ready ? 'visible' : 'hidden' }}
     >
-      {items.map((it, i) => {
-        if (it.type === 'separator') return <div key={i} className="mx-2 my-1 h-px bg-line" />;
-        if (it.type === 'label')
+      {/* Scrolls on its own, so an open submenu (a sibling) isn't clipped. */}
+      <div
+        className={cn('p-1', pos.maxHeight !== undefined && 'scroll-thin overflow-y-auto overscroll-contain')}
+        style={{ maxHeight: pos.maxHeight }}
+        onScroll={() => setSub(null)}
+      >
+        {items.map((it, i) => {
+          if (it.type === 'separator') return <div key={i} className="mx-2 my-1 h-px bg-line" />;
+          if (it.type === 'label')
+            return (
+              <div key={i} className="px-2.5 pb-1 pt-1.5 text-[11px] font-medium uppercase tracking-wide text-subtle">
+                {it.label}
+              </div>
+            );
           return (
-            <div key={i} className="px-2.5 pb-1 pt-1.5 text-[11px] font-medium uppercase tracking-wide text-subtle">
-              {it.label}
+            <div
+              key={i}
+              data-index={i}
+              role="menuitem"
+              aria-disabled={it.disabled}
+              onPointerEnter={() => {
+                setActive(i);
+                if (it.items && !it.disabled) activate(i);
+                else setSub(null);
+              }}
+              onClick={() => activate(i)}
+              className={cn(
+                'flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-[13px]',
+                it.disabled ? 'text-subtle' : it.danger ? 'text-danger' : 'text-fg',
+                active === i && !it.disabled && (it.danger ? 'bg-danger/10' : 'bg-hover'),
+              )}
+            >
+              <span className="flex w-4 shrink-0 items-center justify-center text-muted [&_svg]:size-[15px]">
+                {it.checked ? <Check className="text-accent" /> : it.icon}
+              </span>
+              <span className="flex-1 truncate">{it.label}</span>
+              {it.shortcut && (
+                <span className="ml-6 text-[11.5px] tracking-wide text-subtle">{formatShortcut(it.shortcut).join(isMacJoiner())}</span>
+              )}
+              {it.items && <ChevronRight className="size-3.5 text-subtle" />}
             </div>
           );
-        return (
-          <div
-            key={i}
-            data-index={i}
-            role="menuitem"
-            aria-disabled={it.disabled}
-            onPointerEnter={() => {
-              setActive(i);
-              if (it.items && !it.disabled) activate(i);
-              else setSub(null);
-            }}
-            onClick={() => activate(i)}
-            className={cn(
-              'flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-[13px]',
-              it.disabled ? 'text-subtle' : it.danger ? 'text-danger' : 'text-fg',
-              active === i && !it.disabled && (it.danger ? 'bg-danger/10' : 'bg-hover'),
-            )}
-          >
-            <span className="flex w-4 shrink-0 items-center justify-center text-muted [&_svg]:size-[15px]">
-              {it.checked ? <Check className="text-accent" /> : it.icon}
-            </span>
-            <span className="flex-1 truncate">{it.label}</span>
-            {it.shortcut && (
-              <span className="ml-6 text-[11.5px] tracking-wide text-subtle">{formatShortcut(it.shortcut).join(isMacJoiner())}</span>
-            )}
-            {it.items && <ChevronRight className="size-3.5 text-subtle" />}
-          </div>
-        );
-      })}
+        })}
+      </div>
       {sub && (() => {
         const it = items[sub.index];
         return it && (!it.type || it.type === 'item') && it.items ? (

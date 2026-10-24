@@ -180,7 +180,7 @@ function ProviderMonogram({ provider, size = 28, className }: { provider: Provid
       return <span className={cn(base, 'bg-[#f38020]', className)} style={style}>CF</span>;
     case 'ollama':
       return (
-        <span className={cn(base, 'bg-fg text-panel', className)} style={style}>
+        <span className={cn(base, 'bg-[#111111] ring-1 ring-white/15', className)} style={style}>
           <Laptop style={{ width: size * 0.55, height: size * 0.55 }} />
         </span>
       );

@@ -9,8 +9,12 @@ export default {
 
   // AiPanel — setup / empty state
   'ai.panel.connectTitle': 'Подключите модель',
-  'ai.panel.connectBody': 'Используйте свой ключ Anthropic, OpenAI, Gemini, Grok, DeepSeek, Mistral и других — или работайте полностью офлайн с Ollama.',
+  'ai.panel.connectBody': 'Выберите провайдера и вставьте API-ключ или работайте полностью офлайн с Ollama.',
   'ai.panel.setUp': 'Настроить ИИ',
+  'ai.panel.setUpProvider': 'Настроить {provider}',
+  'ai.panel.moreProviders': 'Все провайдеры',
+  'ai.panel.tryOne': 'Попробуйте',
+  'ai.panel.keyPrivacy': 'Ключ остаётся на этом устройстве. Запросы идут напрямую к провайдеру, а не через ArkDraw.',
   'ai.panel.emptyEditTitle': 'Что сделать?',
   'ai.panel.emptyGenerateTitle': 'Что нарисуем?',
   'ai.panel.emptyEditSelection': 'Попросите изменение или новую диаграмму. «Это» относится к {count, plural, one {# выделенному элементу} few {# выделенным элементам} many {# выделенным элементам} other {# выделенного элемента}}.',

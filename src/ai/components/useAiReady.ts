@@ -35,18 +35,23 @@ export function useHasKey(provider: ProviderId): [boolean | null, () => void] {
   return [state, refresh];
 }
 
-/** Whether the active provider is configured well enough to send a request (`reason`: a whole, translated sentence). */
-export function useAiReady(): { ready: boolean | null; reason?: string } {
+export type AiSetupNeed = 'model' | 'endpoint' | 'settings' | 'key';
+
+/**
+ * Whether the active provider is configured well enough to send a request
+ * (`reason`: a whole, translated sentence; `need`: what is missing).
+ */
+export function useAiReady(): { ready: boolean | null; reason?: string; need?: AiSetupNeed } {
   const t = useT();
   const s = useAiSettings();
   const meta = PROVIDER_META[s.provider];
   const [has] = useHasKey(s.provider);
-  if (!modelFor(s)) return { ready: false, reason: t('ai.ready.chooseModel') };
-  if (meta.needsBaseUrl && !baseUrlFor(s)) return { ready: false, reason: t('ai.ready.setEndpoint') };
-  if (meta.fields?.some((f) => !paramFor(s, s.provider, f.id))) return { ready: false, reason: t('ai.ready.completeSettings', { provider: meta.name }) };
+  if (!modelFor(s)) return { ready: false, reason: t('ai.ready.chooseModel'), need: 'model' };
+  if (meta.needsBaseUrl && !baseUrlFor(s)) return { ready: false, reason: t('ai.ready.setEndpoint'), need: 'endpoint' };
+  if (meta.fields?.some((f) => !paramFor(s, s.provider, f.id))) return { ready: false, reason: t('ai.ready.completeSettings', { provider: meta.name }), need: 'settings' };
   if (meta.needsKey) {
     if (has === null) return { ready: null };
-    if (!has) return { ready: false, reason: t('ai.ready.addKey', { provider: meta.name }) };
+    if (!has) return { ready: false, reason: t('ai.ready.addKey', { provider: meta.name }), need: 'key' };
   }
   return { ready: true };
 }
