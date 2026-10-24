@@ -356,6 +356,7 @@ export default {
   'panels.left.favorites': 'Favoris',
   'panels.left.recent': 'Récentes',
   'panels.icons.none': 'Aucun pack d’icônes installé.',
+  'panels.icons.groups': 'Groupes',
   'panels.icons.description': 'Icône {provider} {category} pour diagrammes d’architecture.',
   'panels.icons.footer': 'Icônes {name} · {version}. Marques déposées de leurs propriétaires respectifs ; fournies pour les diagrammes d’architecture.',
   'panels.libraryDrag.replace': 'Remplacer',

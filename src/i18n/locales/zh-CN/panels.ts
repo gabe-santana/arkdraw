@@ -357,6 +357,7 @@ export default {
   'panels.left.favorites': '收藏夹',
   'panels.left.recent': '最近使用',
   'panels.icons.none': '未安装图标包。',
+  'panels.icons.groups': '分组',
   'panels.icons.description': '用于架构图的 {provider} {category} 图标。',
   'panels.icons.footer': '{name} 图标 · {version}。商标归其各自所有者所有；仅供绘制架构图使用。',
   'panels.libraryDrag.replace': '替换',

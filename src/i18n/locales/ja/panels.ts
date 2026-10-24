@@ -452,6 +452,7 @@ export default {
   'panels.left.favorites': 'お気に入り',
   'panels.left.recent': '最近使用した項目',
   'panels.icons.none': 'アイコンパックがインストールされていません。',
+  'panels.icons.groups': 'グループ',
   // Hover-card fallback; {provider} is a vendor (AWS…), {category} an icon category.
   'panels.icons.description': 'アーキテクチャ図用の {provider} {category} アイコン。',
   // {name} is the icon pack (AWS…), {version} its version.

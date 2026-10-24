@@ -360,6 +360,7 @@ export default {
   'panels.left.favorites': 'Favoritos',
   'panels.left.recent': 'Recentes',
   'panels.icons.none': 'Nenhum pacote de ícones instalado.',
+  'panels.icons.groups': 'Grupos',
   'panels.icons.description': 'Ícone {provider} de {category} para diagramas de arquitetura.',
   'panels.icons.footer': 'Ícones {name} · {version}. Marcas registradas de seus respectivos proprietários; fornecidos para diagramas de arquitetura.',
   'panels.libraryDrag.replace': 'Substituir',

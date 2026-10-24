@@ -454,6 +454,7 @@ export default {
   'panels.left.favorites': 'Favorites',
   'panels.left.recent': 'Recent',
   'panels.icons.none': 'No icon packs installed.',
+  'panels.icons.groups': 'Groups',
   // Hover-card fallback; {provider} is a vendor (AWS…), {category} an icon category.
   'panels.icons.description': '{provider} {category} icon for architecture diagrams.',
   // {name} is the icon pack (AWS…), {version} its version.

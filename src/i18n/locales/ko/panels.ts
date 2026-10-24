@@ -358,6 +358,7 @@ export default {
   'panels.left.favorites': '즐겨찾기',
   'panels.left.recent': '최근 사용',
   'panels.icons.none': '설치된 아이콘 팩이 없습니다.',
+  'panels.icons.groups': '그룹',
   'panels.icons.description': '아키텍처 다이어그램용 {provider} {category} 아이콘입니다.',
   'panels.icons.footer': '{name} 아이콘 · {version}. 각 소유자의 상표이며 아키텍처 다이어그램용으로 제공됩니다.',
   'panels.libraryDrag.replace': '바꾸기',

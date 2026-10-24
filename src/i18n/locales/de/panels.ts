@@ -359,6 +359,7 @@ export default {
   'panels.left.favorites': 'Favoriten',
   'panels.left.recent': 'Zuletzt verwendet',
   'panels.icons.none': 'Keine Symbolpakete installiert.',
+  'panels.icons.groups': 'Gruppen',
   'panels.icons.description': '{provider}-Symbol ({category}) für Architekturdiagramme.',
   'panels.icons.footer': '{name}-Symbole · {version}. Marken der jeweiligen Inhaber; bereitgestellt für Architekturdiagramme.',
   'panels.libraryDrag.replace': 'Ersetzen',

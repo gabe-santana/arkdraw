@@ -15,6 +15,7 @@ import { ShapePreview } from './ShapePreview';
 import { HoverCard } from '@/ui/HoverCard';
 import { loadIconDescriptions, shapeDescription, useIconDescriptions } from '@/icons/descriptions';
 import { searchLibrary } from '@/search/indexes';
+import { CLOUD_GROUPS, createGroup, groupIcon, groupStyle, PACK_LOGOS } from '@/shapes/cloudGroups';
 import { UserLibrariesSection } from './UserLibrariesSection';
 import { connectableSelection, startLibraryDrag } from './libraryDrag';
 import { hasRef, refKey, useLibraryHistory, type LibraryRef } from './libraryHistory';
@@ -141,14 +142,14 @@ function useCollapsed(key: string, defaultCollapsed: (id: string) => boolean = (
 }
 
 function Section({
-  title, count, open, onToggle, action, dot, minor, children,
-}: { title: string; count?: number; open: boolean; onToggle: () => void; action?: React.ReactNode; dot?: string; minor?: boolean; children: React.ReactNode }) {
+  title, count, open, onToggle, action, logo, minor, children,
+}: { title: string; count?: number; open: boolean; onToggle: () => void; action?: React.ReactNode; logo?: string; minor?: boolean; children: React.ReactNode }) {
   return (
     <section className="mb-1" style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 200px' }}>
       <div className="group flex h-8 w-full items-center rounded-lg hover:bg-hover">
         <button onClick={onToggle} aria-expanded={open} className={cn('flex h-full min-w-0 flex-1 items-center gap-1 px-1.5 text-[12px] text-fg', minor ? 'font-medium' : 'font-semibold')}>
           <ChevronRight className={cn('size-3.5 text-subtle transition-transform duration-200', open && 'rotate-90')} />
-          {dot && <span className="mr-0.5 size-1.5 shrink-0 rounded-full" style={{ background: dot }} />}
+          {logo && <PackLogo path={logo} />}
           <span className="flex-1 truncate text-left" title={title}>{title}</span>
           {count !== undefined && <span className="text-[11px] font-normal tabular-nums text-subtle">{count}</span>}
         </button>
@@ -375,7 +376,7 @@ function IconLibraries() {
           count={p.count}
           open={!collapsed(p.id)}
           onToggle={() => toggle(p.id)}
-          dot={PROVIDER_ACCENT[p.id] ?? 'var(--accent)'}
+          logo={PACK_LOGOS[p.id]}
         >
           <IconPackBody provider={p.id} />
         </Section>
@@ -387,6 +388,7 @@ function IconLibraries() {
 function IconPackBody({ provider }: { provider: string }) {
   const pack = useIconPacks((s) => s.packs[provider]);
   const [collapsed, toggle] = useCollapsed(`opendraw:collapsed-icons:${provider}`);
+  const t = useT();
   useEffect(() => {
     loadPack(provider).catch(() => {});
     loadIconDescriptions(provider);
@@ -401,8 +403,18 @@ function IconPackBody({ provider }: { provider: string }) {
     return [...map];
   }, [pack]);
   if (!pack) return <IconSkeleton />;
+  const groups = CLOUD_GROUPS[provider];
   return (
     <div className="pl-2">
+      {groups && (
+        <Section title={t('panels.icons.groups')} count={groups.length} open={!collapsed('__groups')} onToggle={() => toggle('__groups')} minor>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-1">
+            {groups.map((label) => (
+              <GroupTile key={label} provider={provider} label={label} />
+            ))}
+          </div>
+        </Section>
+      )}
       {categories.map(([cat, icons]) => (
         <Section key={cat} title={cat} count={icons.length} open={!collapsed(cat)} onToggle={() => toggle(cat)} minor>
           <div className="grid grid-cols-4 gap-1">
@@ -414,6 +426,37 @@ function IconPackBody({ provider }: { provider: string }) {
       ))}
       <PackFooter pack={pack} />
     </div>
+  );
+}
+
+/** A pack's logo in its section header (hidden if the file is missing). */
+function PackLogo({ path }: { path: string }) {
+  const [ok, setOk] = useState(true);
+  if (!ok) return null;
+  // On a white tile: many logos are dark glyphs that would vanish on the dark theme.
+  return (
+    <span className="mr-0.5 flex size-[18px] shrink-0 items-center justify-center rounded-[5px] bg-white ring-1 ring-line">
+      <img src={iconUrl(path)} alt="" draggable={false} onError={() => setOk(false)} className="size-3.5 object-contain" />
+    </span>
+  );
+}
+
+/** A cloud/network group box (VPC, subnet, resource group…) with its official logo. */
+function GroupTile({ provider, label }: { provider: string; label: string }) {
+  const icon = groupIcon(label, provider);
+  const stroke = groupStyle(label).stroke;
+  return (
+    <HoverCard content={() => ({ title: label, meta: t('panels.icons.groups'), hint: tileHint() })}>
+      <button
+        onPointerDown={(e) => startLibraryDrag(e, { size: { w: 360, h: 220 }, create: (at) => [createGroup(label, provider, at)] })}
+        className="flex h-9 w-full min-w-0 items-center gap-1.5 rounded-lg border border-dashed bg-panel px-2 text-left text-[11.5px] font-medium text-fg transition-[background,transform] duration-150 hover:bg-hover active:scale-[0.97]"
+        style={{ borderColor: stroke && stroke !== 'none' ? stroke : undefined }}
+        aria-label={label}
+      >
+        {icon && <img src={iconUrl(icon)} alt="" draggable={false} className="size-4 shrink-0 object-contain" />}
+        <span className="truncate">{label}</span>
+      </button>
+    </HoverCard>
   );
 }
 

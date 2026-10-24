@@ -360,6 +360,7 @@ export default {
   'panels.left.favorites': 'Избранное',
   'panels.left.recent': 'Недавние',
   'panels.icons.none': 'Наборы значков не установлены.',
+  'panels.icons.groups': 'Группы',
   'panels.icons.description': 'Значок {provider} ({category}) для архитектурных диаграмм.',
   'panels.icons.footer': 'Значки {name} · {version}. Товарные знаки принадлежат их владельцам; предоставлены для архитектурных диаграмм.',
   'panels.libraryDrag.replace': 'Заменить',
