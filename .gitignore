@@ -37,3 +37,6 @@ docs/PARITY.md
 .secrets
 .secrets.*
 *.secrets
+
+# Cloudflare wrangler local state
+.wrangler/

@@ -2,7 +2,7 @@
   <a href="https://github.com/gabe-santana/opendraw">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="docs/media/banner-dark.svg">
-      <img alt="OpenDraw" src="docs/media/banner-light.svg" width="100%">
+      <img alt="ArkDraw" src="docs/media/banner-light.svg" width="100%">
     </picture>
   </a>
 </p>
@@ -15,6 +15,10 @@
 </p>
 
 <p align="center">
+  <a href="https://arkdraw.com"><b>Open it in your browser at arkdraw.com</b></a> · <a href="#download">Download for Windows, macOS and Linux</a>
+</p>
+
+<p align="center">
   <a href="https://github.com/gabe-santana/opendraw/releases/latest"><img alt="Download" src="https://img.shields.io/github/v/release/gabe-santana/opendraw?style=flat-square&label=download&color=5B4BF5"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-5B4BF5?style=flat-square"></a>
   <a href="https://github.com/gabe-santana/opendraw/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/gabe-santana/opendraw/ci.yml?branch=main&style=flat-square&label=CI"></a>
@@ -22,7 +26,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/media/ai/aws-serverless.gif" alt="Typing a prompt into OpenDraw's AI tab: the assistant picks the official AWS icons, draws CloudFront, API Gateway, Lambda, S3 and DynamoDB, and the request flow starts moving along the arrows" width="100%">
+  <img src="docs/media/ai/aws-serverless.gif" alt="Typing a prompt into ArkDraw's AI tab: the assistant picks the official AWS icons, draws CloudFront, API Gateway, Lambda, S3 and DynamoDB, and the request flow starts moving along the arrows" width="100%">
 </p>
 <p align="center"><sub>Real recording: one prompt, official AWS icons, routed arrows, animated flow. Nothing edited afterwards.</sub></p>
 
@@ -34,7 +38,7 @@ Open the **AI** tab (<kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>I</kbd>) and say what
 - **Clean layout.** Connectors are routed together, so they don't overlap, don't cross shapes, and each one gets its own port.
 - **It edits.** Try "add a cache in front of the database", "label every connection" or "make the failing service pulse". Every change pops in place and is a single <kbd>Ctrl</kbd>+<kbd>Z</kbd> away.
 - **It animates.** Ask it to "animate the request flow" or "build it step by step", then export the result as a GIF.
-- **Your model, your key.** Anthropic Claude, OpenAI, Google Gemini, xAI Grok, DeepSeek, Mistral, Azure AI Foundry, Amazon Bedrock, Google Vertex AI, OpenRouter, Groq and more, or **Ollama** fully offline. Keys stay in your system keychain (desktop) or encrypted in your browser (web), and requests go straight to your provider. OpenDraw has no servers.
+- **Your model, your key.** Anthropic Claude, OpenAI, Google Gemini, xAI Grok, DeepSeek, Mistral, Azure AI Foundry, Amazon Bedrock, Google Vertex AI, OpenRouter, Groq and more, or **Ollama** fully offline. Keys stay in your system keychain (desktop) or encrypted in your browser (web), and requests go straight to your provider. ArkDraw has no servers.
 
 <table>
   <tr>
@@ -63,17 +67,17 @@ Open the **AI** tab (<kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>I</kbd>) and say what
 
 | OS | Get it |
 | --- | --- |
-| **Windows** 10/11 | [Microsoft Store](https://apps.microsoft.com/detail/9PG6WQTHD78Q), `winget install 9PG6WQTHD78Q`, or `OpenDraw_x.y.z_windows-installer.exe` from [Releases](https://github.com/gabe-santana/opendraw/releases/latest). Signed by Microsoft, updates automatically |
-| **macOS** 11+ | `OpenDraw_x.y.z_universal.dmg` (Apple Silicon and Intel) |
+| **Windows** 10/11 | [Microsoft Store](https://apps.microsoft.com/detail/9PG6WQTHD78Q), `winget install 9PG6WQTHD78Q`, or the `windows-installer.exe` from [Releases](https://github.com/gabe-santana/opendraw/releases/latest). Signed by Microsoft, updates automatically |
+| **macOS** 11+ | Universal `.dmg` (Apple Silicon and Intel) |
 | **Linux** | `.AppImage` (any distro), `.deb`, `.rpm`, x64 and arm64 |
-| **Web** | Installable PWA, [self-host it](docs/web.md) |
+| **Web** | **[arkdraw.com](https://arkdraw.com)**, installable as an app, or [self-host it](docs/web.md) |
 
 Checksums are in `SHA256SUMS.txt` on every release.
 
 <details>
 <summary>macOS says the app is from an unidentified developer?</summary>
 
-The macOS build isn't notarized yet: right-click OpenDraw in Applications and choose **Open**, or run `xattr -dr com.apple.quarantine /Applications/OpenDraw.app`.
+The macOS build isn't notarized yet: right-click the app in Applications and choose **Open**, or run `xattr -dr com.apple.quarantine` on it.
 
 </details>
 

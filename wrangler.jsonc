@@ -1,0 +1,23 @@
+// Cloudflare Workers deployment of the web app (https://arkdraw.com).
+//
+// An assets-only Worker: no code runs, Cloudflare serves the static build
+// from its edge, so requests don't count against the Workers free-plan
+// request limit. `dist/` comes from `npm run build:web`, which also writes
+// `dist/_headers` (CSP, caching, security headers) that Workers applies.
+//
+// Deployed by .github/workflows/deploy-web.yml on version tags. Credentials
+// are GitHub repository secrets (CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID),
+// never stored in the repo. See docs/web.md#cloudflare-workers.
+{
+  "name": "arkdraw",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    // Unknown paths load the app, which handles its own routes (share links, ?embed=1…).
+    "not_found_handling": "single-page-application"
+  },
+  "routes": [{ "pattern": "arkdraw.com", "custom_domain": true }],
+  // Keep the *.workers.dev preview URL off: the site lives on the custom domain only.
+  "workers_dev": false,
+  "preview_urls": false
+}

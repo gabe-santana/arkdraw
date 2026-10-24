@@ -265,6 +265,45 @@ FRAME_ANCESTORS="'self'" node scripts/web/csp.mjs dist
 directory `dist`. `build:web` writes `dist/_headers` (CSP, caching, security
 headers), which both hosts read.
 
+### Cloudflare Workers
+
+The official site, https://arkdraw.com, is an assets-only Worker
+([`wrangler.jsonc`](../wrangler.jsonc)): no code runs, so it fits the free plan
+(static requests are free; up to 20,000 files and 25 MiB per file per
+deployment, and the build is about 14,600 files with the icon packs). The
+[Deploy web](../.github/workflows/deploy-web.yml) workflow builds and deploys
+it on every stable version tag (`v1.2.3`), or by hand from the Actions tab.
+
+One-time setup (maintainers). Nothing secret goes in the repository:
+
+1. The domain's zone (`arkdraw.com`) must be active in the Cloudflare account.
+   If it has an `A`/`AAAA`/`CNAME` record for the apex, delete it: the first
+   deploy creates the record and the certificate for the Worker.
+2. Cloudflare dashboard → *My Profile* → *API Tokens* → *Create Token* →
+   template **Edit Cloudflare Workers**. Account resources: your account; zone
+   resources: `arkdraw.com`. Create it and copy it once.
+3. Copy the **Account ID** (Workers & Pages overview, right-hand column).
+4. Store both as repository secrets (paste when prompted, so they never land
+   in your shell history):
+
+   ```sh
+   gh secret set CLOUDFLARE_API_TOKEN
+   gh secret set CLOUDFLARE_ACCOUNT_ID
+   ```
+
+5. Optional: *Rules* → *Redirect Rules* → template **Redirect from WWW to root**,
+   so `www.arkdraw.com` lands on `arkdraw.com`.
+
+Deploy by hand from a clone (uses your own `wrangler login`):
+
+```sh
+npm run icons:fetch && npm run build:web
+npx wrangler@4 deploy
+```
+
+Forks without the secrets still build in the workflow; the upload step is
+skipped.
+
 **Vercel.** Framework preset *Vite*, build command `npm run build:web`, output
 `dist`. Vercel ignores `_headers`; add a `vercel.json`:
 
