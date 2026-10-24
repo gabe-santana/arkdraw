@@ -155,6 +155,9 @@ export default {
   'ai.settings.saveKey': 'キーを保存',
   'ai.settings.storedKeychain': 'システムのキーチェーンに保存済み',
   'ai.settings.keptInMemory': 'このタブのメモリ内に保持',
+  'ai.settings.storedBrowser': 'このブラウザーに暗号化して保存済み',
+  'ai.settings.rememberKey': 'このブラウザーにキーを記憶する(暗号化)',
+  'ai.settings.rememberKeyHint': 'キーは、ブラウザーが誰にも読み取らせない鍵で暗号化され、このデバイスにのみ保存されます。共有のコンピューターではオフにしてください。デスクトップアプリはシステムのキーチェーンを使います。',
   // Verb: replace the stored API key with a new one
   'ai.settings.replace': '置き換え',
   'ai.settings.deleteKey': 'キーを削除',

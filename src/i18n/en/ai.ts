@@ -153,6 +153,9 @@ export default {
   'ai.settings.saveKey': 'Save key',
   'ai.settings.storedKeychain': 'Stored in the system keychain',
   'ai.settings.keptInMemory': 'Kept in memory for this tab',
+  'ai.settings.storedBrowser': 'Saved encrypted in this browser',
+  'ai.settings.rememberKey': 'Remember my keys in this browser (encrypted)',
+  'ai.settings.rememberKeyHint': 'Keys are encrypted with a key this browser never lets anyone read, and stay on this device. On a shared computer, turn this off. The desktop app uses the system keychain.',
   // Verb: replace the stored API key with a new one
   'ai.settings.replace': 'Replace',
   'ai.settings.deleteKey': 'Delete key',

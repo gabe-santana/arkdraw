@@ -21,7 +21,7 @@ Linux, including the Microsoft Store version) or the web app.
 
 | Feature | What is sent | To whom |
 | --- | --- | --- |
-| **AI assistant** (off until you add your own API key) | The prompt you type and, in edit mode, a text summary of the current diagram | The AI provider **you** configure (for example Anthropic, OpenAI, Google, or a local Ollama server). Their privacy policy applies. Your API key is stored in your operating system's keychain on desktop, or only in memory in the web app. |
+| **AI assistant** (off until you add your own API key) | The prompt you type and, in edit mode, a text summary of the current diagram | The AI provider **you** configure (for example Anthropic, OpenAI, Google, or a local Ollama server). Their privacy policy applies. Your API key is stored in your operating system's keychain on desktop. In the web app it is encrypted with a non-exportable key and kept in your browser's storage on this device (you can turn this off to keep it in memory only); it is only ever sent to that provider. |
 | **Web fonts** (only if a diagram uses a Google Font) | A standard request for the font file | Google Fonts |
 | **Update check** (desktop) | A request for the latest version information | GitHub |
 | **Images or diagrams opened from a URL** | A request for that URL | The website you entered |

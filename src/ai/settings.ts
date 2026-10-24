@@ -21,6 +21,8 @@ export interface AiSettings {
   params: Partial<Record<ProviderId, Record<string, string>>>;
   /** Endpoint each Ollama/custom key entry was saved for (UI hint only; Rust enforces it). */
   authorizedBaseUrls: Partial<Record<ProviderId, string>>;
+  /** Browser build: keep keys across reloads, encrypted in this browser (keyVault.ts). */
+  rememberKeys: boolean;
 }
 
 const STORAGE_KEY = 'opendraw.ai.settings.v1';
@@ -34,6 +36,7 @@ export const DEFAULT_AI_SETTINGS: AiSettings = {
   azureAuth: 'api-key',
   params: {},
   authorizedBaseUrls: {},
+  rememberKeys: true,
 };
 
 function load(): AiSettings {
@@ -49,6 +52,7 @@ function load(): AiSettings {
       azureAuth: parsed.azureAuth === 'bearer' ? 'bearer' : 'api-key',
       params: typeof parsed.params === 'object' && parsed.params ? parsed.params : {},
       authorizedBaseUrls: typeof parsed.authorizedBaseUrls === 'object' && parsed.authorizedBaseUrls ? parsed.authorizedBaseUrls : {},
+      rememberKeys: parsed.rememberKeys !== false,
     };
   } catch {
     return DEFAULT_AI_SETTINGS;

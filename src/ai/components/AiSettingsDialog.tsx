@@ -13,7 +13,7 @@ import { t as tNow, useT, type MessageKey } from '@/i18n';
 import { ADAPTERS, AiError, checkKeyPrefix, PROVIDERS, PROVIDER_META, type ModelInfo, type ProviderField, type ProviderId, type ProviderMeta } from '../providers';
 import { azureBase, normalizeBaseUrl } from '../providers/openai';
 import { authStyleFor, baseUrlFor, modelFor, paramFor, providerConfig, updateAiSettings, useAiSettings, type CustomAuthStyle } from '../settings';
-import { deleteKey, hasKey, isTauri, saveKey, testConnection } from '../transport';
+import { deleteKey, hasKey, isTauri, saveKey, setRememberKeys, testConnection } from '../transport';
 import { Btn, IconBtn, inputClass, modelHint, ProviderMark, providerKeyPlaceholder, providerName, providerTagline, stopKeys } from './ui';
 import { notifyKeysChanged, useHasKey } from './useAiReady';
 
@@ -445,7 +445,7 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
               <div className="flex h-9 items-center gap-2.5 rounded-lg bg-panel-2 px-3 ring-1 ring-line">
                 <Lock className="size-3.5 text-success" />
                 <span className="font-mono text-[12px] tracking-widest text-muted">••••••••••••</span>
-                <span className="flex-1 truncate text-[12px] text-muted">{isTauri() ? t('ai.settings.storedKeychain') : t('ai.settings.keptInMemory')}</span>
+                <span className="flex-1 truncate text-[12px] text-muted">{isTauri() ? t('ai.settings.storedKeychain') : settings.rememberKeys ? t('ai.settings.storedBrowser') : t('ai.settings.keptInMemory')}</span>
                 <Btn size="sm" variant="ghost" onClick={() => setReplacing(true)}>
                   {t('ai.settings.replace')}
                 </Btn>
@@ -458,6 +458,20 @@ function SettingsBody({ onClose }: { onClose: () => void }) {
               <p className="mt-1.5 flex items-center gap-1.5 text-[12px] text-danger">
                 <CircleAlert className="size-3.5" /> {keyError}
               </p>
+            )}
+            {!isTauri() && (
+              <label className="mt-2 flex cursor-pointer items-start gap-2 text-[12px] leading-snug text-muted" title={t('ai.settings.rememberKeyHint')}>
+                <input
+                  type="checkbox"
+                  className="mt-px size-3.5 shrink-0 accent-[var(--accent)]"
+                  checked={settings.rememberKeys}
+                  onChange={(e) => {
+                    updateAiSettings({ rememberKeys: e.target.checked });
+                    void setRememberKeys(e.target.checked);
+                  }}
+                />
+                <span>{t('ai.settings.rememberKey')}</span>
+              </label>
             )}
           </Field>
 

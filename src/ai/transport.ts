@@ -6,13 +6,15 @@
  * key never comes back to the webview. Rust only talks to the provider's own
  * host, or to the endpoint the key was saved for (Ollama / custom).
  *
- * Browser (`npm run dev` without Tauri): keys are kept in memory for this tab
- * only and requests go straight from the page. The UI shows a warning.
+ * Browser: requests go straight from the page. Keys are kept in memory and,
+ * unless the user turns it off, also encrypted in this browser (keyVault.ts)
+ * so they survive reloads.
  */
 import { invoke } from '@tauri-apps/api/core';
 import { ADAPTERS, AiError, PROVIDER_META, type HttpRequest, type HttpResponse, type ModelInfo, type ProviderConfig, type ProviderId, type ChatRequest, type ChatResponse } from './providers';
 import { ANTHROPIC_VERSION } from './providers/anthropic';
-import type { CustomAuthStyle } from './settings';
+import { getAiSettings, type CustomAuthStyle } from './settings';
+import { vaultAll, vaultAvailable, vaultClear, vaultDelete, vaultPut } from './keyVault';
 import { t } from '@/i18n';
 
 export const isTauri = (): boolean => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
@@ -23,6 +25,27 @@ interface MemoryKey {
   auth: CustomAuthStyle;
 }
 const memoryKeys = new Map<ProviderId, MemoryKey>();
+
+/** Keys remembered from earlier sessions, loaded once (browser only). */
+let restored: Promise<void> | null = null;
+function restoreKeys(): Promise<void> {
+  if (isTauri() || !vaultAvailable() || !getAiSettings().rememberKeys) return Promise.resolve();
+  restored ??= vaultAll()
+    .then((all) => {
+      for (const [id, value] of all) if (!memoryKeys.has(id as ProviderId)) memoryKeys.set(id as ProviderId, value as MemoryKey);
+    })
+    .catch(() => {});
+  return restored;
+}
+
+/** Browser: whether saved keys are remembered across reloads (encrypted). Turning it off forgets them. */
+export async function setRememberKeys(remember: boolean): Promise<void> {
+  if (isTauri() || !vaultAvailable()) return;
+  if (!remember) return vaultClear().catch(() => {});
+  await Promise.all([...memoryKeys].map(([id, mk]) => vaultPut(id, mk).catch(() => {})));
+}
+
+export const keysPersistInBrowser = (): boolean => !isTauri() && vaultAvailable() && getAiSettings().rememberKeys;
 
 const originOf = (url: string) => {
   try {
@@ -45,11 +68,15 @@ export async function saveKey(provider: ProviderId, key: string, opts: SaveKeyOp
     await invoke('ai_set_key', { provider, key: trimmed, baseUrl: opts.baseUrl ?? null, auth: opts.auth ?? null });
     return;
   }
-  memoryKeys.set(provider, { key: trimmed, origin: opts.baseUrl ? originOf(opts.baseUrl) : undefined, auth: opts.auth ?? 'bearer' });
+  const entry: MemoryKey = { key: trimmed, origin: opts.baseUrl ? originOf(opts.baseUrl) : undefined, auth: opts.auth ?? 'bearer' };
+  await restoreKeys();
+  memoryKeys.set(provider, entry);
+  if (keysPersistInBrowser()) await vaultPut(provider, entry).catch(() => {});
 }
 
 export async function hasKey(provider: ProviderId): Promise<boolean> {
   if (isTauri()) return invoke<boolean>('ai_has_key', { provider });
+  await restoreKeys();
   return !!memoryKeys.get(provider)?.key;
 }
 
@@ -59,6 +86,7 @@ export async function deleteKey(provider: ProviderId): Promise<void> {
     return;
   }
   memoryKeys.delete(provider);
+  if (vaultAvailable()) await vaultDelete(provider).catch(() => {});
 }
 
 function authHeaders(provider: ProviderId, mk: MemoryKey | undefined): Record<string, string> {
@@ -129,6 +157,7 @@ export async function sendRequest(provider: ProviderId, req: HttpRequest, signal
     });
     return abortable(p, signal);
   }
+  await restoreKeys();
   const headers: Record<string, string> = {
     ...(body ? { 'content-type': 'application/json' } : {}),
     ...(req.headers ?? {}),
