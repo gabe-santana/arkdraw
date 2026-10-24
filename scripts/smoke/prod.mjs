@@ -134,7 +134,7 @@ async function httpTests() {
   });
   await test('every referenced asset loads with the right type', async () => {
     const n = await checkAssets(landing, `${SITE}/`);
-    assert(n >= 10, `only ${n} assets referenced`);
+    assert(n >= 8, `only ${n} assets referenced`); // videos are picked by main.js and checked by the range test
   });
   await test('videos support range requests (Safari, seeking)', async () => {
     const names = [...landing.matchAll(/data-video="([^"]+)"/g)].map((m) => m[1]);
