@@ -1,4 +1,4 @@
-# OpenDraw on the web
+# ArkDraw on the web
 
 The desktop app (Tauri) and the website are the same build. At runtime
 `isTauri()` (`src/lib/platform.ts`) decides which shell we are in; in a plain
@@ -47,9 +47,9 @@ npm run preview:web    # serve dist/ on http://localhost:4173 (service worker ac
 | `?saveBtn=0`, `?exitBtn=0` (or `noSaveBtn=1`, `noExitBtn=1`) | Embed: hide the floating Save / Exit buttons. |
 
 Supported content everywhere (share links, URLs, `load` messages, drag & drop
-into the viewer): OpenDraw JSON (`.opendraw`), mxGraph XML (`.drawio`, plain
+into the viewer): ArkDraw JSON (`.opendraw`), mxGraph XML (`.drawio`, plain
 or compressed), and PNG/SVG/PDF exports carrying an embedded mxGraph or
-OpenDraw diagram.
+ArkDraw diagram.
 
 ## Share links
 
@@ -93,7 +93,7 @@ editor's own element renderers, so it matches the canvas and exports exactly.
   (`page:` links switch page; web/mail/phone links open in a new tab; anything
   else is refused).
 - Dark/light toggle (diagram colors adapt like the editor's default).
-- **Edit in OpenDraw** opens the editor with the same diagram (a `#R` link,
+- **Edit in ArkDraw** opens the editor with the same diagram (a `#R` link,
   or the same `?url=`). Inside an iframe it opens a new tab.
 - Without a source it shows a drop zone / file picker; nothing is uploaded.
 
@@ -131,7 +131,7 @@ mxGraph's embed protocol.
 
 | Message | Effect |
 | --- | --- |
-| `{ action: 'load', json?, xml?, title?, autosave? }` | Open a diagram. `json` may be a string or object; `xml` may be mxGraph XML or OpenDraw JSON. Empty = blank document. |
+| `{ action: 'load', json?, xml?, title?, autosave? }` | Open a diagram. `json` may be a string or object; `xml` may be mxGraph XML or ArkDraw JSON. Empty = blank document. |
 | `{ action: 'export', format, page?, scale?, background? }` | `format`: `svg`, `png`, `json`, `drawio`. `page`: index (1-based), id or name (default: current). `scale`: PNG scale (default 2). `background`: CSS color or `null` for transparent (default: page background; white for PNG). |
 | `{ action: 'status', modified: false }` | The host has saved; clears the dirty marker. |
 | `{ action: 'exit' }` | Asks the editor to close; it answers with an `exit` event. |
@@ -171,7 +171,7 @@ A manual test host lives at `test/web/embed-host.html`
 - **Clickjacking / framing.** Embedding requires the app to be frameable.
   The bundled nginx config sends `frame-ancestors ${FRAME_ANCESTORS}`
   (default `*`). Restrict it to your hosts, e.g.
-  `FRAME_ANCESTORS="'self' https://app.example.com"`. Nothing in OpenDraw is
+  `FRAME_ANCESTORS="'self' https://app.example.com"`. Nothing in ArkDraw is
   authenticated, so the residual risk of framing is low, but restricting it is
   good hygiene.
 - **The user's own drafts stay private.** In embed mode the editor's

@@ -502,9 +502,9 @@ export default {
   // File-dialog filter name.
   'panels.userLib.filterName': 'ライブラリ',
   // File-dialog filter name.
-  'panels.userLib.fileType': 'OpenDraw ライブラリ',
+  'panels.userLib.fileType': 'ArkDraw ライブラリ',
   'panels.userLib.loaded': '{count, plural, other {「{name}」から # 個の項目を読み込みました}}',
-  'panels.userLib.notALibrary': 'OpenDraw のライブラリではありません。',
+  'panels.userLib.notALibrary': 'ArkDraw のライブラリではありません。',
   'panels.userLib.unsupported': 'サポートされていないライブラリファイルです。',
   // Verb: add the selected shapes to this library.
   'panels.userLib.addSelection': '選択範囲を追加',

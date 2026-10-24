@@ -12,7 +12,7 @@ export default {
 
   // Viewer — toolbar
   'viewer.openNewTab': '在新标签页中打开',
-  'viewer.editInOpenDraw': '在 OpenDraw 中编辑',
+  'viewer.editInOpenDraw': '在 ArkDraw 中编辑',
   'viewer.previousPage': '上一页',
   'viewer.nextPage': '下一页',
   'viewer.zoomOut': '缩小',

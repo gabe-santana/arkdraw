@@ -102,8 +102,8 @@ function EmptyState() {
     <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
       <div className={cn('animate-fade flex flex-col items-center text-center', leftOpen && 'translate-x-[60px]')}>
         <div className="relative mb-5">
-          <div className="absolute inset-0 rounded-[22px] bg-accent/25 blur-2xl" />
-          <div className="relative flex size-16 items-center justify-center rounded-[20px] bg-gradient-to-br from-[#7c7fff] via-[#5b4bf5] to-[#3a2bb8] shadow-lg ring-1 ring-white/20">
+          {/* A close, colored shadow instead of a wide blurred halo: low-alpha blurs band into rings on dark canvases. */}
+          <div className="relative flex size-16 items-center justify-center rounded-[20px] bg-gradient-to-br from-[#7c7fff] via-[#5b4bf5] to-[#3a2bb8] shadow-[0_12px_32px_-10px_rgb(91_75_245/0.75),0_3px_8px_rgb(0_0_0/0.25)] ring-1 ring-white/20">
             <Shapes className="size-7 text-white" strokeWidth={1.75} />
           </div>
         </div>

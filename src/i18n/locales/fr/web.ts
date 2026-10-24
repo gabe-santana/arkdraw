@@ -7,8 +7,8 @@ export default {
   'web.embed.exit': 'Quitter',
 
   // PwaUpdatePrompt
-  'web.pwa.newVersion': 'Une nouvelle version d’OpenDraw est prête',
-  'web.pwa.offlineReady': 'OpenDraw fonctionne désormais hors ligne',
+  'web.pwa.newVersion': 'Une nouvelle version d’ArkDraw est prête',
+  'web.pwa.offlineReady': 'ArkDraw fonctionne désormais hors ligne',
   'web.pwa.reloadHint': 'Rechargez pour mettre à jour. Le travail non enregistré sera restauré après le rechargement.',
   'web.pwa.cached': 'L’application est en cache sur cet appareil.',
   'web.pwa.updating': 'Mise à jour…',

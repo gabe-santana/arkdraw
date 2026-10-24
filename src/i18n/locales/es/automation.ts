@@ -122,7 +122,7 @@ export default {
   'automation.templates.importFailed': 'No se pudo importar la plantilla: {error}',
   'automation.templates.importFile': 'Importar archivo de plantilla',
   'automation.templates.importTooltip': 'Importar un archivo .{ext} u .opendraw',
-  'automation.templates.fileType': 'Plantilla de OpenDraw',
+  'automation.templates.fileType': 'Plantilla de ArkDraw',
   'automation.templates.deleteTitle': '¿Eliminar “{name}”?',
   'automation.templates.deleteMessage': 'La plantilla se elimina de este dispositivo. Los diagramas creados a partir de ella no se ven afectados.',
   'automation.templates.nothingToSave': 'No hay nada que guardar como plantilla.',

@@ -1,6 +1,6 @@
 {
-  "name": "OpenDraw",
-  "short_name": "OpenDraw",
+  "name": "ArkDraw",
+  "short_name": "ArkDraw",
   "description": "Open-source diagramming for flowcharts, UML, ER diagrams and network maps. Works offline.",
   "id": "./",
   "start_url": "./",

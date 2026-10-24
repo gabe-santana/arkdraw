@@ -122,7 +122,7 @@ export default {
   'automation.templates.importFailed': '无法导入模板：{error}',
   'automation.templates.importFile': '导入模板文件',
   'automation.templates.importTooltip': '导入 .{ext} 或 .opendraw 文件',
-  'automation.templates.fileType': 'OpenDraw 模板',
+  'automation.templates.fileType': 'ArkDraw 模板',
   'automation.templates.deleteTitle': '删除“{name}”？',
   'automation.templates.deleteMessage': '模板将从此设备中删除。基于该模板创建的图表不受影响。',
   'automation.templates.nothingToSave': '没有可保存为模板的内容。',

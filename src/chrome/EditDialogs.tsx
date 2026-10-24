@@ -190,7 +190,7 @@ export function EditStyleDialog() {
 
 function EditStyleBody({ el, close }: { el: DiagramElement; close: () => void }) {
   const t = useT();
-  // strings by default (src/extensibility/styleString.ts); OpenDraw keys on request.
+  // strings by default (src/extensibility/styleString.ts); ArkDraw keys on request.
   const [format, setFormat] = useState<'drawio' | 'opendraw'>(() => (localStorage.getItem('opendraw:styleFormat') === 'opendraw' ? 'opendraw' : 'drawio'));
   const initial = (f: 'drawio' | 'opendraw') => (f === 'drawio' ? formatDrawioStyle(el) : styleToString(el.style));
   const [text, setText] = useState(() => initial(format));
@@ -237,7 +237,7 @@ function EditStyleBody({ el, close }: { el: DiagramElement; close: () => void })
           onChange={switchFormat}
           options={[
             { value: 'drawio', label: t('chrome.editStyle.styleString') },
-            { value: 'opendraw', label: 'OpenDraw' },
+            { value: 'opendraw', label: 'ArkDraw' },
           ]}
         />
         <textarea

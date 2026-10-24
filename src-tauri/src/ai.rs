@@ -28,7 +28,7 @@ impl Default for AiState {
             .timeout(Duration::from_secs(600))
             // Never follow redirects: a redirect could carry the key elsewhere.
             .redirect(reqwest::redirect::Policy::none())
-            .user_agent(concat!("OpenDraw/", env!("CARGO_PKG_VERSION")))
+            .user_agent(concat!("ArkDraw/", env!("CARGO_PKG_VERSION")))
             .build()
             .expect("failed to build the HTTP client");
         Self { client }

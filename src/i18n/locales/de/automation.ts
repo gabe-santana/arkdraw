@@ -121,7 +121,7 @@ export default {
   'automation.templates.importFailed': 'Vorlage konnte nicht importiert werden: {error}',
   'automation.templates.importFile': 'Vorlagendatei importieren',
   'automation.templates.importTooltip': '.{ext}- oder .opendraw-Datei importieren',
-  'automation.templates.fileType': 'OpenDraw-Vorlage',
+  'automation.templates.fileType': 'ArkDraw-Vorlage',
   'automation.templates.deleteTitle': '„{name}“ löschen?',
   'automation.templates.deleteMessage': 'Die Vorlage wird von diesem Gerät entfernt. Daraus erstellte Diagramme sind nicht betroffen.',
   'automation.templates.nothingToSave': 'Es gibt nichts, was als Vorlage gespeichert werden kann.',

@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://github.com/gabe-santana/opendraw">
+  <a href="https://github.com/gabe-santana/arkdraw">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="docs/media/banner-dark.svg">
       <img alt="ArkDraw" src="docs/media/banner-light.svg" width="100%">
@@ -19,9 +19,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/gabe-santana/opendraw/releases/latest"><img alt="Download" src="https://img.shields.io/github/v/release/gabe-santana/opendraw?style=flat-square&label=download&color=5B4BF5"></a>
+  <a href="https://github.com/gabe-santana/arkdraw/releases/latest"><img alt="Download" src="https://img.shields.io/github/v/release/gabe-santana/arkdraw?style=flat-square&label=download&color=5B4BF5"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-5B4BF5?style=flat-square"></a>
-  <a href="https://github.com/gabe-santana/opendraw/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/gabe-santana/opendraw/ci.yml?branch=main&style=flat-square&label=CI"></a>
+  <a href="https://github.com/gabe-santana/arkdraw/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/gabe-santana/arkdraw/ci.yml?branch=main&style=flat-square&label=CI"></a>
   <img alt="Windows, macOS, Linux, Web" src="https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux%20%C2%B7%20Web-3A2BB8?style=flat-square">
 </p>
 
@@ -67,7 +67,7 @@ Open the **AI** tab (<kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>I</kbd>) and say what
 
 | OS | Get it |
 | --- | --- |
-| **Windows** 10/11 | [Microsoft Store](https://apps.microsoft.com/detail/9PG6WQTHD78Q), `winget install 9PG6WQTHD78Q`, or the `windows-installer.exe` from [Releases](https://github.com/gabe-santana/opendraw/releases/latest). Signed by Microsoft, updates automatically |
+| **Windows** 10/11 | [Microsoft Store](https://apps.microsoft.com/detail/9PG6WQTHD78Q), `winget install 9PG6WQTHD78Q`, or the `windows-installer.exe` from [Releases](https://github.com/gabe-santana/arkdraw/releases/latest). Signed by Microsoft, updates automatically |
 | **macOS** 11+ | Universal `.dmg` (Apple Silicon and Intel) |
 | **Linux** | `.AppImage` (any distro), `.deb`, `.rpm`, x64 and arm64 |
 | **Web** | **[app.arkdraw.com](https://app.arkdraw.com)**, installable as an app, or [self-host it](docs/web.md) |
@@ -92,7 +92,7 @@ The macOS build isn't notarized yet: right-click the app in Applications and cho
 ## Quick start
 
 ```sh
-git clone https://github.com/gabe-santana/opendraw.git && cd opendraw
+git clone https://github.com/gabe-santana/arkdraw.git && cd arkdraw
 npm install
 npm run icons:fetch   # official cloud icon packs (optional)
 npm run dev           # web app at http://localhost:1420
@@ -106,7 +106,7 @@ npm run tauri dev     # desktop app (needs Rust)
 
 ## Contributing
 
-Issues and pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md) and the [`good first issue`](https://github.com/gabe-santana/opendraw/labels/good%20first%20issue) label, follow the [Code of Conduct](CODE_OF_CONDUCT.md), and report vulnerabilities privately ([SECURITY.md](SECURITY.md)).
+Issues and pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md) and the [`good first issue`](https://github.com/gabe-santana/arkdraw/labels/good%20first%20issue) label, follow the [Code of Conduct](CODE_OF_CONDUCT.md), and report vulnerabilities privately ([SECURITY.md](SECURITY.md)).
 
 The GIFs above are recorded from the real app with `npm run media:ai` (AI demos) and `npm run media:gifs` (template animations).
 

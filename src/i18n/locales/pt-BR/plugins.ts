@@ -4,9 +4,9 @@ import type { Translation } from '../../types';
 export default {
   // PluginsDialog
   'plugins.title': 'Plug-ins',
-  'plugins.subtitle': 'Amplie o OpenDraw com comandos, bibliotecas de formas e formatos de arquivo',
+  'plugins.subtitle': 'Amplie o ArkDraw com comandos, bibliotecas de formas e formatos de arquivo',
   'plugins.warning':
-    'Os plug-ins são executados dentro do OpenDraw com acesso total ao editor e aos seus diagramas. Adicione apenas plug-ins confiáveis. Será solicitada uma confirmação antes de ativar cada um.',
+    'Os plug-ins são executados dentro do ArkDraw com acesso total ao editor e aos seus diagramas. Adicione apenas plug-ins confiáveis. Será solicitada uma confirmação antes de ativar cada um.',
   'plugins.status.active': 'Ativo',
   'plugins.storedCopy': '{source} (cópia armazenada)',
   'plugins.remove': 'Remover plug-in',
@@ -22,7 +22,7 @@ export default {
   'plugins.exported': '{name} exportado',
   'plugins.exportFailed': 'Falha na exportação {format}: {error}',
   'plugins.trustTitle': 'Ativar este plug-in?',
-  'plugins.trustMessage': '{what}\n\nOs plug-ins são executados dentro do OpenDraw com acesso total aos seus diagramas e ao editor. Ative apenas plug-ins de fontes confiáveis.',
+  'plugins.trustMessage': '{what}\n\nOs plug-ins são executados dentro do ArkDraw com acesso total aos seus diagramas e ao editor. Ative apenas plug-ins de fontes confiáveis.',
   'plugins.trustConfirm': 'Ativar plug-in',
   'plugins.duplicate': 'Esse plug-in já está na lista.',
   'plugins.enabled': 'Plug-in ativado: {name}',

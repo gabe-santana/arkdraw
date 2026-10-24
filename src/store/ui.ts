@@ -77,7 +77,9 @@ function load<T>(key: string, fallback: T): T {
   }
 }
 
-const panels = load(PANELS_KEY, { leftOpen: true, rightOpen: true, layersOpen: true, layersHeight: 300, leftWidth: 264, rightWidth: 268, aiWidth: 380, aiOpen: false, dock: { left: ['shapes'], right: ['format', 'layers'] } as DockLayout });
+// First visit (nothing saved yet): the AI tab open, the library only where there's room for it.
+const wide = typeof window === 'undefined' || window.innerWidth >= 1500;
+const panels = load(PANELS_KEY, { leftOpen: wide, rightOpen: true, layersOpen: true, layersHeight: 300, leftWidth: 264, rightWidth: 268, aiWidth: 380, aiOpen: true, dock: { left: ['shapes'], right: ['format', 'layers'] } as DockLayout });
 // A saved layout must still contain each panel exactly once.
 {
   const all = [...panels.dock.left, ...panels.dock.right];
@@ -88,7 +90,8 @@ let toastId = 0;
 
 export const useUi = create<UiState>((set, get) => ({
   ...panels,
-  theme: load(THEME_KEY, { theme: 'system' as ThemeMode }).theme,
+  // Dark until the user picks a theme, like the site and the demos.
+  theme: load(THEME_KEY, { theme: 'dark' as ThemeMode }).theme,
   contextMenu: null,
   paletteOpen: false,
   exportOpen: false,

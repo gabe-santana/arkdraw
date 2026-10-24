@@ -20,12 +20,12 @@ export default {
   'storage.download': 'Download .opendraw',
   'storage.docActions': 'Document actions',
   // file-type name in the save dialog
-  'storage.fileType': 'OpenDraw Diagram',
+  'storage.fileType': 'ArkDraw Diagram',
   'storage.opened': 'Opened “{name}”',
   'storage.savedToBrowser': 'Saved “{name}” to the browser',
   'storage.deleteTitle': 'Delete “{name}”?',
   'storage.deleteMessage': 'It will be removed from this browser’s storage. This can’t be undone.',
-  'storage.notADiagram': '“{name}” is not an OpenDraw diagram.',
+  'storage.notADiagram': '“{name}” is not an ArkDraw diagram.',
   // last-modified time: under a minute ago
   'storage.justNow': 'just now',
   // last-modified time, abbreviated: minutes ago

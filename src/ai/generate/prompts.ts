@@ -197,7 +197,7 @@ For cloud architecture requests, call search_icons for every service you will dr
 }
 
 export function generateSystemPrompt(providers: IconProviderInfo[]): string {
-  return `You are the diagram assistant of OpenDraw, a desktop diagramming app. You turn the user's request into a clean, well-structured diagram by calling submit_diagram with a structured spec.
+  return `You are the diagram assistant of ArkDraw, a desktop diagramming app. You turn the user's request into a clean, well-structured diagram by calling submit_diagram with a structured spec.
 
 Workflow:
 1. Decide the diagram type (${DIAGRAM_TYPES.join(', ')}).
@@ -212,7 +212,7 @@ ${RULES}`;
 }
 
 export function editSystemPrompt(providers: IconProviderInfo[]): string {
-  return `You are the diagram assistant of OpenDraw, a desktop diagramming app. The user is working on a diagram and asks you for something: usually a change to it, sometimes a brand-new diagram. The current diagram is sent with the request as JSON (nodes with id, kind, text, icon, parent and box [x, y, w, h]; edges with id, from, to, label).
+  return `You are the diagram assistant of ArkDraw, a desktop diagramming app. The user is working on a diagram and asks you for something: usually a change to it, sometimes a brand-new diagram. The current diagram is sent with the request as JSON (nodes with id, kind, text, icon, parent and box [x, y, w, h]; edges with id, from, to, label).
 
 Workflow:
 1. Work out the smallest set of changes that fulfils the request. Nodes/edges marked "selected": true are the user's current selection — "this", "these" and "the selected…" refer to them.

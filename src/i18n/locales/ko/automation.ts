@@ -121,7 +121,7 @@ export default {
   'automation.templates.importFailed': '템플릿을 가져올 수 없습니다: {error}',
   'automation.templates.importFile': '템플릿 파일 가져오기',
   'automation.templates.importTooltip': '.{ext} 또는 .opendraw 파일 가져오기',
-  'automation.templates.fileType': 'OpenDraw 템플릿',
+  'automation.templates.fileType': 'ArkDraw 템플릿',
   'automation.templates.deleteTitle': '“{name}”을(를) 삭제하시겠습니까?',
   'automation.templates.deleteMessage': '템플릿이 이 기기에서 제거됩니다. 이 템플릿으로 만든 다이어그램에는 영향이 없습니다.',
   'automation.templates.nothingToSave': '템플릿으로 저장할 내용이 없습니다.',

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * OpenDraw icon library builder.
+ * ArkDraw icon library builder.
  *
  * Downloads the official architecture icon packs from each cloud vendor (plus
  * Kubernetes, the Iconify "logos" set and the permissively licensed generic UI
@@ -1488,7 +1488,7 @@ function writeAggregates(outRoot) {
   const lines = [
     '# Icon licenses',
     '',
-    '> **These icons are NOT covered by the OpenDraw MIT license.** They are third-party assets, and the',
+    '> **These icons are NOT covered by the ArkDraw MIT license.** They are third-party assets, and the',
     '> product names, logos and icons are trademarks of their respective owners. They are included solely so',
     '> users can draw architecture diagrams, under each vendor\'s own terms summarised below. Using an icon',
     '> does not imply endorsement by its owner.',

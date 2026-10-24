@@ -24,7 +24,7 @@ export default {
   'chrome.pageTabs.insertPage': '插入页面',
 
   // StartScreen
-  'chrome.start.title': '欢迎使用 OpenDraw',
+  'chrome.start.title': '欢迎使用 ArkDraw',
   'chrome.start.subtitle': '新建图表，或从上次中断的地方继续。',
   'chrome.start.blank': '空白图表',
   'chrome.start.blankSub': '从空白画布开始',
@@ -61,12 +61,12 @@ export default {
   'chrome.editStyle.title': '编辑样式',
   'chrome.editStyle.subtitleDrawio': '样式字符串（key=value;）——应用于全部所选内容',
   'chrome.editStyle.styleString': '样式字符串',
-  'chrome.editStyle.subtitleOpendraw': 'OpenDraw 样式键，每行一个——应用于全部所选内容',
-  'chrome.editStyle.keptKeys': 'OpenDraw 不使用的键会被保留，并在导出 .drawio 时写回。',
+  'chrome.editStyle.subtitleOpendraw': 'ArkDraw 样式键，每行一个——应用于全部所选内容',
+  'chrome.editStyle.keptKeys': 'ArkDraw 不使用的键会被保留，并在导出 .drawio 时写回。',
 
   // EditDialogs — Edit diagram
   'chrome.editDiagram.title': '编辑图表',
-  'chrome.editDiagram.subtitle': '当前页面的 OpenDraw JSON。更改可撤销。',
+  'chrome.editDiagram.subtitle': '当前页面的 ArkDraw JSON。更改可撤销。',
 
   // EditDialogs — Find & Replace
   'chrome.find.toggleReplace': '切换替换',

@@ -60,6 +60,6 @@ export async function exportPdfPages(pages: PdfPageInput[], opts: PdfOptions): P
   } finally {
     host.remove();
   }
-  pdf!.setProperties({ title: opts.title ?? 'Diagram', creator: 'OpenDraw', ...(opts.embed ?? {}) });
+  pdf!.setProperties({ title: opts.title ?? 'Diagram', creator: 'ArkDraw', ...(opts.embed ?? {}) });
   return new Uint8Array(pdf!.output('arraybuffer'));
 }

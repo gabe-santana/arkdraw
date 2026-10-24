@@ -5,7 +5,7 @@
  * importer (`elementFromDrawioStyle`), so the dialog speaks exactly the
  * dialect the file format does. Applying is a diff: the original and edited
  * strings are both read back and only the fields that changed are written,
- * so OpenDraw-only properties (that a style string can't express) survive.
+ * so ArkDraw-only properties (that a style string can't express) survive.
  * Keys neither side understands are kept in `data.__drawioStyle` and
  * re-emitted on export.
  */

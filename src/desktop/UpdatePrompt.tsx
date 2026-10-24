@@ -1,5 +1,5 @@
 /**
- * "OpenDraw x.y is available — Restart to update" toast for the desktop app
+ * "ArkDraw x.y is available — Restart to update" toast for the desktop app
  * (the web build has PwaUpdatePrompt). Renders nothing until an update is found.
  */
 import { Download, X } from 'lucide-react';

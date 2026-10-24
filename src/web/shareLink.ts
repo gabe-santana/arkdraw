@@ -50,7 +50,7 @@ function inflateCapped(bytes: Uint8Array): Uint8Array {
   return out;
 }
 
-/** Compresses a diagram (OpenDraw JSON or mxGraph XML) into a `#R…` URL fragment (leading `#` included). */
+/** Compresses a diagram (ArkDraw JSON or mxGraph XML) into a `#R…` URL fragment (leading `#` included). */
 export function encodeShareHash(json: string): string {
   return `#R${bytesToBase64Url(deflateSync(strToU8(json), { level: 9 }))}`;
 }

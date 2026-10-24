@@ -39,7 +39,7 @@ pub async fn open_new_window(
     }
 
     let mut builder = WebviewWindowBuilder::new(&app, &label, WebviewUrl::App("index.html".into()))
-        .title("OpenDraw")
+        .title("ArkDraw")
         .min_inner_size(960.0, 600.0)
         .resizable(true)
         // Hidden until the UI's first paint, like the main window.

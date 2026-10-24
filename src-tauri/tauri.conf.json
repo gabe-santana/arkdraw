@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "OpenDraw",
+  "productName": "ArkDraw",
   "version": "0.1.0",
   "identifier": "app.opendraw.desktop",
   "build": {
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "OpenDraw",
+        "title": "ArkDraw",
         "width": 1440,
         "height": 900,
         "minWidth": 960,
@@ -35,8 +35,8 @@
     "active": true,
     "category": "Productivity",
     "shortDescription": "Native, offline diagramming",
-    "longDescription": "OpenDraw is an open-source, fully offline diagramming app for flowcharts, UML, ER diagrams and network maps.",
-    "publisher": "OpenDraw",
+    "longDescription": "ArkDraw is an open-source, fully offline diagramming app for flowcharts, UML, ER diagrams and network maps.",
+    "publisher": "ArkDraw",
     "copyright": "Copyright (c) 2026 Gabriel Santana. MIT License.",
     "license": "MIT",
     "licenseFile": "../LICENSE",
@@ -51,8 +51,8 @@
     "fileAssociations": [
       {
         "ext": ["opendraw"],
-        "name": "OpenDraw Diagram",
-        "description": "OpenDraw Diagram",
+        "name": "ArkDraw Diagram",
+        "description": "ArkDraw Diagram",
         "role": "Editor",
         "mimeType": "application/x-opendraw+json"
       },

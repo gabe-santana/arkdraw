@@ -1,6 +1,6 @@
 /**
  * Turns shared content (inline `#R` data, a fetched URL, a postMessage
- * payload) into pages. Accepts OpenDraw JSON, mxGraph XML, and PNG/SVG/PDF
+ * payload) into pages. Accepts ArkDraw JSON, mxGraph XML, and PNG/SVG/PDF
  * exports that carry an embedded diagram.
  */
 import type { Page } from '@/model/types';

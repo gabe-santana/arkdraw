@@ -7,8 +7,8 @@ export default {
   'web.embed.exit': '退出',
 
   // PwaUpdatePrompt
-  'web.pwa.newVersion': 'OpenDraw 新版本已就绪',
-  'web.pwa.offlineReady': 'OpenDraw 现已支持离线使用',
+  'web.pwa.newVersion': 'ArkDraw 新版本已就绪',
+  'web.pwa.offlineReady': 'ArkDraw 现已支持离线使用',
   'web.pwa.reloadHint': '重新加载以更新。未保存的工作会在重新加载后恢复。',
   'web.pwa.cached': '应用已缓存到此设备。',
   'web.pwa.updating': '正在更新…',

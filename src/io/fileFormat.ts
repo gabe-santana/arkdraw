@@ -23,7 +23,7 @@ interface FilePage {
   elements: DiagramElement[];
 }
 
-export interface OpenDrawFile {
+export interface ArkDrawFile {
   format: typeof FILE_FORMAT;
   version: number;
   generator: string;
@@ -36,10 +36,10 @@ export interface OpenDrawFile {
 const DEFAULT_SETTINGS: PageSettings = { background: null, paper: 'A4', landscape: false, pageView: false };
 
 export function serializePages(pages: Page[], meta?: DocumentMeta): string {
-  const file: OpenDrawFile = {
+  const file: ArkDrawFile = {
     format: FILE_FORMAT,
     version: FILE_VERSION,
-    generator: `OpenDraw ${__APP_VERSION__}`,
+    generator: `ArkDraw ${__APP_VERSION__}`,
     savedAt: new Date().toISOString(),
     ...(meta && Object.keys(meta).length ? { meta } : {}),
     pages: pages.map((p) => ({
@@ -148,10 +148,10 @@ export function parsePages(text: string): Page[] {
   } catch {
     throw new FileFormatError('This file is not valid JSON.');
   }
-  const file = data as Partial<OpenDrawFile> & { elements?: unknown[] };
-  if (!file || file.format !== FILE_FORMAT) throw new FileFormatError('This is not an OpenDraw diagram.');
+  const file = data as Partial<ArkDrawFile> & { elements?: unknown[] };
+  if (!file || file.format !== FILE_FORMAT) throw new FileFormatError('This is not an ArkDraw diagram.');
   if ((file.version ?? 1) > FILE_VERSION) {
-    console.warn(`Diagram was saved by a newer OpenDraw (format v${file.version}); some features may be missing.`);
+    console.warn(`Diagram was saved by a newer ArkDraw (format v${file.version}); some features may be missing.`);
   }
   // v1: a single flat element list.
   if (Array.isArray(file.elements) && !Array.isArray(file.pages)) {
@@ -170,7 +170,7 @@ export function parsePages(text: string): Page[] {
 /** File properties of a serialized diagram (undefined for older files or non-JSON). */
 export function parseMeta(text: string): DocumentMeta | undefined {
   try {
-    const meta = (JSON.parse(text) as Partial<OpenDrawFile>)?.meta;
+    const meta = (JSON.parse(text) as Partial<ArkDrawFile>)?.meta;
     return meta && typeof meta === 'object' ? meta : undefined;
   } catch {
     return undefined;

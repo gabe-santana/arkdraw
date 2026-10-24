@@ -1,7 +1,7 @@
 /**
  * Editable HTML: reopens diagrams from HTML pages that carry one.
  *
- *  - OpenDraw's HTML export: `<script type="application/vnd.opendraw+json"
+ *  - ArkDraw's HTML export: `<script type="application/vnd.opendraw+json"
  *    id="opendraw-diagram">` holding base64 `.opendraw` JSON (lossless).
  *  - mxGraph's "Export as HTML" / embed snippets: `<div class="mxgraph"
  *    data-mxgraph="{…&quot;xml&quot;:&quot;&lt;mxfile…&quot;}">` — the JSON's

@@ -36,7 +36,7 @@ import '@/app/cliExport'; // `opendraw --export …` (desktop CLI); no-op otherw
 
 const AiSettingsHost = lazy(() => import('@/chrome/AiHost'));
 
-/** Whether a dropped PNG/SVG carries a diagram (mxGraph or OpenDraw "editable" image). */
+/** Whether a dropped PNG/SVG carries a diagram (mxGraph or ArkDraw "editable" image). */
 async function hasEmbeddedDiagram(bytes: Uint8Array, ext: string): Promise<boolean> {
   if (ext !== 'png' && ext !== 'svg') return false;
   const { IMPORTERS } = await import('@/io/import');
@@ -82,11 +82,11 @@ export default function App() {
     return () => offs.forEach((off) => off());
   }, []);
 
-  // Keep the window title in sync: "name — OpenDraw", with a dot when unsaved.
+  // Keep the window title in sync: "name — ArkDraw", with a dot when unsaved.
   const name = useEditor((s) => s.file.name);
   const dirty = useEditor((s) => s.doc !== s.file.savedDoc);
   useEffect(() => {
-    windowControls.setTitle(`${dirty ? '• ' : ''}${name.replace(/\.opendraw$/i, '')} — OpenDraw`);
+    windowControls.setTitle(`${dirty ? '• ' : ''}${name.replace(/\.opendraw$/i, '')} — ArkDraw`);
   }, [name, dirty]);
 
   // Remount the UI tree when the language changes, so every string (incl. ones

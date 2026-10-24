@@ -10,7 +10,7 @@
  *    such as `/Subject (...)`, or inside a FlateDecode stream.
  *  Every `<diagram>` of the mxfile becomes its own page.
  *
- * OpenDraw's own convention (written by `embedDiagramInPng` /
+ * ArkDraw's own convention (written by `embedDiagramInPng` /
  * `embedDiagramInSvg` in ./_shared.ts; the payload is exactly the
  * `.opendraw` JSON produced by `serializeDoc`):
  *  - PNG: an `iTXt` chunk with keyword `opendraw`, empty language tag and
@@ -18,7 +18,7 @@
  *    placed right after `IHDR`.
  *  - SVG: attribute `data-opendraw` on the root `<svg>` element whose value is
  *    the base64 encoding of the UTF-8 JSON.
- *  If both an OpenDraw and a mxGraph payload are present, OpenDraw wins.
+ *  If both an ArkDraw and a mxGraph payload are present, ArkDraw wins.
  */
 import { inflateSync, unzlibSync } from 'fflate';
 import { importDrawio } from '@/io/drawio';

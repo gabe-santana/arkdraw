@@ -10,7 +10,7 @@ import { isTauri } from '@/lib/platform';
 interface PwaState {
   /** A new version is installed and waiting. */
   needRefresh: boolean;
-  /** The app shell is cached; OpenDraw now works offline. */
+  /** The app shell is cached; ArkDraw now works offline. */
   offlineReady: boolean;
   /** Activates the waiting version and reloads. */
   update: (() => Promise<void>) | null;

@@ -48,7 +48,7 @@ export function installOriginTracking() {
   installed = true;
   const off = useEditor.subscribe((s, prev) => {
     if (suppressed || s.pages === prev.pages || s.file.savedDocs === prev.file.savedDocs) return;
-    // Only OpenDraw files can be written back; imported formats become new documents.
+    // Only ArkDraw files can be written back; imported formats become new documents.
     // An offer only counts for the load that follows it (a cancelled open must not leak into a later New).
     const o = pending && Date.now() - pending.at < 10_000 ? pending.origin : null;
     pending = null;

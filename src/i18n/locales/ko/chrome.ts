@@ -63,12 +63,12 @@ export default {
   'chrome.editStyle.title': '스타일 편집',
   'chrome.editStyle.subtitleDrawio': '스타일 문자열(key=value;) — 선택 영역 전체에 적용됩니다',
   'chrome.editStyle.styleString': '스타일 문자열',
-  'chrome.editStyle.subtitleOpendraw': 'OpenDraw 스타일 키를 한 줄에 하나씩 입력 — 선택 영역 전체에 적용됩니다',
+  'chrome.editStyle.subtitleOpendraw': 'ArkDraw 스타일 키를 한 줄에 하나씩 입력 — 선택 영역 전체에 적용됩니다',
   'chrome.editStyle.keptKeys': 'OpenDraw에서 사용하지 않는 키는 유지되며 .drawio로 내보낼 때 다시 기록됩니다.',
 
   // EditDialogs — Edit diagram
   'chrome.editDiagram.title': '다이어그램 편집',
-  'chrome.editDiagram.subtitle': '현재 페이지의 OpenDraw JSON입니다. 변경 사항은 실행 취소할 수 있습니다.',
+  'chrome.editDiagram.subtitle': '현재 페이지의 ArkDraw JSON입니다. 변경 사항은 실행 취소할 수 있습니다.',
 
   // EditDialogs — Find & Replace
   'chrome.find.toggleReplace': '바꾸기 전환',

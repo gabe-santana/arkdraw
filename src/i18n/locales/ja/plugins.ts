@@ -4,9 +4,9 @@ import type { Translation } from '../../types';
 export default {
   // PluginsDialog
   'plugins.title': 'プラグイン',
-  'plugins.subtitle': 'コマンド、図形ライブラリ、ファイル形式で OpenDraw を拡張します',
+  'plugins.subtitle': 'コマンド、図形ライブラリ、ファイル形式で ArkDraw を拡張します',
   'plugins.warning':
-    'プラグインは OpenDraw 内で実行され、エディターとダイアグラムに完全にアクセスできます。信頼できるプラグインのみを追加してください。有効化する前に確認を求められます。',
+    'プラグインは ArkDraw 内で実行され、エディターとダイアグラムに完全にアクセスできます。信頼できるプラグインのみを追加してください。有効化する前に確認を求められます。',
   // status chip (shown uppercase): the plugin is running
   'plugins.status.active': '有効',
   // {source} is a URL or file path; the browser keeps a copy of the plugin's code
@@ -30,7 +30,7 @@ export default {
   'plugins.exportFailed': '{format} のエクスポートに失敗しました: {error}',
   'plugins.trustTitle': 'このプラグインを有効にしますか?',
   // {what} is the plugin's name, URL or path (shown on its own line)
-  'plugins.trustMessage': '{what}\n\nプラグインは OpenDraw 内で実行され、ダイアグラムとエディターに完全にアクセスできます。信頼できる提供元のプラグインのみを有効にしてください。',
+  'plugins.trustMessage': '{what}\n\nプラグインは ArkDraw 内で実行され、ダイアグラムとエディターに完全にアクセスできます。信頼できる提供元のプラグインのみを有効にしてください。',
   'plugins.trustConfirm': 'プラグインを有効化',
   'plugins.duplicate': 'そのプラグインはすでにリストにあります。',
   'plugins.enabled': 'プラグインを有効にしました: {name}',

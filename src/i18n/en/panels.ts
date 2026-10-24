@@ -504,9 +504,9 @@ export default {
   // File-dialog filter name.
   'panels.userLib.filterName': 'Libraries',
   // File-dialog filter name.
-  'panels.userLib.fileType': 'OpenDraw library',
+  'panels.userLib.fileType': 'ArkDraw library',
   'panels.userLib.loaded': '{count, plural, one {Loaded # item from “{name}”} other {Loaded # items from “{name}”}}',
-  'panels.userLib.notALibrary': 'Not an OpenDraw library.',
+  'panels.userLib.notALibrary': 'Not an ArkDraw library.',
   'panels.userLib.unsupported': 'Unsupported library file.',
   // Verb: add the selected shapes to this library.
   'panels.userLib.addSelection': 'Add selection',

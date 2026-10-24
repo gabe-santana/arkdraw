@@ -121,7 +121,7 @@ export default {
   'automation.templates.importFailed': 'Não foi possível importar o modelo: {error}',
   'automation.templates.importFile': 'Importar arquivo de modelo',
   'automation.templates.importTooltip': 'Importar um arquivo .{ext} ou .opendraw',
-  'automation.templates.fileType': 'Modelo do OpenDraw',
+  'automation.templates.fileType': 'Modelo do ArkDraw',
   'automation.templates.deleteTitle': 'Excluir “{name}”?',
   'automation.templates.deleteMessage': 'O modelo será removido deste dispositivo. Os diagramas criados a partir dele não são afetados.',
   'automation.templates.nothingToSave': 'Não há nada para salvar como modelo.',

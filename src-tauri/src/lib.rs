@@ -1,4 +1,4 @@
-//! OpenDraw native backend.
+//! ArkDraw native backend.
 //!
 //! The Rust side is intentionally small: the editor itself lives in the web
 //! front end, and this crate provides what a browser cannot do on its own —
@@ -30,7 +30,7 @@ use tauri::Emitter;
 /// How many entries the "Open Recent" menu keeps.
 const MAX_RECENT: usize = 10;
 
-/// File extensions OpenDraw opens from the command line / file association.
+/// File extensions ArkDraw opens from the command line / file association.
 /// (.vsdx is binary: the UI reads it with `read_binary_file`.)
 const OPENABLE_EXTENSIONS: [&str; 4] = ["opendraw", "drawio", "xml", "vsdx"];
 
@@ -288,7 +288,7 @@ pub fn run() {
             Ok(())
         })
         .build(tauri::generate_context!())
-        .expect("error while building OpenDraw");
+        .expect("error while building ArkDraw");
 
     app.run(|_app, _event| {
         // macOS delivers "Open with" / double-clicked files as an event.

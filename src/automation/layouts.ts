@@ -63,7 +63,7 @@ export function parallelEdgesPatches(doc: Doc, ids?: string[], spacing = 24): Re
 // ---------------------------------------------------------------------------
 
 export interface LayoutStep {
-  /** OpenDraw layout id, or `parallel-edges`. */
+  /** ArkDraw layout id, or `parallel-edges`. */
   id: string;
   options: LayoutOptions;
   spacing?: number;

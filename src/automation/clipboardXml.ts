@@ -1,7 +1,7 @@
 /**
  * Clipboard interop with mxGraph. Copying puts mxGraph mxGraphModel XML on the
  * clipboard as `text/html` next to our tagged JSON (`text/plain`), so a copy
- * from OpenDraw pastes as cells in mxGraph; pasting mxGraph XML / mxfile
+ * from ArkDraw pastes as cells in mxGraph; pasting mxGraph XML / mxfile
  * (plain, URL-encoded or HTML-escaped) imports its cells here.
  */
 import type { DiagramElement, Doc, Vec } from '@/model/types';

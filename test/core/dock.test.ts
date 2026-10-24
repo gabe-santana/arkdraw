@@ -15,6 +15,10 @@ describe('panel dock', () => {
   it('hides an empty column and gives the canvas its space back', () => {
     movePanel('format', 'left', 1);
     movePanel('layers', 'left', 2);
+    // The AI tab keeps the right column even with no panels docked there.
+    useUi.getState().set({ aiOpen: true });
+    expect(columnVisible(useUi.getState(), 'right')).toBe(true);
+    useUi.getState().set({ aiOpen: false });
     const s = useUi.getState();
     expect(columnVisible(s, 'right')).toBe(false);
     expect(columnInset(s, 'right')).toBe(0);

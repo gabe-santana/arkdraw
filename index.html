@@ -10,11 +10,11 @@
     <link rel="apple-touch-icon" href="/pwa/apple-touch-icon.png" />
     <meta name="theme-color" content="#eeeef1" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#08080a" media="(prefers-color-scheme: dark)" />
-    <title>OpenDraw</title>
+    <title>ArkDraw</title>
     <script>
       // Apply the theme before first paint to avoid a flash.
       try {
-        var t = JSON.parse(localStorage.getItem('opendraw:theme') || '{}').theme || 'system';
+        var t = JSON.parse(localStorage.getItem('opendraw:theme') || '{}').theme || 'dark';
         if (t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)) {
           document.documentElement.classList.add('dark');
         }

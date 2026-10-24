@@ -12,7 +12,7 @@ import { uid } from '@/lib/id';
 
 type StyleMap = Map<string, string>;
 
-/** OpenDraw head → mxGraph marker name. Fill comes from `arrowFilled`. */
+/** ArkDraw head → mxGraph marker name. Fill comes from `arrowFilled`. */
 export const ARROW_TO_DRAWIO: Record<ArrowHead, string> = {
   none: 'none',
   arrow: 'open',

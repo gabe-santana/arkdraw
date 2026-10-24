@@ -6,7 +6,7 @@ Security fixes go into the latest release. Please update before reporting an iss
 
 ## Reporting a vulnerability
 
-**Please do not open a public issue.** Instead, use GitHub's [private vulnerability reporting](https://github.com/gabe-santana/opendraw/security/advisories/new) or email **gsantana.sza@gmail.com** with:
+**Please do not open a public issue.** Instead, use GitHub's [private vulnerability reporting](https://github.com/gabe-santana/arkdraw/security/advisories/new) or email **gsantana.sza@gmail.com** with:
 
 - a description of the issue and its impact,
 - steps to reproduce (a sample file, URL parameters or plugin, if relevant),

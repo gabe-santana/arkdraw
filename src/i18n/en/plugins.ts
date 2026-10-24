@@ -6,9 +6,9 @@
 export default {
   // PluginsDialog
   'plugins.title': 'Plugins',
-  'plugins.subtitle': 'Extend OpenDraw with commands, shape libraries and file formats',
+  'plugins.subtitle': 'Extend ArkDraw with commands, shape libraries and file formats',
   'plugins.warning':
-    'Plugins run inside OpenDraw with full access to the editor and your diagrams. Only add plugins you trust. You’ll be asked to confirm before one is enabled.',
+    'Plugins run inside ArkDraw with full access to the editor and your diagrams. Only add plugins you trust. You’ll be asked to confirm before one is enabled.',
   // status chip (shown uppercase): the plugin is running
   'plugins.status.active': 'Active',
   // {source} is a URL or file path; the browser keeps a copy of the plugin's code
@@ -32,7 +32,7 @@ export default {
   'plugins.exportFailed': '{format} export failed: {error}',
   'plugins.trustTitle': 'Enable this plugin?',
   // {what} is the plugin's name, URL or path (shown on its own line)
-  'plugins.trustMessage': '{what}\n\nPlugins run inside OpenDraw with full access to your diagrams and the editor. Only enable plugins from sources you trust.',
+  'plugins.trustMessage': '{what}\n\nPlugins run inside ArkDraw with full access to your diagrams and the editor. Only enable plugins from sources you trust.',
   'plugins.trustConfirm': 'Enable plugin',
   'plugins.duplicate': 'That plugin is already in the list.',
   'plugins.enabled': 'Plugin enabled: {name}',

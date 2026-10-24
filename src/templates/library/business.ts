@@ -183,7 +183,7 @@ function valueStreamPage() {
 
 function swotPage() {
   const b = new Builder();
-  b.title('SWOT analysis', 0, 0, 900, 'Product: OpenDraw desktop — Q3 review');
+  b.title('SWOT analysis', 0, 0, 900, 'Product: ArkDraw desktop — Q3 review');
   const cells: Array<[string, Tone, string, string]> = [
     ['Strengths', TONES.green, 'S', '• Fast native performance\n• Works fully offline\n• Open file format, imports common formats\n• Free and open source'],
     ['Weaknesses', TONES.amber, 'W', '• Small template library\n• No real-time collaboration yet\n• Limited brand awareness'],

@@ -66,7 +66,7 @@ export async function newDocument() {
 
 type IncomingFile = OpenedFile | { name: string; bytes: Uint8Array; path: null };
 
-/** Turns any supported file into pages. `native` = an OpenDraw file (keeps its path). */
+/** Turns any supported file into pages. `native` = an ArkDraw file (keeps its path). */
 async function pagesFromFile(f: IncomingFile): Promise<{ pages: Page[]; native: boolean; warnings?: string[]; meta?: DocumentMeta }> {
   const lower = f.name.toLowerCase();
   const ext = lower.split('.').pop() ?? '';
@@ -95,7 +95,7 @@ export async function loadOpenedFile(f: IncomingFile) {
       void import('@/storage/recent').then((r) => r.noteCurrentDocument());
       if (f.path) addRecentFile(f.path).catch(() => {});
     } else {
-      // Imported files become a new, unsaved OpenDraw document.
+      // Imported files become a new, unsaved ArkDraw document.
       s.loadPages(pages, { path: null, name: f.name.replace(/\.[^.]+$/, '') });
       markUnsaved();
       const count = pages.reduce((n, p) => n + p.doc.order.length, 0);

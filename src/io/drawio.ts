@@ -4,7 +4,7 @@
  * Export writes an uncompressed `.drawio` file (mxGraphModel XML) with
  * native mxGraph styles, so diagrams stay editable after migrating.
  * Import reads both plain and compressed (deflate + base64) files and maps
- * common mxGraph shapes back to OpenDraw kinds; unknown stencils become
+ * common mxGraph shapes back to ArkDraw kinds; unknown stencils become
  * labeled rectangles so nothing is silently lost.
  */
 import type {
@@ -265,7 +265,7 @@ function diagramXml(doc: Doc, title: string, iconHref: (p: string) => string): s
 }
 
 const mxfile = (diagrams: string[]) =>
-  `<mxfile host="OpenDraw" agent="OpenDraw ${__APP_VERSION__}" version="24.7.0" type="device">\n${diagrams.join('')}</mxfile>\n`;
+  `<mxfile host="ArkDraw" agent="ArkDraw ${__APP_VERSION__}" version="24.7.0" type="device">\n${diagrams.join('')}</mxfile>\n`;
 
 /** Single page. */
 export async function exportDrawio(doc: Doc, title = 'Page-1'): Promise<string> {
@@ -285,7 +285,7 @@ const round = (n: number) => Math.round(n * 100) / 100;
 // Import
 // ---------------------------------------------------------------------------
 
-/** Reverse index: mxGraph shape name / base style → OpenDraw kind. */
+/** Reverse index: mxGraph shape name / base style → ArkDraw kind. */
 const KIND_BY_DRAWIO: Map<string, string> = (() => {
   const m = new Map<string, string>();
   for (const def of Object.values(SHAPES)) {
@@ -378,7 +378,7 @@ function styleFromDrawio(m: StyleMap, isEdge: boolean, base: ElementStyle): Elem
   });
 }
 
-/** Parses a .drawio / .xml file into an OpenDraw document (first page). */
+/** Parses a .drawio / .xml file into an ArkDraw document (first page). */
 export async function importDrawio(xml: string): Promise<Doc> {
   return (await importDrawioPages(xml))[0].doc;
 }

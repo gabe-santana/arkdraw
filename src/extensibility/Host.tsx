@@ -1,7 +1,7 @@
 /**
  * Mounts the extensibility features into the app: the stencil editor and
  * Plugins dialogs, the editor UI mode (a `data-ui-mode` attribute on <html>,
- * styled in src/index.css), `window.OpenDraw`, and saved plugins.
+ * styled in src/index.css), `window.ArkDraw`, and saved plugins.
  */
 import { useEffect } from 'react';
 import { StencilEditorDialog } from '@/stencils/StencilEditorDialog';

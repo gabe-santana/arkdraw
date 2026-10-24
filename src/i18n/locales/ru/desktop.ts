@@ -3,21 +3,21 @@ import type { Translation } from '../../types';
 
 export default {
   // UpdatePrompt
-  'desktop.update.available': 'Доступна версия OpenDraw {version}',
+  'desktop.update.available': 'Доступна версия ArkDraw {version}',
   'desktop.update.downloading': 'Загрузка…',
   'desktop.update.downloadingPercent': 'Загрузка · {percent}%',
-  'desktop.update.installing': 'Установка… OpenDraw перезапустится.',
+  'desktop.update.installing': 'Установка… ArkDraw перезапустится.',
   'desktop.update.restartHint': 'Перезапустите для обновления. Сначала будет предложено сохранить изменения.',
   'desktop.update.restart': 'Перезапустить и обновить',
 
   // updater.ts
   'desktop.update.webAuto': 'В веб-версии обновления устанавливаются автоматически.',
-  'desktop.update.upToDate': 'Установлена последняя версия OpenDraw.',
+  'desktop.update.upToDate': 'Установлена последняя версия ArkDraw.',
   'desktop.update.checkFailed': 'Не удалось проверить обновления: {error}',
   'desktop.update.failed': 'Ошибка обновления: {error}',
 
   // startup.ts — Extras → Configuration file…
-  'desktop.config.editHint': 'Измените config.json и перезапустите OpenDraw, чтобы применить изменения.',
+  'desktop.config.editHint': 'Измените config.json и перезапустите ArkDraw, чтобы применить изменения.',
   'desktop.config.noFolder': 'Нет папки конфигурации',
 
   // windows.ts — opening a file while the current one has unsaved changes

@@ -1,5 +1,5 @@
 /**
- * OpenDraw AI assistant (bring-your-own-key).
+ * ArkDraw AI assistant (bring-your-own-key).
  *
  *   <AiPanel host={hostApi} onClose={…} />      assistant panel
  *   <AiSettingsDialog open onClose={…} />      BYOK settings (the panel also opens it itself)

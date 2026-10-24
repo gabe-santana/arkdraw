@@ -89,7 +89,7 @@ export function vsdxColor(c: string | undefined): string | null {
   return null;
 }
 
-/** OpenDraw arrowheads → Visio BeginArrow/EndArrow indices. */
+/** ArkDraw arrowheads → Visio BeginArrow/EndArrow indices. */
 export function vsdxArrow(a: ArrowHead): number {
   switch (a) {
     case 'none': return 0;
@@ -498,14 +498,14 @@ function contentTypes(pageCount: number, hasImages: boolean): string {
 const coreXml = (title: string) =>
   XML_DECL +
   `<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">` +
-  `<dc:title>${xmlEscape(title)}</dc:title><dc:creator>OpenDraw</dc:creator>` +
+  `<dc:title>${xmlEscape(title)}</dc:title><dc:creator>ArkDraw</dc:creator>` +
   `<dcterms:created xsi:type="dcterms:W3CDTF">${new Date().toISOString().replace(/\.\d+Z$/, 'Z')}</dcterms:created>` +
   `</cp:coreProperties>`;
 
 const appXml = () =>
   XML_DECL +
   `<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">` +
-  `<Application>OpenDraw</Application><DocSecurity>0</DocSecurity><ScaleCrop>false</ScaleCrop><AppVersion>15.0000</AppVersion>` +
+  `<Application>ArkDraw</Application><DocSecurity>0</DocSecurity><ScaleCrop>false</ScaleCrop><AppVersion>15.0000</AppVersion>` +
   `</Properties>`;
 
 /** Builds the .vsdx package for `pages`. */

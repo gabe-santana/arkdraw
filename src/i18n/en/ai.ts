@@ -175,8 +175,8 @@ export default {
   // {model} is a model id, e.g. anthropic/claude-opus-5-5
   'ai.settings.customModelPlaceholder': 'e.g. {model}',
   'ai.settings.testConnection': 'Test connection',
-  'ai.settings.privacyKeychain': 'Keys are stored in your operating system’s keychain and used only by OpenDraw’s native layer — they never reach the web view.',
-  'ai.settings.privacy': 'Your diagram and prompt are sent only to the provider selected here; OpenDraw has no servers of its own.',
+  'ai.settings.privacyKeychain': 'Keys are stored in your operating system’s keychain and used only by ArkDraw’s native layer — they never reach the web view.',
+  'ai.settings.privacy': 'Your diagram and prompt are sent only to the provider selected here; ArkDraw has no servers of its own.',
   'ai.settings.privacyOllama': 'With Ollama everything stays on your machine and works offline.',
   'ai.settings.privacyChooseOllama': 'Choose Ollama to keep everything on your machine.',
   'ai.settings.keySaved': 'Key saved',

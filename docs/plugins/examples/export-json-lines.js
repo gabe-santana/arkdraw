@@ -1,5 +1,5 @@
 /**
- * Example OpenDraw plugin: "Export as JSON Lines".
+ * Example ArkDraw plugin: "Export as JSON Lines".
  *
  * Registers an export format (File → Export as JSON Lines…, also in the
  * command palette) that writes one JSON object per element of every page —
@@ -9,7 +9,7 @@
  * Load it from Extras → Plugins… (URL or "Add from file…"). See docs/extensibility.md.
  */
 (function () {
-  window.OpenDraw.registerPlugin({
+  window.ArkDraw.registerPlugin({
     id: 'json-lines',
     name: 'JSON Lines export',
     version: '1.0.0',

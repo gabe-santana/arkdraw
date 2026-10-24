@@ -8,7 +8,7 @@
  *  - PDF: jsPDF has no file-attachment API, so the document info dictionary is
  *    used: `/Subject` = URI-encoded mxGraph mxfile XML (what mxGraph desktop
  *    writes, and what the embedded importer reads), `/Keywords` =
- *    `opendraw:<base64 JSON>` (lossless OpenDraw copy).
+ *    `opendraw:<base64 JSON>` (lossless ArkDraw copy).
  */
 import { base64Decode, base64Encode, embedDiagramInPng, embedDiagramInSvg, utf8Decode, utf8Encode } from '@/io/import/_shared';
 
@@ -29,7 +29,7 @@ export function pdfEmbedProps(json: string, mxfile?: string): PdfEmbedProps {
   };
 }
 
-/** Reads the OpenDraw JSON back out of a PDF written with `pdfEmbedProps` (best effort, uncompressed info dict). */
+/** Reads the ArkDraw JSON back out of a PDF written with `pdfEmbedProps` (best effort, uncompressed info dict). */
 export function extractJsonFromPdf(pdf: Uint8Array): string | null {
   let text = '';
   for (let i = 0; i < pdf.length; i += 0x8000) text += String.fromCharCode(...pdf.subarray(i, i + 0x8000));

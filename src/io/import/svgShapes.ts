@@ -1,5 +1,5 @@
 /**
- * SVG → editable OpenDraw shapes ("Convert to shapes" when an SVG is dropped,
+ * SVG → editable ArkDraw shapes ("Convert to shapes" when an SVG is dropped,
  * pasted or picked, and Arrange › Insert › SVG as shapes…)
  * "Edit Image › Convert" or Inkscape's import.
  *

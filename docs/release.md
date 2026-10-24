@@ -1,6 +1,6 @@
 # Releasing the desktop app
 
-How OpenDraw's desktop builds are packaged, signed and updated. The workflow is
+How ArkDraw's desktop builds are packaged, signed and updated. The workflow is
 `.github/workflows/release.yml`; the Tauri configuration lives in `src-tauri/`.
 
 ## Packaging matrix
@@ -58,12 +58,12 @@ identifiers, so use `-1`, `-2`… rather than `-beta`.
 
 The app uses [`tauri-plugin-updater`](https://v2.tauri.app/plugin/updater/):
 
-- Endpoint: `https://github.com/gabe-santana/opendraw/releases/latest/download/latest.json`
+- Endpoint: `https://github.com/gabe-santana/arkdraw/releases/latest/download/latest.json`
   (`plugins.updater.endpoints` in `tauri.conf.json`).
 - On launch the main window runs a quiet check at most once a day. Turn it off with
   `"checkForUpdates": false` in `config.json` (see below). *Help → Check for
   updates…* runs a check on demand.
-- When an update is found a toast offers **Restart to update**: OpenDraw asks to
+- When an update is found a toast offers **Restart to update**: ArkDraw asks to
   save unsaved changes, downloads and verifies the signed package, installs it and
   relaunches. On Windows the installer runs in `passive` mode and restarts the app.
 - Update packages are signed; the app checks every download against the public key
@@ -111,7 +111,7 @@ Signing is separate from the updater key above and fully optional: each signing
 step is skipped when its secrets are missing. Unsigned builds work, but Windows
 SmartScreen shows *Windows protected your PC* (users click *More info → Run anyway*)
 and macOS Gatekeeper refuses to open the app until the user right-clicks it and
-chooses *Open* (or runs `xattr -dr com.apple.quarantine /Applications/OpenDraw.app`).
+chooses *Open* (or runs `xattr -dr com.apple.quarantine /Applications/ArkDraw.app`).
 
 | Secret | Platform | Value |
 | --- | --- | --- |
@@ -143,7 +143,7 @@ API secrets exist.
 One-time setup (needs your Microsoft account, so it can't be scripted):
 
 1. Register at <https://storedeveloper.microsoft.com> (individual accounts are free).
-2. In Partner Center create the app and reserve the name **OpenDraw**.
+2. In Partner Center create the app and reserve the name **ArkDraw**.
 3. *Product identity* page → add repository **variables**
    (*Settings → Secrets and variables → Actions → Variables*):
    `MSIX_IDENTITY_NAME` (Package/Identity/Name), `MSIX_PUBLISHER` (Package/Identity/Publisher),

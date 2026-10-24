@@ -156,7 +156,7 @@ export default {
   // {ext} is a file extension
   'automation.templates.importTooltip': 'Import a .{ext} or .opendraw file',
   // file-type name in the save dialog
-  'automation.templates.fileType': 'OpenDraw template',
+  'automation.templates.fileType': 'ArkDraw template',
   'automation.templates.deleteTitle': 'Delete “{name}”?',
   'automation.templates.deleteMessage': 'The template is removed from this device. Diagrams made from it are not affected.',
   'automation.templates.nothingToSave': 'There is nothing to save as a template.',

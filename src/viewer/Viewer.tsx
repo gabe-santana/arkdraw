@@ -217,7 +217,7 @@ function DiagramViewer({ pages, name, launch, dark, onToggleTheme }: { pages: Pa
   );
 
   useEffect(() => {
-    document.title = `${name} · OpenDraw`;
+    document.title = `${name} · ArkDraw`;
   }, [name]);
 
   // Text is measured on a canvas; re-measure once the real fonts are in.

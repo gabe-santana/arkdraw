@@ -5,13 +5,13 @@
  * list, every foreground `pageN.xml` for shapes, and `visio/masters/*` so that
  * shapes inherit cells (size, colours, geometry) from their master and master
  * names (Process, Decision, Start/End, Database, Document, …) map onto
- * OpenDraw kinds; masterless shapes fall back to their geometry (ellipse /
+ * ArkDraw kinds; masterless shapes fall back to their geometry (ellipse /
  * rectangle / text). Coordinates are inches with the y axis pointing up:
  *
  *   left = PinX − LocPinX, top = PageHeight − (PinY − LocPinY + Height), × 96 px
  *
  * Groups are flattened (children are relative to the group's local origin)
- * and kept as OpenDraw groups; 1-D shapes become connectors, attached through
+ * and kept as ArkDraw groups; 1-D shapes become connectors, attached through
  * `Connects` (FromCell BeginX/EndX → ToSheet), with BeginX/EndX as the free
  * end position. Angle → rotation, FillForegnd/LineColor/LineWeight/LinePattern
  * and the first Character row (Color/Size/Style) → style, embedded images

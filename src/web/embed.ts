@@ -139,7 +139,7 @@ export function initEmbedMode(opts: EmbedOptions = {}): () => void {
   };
   const host: EmbedHost = opts.host ?? { self: window, parent: window.parent };
   if (!opts.host && window.parent === window) {
-    console.warn('[OpenDraw] embed=1 but the editor is not inside an iframe; embed messages are disabled.');
+    console.warn('[ArkDraw] embed=1 but the editor is not inside an iframe; embed messages are disabled.');
   }
 
   active = true;

@@ -3,8 +3,8 @@
  *
  * - mxGraph / mxGraph stencil sets: `<shapes name="…"><shape …/>…</shapes>`
  *   (or a single `<shape>`), one item per shape.
- * - OpenDraw shape config JSON (`"format": "opendraw-shapes"`), documented in
- *   docs/extensibility.md: name, stencil XML, default style (OpenDraw keys or a
+ * - ArkDraw shape config JSON (`"format": "opendraw-shapes"`), documented in
+ *   docs/extensibility.md: name, stencil XML, default style (ArkDraw keys or a
  *   string), size, label, connection points and parameters.
  *
  * mxGraph `<mxlibrary>` files whose entries use `shape=stencil(…)` need nothing
@@ -24,7 +24,7 @@ export interface ShapeConfigEntry {
   /** Default size; falls back to the stencil's design size. */
   w?: number;
   h?: number;
-  /** Default style: OpenDraw `ElementStyle` keys, or a string. */
+  /** Default style: ArkDraw `ElementStyle` keys, or a string. */
   style?: Partial<ElementStyle> | string;
   /** Default label. */
   text?: string;
@@ -78,7 +78,7 @@ const toItem = (entry: ShapeConfigEntry): StencilLibraryItem => {
 export function readShapeConfig(data: unknown): ShapeConfig {
   const d = data as Partial<ShapeConfig> | ShapeConfigEntry[];
   const shapes = Array.isArray(d) ? d : d?.format === 'opendraw-shapes' && Array.isArray(d.shapes) ? d.shapes : null;
-  if (!shapes) throw new Error('Not an OpenDraw shape config (expected "format": "opendraw-shapes").');
+  if (!shapes) throw new Error('Not an ArkDraw shape config (expected "format": "opendraw-shapes").');
   for (const [i, s] of shapes.entries()) {
     if (!s || typeof s.stencil !== 'string') throw new Error(`Shape ${i + 1} has no "stencil" XML.`);
   }

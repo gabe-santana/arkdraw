@@ -1,4 +1,4 @@
-# Snap package for OpenDraw (Tauri's bundler has no snap target).
+# Snap package for ArkDraw (Tauri's bundler has no snap target).
 # Builds the app with Tauri, then repackages the .deb into a strictly confined
 # snap using the GNOME extension for WebKitGTK. Build locally with `snapcraft`
 # (Ubuntu, LXD or Multipass) or in CI (.github/workflows/release.yml, job `snap`).
@@ -8,7 +8,7 @@ base: core22
 adopt-info: opendraw
 summary: Open-source, offline, local-first diagram editor
 description: |
-  OpenDraw is an open-source, fully offline diagramming app for flowcharts,
+  ArkDraw is an open-source, fully offline diagramming app for flowcharts,
   UML, ER diagrams and network maps. It opens and saves .drawio files and
   imports .vsdx drawings.
 grade: stable

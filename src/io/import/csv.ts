@@ -6,7 +6,7 @@
  * rest is CSV whose first row holds the column names. Supported directives:
  *
  *   label, labelname + labels   label template with %column% placeholders (HTML → text)
- *   style, stylename + styles   (placeholders allowed), mapped to OpenDraw
+ *   style, stylename + styles   (placeholders allowed), mapped to ArkDraw
  *   vars                        JSON of extra %placeholders% for styles
  *   parentstyle                 style for rows that have children
  *   identity, parent            id column / parent-id column → nested containers

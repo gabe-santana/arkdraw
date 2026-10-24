@@ -1,7 +1,7 @@
 /**
  * Plugin runtime (Extras → Plugins…). See docs/extensibility.md.
  *
- * A plugin is a script that calls `window.OpenDraw.registerPlugin({ id, name,
+ * A plugin is a script that calls `window.ArkDraw.registerPlugin({ id, name,
  * activate(ctx) })` (or an ES module whose default export is that object).
  * `activate` receives a context with:
  *
@@ -111,7 +111,7 @@ export interface PluginEditorApi {
   select: (ids: string[]) => void;
 }
 
-export interface OpenDrawPlugin {
+export interface ArkDrawPlugin {
   id: string;
   name?: string;
   version?: string;
@@ -169,7 +169,7 @@ const setStatus = (source: string, st: PluginStatus) => usePlugins.setState((s) 
 // ---------------------------------------------------------------------------
 
 interface Registered {
-  plugin: OpenDrawPlugin;
+  plugin: ArkDrawPlugin;
   source?: string;
   disposers: Disposer[];
   active: boolean;
@@ -384,9 +384,9 @@ function deactivate(rec: Registered) {
 
 /**
  * Registers and activates a plugin. Called by plugin scripts through
- * `window.OpenDraw.registerPlugin`. Re-registering an id replaces the old one.
+ * `window.ArkDraw.registerPlugin`. Re-registering an id replaces the old one.
  */
-export async function registerPlugin(plugin: OpenDrawPlugin): Promise<void> {
+export async function registerPlugin(plugin: ArkDrawPlugin): Promise<void> {
   if (!plugin || typeof plugin.id !== 'string' || !/^[\w.-]+$/.test(plugin.id) || typeof plugin.activate !== 'function') {
     throw new Error('registerPlugin needs { id: "my-plugin", activate(ctx) { … } } (id: letters, digits, . _ -).');
   }
@@ -443,10 +443,10 @@ async function loadSource(entry: PluginEntry): Promise<string[]> {
     else if (isDesktopPath(source) && isTauri()) mod = await importCode((await readFile(source.replace(/^file:\/\//, ''))).contents);
     else mod = await import(/* @vite-ignore */ new URL(source, location.href).href);
     // ES modules may export the plugin instead of calling registerPlugin.
-    const exported = (mod.default ?? mod.plugin) as OpenDrawPlugin | undefined;
+    const exported = (mod.default ?? mod.plugin) as ArkDrawPlugin | undefined;
     if (exported && typeof exported === 'object' && typeof exported.activate === 'function' && !REGISTRY.has(exported.id)) await registerPlugin(exported);
     const ids = loadedBy.get(source) ?? [];
-    if (!ids.length) throw new Error('The script ran but registered no plugin (call OpenDraw.registerPlugin or export default { id, activate }).');
+    if (!ids.length) throw new Error('The script ran but registered no plugin (call ArkDraw.registerPlugin or export default { id, activate }).');
     setStatus(source, { state: 'active', ids });
     return ids;
   } catch (e) {
@@ -566,12 +566,12 @@ export function removePlugin(source: string) {
 }
 
 // ---------------------------------------------------------------------------
-// window.OpenDraw
+// window.ArkDraw (window.OpenDraw is kept as an alias for existing plugins)
 // ---------------------------------------------------------------------------
 
-export interface OpenDrawGlobal {
+export interface ArkDrawGlobal {
   version: string;
-  registerPlugin: (plugin: OpenDrawPlugin) => Promise<void>;
+  registerPlugin: (plugin: ArkDrawPlugin) => Promise<void>;
   loadPluginsFrom: typeof loadPluginsFrom;
   plugins: typeof registeredPlugins;
   stencils: { parse: typeof parseStencil; compress: typeof compressStencil; decompress: typeof decompressStencil; register: typeof registerStencil };
@@ -579,13 +579,16 @@ export interface OpenDrawGlobal {
 
 declare global {
   interface Window {
-    OpenDraw?: OpenDrawGlobal;
-    /** Plugins queued before OpenDraw finished loading (picked up on install). */
-    OpenDrawPlugins?: OpenDrawPlugin[];
+    ArkDraw?: ArkDrawGlobal;
+    /** Plugins queued before ArkDraw finished loading (picked up on install). */
+    ArkDrawPlugins?: ArkDrawPlugin[];
+    /** The same API and queue under the project's former name. */
+    OpenDraw?: ArkDrawGlobal;
+    OpenDrawPlugins?: ArkDrawPlugin[];
   }
 }
 
-/** Installs `window.OpenDraw` (idempotent) and registers any queued plugins. */
+/** Installs `window.ArkDraw` and its `window.OpenDraw` alias (idempotent), and registers any queued plugins. */
 // The global delegates to the latest evaluation of this module, so dev hot reloads
 // (which re-run this file with a fresh registry) keep plugins attributed correctly.
 const RUNTIME_KEY = '__openDrawPluginRuntime';
@@ -594,8 +597,8 @@ const runtime = () =>
   (globalThis as Record<string, unknown>)[RUNTIME_KEY] as { registerPlugin: typeof registerPlugin; loadPluginsFrom: typeof loadPluginsFrom; registeredPlugins: typeof registeredPlugins };
 
 export function installPluginGlobal() {
-  if (typeof window === 'undefined' || window.OpenDraw) return;
-  const api: OpenDrawGlobal = {
+  if (typeof window === 'undefined' || window.ArkDraw) return;
+  const api: ArkDrawGlobal = {
     version: __APP_VERSION__,
     registerPlugin: (p) =>
       runtime()
@@ -608,6 +611,7 @@ export function installPluginGlobal() {
     plugins: () => runtime().registeredPlugins(),
     stencils: { parse: parseStencil, compress: compressStencil, decompress: decompressStencil, register: registerStencil },
   };
-  Object.defineProperty(window, 'OpenDraw', { value: Object.freeze(api), configurable: false, writable: false });
-  for (const p of window.OpenDrawPlugins ?? []) void api.registerPlugin(p).catch(() => {});
+  const frozen = Object.freeze(api);
+  for (const name of ['ArkDraw', 'OpenDraw'] as const) Object.defineProperty(window, name, { value: frozen, configurable: false, writable: false });
+  for (const p of [...(window.ArkDrawPlugins ?? []), ...(window.OpenDrawPlugins ?? [])]) void api.registerPlugin(p).catch(() => {});
 }

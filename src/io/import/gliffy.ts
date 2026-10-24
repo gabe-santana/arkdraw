@@ -3,11 +3,11 @@
  *
  * Reads `stage.objects` (recursively through `children`, whose coordinates are
  * relative to their parent): `graphic.Shape` objects map their `tid` stencil
- * (or `uid`) onto OpenDraw kinds, `graphic.Text` children become the shape
+ * (or `uid`) onto ArkDraw kinds, `graphic.Text` children become the shape
  * label (`Text.html` → plain text), free-standing text becomes text shapes,
  * `graphic.Line` objects become connectors attached through
  * `constraints.startConstraint / endConstraint … nodeId` (free ends use the
- * `controlPath`), groups become OpenDraw groups and swimlanes containers.
+ * `controlPath`), groups become ArkDraw groups and swimlanes containers.
  * Unknown stencils fall back to rectangles (reported as a warning).
  */
 import type { ArrowHead, ConnectorElement, DiagramElement, ElementStyle, ShapeElement, Vec } from '@/model/types';
@@ -93,7 +93,7 @@ const STENCILS: Array<[RegExp, string[], Partial<ElementStyle>?]> = [
   [/text/, ['text'], { fill: 'none', stroke: 'none' }],
 ];
 
-/** Gliffy arrow ids → OpenDraw heads (approximate; Gliffy uses ~20 numbered styles). */
+/** Gliffy arrow ids → ArkDraw heads (approximate; Gliffy uses ~20 numbered styles). */
 function arrowOf(n: number | undefined): ArrowHead {
   switch (n ?? 0) {
     case 0:

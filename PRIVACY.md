@@ -2,13 +2,13 @@
 
 _Last updated: October 24, 2026_
 
-OpenDraw is an open-source diagram editor that runs on your device. This policy
+ArkDraw is an open-source diagram editor that runs on your device. This policy
 explains what happens to your data when you use the desktop app (Windows, macOS,
 Linux, including the Microsoft Store version) or the web app.
 
 ## The short version
 
-- **We don't collect anything.** OpenDraw has no accounts, no analytics, no
+- **We don't collect anything.** ArkDraw has no accounts, no analytics, no
   telemetry, no ads and no tracking. We never receive your diagrams or any
   information about you.
 - **Your diagrams stay on your device.** Files are saved where you choose.
@@ -32,14 +32,14 @@ plugins you trust.
 
 ## Children
 
-OpenDraw doesn't knowingly collect information from anyone, including children.
+ArkDraw doesn't knowingly collect information from anyone, including children.
 
 ## Changes
 
 Changes to this policy are published in this file, in the project's public
-repository: https://github.com/gabe-santana/opendraw
+repository: https://github.com/gabe-santana/arkdraw
 
 ## Contact
 
-Questions: open an issue at https://github.com/gabe-santana/opendraw/issues or
+Questions: open an issue at https://github.com/gabe-santana/arkdraw/issues or
 email gsantana.sza@gmail.com.

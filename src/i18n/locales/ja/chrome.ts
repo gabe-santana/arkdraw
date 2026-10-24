@@ -30,7 +30,7 @@ export default {
   'chrome.pageTabs.insertPage': 'ページを挿入',
 
   // StartScreen
-  'chrome.start.title': 'OpenDraw へようこそ',
+  'chrome.start.title': 'ArkDraw へようこそ',
   'chrome.start.subtitle': '新しいダイアグラムを作成するか、前回の続きから始めましょう。',
   'chrome.start.blank': '空白のダイアグラム',
   'chrome.start.blankSub': '空のキャンバスから開始',
@@ -77,14 +77,14 @@ export default {
   // EditDialogs — Edit style
   'chrome.editStyle.title': 'スタイルを編集',
   'chrome.editStyle.subtitleDrawio': 'スタイル文字列 (key=value;)。選択範囲全体に適用されます',
-  // format option: the key=value; style string syntax (vs. "OpenDraw" keys)
+  // format option: the key=value; style string syntax (vs. "ArkDraw" keys)
   'chrome.editStyle.styleString': 'スタイル文字列',
-  'chrome.editStyle.subtitleOpendraw': 'OpenDraw のスタイルキー (1 行に 1 つ)。選択範囲全体に適用されます',
-  'chrome.editStyle.keptKeys': 'OpenDraw が使用しないキーも保持され、.drawio へのエクスポート時に書き戻されます。',
+  'chrome.editStyle.subtitleOpendraw': 'ArkDraw のスタイルキー (1 行に 1 つ)。選択範囲全体に適用されます',
+  'chrome.editStyle.keptKeys': 'ArkDraw が使用しないキーも保持され、.drawio へのエクスポート時に書き戻されます。',
 
   // EditDialogs — Edit diagram
   'chrome.editDiagram.title': 'ダイアグラムを編集',
-  'chrome.editDiagram.subtitle': '現在のページを OpenDraw JSON で表示しています。変更は元に戻せます。',
+  'chrome.editDiagram.subtitle': '現在のページを ArkDraw JSON で表示しています。変更は元に戻せます。',
 
   // EditDialogs — Find & Replace
   'chrome.find.toggleReplace': '置換の表示切り替え',

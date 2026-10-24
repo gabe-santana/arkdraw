@@ -110,7 +110,7 @@ export function serializeLibrary(lib: UserLibrary): string {
 export async function parseLibrary(text: string, fileName: string): Promise<{ name: string; items: UserLibraryItem[] }> {
   const name = fileName.replace(/\.[^.]+$/, '');
   const trimmed = text.trim();
-  // Stencil sets (<shapes>) and OpenDraw shape configs (JSON) — see src/stencils/library.ts.
+  // Stencil sets (<shapes>) and ArkDraw shape configs (JSON) — see src/stencils/library.ts.
   const stencils = parseStencilLibrary(trimmed, name);
   if (stencils) return stencils;
   if (trimmed.startsWith('{')) {

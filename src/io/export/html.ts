@@ -62,7 +62,7 @@ export async function exportHtml(pages: HtmlPageInput[], opts: HtmlExportOptions
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="generator" content="OpenDraw">
+<meta name="generator" content="ArkDraw">
 <title>${escHtml(opts.title)}</title>
 <style>${fonts}${VIEWER_CSS}</style>
 </head>

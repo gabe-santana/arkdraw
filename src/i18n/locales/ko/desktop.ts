@@ -3,7 +3,7 @@ import type { Translation } from '../../types';
 
 export default {
   // UpdatePrompt
-  'desktop.update.available': 'OpenDraw {version}을(를) 사용할 수 있습니다',
+  'desktop.update.available': 'ArkDraw {version}을(를) 사용할 수 있습니다',
   'desktop.update.downloading': '다운로드 중…',
   'desktop.update.downloadingPercent': '다운로드 중 · {percent}%',
   'desktop.update.installing': '설치 중… OpenDraw가 다시 시작됩니다.',

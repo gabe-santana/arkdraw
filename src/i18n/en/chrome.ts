@@ -28,7 +28,7 @@ export default {
   'chrome.pageTabs.insertPage': 'Insert page',
 
   // StartScreen
-  'chrome.start.title': 'Welcome to OpenDraw',
+  'chrome.start.title': 'Welcome to ArkDraw',
   'chrome.start.subtitle': 'Start a new diagram or pick up where you left off.',
   'chrome.start.blank': 'Blank diagram',
   'chrome.start.blankSub': 'Start from an empty canvas',
@@ -75,14 +75,14 @@ export default {
   // EditDialogs — Edit style
   'chrome.editStyle.title': 'Edit style',
   'chrome.editStyle.subtitleDrawio': 'Style string (key=value;) — applied to the whole selection',
-  // format option: the key=value; style string syntax (vs. "OpenDraw" keys)
+  // format option: the key=value; style string syntax (vs. "ArkDraw" keys)
   'chrome.editStyle.styleString': 'Style string',
-  'chrome.editStyle.subtitleOpendraw': 'OpenDraw style keys, one per line — applied to the whole selection',
-  'chrome.editStyle.keptKeys': 'Keys OpenDraw doesn’t use are kept and written back on .drawio export.',
+  'chrome.editStyle.subtitleOpendraw': 'ArkDraw style keys, one per line — applied to the whole selection',
+  'chrome.editStyle.keptKeys': 'Keys ArkDraw doesn’t use are kept and written back on .drawio export.',
 
   // EditDialogs — Edit diagram
   'chrome.editDiagram.title': 'Edit diagram',
-  'chrome.editDiagram.subtitle': 'The current page as OpenDraw JSON. Changes are undoable.',
+  'chrome.editDiagram.subtitle': 'The current page as ArkDraw JSON. Changes are undoable.',
 
   // EditDialogs — Find & Replace
   'chrome.find.toggleReplace': 'Toggle replace',

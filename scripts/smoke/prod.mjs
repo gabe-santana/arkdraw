@@ -379,7 +379,7 @@ async function browserTests() {
 
   section('Editor in a real browser');
   {
-    const b = await openBrowser({ width: 1440, height: 900 });
+    const b = await openBrowser({ width: 1600, height: 900 }); // wide enough for the library to open on a first visit
     try {
       await test('loads without console errors', async () => {
         await b.goto(`${APP}/?lang=en`);
@@ -387,10 +387,19 @@ async function browserTests() {
         await sleep(2000);
         assert(!b.problems.length, b.problems.join('\n        '));
       });
-      await test('start screen offers a blank diagram', async () => {
-        await b.waitFor(`document.body.innerText.includes('Blank diagram')`, 10000, 'the start screen');
-        assert(await clickByText(b, 'Blank diagram'), 'no Blank diagram button');
-        await b.waitFor(`!document.body.innerText.includes('Blank diagram')`, 5000, 'the start screen to close');
+      await test('first visit looks like the landing: ArkDraw, dark, AI tab open, no dialog', async () => {
+        const s = await b.evaluate(`({
+          title: document.title,
+          dark: document.documentElement.classList.contains('dark'),
+          ai: !!document.querySelector('[role=tabpanel] textarea'),
+          dialog: !!document.querySelector('[role=dialog]'),
+          oldName: document.body.innerText.includes('OpenDraw'),
+        })`);
+        assert(s.title.includes('ArkDraw'), `title: ${s.title}`);
+        assert(s.dark, 'not dark');
+        assert(s.ai, 'AI tab not open');
+        assert(!s.dialog, 'a dialog covers the canvas');
+        assert(!s.oldName, 'the page still says OpenDraw');
       });
       await test('draws a rectangle, then undo removes it', async () => {
         const count = `document.querySelectorAll('[data-canvas] [data-el]').length`;

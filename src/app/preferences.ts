@@ -21,7 +21,8 @@ export interface Preferences {
 }
 
 const KEY = 'opendraw:preferences';
-const DEFAULTS: Preferences = { author: '', customColors: [], defaultFont: 'sans', recentColors: [] };
+// No start dialog unless turned on in Preferences: a new visit opens on the canvas with the AI tab.
+const DEFAULTS: Preferences = { author: '', customColors: [], defaultFont: 'sans', recentColors: [], startScreen: false };
 
 function load(): Preferences {
   try {

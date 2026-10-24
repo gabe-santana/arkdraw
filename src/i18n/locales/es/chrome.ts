@@ -26,7 +26,7 @@ export default {
   'chrome.pageTabs.insertPage': 'Insertar página',
 
   // StartScreen
-  'chrome.start.title': 'Te damos la bienvenida a OpenDraw',
+  'chrome.start.title': 'Te damos la bienvenida a ArkDraw',
   'chrome.start.subtitle': 'Empieza un diagrama nuevo o continúa donde lo dejaste.',
   'chrome.start.blank': 'Diagrama en blanco',
   'chrome.start.blankSub': 'Empezar con un lienzo vacío',
@@ -63,12 +63,12 @@ export default {
   'chrome.editStyle.title': 'Editar estilo',
   'chrome.editStyle.subtitleDrawio': 'Cadena de estilo (key=value;): se aplica a toda la selección',
   'chrome.editStyle.styleString': 'Cadena de estilo',
-  'chrome.editStyle.subtitleOpendraw': 'Claves de estilo de OpenDraw, una por línea: se aplican a toda la selección',
-  'chrome.editStyle.keptKeys': 'Las claves que OpenDraw no usa se conservan y se vuelven a escribir al exportar a .drawio.',
+  'chrome.editStyle.subtitleOpendraw': 'Claves de estilo de ArkDraw, una por línea: se aplican a toda la selección',
+  'chrome.editStyle.keptKeys': 'Las claves que ArkDraw no usa se conservan y se vuelven a escribir al exportar a .drawio.',
 
   // EditDialogs — Edit diagram
   'chrome.editDiagram.title': 'Editar diagrama',
-  'chrome.editDiagram.subtitle': 'La página actual como JSON de OpenDraw. Los cambios se pueden deshacer.',
+  'chrome.editDiagram.subtitle': 'La página actual como JSON de ArkDraw. Los cambios se pueden deshacer.',
 
   // EditDialogs — Find & Replace
   'chrome.find.toggleReplace': 'Mostrar u ocultar reemplazo',

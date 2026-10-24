@@ -1,5 +1,5 @@
 /**
- * Example OpenDraw plugin: "Word count".
+ * Example ArkDraw plugin: "Word count".
  *
  * Adds Extras → Word count (also in the command palette, Mod+Alt+Shift+W),
  * which counts the words in every label on the current page (or in the
@@ -11,7 +11,7 @@
 (function () {
   const words = (text) => (text.match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu) || []).length;
 
-  window.OpenDraw.registerPlugin({
+  window.ArkDraw.registerPlugin({
     id: 'word-count',
     name: 'Word count',
     version: '1.0.0',

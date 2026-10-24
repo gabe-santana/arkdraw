@@ -1,5 +1,5 @@
 /**
- * keys OpenDraw doesn't model, kept on the element so they
+ * keys ArkDraw doesn't model, kept on the element so they
  * survive Edit Style and .drawio export. Stored in the hidden data key
  * `__drawioStyle` ("key=value;key2=value2;"), which Edit Data doesn't show.
  */

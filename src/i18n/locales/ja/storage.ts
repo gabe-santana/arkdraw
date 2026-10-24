@@ -19,12 +19,12 @@ export default {
   'storage.download': '.opendraw をダウンロード',
   'storage.docActions': 'ドキュメントの操作',
   // file-type name in the save dialog
-  'storage.fileType': 'OpenDraw ダイアグラム',
+  'storage.fileType': 'ArkDraw ダイアグラム',
   'storage.opened': '「{name}」を開きました',
   'storage.savedToBrowser': '「{name}」をブラウザーに保存しました',
   'storage.deleteTitle': '「{name}」を削除しますか?',
   'storage.deleteMessage': 'このブラウザーのストレージから削除されます。この操作は元に戻せません。',
-  'storage.notADiagram': '「{name}」は OpenDraw のダイアグラムではありません。',
+  'storage.notADiagram': '「{name}」は ArkDraw のダイアグラムではありません。',
   // last-modified time: under a minute ago
   'storage.justNow': 'たった今',
   // last-modified time, abbreviated: minutes ago

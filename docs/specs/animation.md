@@ -6,7 +6,7 @@ Status: **Accepted** · Owner: core editor · Target: v0.1
 
 Architecture and flow diagrams explain *movement*: requests flowing through
 services, data moving through a pipeline, steps happening in order. Static
-images hide that. OpenDraw lets authors animate a diagram and share it as an
+images hide that. ArkDraw lets authors animate a diagram and share it as an
 animated **GIF** that plays anywhere: READMEs, Slack, Confluence, slides, PRs.
 
 ## Principles

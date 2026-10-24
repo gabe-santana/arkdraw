@@ -140,7 +140,7 @@ export function saveConfig(config: AppConfig) {
 // Shape libraries (also used by the `libs` / `clibs` URL parameters)
 // ---------------------------------------------------------------------------
 
-/** mxGraph library names → OpenDraw library ids. */
+/** mxGraph library names → ArkDraw library ids. */
 const LIB_ALIASES: Record<string, string> = {
   er: 'erd', arrows2: 'arrows', basic: 'basic', lean_mapping: 'lean', android: 'mobile', ios: 'mobile', ios7: 'mobile', archimate3: 'archimate',
   networks: 'network', cisco19: 'cisco', cisco_safe: 'cisco', office: 'office', rack: 'rack', pid: 'pid', mockups: 'mockups', bootstrap: 'bootstrap',

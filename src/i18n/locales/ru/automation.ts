@@ -121,7 +121,7 @@ export default {
   'automation.templates.importFailed': 'Не удалось импортировать шаблон: {error}',
   'automation.templates.importFile': 'Импортировать файл шаблона',
   'automation.templates.importTooltip': 'Импортировать файл .{ext} или .opendraw',
-  'automation.templates.fileType': 'Шаблон OpenDraw',
+  'automation.templates.fileType': 'Шаблон ArkDraw',
   'automation.templates.deleteTitle': 'Удалить «{name}»?',
   'automation.templates.deleteMessage': 'Шаблон будет удалён с этого устройства. Созданные по нему диаграммы не изменятся.',
   'automation.templates.nothingToSave': 'Нечего сохранить как шаблон.',

@@ -1,5 +1,5 @@
 /**
- * Diagram spec → positioned OpenDraw elements.
+ * Diagram spec → positioned ArkDraw elements.
  */
 import type { ArrowHead, ConnectorAnimation, ConnectorElement, DiagramElement, ElementStyle, Endpoint, Rect, ShapeAnimation, ShapeElement, Vec } from '@/model/types';
 import { createConnector, createShape, DEFAULT_CONNECTOR_STYLE } from '@/model/defaults';
@@ -274,7 +274,7 @@ export function convertSpec(spec: DiagramSpec, origin: Vec, opts: ConvertOptions
 }
 
 /**
- * Pure conversion of a validated spec into OpenDraw elements, laid out and
+ * Pure conversion of a validated spec into ArkDraw elements, laid out and
  * centered on `origin` (world coordinates).
  */
 export function specToElements(spec: DiagramSpec, origin: Vec): DiagramElement[] {

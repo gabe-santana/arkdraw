@@ -1,5 +1,5 @@
 /**
- * The OpenDraw document model.
+ * The ArkDraw document model.
  *
  * A file holds one or more pages. Each page is a flat map of elements plus an
  * `order` array that defines z-order (first = back), and a list of layers.

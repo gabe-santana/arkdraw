@@ -6,7 +6,7 @@
  *  - document building (kind fallback, spec → laid-out elements, connectors)
  *  - colour / HTML-text / normalisation
  *  - bytes, base64, CRC32, PNG chunk reading/writing
- *  - `embedDiagramInPng` / `embedDiagramInSvg`: OpenDraw's own convention for
+ *  - `embedDiagramInPng` / `embedDiagramInSvg`: ArkDraw's own convention for
  *    "editable images" (documented in ./embedded.ts), used by the exporters.
  */
 import { zlibSync, unzlibSync } from 'fflate';
@@ -287,10 +287,10 @@ export function htmlToPlain(html: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// mxGraph styles → OpenDraw
+// mxGraph styles → ArkDraw
 // ---------------------------------------------------------------------------
 
-/** mxGraph shape names → OpenDraw kind candidates. */
+/** mxGraph shape names → ArkDraw kind candidates. */
 const DRAWIO_KIND: Record<string, string[]> = {
   rectangle: ['rectangle'], label: ['rectangle'], rect: ['rectangle'],
   ellipse: ['ellipse'], doubleEllipse: ['erd.multivalued', 'ellipse'],
@@ -384,7 +384,7 @@ export interface MappedDrawioStyle {
   container: boolean;
 }
 
-/** Maps a string onto an OpenDraw kind + style overrides. */
+/** Maps a string onto an ArkDraw kind + style overrides. */
 export function mapDrawioStyle(styleText: string, isEdge = false): MappedDrawioStyle {
   const m = parseStyle(styleText);
   const style: Partial<ElementStyle> = {};
@@ -577,9 +577,9 @@ export function readPngText(png: Uint8Array): PngText[] {
   return out;
 }
 
-/** The PNG iTXt keyword OpenDraw uses for its embedded document. */
+/** The PNG iTXt keyword ArkDraw uses for its embedded document. */
 export const OPENDRAW_PNG_KEYWORD = 'opendraw';
-/** The root `<svg>` attribute OpenDraw uses for its embedded document. */
+/** The root `<svg>` attribute ArkDraw uses for its embedded document. */
 export const OPENDRAW_SVG_ATTRIBUTE = 'data-opendraw';
 
 /**

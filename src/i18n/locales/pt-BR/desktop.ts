@@ -3,21 +3,21 @@ import type { Translation } from '../../types';
 
 export default {
   // UpdatePrompt
-  'desktop.update.available': 'O OpenDraw {version} está disponível',
+  'desktop.update.available': 'O ArkDraw {version} está disponível',
   'desktop.update.downloading': 'Baixando…',
   'desktop.update.downloadingPercent': 'Baixando · {percent}%',
-  'desktop.update.installing': 'Instalando… O OpenDraw será reiniciado.',
+  'desktop.update.installing': 'Instalando… O ArkDraw será reiniciado.',
   'desktop.update.restartHint': 'Reinicie para atualizar. Antes, será solicitado que você salve as alterações pendentes.',
   'desktop.update.restart': 'Reiniciar para atualizar',
 
   // updater.ts
   'desktop.update.webAuto': 'Na versão web, as atualizações são instaladas automaticamente.',
-  'desktop.update.upToDate': 'O OpenDraw está atualizado.',
+  'desktop.update.upToDate': 'O ArkDraw está atualizado.',
   'desktop.update.checkFailed': 'Não foi possível verificar atualizações: {error}',
   'desktop.update.failed': 'Falha na atualização: {error}',
 
   // startup.ts — Extras → Configuration file…
-  'desktop.config.editHint': 'Edite o config.json e reinicie o OpenDraw para aplicá-lo.',
+  'desktop.config.editHint': 'Edite o config.json e reinicie o ArkDraw para aplicá-lo.',
   'desktop.config.noFolder': 'Nenhuma pasta de configuração',
 
   // windows.ts — opening a file while the current one has unsaved changes

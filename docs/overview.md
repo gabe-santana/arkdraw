@@ -1,4 +1,4 @@
-# OpenDraw overview
+# ArkDraw overview
 
 The details that used to live in the README: features, editions, formats, icon packs, CLI, AI, animation, project layout and scripts.
 
@@ -48,7 +48,7 @@ npm run docker:build && npm run docker:run  # http://localhost:8080
 
 | Format | Import | Export | Notes |
 | --- | :---: | :---: | --- |
-| OpenDraw `.opendraw` | ✓ | ✓ | Pretty-printed JSON, git-friendly |
+| ArkDraw `.opendraw` | ✓ | ✓ | Pretty-printed JSON, git-friendly |
 | mxGraph XML `.drawio`, `.xml` | ✓ | ✓ | Compressed or plain; `flow` animation survives as `flowAnimation=1` |
 | PNG / SVG / PDF with an embedded diagram | ✓ | ✓ | "Include a copy of the diagram" makes the image re-editable |
 | PNG, JPEG, WebP | | ✓ | Scale, border, transparent background, selection only |
@@ -81,7 +81,7 @@ Exports can use light, dark or automatic appearance, include the grid, and be pr
 Counts come from the last `icons:fetch` (`public/icons/providers.json`). Search is fuzzy: it handles typos ("lamda"), acronyms and cross-cloud synonyms ("vnet"), and icons come with one-line descriptions shown in a hover card.
 
 > [!IMPORTANT]
-> **The vendor icons are not MIT-licensed.** They're third-party trademarks, used under each vendor's own terms for drawing architecture diagrams, so they aren't committed to this repo: `.gitignore` excludes them, `npm run icons:fetch` downloads them, and the release workflow bundles them into installers. [`public/icons/LICENSES.md`](public/icons/LICENSES.md) lists the source, version and terms of every pack; read it before you redistribute a build. The icon descriptions (`public/icons/*/descriptions.json`) are OpenDraw's own.
+> **The vendor icons are not MIT-licensed.** They're third-party trademarks, used under each vendor's own terms for drawing architecture diagrams, so they aren't committed to this repo: `.gitignore` excludes them, `npm run icons:fetch` downloads them, and the release workflow bundles them into installers. [`public/icons/LICENSES.md`](public/icons/LICENSES.md) lists the source, version and terms of every pack; read it before you redistribute a build. The icon descriptions (`public/icons/*/descriptions.json`) are ArkDraw's own.
 
 ## Command-line export
 
@@ -102,7 +102,7 @@ Formats: PNG, SVG, PDF, JPG, WebP, HTML, VSDX, .drawio and URL. Rendering runs i
 - **Generate** creates a diagram from a prompt; insert it or replace the current diagram.
 - **Edit** changes the existing diagram ("add a CDN in front of the load balancer").
 
-The model works in a tool-calling loop: it searches the installed icon packs (`search_icons`), then submits a diagram spec or a list of edit operations, which OpenDraw validates, lays out and turns into native shapes (`src/ai/generate/`).
+The model works in a tool-calling loop: it searches the installed icon packs (`search_icons`), then submits a diagram spec or a list of edit operations, which ArkDraw validates, lays out and turns into native shapes (`src/ai/generate/`).
 
 | Provider | Notes |
 | --- | --- |

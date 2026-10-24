@@ -1,14 +1,14 @@
-# Contributing to OpenDraw
+# Contributing to ArkDraw
 
-Thanks for helping make OpenDraw better. This guide covers how to set up the project, how the code is organised, and what we look for in a pull request.
+Thanks for helping make ArkDraw better. This guide covers how to set up the project, how the code is organised, and what we look for in a pull request.
 
 By participating you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Ways to contribute
 
-- **Report a bug** or **request a feature** with the [issue templates](https://github.com/gabe-santana/opendraw/issues/new/choose).
-- **Pick up an issue.** Issues labelled [`good first issue`](https://github.com/gabe-santana/opendraw/labels/good%20first%20issue) are small and well scoped; [`help wanted`](https://github.com/gabe-santana/opendraw/labels/help%20wanted) ones are bigger.
-- **Add shapes, templates, importers or translations.** Most of these are self-contained modules (see [Extending OpenDraw](#extending-opendraw)).
+- **Report a bug** or **request a feature** with the [issue templates](https://github.com/gabe-santana/arkdraw/issues/new/choose).
+- **Pick up an issue.** Issues labelled [`good first issue`](https://github.com/gabe-santana/arkdraw/labels/good%20first%20issue) are small and well scoped; [`help wanted`](https://github.com/gabe-santana/arkdraw/labels/help%20wanted) ones are bigger.
+- **Add shapes, templates, importers or translations.** Most of these are self-contained modules (see [Extending ArkDraw](#extending-opendraw)).
 - **Improve the docs.**
 
 For larger changes, please open an issue first so we can agree on the approach before you invest time in it.
@@ -18,7 +18,7 @@ For larger changes, please open an issue first so we can agree on the approach b
 Requirements: [Node.js](https://nodejs.org/) 20+ and, for the desktop app only, [Rust](https://rustup.rs/) stable plus the [Tauri prerequisites](https://tauri.app/start/prerequisites/) for your OS (on Windows: the MSVC Build Tools and WebView2).
 
 ```sh
-git clone https://github.com/gabe-santana/opendraw.git && cd opendraw
+git clone https://github.com/gabe-santana/arkdraw.git && cd arkdraw
 npm install
 npm run icons:fetch   # optional: official cloud icon packs into public/icons
 npm run dev           # web app at http://localhost:1420
@@ -53,7 +53,7 @@ docs/          user and developer documentation
 
 [docs/overview.md](docs/overview.md) describes features, formats and editions in more detail.
 
-## Extending OpenDraw
+## Extending ArkDraw
 
 - **Shape library:** add `src/shapes/libs/<name>.tsx` (see an existing library for the pattern). Give every shape search keywords and a one-line description in `src/shapes/descriptions.ts`; `npm run icons:check-descriptions` checks coverage.
 - **Importer:** add `src/io/import/<format>.ts` exporting an `importer` (see `src/io/import/types.ts`).

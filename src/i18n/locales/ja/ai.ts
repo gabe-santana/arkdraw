@@ -177,8 +177,8 @@ export default {
   // {model} is a model id, e.g. anthropic/claude-opus-5-5
   'ai.settings.customModelPlaceholder': '例: {model}',
   'ai.settings.testConnection': '接続をテスト',
-  'ai.settings.privacyKeychain': 'キーは OS のキーチェーンに保存され、OpenDraw のネイティブ層でのみ使用されます。Web ビューに渡されることはありません。',
-  'ai.settings.privacy': 'ダイアグラムとプロンプトは、ここで選択したプロバイダーにのみ送信されます。OpenDraw 独自のサーバーはありません。',
+  'ai.settings.privacyKeychain': 'キーは OS のキーチェーンに保存され、ArkDraw のネイティブ層でのみ使用されます。Web ビューに渡されることはありません。',
+  'ai.settings.privacy': 'ダイアグラムとプロンプトは、ここで選択したプロバイダーにのみ送信されます。ArkDraw 独自のサーバーはありません。',
   'ai.settings.privacyOllama': 'Ollama を使用すると、すべてがこの端末内で完結し、オフラインで動作します。',
   'ai.settings.privacyChooseOllama': 'すべてをこの端末内で完結させるには Ollama を選択してください。',
   'ai.settings.keySaved': 'キーを保存しました',

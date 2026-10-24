@@ -1,5 +1,5 @@
 /**
- * Mermaid → OpenDraw, with a hand-written parser (the mermaid package is huge
+ * Mermaid → ArkDraw, with a hand-written parser (the mermaid package is huge
  * and DOM-bound). Supported diagram types:
  *
  *  - flowchart / graph: directions, all classic node shapes plus the

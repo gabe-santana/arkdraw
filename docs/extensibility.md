@@ -1,6 +1,6 @@
-# Extending OpenDraw
+# Extending ArkDraw
 
-OpenDraw can be extended in four ways, from least to most powerful:
+ArkDraw can be extended in four ways, from least to most powerful:
 
 1. **Custom shapes** written in mxGraph stencil XML, the format mxGraph uses.
 2. **Shape configs**: JSON files that package stencils with default styles, sizes and connection points into a library.
@@ -67,7 +67,7 @@ The shape's fill, stroke, stroke width, dash, opacity and font set the initial s
 
 | File | Becomes |
 | --- | --- |
-| `.opendrawlib` | An OpenDraw library. |
+| `.opendrawlib` | An ArkDraw library. |
 | mxGraph `<mxlibrary>` `.xml` | One item per entry. Entries built from `shape=stencil(…)` cells become custom shapes. |
 | Stencil set `.xml`: `<shapes name="…"><shape …/>…</shapes>` or a single `<shape>` | One custom shape per `<shape>`. |
 | Shape config `.json` (see below) | One custom shape per entry, with its defaults. |
@@ -100,7 +100,7 @@ The shape's fill, stroke, stroke width, dash, opacity and font set the initial s
 | `name` | yes | Library item title, and the shape's name. |
 | `stencil` | yes | Stencil XML. |
 | `w`, `h` | no | Default size. Defaults to the stencil's `w` and `h`. |
-| `style` | no | Default style, as either OpenDraw `ElementStyle` keys or a string (`"fillColor=#fef3c7;dashed=1;"`). |
+| `style` | no | Default style, as either ArkDraw `ElementStyle` keys or a string (`"fillColor=#fef3c7;dashed=1;"`). |
 | `text` | no | Default label. |
 | `connectionPoints` | no | Fractions of the box. Defaults to the stencil's `<constraint>`s. |
 | `params` | no | Values stored in `ShapeElement.params`. |
@@ -112,11 +112,11 @@ A bare JSON array of entries is also accepted. Plugins pass the same entries to 
 
 ## 3. Style strings
 
-**Edit → Edit style…** (`Mod+E`) shows the selection's style as a string, with one `key=value;` per line. A toggle switches to OpenDraw's own style keys.
+**Edit → Edit style…** (`Mod+E`) shows the selection's style as a string, with one `key=value;` per line. A toggle switches to ArkDraw's own style keys.
 
 - The string comes from the `.drawio` exporter (`drawioStyleOf` in `src/io/drawio.ts`), and edits are read back by the importer (`elementFromDrawioStyle`). The dialog therefore speaks exactly the dialect that `.drawio` files use.
-- Applying a style is a diff. Only the fields whose keys you changed are written, so OpenDraw-only properties that a style string can't express (underline, label position, custom shadow…) are left alone. The change applies to the whole selection as one undo step. Shape-only fields, such as the shape kind, apply only to elements of the same type.
-- Keys OpenDraw doesn't understand (`myPluginFlag=1`, newer mxGraph keys…) are kept in the element's hidden data (`data.__drawioStyle`). They show up again in the dialog and are written back into the cell style on `.drawio` export.
+- Applying a style is a diff. Only the fields whose keys you changed are written, so ArkDraw-only properties that a style string can't express (underline, label position, custom shadow…) are left alone. The change applies to the whole selection as one undo step. Shape-only fields, such as the shape kind, apply only to elements of the same type.
+- Keys ArkDraw doesn't understand (`myPluginFlag=1`, newer mxGraph keys…) are kept in the element's hidden data (`data.__drawioStyle`). They show up again in the dialog and are written back into the cell style on `.drawio` export.
 
 ---
 
@@ -132,7 +132,7 @@ The list is saved, and enabled plugins load at startup.
 
 ### Trust model
 
-Plugins work plugins: they run in the page, with full access to the editor, your diagrams and anything the page can reach. There is no sandbox. **Only load plugins you trust.** OpenDraw asks for confirmation before it enables a plugin, either when you add one or when you re-enable one.
+Plugins work plugins: they run in the page, with full access to the editor, your diagrams and anything the page can reach. There is no sandbox. **Only load plugins you trust.** ArkDraw asks for confirmation before it enables a plugin, either when you add one or when you re-enable one.
 
 Content Security Policy:
 
@@ -144,10 +144,10 @@ The dev server (`npm run dev`) has no CSP.
 
 ### Writing a plugin
 
-A plugin is a script that calls `window.OpenDraw.registerPlugin`. It can also be an ES module whose default export is the plugin object:
+A plugin is a script that calls `window.ArkDraw.registerPlugin` (`window.OpenDraw`, the project's former name, is the same API and keeps older plugins working). It can also be an ES module whose default export is the plugin object:
 
 ```js
-window.OpenDraw.registerPlugin({
+window.ArkDraw.registerPlugin({
   id: 'hello',            // letters, digits, . _ -
   name: 'Hello',
   version: '1.0.0',
@@ -186,7 +186,7 @@ Everything a plugin registers through `ctx` is removed when the plugin is disabl
 | `ui.toast(message, kind?)`, `ui.confirm(title, message, confirmLabel?)` | Feedback to the user. |
 | `onDispose(fn)` | Runs `fn` when the plugin is disabled. |
 
-`window.OpenDraw` also exposes:
+`window.ArkDraw` also exposes:
 
 - `version`
 - `registerPlugin`
@@ -194,12 +194,12 @@ Everything a plugin registers through `ctx` is removed when the plugin is disabl
 - `plugins()`
 - `stencils.{ parse, compress, decompress, register }`
 
-Scripts that load before OpenDraw can push plugin objects to `window.OpenDrawPlugins = [...]`; they're registered once the app starts.
+Scripts that load before ArkDraw can push plugin objects to `window.ArkDrawPlugins = [...]`; they're registered once the app starts.
 
 ### Loading from the host (desktop config)
 
 ```js
-await window.OpenDraw.loadPluginsFrom(['C:\\plugins\\word-count.js', 'https://intranet/plugins/x.js']);
+await window.ArkDraw.loadPluginsFrom(['C:\\plugins\\word-count.js', 'https://intranet/plugins/x.js']);
 // → [{ source, ids: ['word-count'] }, { source, error: '…' }]
 ```
 

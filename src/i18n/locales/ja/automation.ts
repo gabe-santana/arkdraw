@@ -154,7 +154,7 @@ export default {
   // {ext} is a file extension
   'automation.templates.importTooltip': '.{ext} または .opendraw ファイルをインポート',
   // file-type name in the save dialog
-  'automation.templates.fileType': 'OpenDraw テンプレート',
+  'automation.templates.fileType': 'ArkDraw テンプレート',
   'automation.templates.deleteTitle': '「{name}」を削除しますか?',
   'automation.templates.deleteMessage': 'テンプレートはこのデバイスから削除されます。このテンプレートから作成したダイアグラムには影響しません。',
   'automation.templates.nothingToSave': 'テンプレートとして保存するものがありません。',

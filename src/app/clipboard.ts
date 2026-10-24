@@ -1,6 +1,6 @@
 /**
  * Clipboard: copies go to an in-memory clipboard *and* the system clipboard
- * (as tagged JSON), so you can paste between OpenDraw windows. Pasting plain
+ * (as tagged JSON), so you can paste between ArkDraw windows. Pasting plain
  * text from other apps creates a text box.
  */
 import type { DiagramElement, Vec } from '@/model/types';
@@ -72,7 +72,7 @@ async function readClipboardImage(): Promise<Blob | null> {
 }
 
 /**
- * Pastes, in priority order: OpenDraw elements (our tagged JSON always wins),
+ * Pastes, in priority order: ArkDraw elements (our tagged JSON always wins),
  * image files, a lone image URL, plain text, then the in-memory clipboard.
  * Images and image URLs land at `at` (default: viewport center).
  */

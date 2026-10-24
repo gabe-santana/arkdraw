@@ -3,21 +3,21 @@ import type { Translation } from '../../types';
 
 export default {
   // UpdatePrompt
-  'desktop.update.available': 'OpenDraw {version} 已发布',
+  'desktop.update.available': 'ArkDraw {version} 已发布',
   'desktop.update.downloading': '正在下载…',
   'desktop.update.downloadingPercent': '正在下载 · {percent}%',
-  'desktop.update.installing': '正在安装… OpenDraw 将重新启动。',
+  'desktop.update.installing': '正在安装… ArkDraw 将重新启动。',
   'desktop.update.restartHint': '重新启动以更新。系统会先提示你保存未保存的更改。',
   'desktop.update.restart': '重新启动以更新',
 
   // updater.ts
   'desktop.update.webAuto': '网页版会自动安装更新。',
-  'desktop.update.upToDate': 'OpenDraw 已是最新版本。',
+  'desktop.update.upToDate': 'ArkDraw 已是最新版本。',
   'desktop.update.checkFailed': '无法检查更新：{error}',
   'desktop.update.failed': '更新失败：{error}',
 
   // startup.ts — Extras → Configuration file…
-  'desktop.config.editHint': '编辑 config.json，然后重新启动 OpenDraw 以应用。',
+  'desktop.config.editHint': '编辑 config.json，然后重新启动 ArkDraw 以应用。',
   'desktop.config.noFolder': '没有配置文件夹',
 
   // windows.ts — opening a file while the current one has unsaved changes

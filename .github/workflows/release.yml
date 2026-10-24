@@ -69,7 +69,7 @@ jobs:
           prerelease=""
           case "$TAG" in *-*) prerelease="--prerelease" ;; esac
           if ! gh release view "$TAG" >/dev/null 2>&1; then
-            gh release create "$TAG" --draft --verify-tag --title "OpenDraw ${TAG#v}" --generate-notes $prerelease
+            gh release create "$TAG" --draft --verify-tag --title "ArkDraw ${TAG#v}" --generate-notes $prerelease
           fi
           echo "id=$(gh release view "$TAG" --json databaseId --jq .databaseId)" >> "$GITHUB_OUTPUT"
 
@@ -233,7 +233,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # Windows download: the Microsoft Store web installer, a small executable
-      # signed by Microsoft that installs OpenDraw from the Store (no SmartScreen
+      # signed by Microsoft that installs ArkDraw from the Store (no SmartScreen
       # prompt). It exists once the Store listing is live.
       - name: Windows installer (Microsoft Store)
         if: vars.MSSTORE_PRODUCT_ID != ''
@@ -242,7 +242,7 @@ jobs:
           PRODUCT_ID: ${{ vars.MSSTORE_PRODUCT_ID }}
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
-          file="OpenDraw_${VERSION}_windows-installer.exe"
+          file="ArkDraw_${VERSION}_windows-installer.exe"
           code=$(curl -sL -o "$file" -w '%{http_code}' "https://get.microsoft.com/installer/download/${PRODUCT_ID}?cid=github_release")
           if [ "$code" = "200" ] && [ "$(head -c 2 "$file")" = "MZ" ]; then
             gh release upload "$TAG" "$file" --repo "$GITHUB_REPOSITORY" --clobber

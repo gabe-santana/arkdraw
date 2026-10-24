@@ -60,7 +60,7 @@ async function exit(code: number) {
   await (await core()).invoke('cli_exit', { code });
 }
 
-/** Parses diagram text (OpenDraw JSON or mxGraph XML) into pages. */
+/** Parses diagram text (ArkDraw JSON or mxGraph XML) into pages. */
 export async function pagesFromText(text: string): Promise<Page[]> {
   const t = text.replace(/^﻿/, '').trimStart();
   if (t.startsWith('{')) return parsePages(t);
