@@ -16,7 +16,7 @@ export interface Revision {
   elements: number;
 }
 
-const DB = 'opendraw';
+const DB = 'arkdraw';
 const STORE = 'revisions';
 const KEEP = 40;
 

@@ -27,8 +27,8 @@ describe('parseLaunchParams', () => {
       kind: 'url',
       url: 'https://cdn.example.org/a%20b.drawio',
     });
-    expect(parseLaunchParams(`${BASE}#U${encodeURIComponent('https://x.org/d.opendraw')}`).source).toEqual({ kind: 'url', url: 'https://x.org/d.opendraw' });
-    expect(parseLaunchParams(`${BASE}?url=examples/flow.opendraw`).source).toEqual({ kind: 'url', url: 'https://draw.example.com/app/examples/flow.opendraw' });
+    expect(parseLaunchParams(`${BASE}#U${encodeURIComponent('https://x.org/d.arkdraw')}`).source).toEqual({ kind: 'url', url: 'https://x.org/d.arkdraw' });
+    expect(parseLaunchParams(`${BASE}?url=examples/flow.arkdraw`).source).toEqual({ kind: 'url', url: 'https://draw.example.com/app/examples/flow.arkdraw' });
   });
 
   it('prefers the fragment over ?url=', () => {

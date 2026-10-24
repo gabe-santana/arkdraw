@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
 #
-# OpenDraw web edition: static build served by nginx.
+# ArkDraw web edition: static build served by nginx.
 #
-#   docker build -t opendraw .
-#   docker run --rm -p 8080:8080 opendraw          → http://localhost:8080
+#   docker build -t arkdraw .
+#   docker run --rm -p 8080:8080 arkdraw          → http://localhost:8080
 #
 # Runtime env: PORT (default 8080), FRAME_ANCESTORS (who may iframe the app,
 # default *). See docs/web.md.
@@ -16,7 +16,7 @@ COPY package.json package-lock.json .npmrc ./
 RUN npm ci --no-audit --no-fund
 
 COPY . .
-# Sub-path deployments (behind a prefix-stripping proxy): --build-arg BASE_PATH=/opendraw/
+# Sub-path deployments (behind a prefix-stripping proxy): --build-arg BASE_PATH=/arkdraw/
 ARG BASE_PATH=/
 # Build, render the nginx template with the CSP script hashes, drop the
 # Netlify-style _headers file (nginx sets headers itself), and pre-compress

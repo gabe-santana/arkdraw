@@ -87,7 +87,7 @@ const toBase64 = (bytes: Uint8Array) => {
   return btoa(bin);
 };
 
-const fileTitle = () => useEditor.getState().file.name.replace(/\.opendraw$/i, '');
+const fileTitle = () => useEditor.getState().file.name.replace(/\.arkdraw$/i, '');
 
 function samePages(a: Page[], b: Page[]): boolean {
   return a.length === b.length && a.every((p, i) => p.id === b[i].id && p.doc === b[i].doc && p.name === b[i].name && p.settings === b[i].settings);
@@ -101,7 +101,7 @@ export async function exportForEmbed(req: Extract<EmbedAction, { action: 'export
   const page = (req.page !== undefined && resolvePageParam(pages, String(req.page))) || pages.find((p) => p.id === s.activePageId) || pages[0];
   switch (format) {
     case 'json':
-    case 'opendraw':
+    case 'arkdraw':
       return { format: 'json', mime: 'application/json', data: serializePages(pages) };
     case 'drawio':
     case 'xml': {

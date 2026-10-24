@@ -2,7 +2,7 @@
  * User libraries: the Scratchpad plus any number of custom libraries. Items
  * are snapshots of elements (one shape or a whole group with connectors) that
  * can be dropped back onto the canvas. Persisted locally; libraries can be
- * exported/imported as `.opendrawlib` files, and mxGraph `<mxlibrary>` files
+ * exported/imported as `.arkdrawlib` files, and mxGraph `<mxlibrary>` files
  * can be imported.
  */
 import { create } from 'zustand';
@@ -29,7 +29,7 @@ export interface UserLibrary {
 }
 
 export const SCRATCHPAD_ID = 'scratchpad';
-const KEY = 'opendraw:user-libraries';
+const KEY = 'arkdraw:user-libraries';
 
 function load(): UserLibrary[] {
   try {
@@ -103,10 +103,10 @@ export function translate(e: DiagramElement, dx: number, dy: number): DiagramEle
 // --- Files ---------------------------------------------------------------------------------
 
 export function serializeLibrary(lib: UserLibrary): string {
-  return JSON.stringify({ format: 'opendraw-library', version: 1, name: lib.name, items: lib.items }, null, 2) + '\n';
+  return JSON.stringify({ format: 'arkdraw-library', version: 1, name: lib.name, items: lib.items }, null, 2) + '\n';
 }
 
-/** Parses an `.opendrawlib` file or a mxGraph `<mxlibrary>` file. */
+/** Parses an `.arkdrawlib` file or a mxGraph `<mxlibrary>` file. */
 export async function parseLibrary(text: string, fileName: string): Promise<{ name: string; items: UserLibraryItem[] }> {
   const name = fileName.replace(/\.[^.]+$/, '');
   const trimmed = text.trim();
@@ -115,7 +115,7 @@ export async function parseLibrary(text: string, fileName: string): Promise<{ na
   if (stencils) return stencils;
   if (trimmed.startsWith('{')) {
     const data = JSON.parse(trimmed);
-    if (data?.format !== 'opendraw-library' || !Array.isArray(data.items)) throw new Error(t('panels.userLib.notALibrary'));
+    if (data?.format !== 'arkdraw-library' || !Array.isArray(data.items)) throw new Error(t('panels.userLib.notALibrary'));
     return { name: data.name || name, items: data.items.map((i: UserLibraryItem) => ({ ...i, id: uid() })) };
   }
   const m = trimmed.match(/<mxlibrary[^>]*>([\s\S]*)<\/mxlibrary>/);

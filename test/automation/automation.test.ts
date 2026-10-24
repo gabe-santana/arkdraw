@@ -79,7 +79,7 @@ describe('placeholders with parent lookup', () => {
 });
 
 describe('file format: page data, layer data, hidden and file properties', () => {
-  it('round-trips through .opendraw', () => {
+  it('round-trips through .arkdraw', () => {
     const page = { ...newPage('P', { ...docOf(shape('a', 0, 0, { hidden: true })), layers: [{ id: 'L', name: 'L', visible: true, locked: false, data: { k: 'v' } }] }), data: { owner: 'Ada' } };
     const text = serializePages([page], { title: 'T', author: 'A', created: '2026-01-01T00:00:00.000Z' });
     const [back] = parsePages(text);
@@ -87,7 +87,7 @@ describe('file format: page data, layer data, hidden and file properties', () =>
     expect(back.doc.layers?.[0].data).toEqual({ k: 'v' });
     expect(back.doc.elements.a.hidden).toBe(true);
     expect(parseMeta(text)).toMatchObject({ title: 'T', author: 'A' });
-    expect(parseMeta('{"format":"opendraw","pages":[]}')).toBeUndefined();
+    expect(parseMeta('{"format":"arkdraw","pages":[]}')).toBeUndefined();
   });
 
   it('round-trips layer data and hidden cells through mxGraph', async () => {

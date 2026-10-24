@@ -393,7 +393,7 @@ export interface Page {
   data?: Record<string, string>;
 }
 
-/** File-level properties (File → Properties), stored in the `.opendraw` file. */
+/** File-level properties (File → Properties), stored in the `.arkdraw` file. */
 export interface DocumentMeta {
   title?: string;
   author?: string;

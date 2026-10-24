@@ -23,9 +23,9 @@ Notes:
 - **Snap**: Tauri's bundler has no snap target, so `snap/snapcraft.yaml` builds the
   `.deb` and repacks it with the GNOME extension (WebKitGTK). Build locally with
   `snapcraft` on Ubuntu. The CI job is best effort (`continue-on-error`). To publish
-  to the Snap Store, run `snapcraft upload --release=stable opendraw_*.snap` with a
+  to the Snap Store, run `snapcraft upload --release=stable arkdraw_*.snap` with a
   store login.
-- **File associations** (installers only): `.opendraw` (editor), `.drawio` (editor)
+- **File associations** (installers only): `.arkdraw` (editor), `.drawio` (editor)
   and `.vsdx` (viewer, alternate handler on macOS), set in `bundle.fileAssociations`
   in `tauri.conf.json`. `.png`/`.svg`/`.xml` open only through *File → Open*,
   not by association.
@@ -75,10 +75,10 @@ The app uses [`tauri-plugin-updater`](https://v2.tauri.app/plugin/updater/):
    installed copies can never update again):
 
    ```sh
-   npm run tauri signer generate -- -w ~/.tauri/opendraw.key
+   npm run tauri signer generate -- -w ~/.tauri/arkdraw.key
    ```
 
-2. Put the **public** key (contents of `~/.tauri/opendraw.key.pub`) in
+2. Put the **public** key (contents of `~/.tauri/arkdraw.key.pub`) in
    `src-tauri/tauri.conf.json` → `plugins.updater.pubkey`, replacing the
    `REPLACE_WITH_…` placeholder. Until you do, update checks work but every
    download fails signature verification.
@@ -87,7 +87,7 @@ The app uses [`tauri-plugin-updater`](https://v2.tauri.app/plugin/updater/):
 
    | Secret | Value |
    | --- | --- |
-   | `TAURI_SIGNING_PRIVATE_KEY` | contents of `~/.tauri/opendraw.key` (or its path on a self-hosted runner) |
+   | `TAURI_SIGNING_PRIVATE_KEY` | contents of `~/.tauri/arkdraw.key` (or its path on a self-hosted runner) |
    | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | the password you chose (empty if none) |
 
 With `TAURI_SIGNING_PRIVATE_KEY` set, the workflow merges
@@ -100,7 +100,7 @@ Local builds (`npm run tauri build`) don't create updater artifacts, so they don
 need the key. To test signing locally:
 
 ```sh
-export TAURI_SIGNING_PRIVATE_KEY="$(cat ~/.tauri/opendraw.key)"
+export TAURI_SIGNING_PRIVATE_KEY="$(cat ~/.tauri/arkdraw.key)"
 export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=...
 npm run tauri build -- --config src-tauri/tauri.updater.conf.json
 ```
@@ -173,7 +173,7 @@ or any file passed with `--config <path>`:
 
 ```json
 {
-  "plugins": ["/home/me/opendraw-plugins/my-plugin.js"],
+  "plugins": ["/home/me/arkdraw-plugins/my-plugin.js"],
   "enablePlugins": false,
   "spellCheck": true,
   "spellCheckLanguage": "en-GB",
@@ -194,5 +194,5 @@ or any file passed with `--config <path>`:
 Command-line flags (they can be combined with a file to open, and with `--export`):
 
 ```text
-opendraw [file] [--enable-plugins] [--config <path>]
+arkdraw [file] [--enable-plugins] [--config <path>]
 ```

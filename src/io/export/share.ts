@@ -1,6 +1,6 @@
 /**
- * Share URLs: the whole `.opendraw` document, deflate-raw compressed and
- * base64url encoded into the fragment of a link (`https://opendraw.app/#R…`).
+ * Share URLs: the whole `.arkdraw` document, deflate-raw compressed and
+ * base64url encoded into the fragment of a link (`https://arkdraw.app/#R…`).
  * Uses the same codec as the web app's link loader (src/web/shareLink.ts).
  */
 import type { Page } from '@/model/types';

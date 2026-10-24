@@ -12,7 +12,7 @@ export default {
 
   // Viewer — toolbar
   'viewer.openNewTab': 'Ouvrir dans un nouvel onglet',
-  'viewer.editInOpenDraw': 'Modifier dans ArkDraw',
+  'viewer.editInArkDraw': 'Modifier dans ArkDraw',
   'viewer.previousPage': 'Page précédente',
   'viewer.nextPage': 'Page suivante',
   'viewer.zoomOut': 'Zoom arrière',

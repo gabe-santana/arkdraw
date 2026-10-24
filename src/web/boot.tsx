@@ -111,7 +111,7 @@ interface LaunchQueue {
   setConsumer: (cb: (params: { files?: Array<{ getFile: () => Promise<File> }> }) => void) => void;
 }
 
-/** Installed PWA: open `.opendraw` / `.drawio` files from the OS (manifest `file_handlers`). */
+/** Installed PWA: open `.arkdraw` / `.drawio` files from the OS (manifest `file_handlers`). */
 function installLaunchQueue() {
   const lq = (window as unknown as { launchQueue?: LaunchQueue }).launchQueue;
   lq?.setConsumer(async ({ files }) => {

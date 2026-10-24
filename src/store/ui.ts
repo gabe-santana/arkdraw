@@ -65,8 +65,8 @@ interface UiState {
   ask: (req: Omit<ConfirmRequest, 'resolve'>) => Promise<'confirm' | 'deny' | 'cancel'>;
 }
 
-const THEME_KEY = 'opendraw:theme';
-const PANELS_KEY = 'opendraw:panels';
+const THEME_KEY = 'arkdraw:theme';
+const PANELS_KEY = 'arkdraw:panels';
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -106,11 +106,11 @@ export const useUi = create<UiState>((set, get) => ({
   importOpen: false,
   templatesOpen: false,
   layoutOpen: false,
-  rulers: load('opendraw:rulers', { rulers: false }).rulers,
+  rulers: load('arkdraw:rulers', { rulers: false }).rulers,
   commentsOpen: false,
   revisionsOpen: false,
   prefsOpen: false,
-  units: load('opendraw:units', { units: 'px' as UiUnits }).units,
+  units: load('arkdraw:units', { units: 'px' as UiUnits }).units,
   toasts: [],
   confirm: null,
 
@@ -119,8 +119,8 @@ export const useUi = create<UiState>((set, get) => ({
     const s = get();
     try {
       if ('theme' in patch) localStorage.setItem(THEME_KEY, JSON.stringify({ theme: s.theme }));
-      if ('rulers' in patch) localStorage.setItem('opendraw:rulers', JSON.stringify({ rulers: s.rulers }));
-      if ('units' in patch) localStorage.setItem('opendraw:units', JSON.stringify({ units: s.units }));
+      if ('rulers' in patch) localStorage.setItem('arkdraw:rulers', JSON.stringify({ rulers: s.rulers }));
+      if ('units' in patch) localStorage.setItem('arkdraw:units', JSON.stringify({ units: s.units }));
       if ('leftOpen' in patch || 'rightOpen' in patch || 'layersOpen' in patch || 'layersHeight' in patch || 'leftWidth' in patch || 'rightWidth' in patch || 'aiWidth' in patch || 'aiOpen' in patch || 'dock' in patch) {
         const { leftOpen, rightOpen, layersOpen, layersHeight, leftWidth, rightWidth, aiWidth, aiOpen, dock } = s;
         localStorage.setItem(PANELS_KEY, JSON.stringify({ leftOpen, rightOpen, layersOpen, layersHeight, leftWidth, rightWidth, aiWidth, aiOpen, dock }));

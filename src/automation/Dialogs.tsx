@@ -100,7 +100,7 @@ export function ConfigurationBody({ close }: { close: () => void }) {
 // Layout from JSON
 // ---------------------------------------------------------------------------
 
-const LAYOUT_KEY = 'opendraw:layout-json';
+const LAYOUT_KEY = 'arkdraw:layout-json';
 
 export function LayoutJsonBody({ close }: { close: () => void }) {
   const t = useT();
@@ -155,7 +155,7 @@ export function LayoutJsonBody({ close }: { close: () => void }) {
 // Print
 // ---------------------------------------------------------------------------
 
-const PRINT_KEY = 'opendraw:print-options';
+const PRINT_KEY = 'arkdraw:print-options';
 type Scaling = PrintOptions['scaling']['mode'];
 const PAPERS = ['A3', 'A4', 'A5', 'Letter', 'Legal', 'Tabloid'] as const satisfies readonly Exclude<PaperSize, 'Custom'>[];
 
@@ -303,7 +303,7 @@ function Snippet({ label, value, note }: { label: string; value: string; note?: 
 
 export function EmbedBody({ close }: { close: () => void }) {
   const t = useT();
-  const name = useEditor((s) => s.file.name.replace(/\.opendraw$/i, ''));
+  const name = useEditor((s) => s.file.name.replace(/\.arkdraw$/i, ''));
   const [scope, setScope] = useState<'all' | 'current'>('all');
   const [toolbar, setToolbar] = useState(true);
   const [width, setWidth] = useState('100%');

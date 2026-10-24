@@ -8,7 +8,7 @@ By participating you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 - **Report a bug** or **request a feature** with the [issue templates](https://github.com/gabe-santana/arkdraw/issues/new/choose).
 - **Pick up an issue.** Issues labelled [`good first issue`](https://github.com/gabe-santana/arkdraw/labels/good%20first%20issue) are small and well scoped; [`help wanted`](https://github.com/gabe-santana/arkdraw/labels/help%20wanted) ones are bigger.
-- **Add shapes, templates, importers or translations.** Most of these are self-contained modules (see [Extending ArkDraw](#extending-opendraw)).
+- **Add shapes, templates, importers or translations.** Most of these are self-contained modules (see [Extending ArkDraw](#extending-arkdraw)).
 - **Improve the docs.**
 
 For larger changes, please open an issue first so we can agree on the approach before you invest time in it.
@@ -46,7 +46,7 @@ src/
   panels/      shape library and Format panel
   model/ store document model and Zustand stores (history lives here)
   shapes/      shape registry and libraries (src/shapes/libs/*, auto-discovered)
-  io/          .opendraw format, importers (src/io/import/*, auto-discovered), exporters
+  io/          .arkdraw format, importers (src/io/import/*, auto-discovered), exporters
   ai/          provider adapters and the diagram-generation agent
   i18n/        UI translations
 src-tauri/     desktop shell (Rust)

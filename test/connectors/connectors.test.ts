@@ -238,7 +238,7 @@ describe('round trips', () => {
     expect(e.source.side).toBe('right');
   });
 
-  it('survives the .opendraw format (including elbow routings)', () => {
+  it('survives the .arkdraw format (including elbow routings)', () => {
     const { a, b, c, branch } = build();
     c.routing = 'elbow-v';
     const page = newPage('P', docOf(a, b, c, branch));

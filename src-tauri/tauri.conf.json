@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "ArkDraw",
   "version": "0.1.0",
-  "identifier": "app.opendraw.desktop",
+  "identifier": "app.arkdraw.desktop",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -40,7 +40,7 @@
     "copyright": "Copyright (c) 2026 Gabriel Santana. MIT License.",
     "license": "MIT",
     "licenseFile": "../LICENSE",
-    "homepage": "https://github.com/gabe-santana/opendraw",
+    "homepage": "https://github.com/gabe-santana/arkdraw",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -50,11 +50,11 @@
     ],
     "fileAssociations": [
       {
-        "ext": ["opendraw"],
+        "ext": ["arkdraw"],
         "name": "ArkDraw Diagram",
         "description": "ArkDraw Diagram",
         "role": "Editor",
-        "mimeType": "application/x-opendraw+json"
+        "mimeType": "application/x-arkdraw+json"
       },
       {
         "ext": ["drawio"],
@@ -76,7 +76,7 @@
   "plugins": {
     "updater": {
       "pubkey": "REPLACE_WITH_THE_PUBLIC_KEY_FROM_tauri_signer_generate (see docs/release.md)",
-      "endpoints": ["https://github.com/gabe-santana/opendraw/releases/latest/download/latest.json"],
+      "endpoints": ["https://github.com/gabe-santana/arkdraw/releases/latest/download/latest.json"],
       "windows": { "installMode": "passive" }
     }
   }

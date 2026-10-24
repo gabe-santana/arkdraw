@@ -1,7 +1,7 @@
 //! Desktop configuration and desktop-only command-line flags.
 //!
 //! ```text
-//! opendraw [file] [--enable-plugins] [--config <path>]
+//! arkdraw [file] [--enable-plugins] [--config <path>]
 //! ```
 //!
 //! The config file is `config.json` in the app config directory (or the file

@@ -67,7 +67,7 @@ The shape's fill, stroke, stroke width, dash, opacity and font set the initial s
 
 | File | Becomes |
 | --- | --- |
-| `.opendrawlib` | An ArkDraw library. |
+| `.arkdrawlib` | An ArkDraw library. |
 | mxGraph `<mxlibrary>` `.xml` | One item per entry. Entries built from `shape=stencil(…)` cells become custom shapes. |
 | Stencil set `.xml`: `<shapes name="…"><shape …/>…</shapes>` or a single `<shape>` | One custom shape per `<shape>`. |
 | Shape config `.json` (see below) | One custom shape per entry, with its defaults. |
@@ -76,7 +76,7 @@ The shape's fill, stroke, stroke width, dash, opacity and font set the initial s
 
 ```json
 {
-  "format": "opendraw-shapes",
+  "format": "arkdraw-shapes",
   "version": 1,
   "name": "Release shapes",
   "shapes": [
@@ -144,7 +144,7 @@ The dev server (`npm run dev`) has no CSP.
 
 ### Writing a plugin
 
-A plugin is a script that calls `window.ArkDraw.registerPlugin` (`window.OpenDraw`, the project's former name, is the same API and keeps older plugins working). It can also be an ES module whose default export is the plugin object:
+A plugin is a script that calls `window.ArkDraw.registerPlugin`. It can also be an ES module whose default export is the plugin object:
 
 ```js
 window.ArkDraw.registerPlugin({

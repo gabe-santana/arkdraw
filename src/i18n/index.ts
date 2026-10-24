@@ -26,7 +26,7 @@ export type { MessageVars } from './format';
 
 export type LocalePreference = LocaleCode | 'auto';
 
-const STORAGE_KEY = 'opendraw:locale';
+const STORAGE_KEY = 'arkdraw:locale';
 
 /**
  * Lazy locale bundles: ./bundles/<code>.ts gathers ./locales/<code>/<namespace>.ts,

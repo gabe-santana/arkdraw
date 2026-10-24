@@ -57,12 +57,12 @@ describe('CRC32 and PNG chunks', () => {
     expect(readPngChunks(png).map((c) => c.type)).toEqual(['IHDR', 'iTXt', 'IDAT', 'IEND']);
     // Re-embedding replaces instead of duplicating.
     const again = embedDiagramInPng(png, '{"x":2}');
-    expect(readPngText(again).filter((t) => t.keyword === 'opendraw').map((t) => t.text)).toEqual(['{"x":2}']);
+    expect(readPngText(again).filter((t) => t.keyword === 'arkdraw').map((t) => t.text)).toEqual(['{"x":2}']);
   });
 });
 
 describe('editable images', () => {
-  it('round-trips an OpenDraw document through PNG', async () => {
+  it('round-trips an ArkDraw document through PNG', async () => {
     const doc = sampleDoc();
     const png = embedDiagramInPng(tinyPng(), serializeDoc(doc));
     expect(importer.detect!(png, 'x.png')).toBe(true);
@@ -74,12 +74,12 @@ describe('editable images', () => {
     expect(Object.values(d.elements).filter(isConnector)[0].target.elementId).toBe(doc.order[1]);
   });
 
-  it('round-trips an OpenDraw document through SVG', async () => {
+  it('round-trips an ArkDraw document through SVG', async () => {
     const doc = sampleDoc();
     const svg = embedDiagramInSvg('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10"/></svg>', serializeDoc(doc));
-    expect(svg).toMatch(/^<svg [^>]*data-opendraw="[A-Za-z0-9+/=]+">/);
+    expect(svg).toMatch(/^<svg [^>]*data-arkdraw="[A-Za-z0-9+/=]+">/);
     const twice = embedDiagramInSvg(svg, serializeDoc(doc));
-    expect(twice.match(/data-opendraw/g)).toHaveLength(1);
+    expect(twice.match(/data-arkdraw/g)).toHaveLength(1);
     const res = await importEmbedded(twice, 'd.svg');
     expect(Object.values(res.pages[0].doc.elements).filter(isShape).map((s) => s.text)).toEqual(['Hello', 'Wörld ✓']);
   });

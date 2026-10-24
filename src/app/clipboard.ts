@@ -14,7 +14,7 @@ import { presetForTool } from '@/canvas/tools';
 import { lineHeight, measureText, wrapText } from '@/lib/text';
 import { hasDrawioXml, pasteDrawioXml, writeClipboard } from '@/automation/clipboardXml';
 
-const MARKER = 'application/x-opendraw';
+const MARKER = 'application/x-arkdraw';
 
 export function copyToClipboard(cut: boolean) {
   const s = useEditor.getState();

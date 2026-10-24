@@ -67,7 +67,7 @@ const CATEGORY_ICONS: Record<TemplateCategory, ComponentType<LucideProps>> = {
   'Education & Other': GraduationCap,
 };
 
-const LAST_KEY = 'opendraw:templates-category';
+const LAST_KEY = 'arkdraw:templates-category';
 
 export function TemplatesDialog() {
   const open = useUi((s) => s.templatesOpen);

@@ -8,7 +8,7 @@
  * keys out of plain-text storage (synced profiles, disk, storage dumps); it
  * cannot protect them from code running inside the page itself.
  */
-const DB = 'opendraw-ai';
+const DB = 'arkdraw-ai';
 const STORE = 'vault';
 const MASTER = '\u0000master';
 

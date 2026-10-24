@@ -22,7 +22,7 @@ export default {
 
   // fileCommands.ts — file dialog filters
   'app.filter.allDiagrams': 'Tutti i diagrammi',
-  'app.filter.opendraw': 'Diagramma ArkDraw',
+  'app.filter.arkdraw': 'Diagramma ArkDraw',
   'app.filter.drawio': 'XML diagramma (.drawio)',
 
   // fileCommands.ts — unsaved changes, open, save

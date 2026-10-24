@@ -14,7 +14,7 @@
     <script>
       // Apply the theme before first paint to avoid a flash.
       try {
-        var t = JSON.parse(localStorage.getItem('opendraw:theme') || '{}').theme || 'dark';
+        var t = JSON.parse(localStorage.getItem('arkdraw:theme') || '{}').theme || 'dark';
         if (t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)) {
           document.documentElement.classList.add('dark');
         }

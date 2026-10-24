@@ -17,7 +17,7 @@ export default {
   'storage.openDoc': 'Open {name}',
   // thumbnail placeholder for a document without content
   'storage.emptyThumb': 'Empty',
-  'storage.download': 'Download .opendraw',
+  'storage.download': 'Download .arkdraw',
   'storage.docActions': 'Document actions',
   // file-type name in the save dialog
   'storage.fileType': 'ArkDraw Diagram',

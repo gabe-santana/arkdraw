@@ -58,7 +58,7 @@ const HISTORY_LIMIT = 200;
 
 const EMPTY_DOC: Doc = { elements: {}, order: [] };
 
-const SETTINGS_KEY = 'opendraw:settings';
+const SETTINGS_KEY = 'arkdraw:settings';
 function loadSettings(): Settings {
   const defaults: Settings = { grid: true, snap: true, guides: true, gridSize: 10, adaptColors: true, connectionPoints: true };
   try {

@@ -29,7 +29,7 @@ pages[1].doc.layers = [
   { id: 'l2', name: 'Notes', visible: true, locked: false },
 ];
 pages[1].doc.elements[pages[1].doc.order[3]] = { ...pages[1].doc.elements[pages[1].doc.order[3]], layerId: 'l2' };
-useEditor.getState().loadPages(pages, { path: null, name: 'Architecture.opendraw' });
+useEditor.getState().loadPages(pages, { path: null, name: 'Architecture.arkdraw' });
 useUi.getState().set({ exportOpen: true });
 Object.assign(window, { __exportPreview: { ...exporters, exportHtml, useEditor, useUi } });
 

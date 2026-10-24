@@ -16,7 +16,7 @@
  * 30 fps at full speed.
  *
  * Credentials come from `.secrets` (Endpoint=, Key=, Model= for Azure AI
- * Foundry; git-ignored) or OPENDRAW_AI_ENDPOINT / _KEY / _MODEL. They are
+ * Foundry; git-ignored) or ARKDRAW_AI_ENDPOINT / _KEY / _MODEL. They are
  * only handed to the page under test and are never printed.
  *
  * Uses the installed Chrome (or Edge) through the DevTools protocol and
@@ -28,7 +28,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 const ROOT = resolve(import.meta.dirname, '../..');
-const APP = process.env.OPENDRAW_DEMO_URL ?? 'http://localhost:1422';
+const APP = process.env.ARKDRAW_DEMO_URL ?? 'http://localhost:1422';
 const VIDEO = process.argv.includes('--video');
 const OUT = join(ROOT, VIDEO ? 'site/public/media' : 'docs/media/ai');
 /** GIFs: 1280×760 at 1×. Videos: 4K, i.e. 1280×720 at 3×. */
@@ -64,9 +64,9 @@ const DEMOS = {
 
 function credentials() {
   const env = {
-    Endpoint: process.env.OPENDRAW_AI_ENDPOINT,
-    Key: process.env.OPENDRAW_AI_KEY,
-    Model: process.env.OPENDRAW_AI_MODEL,
+    Endpoint: process.env.ARKDRAW_AI_ENDPOINT,
+    Key: process.env.ARKDRAW_AI_KEY,
+    Model: process.env.ARKDRAW_AI_MODEL,
   };
   const file = join(ROOT, '.secrets');
   if (existsSync(file)) {
@@ -75,7 +75,7 @@ function credentials() {
       if (i > 0) env[line.slice(0, i).trim()] ??= line.slice(i + 1).trim();
     }
   }
-  for (const k of ['Endpoint', 'Key', 'Model']) if (!env[k]) throw new Error(`Missing ${k} in .secrets (or OPENDRAW_AI_${k.toUpperCase()})`);
+  for (const k of ['Endpoint', 'Key', 'Model']) if (!env[k]) throw new Error(`Missing ${k} in .secrets (or ARKDRAW_AI_${k.toUpperCase()})`);
   return env;
 }
 
@@ -101,7 +101,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const log = (...a) => process.env.DEBUG && console.log(new Date().toISOString().slice(11, 19), ...a);
 
 async function launch() {
-  const profile = mkdtempSync(join(tmpdir(), 'opendraw-demo-'));
+  const profile = mkdtempSync(join(tmpdir(), 'arkdraw-demo-'));
   const port = 9300 + Math.floor(Math.random() * 500);
   const proc = spawn(findBrowser(), [
     '--headless=new',
@@ -199,7 +199,7 @@ function pageApi(send) {
  * screencast: only screenshots honor the device scale factor (true 4K).
  */
 function recorder(send) {
-  const dir = mkdtempSync(join(tmpdir(), 'opendraw-frames-'));
+  const dir = mkdtempSync(join(tmpdir(), 'arkdraw-frames-'));
   const frames = [];
   let running = true;
   const start = Date.now();
@@ -279,11 +279,11 @@ async function record(name, demo, creds) {
     await page.waitFor(`document.readyState === 'complete'`);
     log('settings');
     await page.evaluate(`(() => {
-      localStorage.setItem('opendraw:theme', JSON.stringify({ theme: 'dark' }));
-      localStorage.setItem('opendraw:locale', 'en');
-      localStorage.setItem('opendraw:preferences', JSON.stringify({ startScreen: false }));
-      localStorage.setItem('opendraw:panels', JSON.stringify({ leftOpen: false, rightOpen: true, aiOpen: true, aiWidth: 360, leftWidth: 264, rightWidth: 268, layersOpen: true, layersHeight: 300, dock: { left: ['shapes'], right: ['format', 'layers'] } }));
-      localStorage.setItem('opendraw.ai.settings.v1', JSON.stringify({ provider: 'azure', models: { azure: ${JSON.stringify(creds.Model)} }, baseUrls: { azure: ${JSON.stringify(creds.Endpoint)} }, customAuth: 'bearer', azureAuth: 'api-key', params: {}, authorizedBaseUrls: { azure: ${JSON.stringify(creds.Endpoint)} }, rememberKeys: true }));
+      localStorage.setItem('arkdraw:theme', JSON.stringify({ theme: 'dark' }));
+      localStorage.setItem('arkdraw:locale', 'en');
+      localStorage.setItem('arkdraw:preferences', JSON.stringify({ startScreen: false }));
+      localStorage.setItem('arkdraw:panels', JSON.stringify({ leftOpen: false, rightOpen: true, aiOpen: true, aiWidth: 360, leftWidth: 264, rightWidth: 268, layersOpen: true, layersHeight: 300, dock: { left: ['shapes'], right: ['format', 'layers'] } }));
+      localStorage.setItem('arkdraw.ai.settings.v1', JSON.stringify({ provider: 'azure', models: { azure: ${JSON.stringify(creds.Model)} }, baseUrls: { azure: ${JSON.stringify(creds.Endpoint)} }, customAuth: 'bearer', azureAuth: 'api-key', params: {}, authorizedBaseUrls: { azure: ${JSON.stringify(creds.Endpoint)} }, rememberKeys: true }));
       return true;
     })()`);
     await page.evaluate(`import('/src/ai/keyVault.ts').then((v) => v.vaultPut('azure', { key: ${JSON.stringify(creds.Key)}, origin: new URL(${JSON.stringify(creds.Endpoint)}).origin, auth: 'api-key' })).then(() => true)`);

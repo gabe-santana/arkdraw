@@ -5,7 +5,7 @@
  * two never fight over schema versions.
  */
 
-const DB = 'opendraw-storage';
+const DB = 'arkdraw-storage';
 const VERSION = 1;
 export type StoreName = 'documents' | 'recent' | 'templates';
 const STORES: StoreName[] = ['documents', 'recent', 'templates'];

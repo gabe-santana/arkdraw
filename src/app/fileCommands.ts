@@ -18,13 +18,13 @@ import { askOpenWhere, openNewWindow, windowScopedKey } from '@/desktop/windows'
 import { backupsEnabled } from '@/desktop/config';
 import { t } from '@/i18n';
 
-const saveFilters = () => [{ name: t('app.filter.opendraw'), extensions: [FILE_EXTENSION] }];
+const saveFilters = () => [{ name: t('app.filter.arkdraw'), extensions: [FILE_EXTENSION] }];
 
 function openFilters() {
   const extra = IMPORTERS.flatMap((i) => i.extensions);
   return [
     { name: t('app.filter.allDiagrams'), extensions: [...new Set([FILE_EXTENSION, 'drawio', 'xml', ...extra])] },
-    { name: t('app.filter.opendraw'), extensions: [FILE_EXTENSION] },
+    { name: t('app.filter.arkdraw'), extensions: [FILE_EXTENSION] },
     { name: t('app.filter.drawio'), extensions: ['drawio', 'xml'] },
     ...IMPORTERS.filter((i) => i.extensions.length).map((i) => ({ name: i.label.replace(/…$/, ''), extensions: i.extensions })),
   ];
@@ -191,7 +191,7 @@ export async function saveDocument(saveAs = false): Promise<boolean> {
 // ---------------------------------------------------------------------------
 
 // Per window (desktop File → New window), so windows don't overwrite each other's draft.
-const RECOVERY_KEY = windowScopedKey('opendraw:recovery');
+const RECOVERY_KEY = windowScopedKey('arkdraw:recovery');
 
 export function startRecovery() {
   let timer = 0;

@@ -47,7 +47,7 @@ function EmbedBar({ save, exit }: Props) {
 export function mountEmbedBar(props: Props): () => void {
   const host = document.createElement('div');
   host.className = 'pointer-events-none fixed left-1/2 top-[54px] z-40 -translate-x-1/2';
-  host.dataset.opendrawEmbedBar = '';
+  host.dataset.arkdrawEmbedBar = '';
   document.body.appendChild(host);
   const root = createRoot(host);
   root.render(

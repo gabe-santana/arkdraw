@@ -12,7 +12,7 @@ export default {
   'storage.empty': '이 브라우저에 저장된 다이어그램이 아직 없습니다. “현재 문서 저장” 또는 파일 → 브라우저에 저장을 사용하세요.',
   'storage.openDoc': '{name} 열기',
   'storage.emptyThumb': '비어 있음',
-  'storage.download': '.opendraw 다운로드',
+  'storage.download': '.arkdraw 다운로드',
   'storage.docActions': '문서 작업',
   'storage.fileType': 'ArkDraw 다이어그램',
   'storage.opened': '“{name}”을(를) 열었습니다',

@@ -578,19 +578,19 @@ export function readPngText(png: Uint8Array): PngText[] {
 }
 
 /** The PNG iTXt keyword ArkDraw uses for its embedded document. */
-export const OPENDRAW_PNG_KEYWORD = 'opendraw';
+export const ARKDRAW_PNG_KEYWORD = 'arkdraw';
 /** The root `<svg>` attribute ArkDraw uses for its embedded document. */
-export const OPENDRAW_SVG_ATTRIBUTE = 'data-opendraw';
+export const ARKDRAW_SVG_ATTRIBUTE = 'data-arkdraw';
 
 /**
- * Returns a copy of `png` carrying `json` (an `.opendraw` document) in a
- * zlib-compressed `iTXt` chunk with keyword `opendraw`, placed right after
- * IHDR. Any previous `opendraw` chunk is replaced. See ./embedded.ts.
+ * Returns a copy of `png` carrying `json` (an `.arkdraw` document) in a
+ * zlib-compressed `iTXt` chunk with keyword `arkdraw`, placed right after
+ * IHDR. Any previous `arkdraw` chunk is replaced. See ./embedded.ts.
  */
 export function embedDiagramInPng(png: Uint8Array, json: string): Uint8Array {
   const chunks = readPngChunks(png);
   if (chunks[0]?.type !== 'IHDR') throw new Error('PNG has no IHDR chunk.');
-  const keyword = latin1Encode(OPENDRAW_PNG_KEYWORD);
+  const keyword = latin1Encode(ARKDRAW_PNG_KEYWORD);
   const body = zlibSync(utf8Encode(json), { level: 9 });
   // keyword \0 compressionFlag=1 method=0 language \0 translated \0 text
   const data = new Uint8Array(keyword.length + 5 + body.length);
@@ -602,7 +602,7 @@ export function embedDiagramInPng(png: Uint8Array, json: string): Uint8Array {
   const parts: Uint8Array[] = [png.subarray(0, 8)];
   for (const c of chunks) {
     const raw = png.subarray(c.offset, c.offset + 12 + c.data.length);
-    if (c.type === 'iTXt' && latin1Decode(c.data.subarray(0, c.data.indexOf(0))) === OPENDRAW_PNG_KEYWORD) continue;
+    if (c.type === 'iTXt' && latin1Decode(c.data.subarray(0, c.data.indexOf(0))) === ARKDRAW_PNG_KEYWORD) continue;
     parts.push(raw);
     if (c.type === 'IHDR') parts.push(chunk);
   }
@@ -617,16 +617,16 @@ export function embedDiagramInPng(png: Uint8Array, json: string): Uint8Array {
 }
 
 /**
- * Returns `svg` with `data-opendraw="<base64 of the UTF-8 json>"` on its root
+ * Returns `svg` with `data-arkdraw="<base64 of the UTF-8 json>"` on its root
  * `<svg>` element (replacing an existing one). See ./embedded.ts.
  */
 export function embedDiagramInSvg(svg: string, json: string): string {
   const b64 = base64Encode(utf8Encode(json));
   const m = /<svg\b[^>]*>/i.exec(svg);
   if (!m) throw new Error('No <svg> element found.');
-  const tag = m[0].replace(/\s+data-opendraw\s*=\s*("[^"]*"|'[^']*')/i, '');
+  const tag = m[0].replace(/\s+data-arkdraw\s*=\s*("[^"]*"|'[^']*')/i, '');
   const selfClosing = tag.endsWith('/>');
-  const newTag = tag.slice(0, selfClosing ? -2 : -1).replace(/\s+$/, '') + ` ${OPENDRAW_SVG_ATTRIBUTE}="${b64}"` + (selfClosing ? '/>' : '>');
+  const newTag = tag.slice(0, selfClosing ? -2 : -1).replace(/\s+$/, '') + ` ${ARKDRAW_SVG_ATTRIBUTE}="${b64}"` + (selfClosing ? '/>' : '>');
   return svg.slice(0, m.index) + newTag + svg.slice(m.index + m[0].length);
 }
 

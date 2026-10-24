@@ -83,7 +83,7 @@ The macOS build isn't notarized yet: right-click the app in Applications and cho
 
 ## Also in the box
 
-- **Local-first.** `.opendraw` is plain JSON that diffs in git. No account, works offline.
+- **Local-first.** `.arkdraw` is plain JSON that diffs in git. No account, works offline.
 - **Open formats.** Opens and saves `.drawio` and `.vsdx`; imports Mermaid, Graphviz, CSV and SQL.
 - **14,000+ icons** with search that forgives typos (`lamda`) and knows acronyms (`vnet`).
 - **Straight connectors on demand.** Hover a segment, drag it, and it snaps into line with the shapes.

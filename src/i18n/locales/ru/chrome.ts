@@ -63,7 +63,7 @@ export default {
   'chrome.editStyle.title': 'Изменить стиль',
   'chrome.editStyle.subtitleDrawio': 'Строка стиля (key=value;) — применяется ко всему выделению',
   'chrome.editStyle.styleString': 'Строка стиля',
-  'chrome.editStyle.subtitleOpendraw': 'Ключи стиля ArkDraw, по одному на строку — применяются ко всему выделению',
+  'chrome.editStyle.subtitleArkdraw': 'Ключи стиля ArkDraw, по одному на строку — применяются ко всему выделению',
   'chrome.editStyle.keptKeys': 'Ключи, которые ArkDraw не использует, сохраняются и записываются обратно при экспорте в .drawio.',
 
   // EditDialogs — Edit diagram

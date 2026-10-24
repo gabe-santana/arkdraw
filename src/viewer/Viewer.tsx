@@ -157,7 +157,7 @@ function Placeholder({ state, onOpen }: { state: Exclude<LoadState, { status: 'r
           ref={input}
           type="file"
           hidden
-          accept=".opendraw,.drawio,.xml,.json,.svg,.png"
+          accept=".arkdraw,.drawio,.xml,.json,.svg,.png"
           onChange={(e) => {
             const f = e.target.files?.[0];
             if (f) onOpen(f);
@@ -411,7 +411,7 @@ function DiagramViewer({ pages, name, launch, dark, onToggleTheme }: { pages: Pa
                 className="flex h-10 items-center gap-1.5 rounded-xl bg-accent px-3.5 text-[13px] font-medium text-accent-fg shadow-panel transition-colors hover:bg-accent-hover"
               >
                 <PenLine className="size-3.5" />
-                <span className="hidden sm:inline">{tr('viewer.editInOpenDraw')}</span>
+                <span className="hidden sm:inline">{tr('viewer.editInArkDraw')}</span>
                 <span className="sm:hidden">{tr('common.edit')}</span>
               </button>
             )}

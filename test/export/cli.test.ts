@@ -6,7 +6,7 @@ import { exportFiles } from '@/io/export';
 import { samplePages } from './fixtures';
 
 const job = (over: Partial<CliExportJob> = {}): CliExportJob => ({
-  input: '/tmp/a.opendraw',
+  input: '/tmp/a.arkdraw',
   format: 'png',
   output: '/tmp/out.png',
   page: null,
@@ -35,7 +35,7 @@ describe('CLI export (front end)', () => {
     expect(outputPaths('C:\\x\\dir\\', files)).toEqual(['C:\\x\\dir\\a-P1.png', 'C:\\x\\dir\\a-P2.png']);
   });
 
-  it('reads .opendraw and .drawio input and exports a selected page', async () => {
+  it('reads .arkdraw and .drawio input and exports a selected page', async () => {
     const pages = samplePages(3);
     const fromJson = await pagesFromText(serializePages(pages));
     expect(fromJson.map((p) => p.name)).toEqual(pages.map((p) => p.name));

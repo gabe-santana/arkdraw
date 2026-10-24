@@ -61,7 +61,7 @@ function rich(key: MessageKey, nodes: Record<string, ReactNode>): ReactNode {
     .map((part, i) => (i % 2 ? <Fragment key={i}>{nodes[part]}</Fragment> : part));
 }
 
-const PREFS_KEY = 'opendraw:export-prefs:v2';
+const PREFS_KEY = 'arkdraw:export-prefs:v2';
 
 function loadPrefs(): ExportSettings {
   try {
@@ -97,7 +97,7 @@ function ExportBody({ close }: { close: () => void }) {
   const activePageId = useEditor((s) => s.activePageId);
   const pageCount = useEditor((s) => s.pages.length);
   const gridSize = useEditor((s) => s.settings.gridSize);
-  const fileName = useEditor((s) => s.file.name.replace(/\.opendraw$/i, ''));
+  const fileName = useEditor((s) => s.file.name.replace(/\.arkdraw$/i, ''));
   const toast = useUi((s) => s.toast);
   const [prefs, setPrefsState] = useState<ExportSettings>(() => {
     const p = loadPrefs();

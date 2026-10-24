@@ -20,7 +20,7 @@ export interface HtmlExportOptions {
   embedFonts?: boolean;
   /** Index into `pages` shown first. */
   initialPage?: number;
-  /** `.opendraw` JSON embedded so the file can be reopened for editing (src/io/import/html.ts). */
+  /** `.arkdraw` JSON embedded so the file can be reopened for editing (src/io/import/html.ts). */
   diagramJson?: string;
 }
 
@@ -87,7 +87,7 @@ ${sections.join('\n')}
 <div class="tip" id="tip" role="tooltip" hidden></div>
 <script type="application/json" id="od-pages">${scriptJson(meta)}</script>
 <script>${VIEWER_JS}</script>
-${opts.diagramJson ? `<script type="application/vnd.opendraw+json" id="opendraw-diagram">${base64Encode(utf8Encode(opts.diagramJson))}</script>
+${opts.diagramJson ? `<script type="application/vnd.arkdraw+json" id="arkdraw-diagram">${base64Encode(utf8Encode(opts.diagramJson))}</script>
 ` : ''}</body>
 </html>
 `;

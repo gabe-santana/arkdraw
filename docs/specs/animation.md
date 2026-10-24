@@ -93,7 +93,7 @@ Size estimate shown before export (`frames × area` heuristic); warn above 15 MB
 
 ### 6. Interop
 
-- `.opendraw` stores the animation fields as-is.
+- `.arkdraw` stores the animation fields as-is.
 - `.drawio` export maps `flow` → `flowAnimation=1` (supported by mxGraph);
   other effects are dropped.
 - SVG export stays static by default; an **"Animated SVG"** toggle embeds

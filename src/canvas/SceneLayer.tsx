@@ -53,7 +53,7 @@ export function SceneLayer({ dark }: { dark: boolean }) {
   // Inherited %placeholder% values (containers, layer, page, document); the signature busts the memo when they change.
   const placeholderSig = useEditor(editorPlaceholderSignature);
   const vars = useMemo(
-    () => ({ pageName: page?.name ?? 'Page 1', pageNumber: pageIndex + 1, pageCount, fileName: fileName.replace(/\.opendraw$/i, ''), lookup: editorPlaceholderLookup, language: page?.settings.language }),
+    () => ({ pageName: page?.name ?? 'Page 1', pageNumber: pageIndex + 1, pageCount, fileName: fileName.replace(/\.arkdraw$/i, ''), lookup: editorPlaceholderLookup, language: page?.settings.language }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [page?.name, pageIndex, pageCount, fileName, placeholderSig, page?.settings.language],
   );

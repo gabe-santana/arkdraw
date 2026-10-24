@@ -45,7 +45,7 @@ interface InteractionState {
   setBrush: (patch: Partial<Brush>) => void;
 }
 
-const BRUSH_KEY = 'opendraw:brush';
+const BRUSH_KEY = 'arkdraw:brush';
 const DEFAULT_BRUSH: Brush = { width: 2, color: '#1e293b', smoothing: 0.5, pressure: true };
 
 function loadBrush(): Brush {

@@ -1,6 +1,6 @@
 /**
  * File properties (File → Properties): title, author, description and
- * timestamps stored in the `.opendraw` file's `meta`, plus document statistics.
+ * timestamps stored in the `.arkdraw` file's `meta`, plus document statistics.
  */
 import type { DocumentMeta, Page } from '@/model/types';
 import { isConnector, isShape } from '@/model/types';

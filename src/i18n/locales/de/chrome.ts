@@ -61,7 +61,7 @@ export default {
   'chrome.editStyle.title': 'Stil bearbeiten',
   'chrome.editStyle.subtitleDrawio': 'Stilzeichenfolge (key=value;) – gilt für die gesamte Auswahl',
   'chrome.editStyle.styleString': 'Stilzeichenfolge',
-  'chrome.editStyle.subtitleOpendraw': 'ArkDraw-Stilschlüssel, einer pro Zeile – gilt für die gesamte Auswahl',
+  'chrome.editStyle.subtitleArkdraw': 'ArkDraw-Stilschlüssel, einer pro Zeile – gilt für die gesamte Auswahl',
   'chrome.editStyle.keptKeys': 'Von ArkDraw nicht verwendete Schlüssel bleiben erhalten und werden beim .drawio-Export zurückgeschrieben.',
 
   // EditDialogs — Edit diagram

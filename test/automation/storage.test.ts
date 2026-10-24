@@ -18,7 +18,7 @@ describe('document origin tracking', () => {
     expect(docOrigin()).toEqual({ kind: 'library', id: 'doc-1' });
     useEditor.getState().newDoc();
     expect(docOrigin()).toBeNull();
-    // Handles for non-OpenDraw files are never written back.
+    // Handles for non-ArkDraw files are never written back.
     offerOrigin({ kind: 'handle', handle: { name: 'x.drawio' } as FileSystemFileHandle });
     useEditor.getState().loadPages([page()], { path: null, name: 'x' });
     expect(docOrigin()).toBeNull();
@@ -28,7 +28,7 @@ describe('document origin tracking', () => {
 
 describe('browser library entries and user templates', () => {
   it('summarises a document with a thumbnail', () => {
-    const e = makeEntry('Report.opendraw', serializePages([page(), newPage('Empty')]));
+    const e = makeEntry('Report.arkdraw', serializePages([page(), newPage('Empty')]));
     expect(e).toMatchObject({ name: 'Report', pages: 2, elements: 1 });
     expect(e.thumb?.startsWith('data:image/svg+xml')).toBe(true);
   });

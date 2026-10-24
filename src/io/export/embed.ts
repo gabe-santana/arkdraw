@@ -3,18 +3,18 @@
  * can be reopened later (File → Import / drag-and-drop, see
  * src/io/import/embedded.ts which reads every convention written here).
  *
- *  - PNG: iTXt chunk, keyword `opendraw`, zlib-compressed `.opendraw` JSON.
- *  - SVG: `data-opendraw` attribute on the root `<svg>` = base64 of the JSON.
+ *  - PNG: iTXt chunk, keyword `arkdraw`, zlib-compressed `.arkdraw` JSON.
+ *  - SVG: `data-arkdraw` attribute on the root `<svg>` = base64 of the JSON.
  *  - PDF: jsPDF has no file-attachment API, so the document info dictionary is
  *    used: `/Subject` = URI-encoded mxGraph mxfile XML (what mxGraph desktop
  *    writes, and what the embedded importer reads), `/Keywords` =
- *    `opendraw:<base64 JSON>` (lossless ArkDraw copy).
+ *    `arkdraw:<base64 JSON>` (lossless ArkDraw copy).
  */
 import { base64Decode, base64Encode, embedDiagramInPng, embedDiagramInSvg, utf8Decode, utf8Encode } from '@/io/import/_shared';
 
 export { embedDiagramInPng, embedDiagramInSvg };
 
-export const PDF_KEYWORDS_PREFIX = 'opendraw:';
+export const PDF_KEYWORDS_PREFIX = 'arkdraw:';
 
 export interface PdfEmbedProps {
   subject?: string;
@@ -33,7 +33,7 @@ export function pdfEmbedProps(json: string, mxfile?: string): PdfEmbedProps {
 export function extractJsonFromPdf(pdf: Uint8Array): string | null {
   let text = '';
   for (let i = 0; i < pdf.length; i += 0x8000) text += String.fromCharCode(...pdf.subarray(i, i + 0x8000));
-  const m = /\/Keywords\s*\(opendraw:([A-Za-z0-9+/=\s\\]+)\)/.exec(text);
+  const m = /\/Keywords\s*\(arkdraw:([A-Za-z0-9+/=\s\\]+)\)/.exec(text);
   if (!m) return null;
   try {
     return utf8Decode(base64Decode(m[1].replace(/\\(\r?\n)?/g, '')));

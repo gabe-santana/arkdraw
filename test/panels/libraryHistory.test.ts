@@ -72,11 +72,11 @@ describe('store', () => {
     const s = useLibraryHistory.getState();
     s.toggleFavorite(shape('Ellipse'));
     s.recordUse(icon('lambda'));
-    expect(parseRefs(localStorage.getItem('opendraw:library-favorites'))).toEqual([shape('Ellipse')]);
-    expect(parseRefs(localStorage.getItem('opendraw:library-recent'))).toEqual([icon('lambda')]);
+    expect(parseRefs(localStorage.getItem('arkdraw:library-favorites'))).toEqual([shape('Ellipse')]);
+    expect(parseRefs(localStorage.getItem('arkdraw:library-recent'))).toEqual([icon('lambda')]);
     useLibraryHistory.getState().clearRecent();
     expect(useLibraryHistory.getState().recent).toEqual([]);
-    expect(localStorage.getItem('opendraw:library-recent')).toBe('[]');
+    expect(localStorage.getItem('arkdraw:library-recent')).toBe('[]');
   });
 });
 

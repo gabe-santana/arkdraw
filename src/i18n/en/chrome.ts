@@ -77,7 +77,7 @@ export default {
   'chrome.editStyle.subtitleDrawio': 'Style string (key=value;) — applied to the whole selection',
   // format option: the key=value; style string syntax (vs. "ArkDraw" keys)
   'chrome.editStyle.styleString': 'Style string',
-  'chrome.editStyle.subtitleOpendraw': 'ArkDraw style keys, one per line — applied to the whole selection',
+  'chrome.editStyle.subtitleArkdraw': 'ArkDraw style keys, one per line — applied to the whole selection',
   'chrome.editStyle.keptKeys': 'Keys ArkDraw doesn’t use are kept and written back on .drawio export.',
 
   // EditDialogs — Edit diagram

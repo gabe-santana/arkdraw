@@ -2,11 +2,11 @@
 /**
  * Packages the Windows build as an MSIX for the Microsoft Store.
  *
- *   node scripts/msix/build-msix.mjs --exe src-tauri/target/release/opendraw.exe --out OpenDraw.msix
+ *   node scripts/msix/build-msix.mjs --exe src-tauri/target/release/arkdraw.exe --out ArkDraw.msix
  *
  * Package identity comes from Partner Center (Apps → OpenDraw → Product identity)
  * through environment variables, or placeholders for a local test build:
- *   MSIX_IDENTITY_NAME            Package/Identity/Name           (e.g. 12345GabrielSantana.OpenDraw)
+ *   MSIX_IDENTITY_NAME            Package/Identity/Name           (e.g. 12345GabrielSantana.ArkDraw)
  *   MSIX_PUBLISHER                Package/Identity/Publisher      (e.g. CN=ABCD1234-…)
  *   MSIX_PUBLISHER_DISPLAY_NAME   Package/Properties/PublisherDisplayName
  *
@@ -25,16 +25,16 @@ const arg = (name, fallback) => {
   return i > 0 ? process.argv[i + 1] : fallback;
 };
 
-const exe = resolve(arg('exe', join(ROOT, 'src-tauri/target/release/opendraw.exe')));
-const out = resolve(arg('out', join(ROOT, 'src-tauri/target/msix/OpenDraw.msix')));
+const exe = resolve(arg('exe', join(ROOT, 'src-tauri/target/release/arkdraw.exe')));
+const out = resolve(arg('out', join(ROOT, 'src-tauri/target/msix/ArkDraw.msix')));
 const pkg = JSON.parse(readFileSync(join(ROOT, 'src-tauri/tauri.conf.json'), 'utf8'));
 // MSIX versions are four numeric parts; the Store requires the last one to be 0.
 const [major, minor, patch] = pkg.version.split(/[.-]/).map((n) => Number.parseInt(n, 10) || 0);
 const version = `${major}.${minor}.${patch}.0`;
 
 const identity = {
-  IDENTITY_NAME: process.env.MSIX_IDENTITY_NAME || 'OpenDraw.Local',
-  PUBLISHER: process.env.MSIX_PUBLISHER || 'CN=OpenDraw Local Build',
+  IDENTITY_NAME: process.env.MSIX_IDENTITY_NAME || 'ArkDraw.Local',
+  PUBLISHER: process.env.MSIX_PUBLISHER || 'CN=ArkDraw Local Build',
   PUBLISHER_DISPLAY_NAME: process.env.MSIX_PUBLISHER_DISPLAY_NAME || 'Gabriel Santana',
   VERSION: version,
 };
@@ -55,7 +55,7 @@ if (!existsSync(exe)) throw new Error(`Build the app first: ${exe} not found.`);
 const stage = join(dirname(out), 'msix-stage');
 rmSync(stage, { recursive: true, force: true });
 mkdirSync(join(stage, 'assets'), { recursive: true });
-cpSync(exe, join(stage, 'OpenDraw.exe'));
+cpSync(exe, join(stage, 'ArkDraw.exe'));
 cpSync(join(ROOT, 'LICENSE'), join(stage, 'LICENSE.txt'));
 
 // Visual assets from the app icon, at the scales the Store expects.

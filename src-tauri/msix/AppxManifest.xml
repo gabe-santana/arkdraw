@@ -39,7 +39,7 @@
   </Resources>
 
   <Applications>
-    <Application Id="OpenDraw" Executable="OpenDraw.exe" EntryPoint="Windows.FullTrustApplication">
+    <Application Id="ArkDraw" Executable="ArkDraw.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
         DisplayName="OpenDraw"
         Description="Open-source, local-first diagram editor"
@@ -51,11 +51,11 @@
 
       <Extensions>
         <uap:Extension Category="windows.fileTypeAssociation">
-          <uap:FileTypeAssociation Name="opendraw">
-            <uap:DisplayName>OpenDraw Diagram</uap:DisplayName>
+          <uap:FileTypeAssociation Name="arkdraw">
+            <uap:DisplayName>ArkDraw Diagram</uap:DisplayName>
             <uap:Logo>assets\Square44x44Logo.png</uap:Logo>
             <uap:SupportedFileTypes>
-              <uap:FileType ContentType="application/x-opendraw+json">.opendraw</uap:FileType>
+              <uap:FileType ContentType="application/x-arkdraw+json">.arkdraw</uap:FileType>
             </uap:SupportedFileTypes>
           </uap:FileTypeAssociation>
         </uap:Extension>

@@ -20,7 +20,7 @@
     {
       "action": "./",
       "accept": {
-        "application/x-opendraw+json": [".opendraw"],
+        "application/x-arkdraw+json": [".arkdraw"],
         "application/vnd.jgraph.mxfile": [".drawio"]
       }
     }

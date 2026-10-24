@@ -47,4 +47,4 @@ body:
     id: media
     attributes:
       label: Screenshots, recordings or a sample file
-      description: Drag files here. A small `.opendraw` file that reproduces the problem helps a lot.
+      description: Drag files here. A small `.arkdraw` file that reproduces the problem helps a lot.

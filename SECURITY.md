@@ -18,7 +18,7 @@ You can expect an acknowledgement within 72 hours and an update on the fix withi
 
 Areas we're especially interested in:
 
-- opening crafted files (`.opendraw`, `.drawio`, `.vsdx`, SVG, HTML) or share links,
+- opening crafted files (`.arkdraw`, `.drawio`, `.vsdx`, SVG, HTML) or share links,
 - the embed `postMessage` protocol and the read-only viewer,
 - the desktop shell (Tauri commands, file access, the updater) and how API keys are stored,
 - the plugin loader.

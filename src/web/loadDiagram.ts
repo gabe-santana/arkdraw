@@ -51,7 +51,7 @@ export async function pagesFromContent(content: string | Uint8Array, fileName?: 
 export function nameFromUrl(url: string): string {
   try {
     const last = new URL(url).pathname.split('/').filter(Boolean).pop() ?? '';
-    const name = decodeURIComponent(last).replace(/(\.drawio)?\.(opendraw|drawio|xml|json|png|svg|pdf)$/i, '');
+    const name = decodeURIComponent(last).replace(/(\.drawio)?\.(arkdraw|drawio|xml|json|png|svg|pdf)$/i, '');
     return name || t('web.load.sharedDiagram');
   } catch {
     return t('web.load.sharedDiagram');

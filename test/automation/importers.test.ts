@@ -60,10 +60,10 @@ describe('Graphviz DOT import', () => {
 });
 
 describe('editable HTML import', () => {
-  it('reads the OpenDraw HTML payload', async () => {
+  it('reads the ArkDraw HTML payload', async () => {
     const json = serializePages([newPage('Hello', { elements: { s: { ...createShape('rectangle', { x: 0, y: 0, w: 10, h: 10 }), id: 's' } }, order: ['s'] })]);
-    const html = `<!doctype html><html><body><script type="application/vnd.opendraw+json" id="opendraw-diagram">${base64Encode(utf8Encode(json))}</script></body></html>`;
-    expect(extractFromHtml(html)?.kind).toBe('opendraw');
+    const html = `<!doctype html><html><body><script type="application/vnd.arkdraw+json" id="arkdraw-diagram">${base64Encode(utf8Encode(json))}</script></body></html>`;
+    expect(extractFromHtml(html)?.kind).toBe('arkdraw');
     const res = await importHtml(html);
     expect(res.pages[0].name).toBe('Hello');
     expect(res.pages[0].doc.elements.s).toBeTruthy();

@@ -25,7 +25,7 @@ export interface AiSettings {
   rememberKeys: boolean;
 }
 
-const STORAGE_KEY = 'opendraw.ai.settings.v1';
+const STORAGE_KEY = 'arkdraw.ai.settings.v1';
 const PROVIDER_IDS: ProviderId[] = ['anthropic', 'openai', 'gemini', 'xai', 'deepseek', 'mistral', 'openrouter', 'groq', 'moonshot', 'qwen', 'zai', 'together', 'fireworks', 'cerebras', 'azure', 'bedrock', 'vertex', 'cloudflare', 'ollama', 'custom'];
 
 export const DEFAULT_AI_SETTINGS: AiSettings = {

@@ -12,7 +12,7 @@ export default {
   'storage.empty': 'В этом браузере пока нет сохранённых диаграмм. Нажмите «Сохранить текущую» или выберите Файл → Сохранить в браузере.',
   'storage.openDoc': 'Открыть {name}',
   'storage.emptyThumb': 'Пусто',
-  'storage.download': 'Скачать .opendraw',
+  'storage.download': 'Скачать .arkdraw',
   'storage.docActions': 'Действия с документом',
   'storage.fileType': 'Диаграмма ArkDraw',
   'storage.opened': 'Открыто: «{name}»',

@@ -1,8 +1,8 @@
 /**
  * Editable HTML: reopens diagrams from HTML pages that carry one.
  *
- *  - ArkDraw's HTML export: `<script type="application/vnd.opendraw+json"
- *    id="opendraw-diagram">` holding base64 `.opendraw` JSON (lossless).
+ *  - ArkDraw's HTML export: `<script type="application/vnd.arkdraw+json"
+ *    id="arkdraw-diagram">` holding base64 `.arkdraw` JSON (lossless).
  *  - mxGraph's "Export as HTML" / embed snippets: `<div class="mxgraph"
  *    data-mxgraph="{…&quot;xml&quot;:&quot;&lt;mxfile…&quot;}">` — the JSON's
  *    `xml` field is the mxfile (possibly compressed).
@@ -14,15 +14,15 @@ import type { ImportResult, Importer } from './types';
 import { base64Decode, decodeEntities, toText, utf8Decode } from './_shared';
 import { extractDrawioXml } from '@/automation/clipboardXml';
 
-const OPENDRAW_RE = /<script[^>]*id=["']opendraw-diagram["'][^>]*>([\s\S]*?)<\/script>/i;
+const ARKDRAW_RE = /<script[^>]*id=["']arkdraw-diagram["'][^>]*>([\s\S]*?)<\/script>/i;
 const MXGRAPH_RE = /data-mxgraph=(["'])([\s\S]*?)\1/i;
 
 /** The diagram payload inside an HTML page, if any. */
-export function extractFromHtml(html: string): { kind: 'opendraw'; json: string } | { kind: 'drawio'; xml: string } | null {
-  const od = OPENDRAW_RE.exec(html);
+export function extractFromHtml(html: string): { kind: 'arkdraw'; json: string } | { kind: 'drawio'; xml: string } | null {
+  const od = ARKDRAW_RE.exec(html);
   if (od) {
     try {
-      return { kind: 'opendraw', json: utf8Decode(base64Decode(od[1].trim())) };
+      return { kind: 'arkdraw', json: utf8Decode(base64Decode(od[1].trim())) };
     } catch {
       /* fall through */
     }
@@ -43,7 +43,7 @@ export function extractFromHtml(html: string): { kind: 'opendraw'; json: string 
 export async function importHtml(html: string): Promise<ImportResult> {
   const found = extractFromHtml(html);
   if (!found) throw new Error('This HTML page has no embedded diagram. Export it as HTML with the diagram embedded to keep it editable.');
-  if (found.kind === 'opendraw') return { pages: parsePages(found.json).map((p) => ({ name: p.name, doc: p.doc })) };
+  if (found.kind === 'arkdraw') return { pages: parsePages(found.json).map((p) => ({ name: p.name, doc: p.doc })) };
   return { pages: await importDrawioPages(found.xml) };
 }
 
@@ -55,7 +55,7 @@ export const importer: Importer = {
   acceptsText: false,
   detect: (content) => {
     const t = toText(content);
-    return /<html|<!doctype html/i.test(t) && (OPENDRAW_RE.test(t) || MXGRAPH_RE.test(t));
+    return /<html|<!doctype html/i.test(t) && (ARKDRAW_RE.test(t) || MXGRAPH_RE.test(t));
   },
   run: async (content) => importHtml(toText(content)),
 };

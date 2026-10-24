@@ -12,11 +12,11 @@
  *
  * ArkDraw's own convention (written by `embedDiagramInPng` /
  * `embedDiagramInSvg` in ./_shared.ts; the payload is exactly the
- * `.opendraw` JSON produced by `serializeDoc`):
- *  - PNG: an `iTXt` chunk with keyword `opendraw`, empty language tag and
+ * `.arkdraw` JSON produced by `serializeDoc`):
+ *  - PNG: an `iTXt` chunk with keyword `arkdraw`, empty language tag and
  *    translated keyword, compression flag 1 (zlib) or 0 (plain UTF-8),
  *    placed right after `IHDR`.
- *  - SVG: attribute `data-opendraw` on the root `<svg>` element whose value is
+ *  - SVG: attribute `data-arkdraw` on the root `<svg>` element whose value is
  *    the base64 encoding of the UTF-8 JSON.
  *  If both an ArkDraw and a mxGraph payload are present, ArkDraw wins.
  */
@@ -25,10 +25,10 @@ import { importDrawio } from '@/io/drawio';
 import { parseDoc } from '@/io/fileFormat';
 import type { ImportResult, ImportedPage, Importer } from './types';
 import {
-  OPENDRAW_PNG_KEYWORD, OPENDRAW_SVG_ATTRIBUTE, base64Decode, decodeEntities, isPng, latin1Decode, parseXml, readPngText, toBytes, utf8Decode,
+  ARKDRAW_PNG_KEYWORD, ARKDRAW_SVG_ATTRIBUTE, base64Decode, decodeEntities, isPng, latin1Decode, parseXml, readPngText, toBytes, utf8Decode,
 } from './_shared';
 
-type Payload = { kind: 'opendraw'; json: string } | { kind: 'drawio'; xml: string };
+type Payload = { kind: 'arkdraw'; json: string } | { kind: 'drawio'; xml: string };
 
 const looksXml = (s: string) => /^\s*</.test(s);
 
@@ -59,8 +59,8 @@ function decodeMx(raw: string): string | null {
 
 function fromPng(bytes: Uint8Array): Payload | null {
   const texts = readPngText(bytes);
-  const own = texts.find((t) => t.keyword === OPENDRAW_PNG_KEYWORD);
-  if (own) return { kind: 'opendraw', json: own.text };
+  const own = texts.find((t) => t.keyword === ARKDRAW_PNG_KEYWORD);
+  if (own) return { kind: 'arkdraw', json: own.text };
   const mx = texts.find((t) => t.keyword === 'mxfile' || t.keyword === 'mxGraphModel');
   const xml = mx ? decodeMx(mx.text) : null;
   return xml ? { kind: 'drawio', xml } : null;
@@ -79,8 +79,8 @@ function svgRootAttr(svg: string, name: string): string | null {
 }
 
 function fromSvg(svg: string): Payload | null {
-  const own = svgRootAttr(svg, OPENDRAW_SVG_ATTRIBUTE);
-  if (own) return { kind: 'opendraw', json: utf8Decode(base64Decode(own)) };
+  const own = svgRootAttr(svg, ARKDRAW_SVG_ATTRIBUTE);
+  if (own) return { kind: 'arkdraw', json: utf8Decode(base64Decode(own)) };
   const content = svgRootAttr(svg, 'content');
   const xml = content ? decodeMx(content) : null;
   return xml ? { kind: 'drawio', xml } : null;
@@ -169,7 +169,7 @@ export async function importEmbedded(content: string | Uint8Array, fileName?: st
     }
   }
   if (!payload) throw new Error('This image does not contain an editable diagram (no diagram data found).');
-  if (payload.kind === 'opendraw') {
+  if (payload.kind === 'arkdraw') {
     const name = (fileName ?? 'Diagram').replace(/^.*[\\/]/, '').replace(/(\.drawio)?\.(png|svg|pdf)$/i, '') || 'Diagram';
     return { pages: [{ name, doc: parseDoc(payload.json) }] };
   }

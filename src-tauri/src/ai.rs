@@ -14,7 +14,7 @@ use tauri::State;
 use url::{Host, Url};
 
 /// Keychain service name; the account name is the provider id.
-const SERVICE: &str = "app.opendraw.desktop.ai";
+const SERVICE: &str = "app.arkdraw.desktop.ai";
 const ANTHROPIC_VERSION: &str = "2023-06-01";
 
 pub struct AiState {

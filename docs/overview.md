@@ -22,7 +22,7 @@ The details that used to live in the README: features, editions, formats, icon p
 - Multi-page documents, layers (hide, lock, reorder), tags with a tag filter, groups and collapsible containers.
 - Edit Data (custom properties, tooltips, links, `%placeholder%` labels), raw Edit Style, and Edit Diagram as JSON.
 - Find and replace (regex, all pages), a **command palette** (`Ctrl/⌘+K`), and familiar shortcuts generated from one action registry.
-- Comment threads stored in the file, local revision history, a Scratchpad, and custom libraries (`.opendrawlib`; mxGraph `<mxlibrary>` files import too).
+- Comment threads stored in the file, local revision history, a Scratchpad, and custom libraries (`.arkdrawlib`; mxGraph `<mxlibrary>` files import too).
 
 ## Web vs desktop
 
@@ -30,10 +30,10 @@ Both editions come from the same Vite build. At runtime `isTauri()` (`src/lib/pl
 
 | | Desktop (Tauri) | Web / PWA |
 | --- | --- | --- |
-| **Files** | Native open/save dialogs, atomic writes, recent files, `.opendraw` file association | File picker / `showSaveFilePicker`, downloads |
+| **Files** | Native open/save dialogs, atomic writes, recent files, `.arkdraw` file association | File picker / `showSaveFilePicker`, downloads |
 | **Offline** | Always | Installable PWA; the app shell is precached, icon packs are cached on first use |
 | **AI keys** | OS keychain; requests are sent by Rust | Held in memory for the tab only |
-| **CLI export** | `opendraw --export …` | — |
+| **CLI export** | `arkdraw --export …` | — |
 | **Sharing** | Export as link | `#R…` share links, `?viewer=1` read-only viewer, `?embed=1` postMessage embed API, `?url=` |
 | **Deploy** | Installers | Static `dist/`, Docker + nginx, Netlify, Cloudflare Pages, Vercel, GitHub Pages |
 
@@ -48,7 +48,7 @@ npm run docker:build && npm run docker:run  # http://localhost:8080
 
 | Format | Import | Export | Notes |
 | --- | :---: | :---: | --- |
-| ArkDraw `.opendraw` | ✓ | ✓ | Pretty-printed JSON, git-friendly; keeps the AI conversation (never exported) |
+| ArkDraw `.arkdraw` | ✓ | ✓ | Pretty-printed JSON, git-friendly; keeps the AI conversation (never exported) |
 | mxGraph XML `.drawio`, `.xml` | ✓ | ✓ | Compressed or plain; `flow` animation survives as `flowAnimation=1` |
 | PNG / SVG / PDF with an embedded diagram | ✓ | ✓ | "Include a copy of the diagram" makes the image re-editable |
 | PNG, JPEG, WebP | | ✓ | Scale, border, transparent background, selection only |
@@ -88,8 +88,8 @@ Counts come from the last `icons:fetch` (`public/icons/providers.json`). Search 
 The desktop binary exports without opening a window, for CI and docs pipelines:
 
 ```sh
-opendraw --export architecture.opendraw --format png --output architecture.png --scale 2
-opendraw -x flows.drawio -f pdf --all-pages --embed -o flows.pdf
+arkdraw --export architecture.arkdraw --format png --output architecture.png --scale 2
+arkdraw -x flows.drawio -f pdf --all-pages --embed -o flows.pdf
 ```
 
 Formats: PNG, SVG, PDF, JPG, WebP, HTML, VSDX, .drawio and URL. Rendering runs in the hidden WebView, so the output matches the Export dialog. See [`docs/cli-export.md`](docs/cli-export.md) for every option, exit codes and Windows notes.
@@ -143,7 +143,7 @@ Configure it in *Extras → AI provider & API key…*.
 │   ├── icons/ search/    vendor icon packs, fuzzy search for shapes, icons and templates
 │   ├── layout/           auto-layout algorithms (auto-discovered)
 │   ├── templates/        template gallery
-│   ├── io/               .opendraw format, mxGraph interop, importers, exporters, VSDX writer
+│   ├── io/               .arkdraw format, mxGraph interop, importers, exporters, VSDX writer
 │   ├── ai/               provider adapters, agent loop, spec → diagram
 │   ├── animation/        animation timeline
 │   ├── viewer/ web/      read-only viewer, web boot, share links, embed API, PWA

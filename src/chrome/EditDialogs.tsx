@@ -191,16 +191,16 @@ export function EditStyleDialog() {
 function EditStyleBody({ el, close }: { el: DiagramElement; close: () => void }) {
   const t = useT();
   // strings by default (src/extensibility/styleString.ts); ArkDraw keys on request.
-  const [format, setFormat] = useState<'drawio' | 'opendraw'>(() => (localStorage.getItem('opendraw:styleFormat') === 'opendraw' ? 'opendraw' : 'drawio'));
-  const initial = (f: 'drawio' | 'opendraw') => (f === 'drawio' ? formatDrawioStyle(el) : styleToString(el.style));
+  const [format, setFormat] = useState<'drawio' | 'arkdraw'>(() => (localStorage.getItem('arkdraw:styleFormat') === 'arkdraw' ? 'arkdraw' : 'drawio'));
+  const initial = (f: 'drawio' | 'arkdraw') => (f === 'drawio' ? formatDrawioStyle(el) : styleToString(el.style));
   const [text, setText] = useState(() => initial(format));
   const [error, setError] = useState<string | null>(null);
-  const switchFormat = (f: 'drawio' | 'opendraw') => {
+  const switchFormat = (f: 'drawio' | 'arkdraw') => {
     setFormat(f);
     setText(initial(f));
     setError(null);
     try {
-      localStorage.setItem('opendraw:styleFormat', f);
+      localStorage.setItem('arkdraw:styleFormat', f);
     } catch {
       /* storage unavailable */
     }
@@ -226,7 +226,7 @@ function EditStyleBody({ el, close }: { el: DiagramElement; close: () => void })
     <div onKeyDown={stop}>
       <DialogHeader
         title={t('chrome.editStyle.title')}
-        subtitle={format === 'drawio' ? t('chrome.editStyle.subtitleDrawio') : t('chrome.editStyle.subtitleOpendraw')}
+        subtitle={format === 'drawio' ? t('chrome.editStyle.subtitleDrawio') : t('chrome.editStyle.subtitleArkdraw')}
         onClose={close}
       />
       <div className="px-5 pb-4">
@@ -237,7 +237,7 @@ function EditStyleBody({ el, close }: { el: DiagramElement; close: () => void })
           onChange={switchFormat}
           options={[
             { value: 'drawio', label: t('chrome.editStyle.styleString') },
-            { value: 'opendraw', label: 'ArkDraw' },
+            { value: 'arkdraw', label: 'ArkDraw' },
           ]}
         />
         <textarea
