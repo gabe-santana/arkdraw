@@ -1,7 +1,8 @@
 /**
- * Visible feedback while the AI assistant works on the diagram: a brand-color glow
- * around the window with a status pill (and a Stop button) during a run, and
- * a staggered pop on every element it adds or changes when the result lands.
+ * Visible feedback while the AI assistant works on the diagram: a status pill
+ * (with a Stop button) while it thinks, then, when it edits the canvas, a
+ * brand-color glow around the window and a staggered pop on every element
+ * it adds or changes.
  */
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
@@ -61,7 +62,8 @@ export function animateChanges(before: Doc, after: Doc) {
   style.textContent = rules.join('\n');
   document.head.append(style);
 
-  const total = ids.length * step + 1100;
+  // The glow stays a little longer than the reveal, so it reads as "the AI is editing".
+  const total = Math.max(1600, ids.length * step + 1100);
   useAiActivity.setState({ applying: true });
   window.clearTimeout(cleanupTimer);
   cleanupTimer = window.setTimeout(() => {
@@ -70,7 +72,7 @@ export function animateChanges(before: Doc, after: Doc) {
   }, total + 150);
 }
 
-/** Glow around the window plus the status pill, while the assistant works. */
+/** Status pill while the assistant works; glow around the window while it edits the canvas. */
 export function AgentGlow() {
   const run = useAiActivity((s) => s.run);
   const applying = useAiActivity((s) => s.applying);
@@ -92,7 +94,7 @@ export function AgentGlow() {
   if (!run && !applying) return null;
   return createPortal(
     <>
-      <div aria-hidden className="od-ai-glow pointer-events-none fixed inset-0 z-[150]" />
+      {applying && <div aria-hidden className="od-ai-glow pointer-events-none fixed inset-0 z-[150]" />}
       {run && (
         <div
           role="status"

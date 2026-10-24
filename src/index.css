@@ -305,15 +305,16 @@
   }
 }
 
-/* AI assistant at work (src/chrome/AiActivity.tsx): a glow in the brand
- * color around the window during a run, and a pop on each element it adds or changes. */
+/* AI assistant editing the canvas (src/chrome/AiActivity.tsx): a strong glow
+ * in the brand color around the window, and a pop on each element it adds or changes. */
 .od-ai-glow {
   box-shadow:
-    inset 0 0 0 2px color-mix(in oklab, var(--accent) 75%, transparent),
-    inset 0 0 28px 6px color-mix(in oklab, var(--accent) 40%, transparent);
+    inset 0 0 0 3px var(--accent),
+    inset 0 0 18px 4px color-mix(in oklab, var(--accent) 85%, transparent),
+    inset 0 0 70px 18px color-mix(in oklab, var(--accent) 45%, transparent);
   animation:
-    fade-in 300ms ease-out both,
-    od-ai-breathe 2.2s ease-in-out 300ms infinite;
+    fade-in 200ms ease-out both,
+    od-ai-breathe 1.4s ease-in-out 200ms infinite;
 }
 @keyframes od-ai-breathe {
   0%,
@@ -321,7 +322,7 @@
     opacity: 1;
   }
   50% {
-    opacity: 0.55;
+    opacity: 0.75;
   }
 }
 .od-ai-sparkle {
