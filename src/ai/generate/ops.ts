@@ -9,7 +9,7 @@ import type { ArrowHead, ConnectorElement, DiagramElement, Doc, Rect, Routing, S
 import { isConnector, isShape } from '@/model/types';
 import { createConnector, createShape, DEFAULT_CONNECTOR_STYLE } from '@/model/defaults';
 import { compartmentHeight, getShapeDef } from '@/shapes/registry';
-import { c4Text, C4_COLORS, compartmentText, resolveNode } from './resolve';
+import { c4Text, C4_COLORS, compartmentText, dominantCloud, GROUP_ICON_SIZE, resolveNode } from './resolve';
 import { ARROW_HEADS, CONTAINER_KINDS, normalizeKind, ROUTINGS, validateSpec, type DiagramType, type SpecEdge, type SpecNode, type SpecStyle } from './spec';
 import { facingPoint } from './toElements';
 
@@ -205,6 +205,7 @@ export function applyOps(doc: Doc, ops: EditOp[]): ApplyResult {
   const els = new Map<string, DiagramElement>(Object.entries(doc.elements));
   const order = doc.order.filter((id) => els.has(id));
   const type = inferDiagramType(doc);
+  const cloud = dominantCloud([...els.values()].map((e) => ({ icon: isShape(e) ? e.icon : undefined })));
   const specToEl = new Map<string, string>();
   const newShapes: ShapeElement[] = [];
   const newContainers: ShapeElement[] = [];
@@ -227,9 +228,10 @@ export function applyOps(doc: Doc, ops: EditOp[]): ApplyResult {
   // 1. Create shapes (unplaced) so edges can reference them.
   for (const op of ops) {
     if (op.op !== 'add_node') continue;
-    const r = resolveNode(op.node, type, ops.some((o) => o.op === 'add_node' && o.node.parent === op.node.id));
+    const r = resolveNode(op.node, type, ops.some((o) => o.op === 'add_node' && o.node.parent === op.node.id), cloud);
     const s = createShape(r.kind, { x: 0, y: 0, w: r.w, h: r.h }, r.style, r.text);
     if (r.icon) s.icon = r.icon;
+    if (r.kind === 'group' && r.icon) s.params = { ...s.params, iconSize: GROUP_ICON_SIZE };
     specToEl.set(op.node.id, s.id);
     els.set(s.id, s);
     (r.container ? newContainers : newShapes).push(s);

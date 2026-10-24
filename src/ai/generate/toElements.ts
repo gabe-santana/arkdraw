@@ -6,7 +6,7 @@ import { createConnector, createShape, DEFAULT_CONNECTOR_STYLE } from '@/model/d
 import { measureText } from '@/lib/text';
 import { layoutDiagram, type LayoutEdge, type LayoutOptions } from './layout';
 import { layoutRouted, type RoutedEdge, type RoutedLayout } from './elkLayout';
-import { defaultDirection, resolveSpec, type ResolvedNode } from './resolve';
+import { defaultDirection, GROUP_ICON_SIZE, resolveSpec, type ResolvedNode } from './resolve';
 import type { DiagramSpec, DiagramType, SpecEdge } from './spec';
 
 export interface SpecConversion {
@@ -60,6 +60,7 @@ function depthOf(n: ResolvedNode, byId: Map<string, ResolvedNode>): number {
 function makeShape(n: ResolvedNode, rect: Rect): ShapeElement {
   const shape = createShape(n.kind, { x: Math.round(rect.x), y: Math.round(rect.y), w: Math.round(rect.w), h: Math.round(rect.h) }, n.style, n.text);
   if (n.icon) shape.icon = n.icon;
+  if (n.kind === 'group' && n.icon) shape.params = { ...shape.params, iconSize: GROUP_ICON_SIZE };
   return shape;
 }
 

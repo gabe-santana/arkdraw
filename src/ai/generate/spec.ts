@@ -72,7 +72,7 @@ export const ARROW_HEADS: ArrowHead[] = [
 export const C4_BOX_KINDS = ['c4.system', 'c4.container', 'c4.component', 'c4.external'] as const;
 
 /** Kinds that hold children. */
-export const CONTAINER_KINDS = new Set(['container', 'c4.boundary', 'uml.frame']);
+export const CONTAINER_KINDS = new Set(['container', 'group', 'c4.boundary', 'uml.frame']);
 
 const KIND_ALIASES: Record<string, string> = {
   process: 'rectangle',

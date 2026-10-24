@@ -23,6 +23,9 @@ import {
   strokeAttrs,
 } from './kit';
 import type { ParamValues, ShapeDef, ShapeLibrary } from './types';
+
+/** Gap between a group's corner and its logo. */
+const GROUP_INSET = 8;
 import { handle, param, pn, ps, radiusHandle, withParams } from './params';
 import { ARROW_PARAMS, documentD, singleArrowD, singleArrowHandle } from './paramGeometry';
 import { STENCIL_SHAPE } from '@/stencils/shape';
@@ -209,6 +212,34 @@ const defs: ShapeDef[] = [
     handles: ({ w, h, p }) => [handle(w / 2, Math.min(h, pn(p, 'startSize')), (pt) => ({ params: { startSize: Math.round(Math.min(h, pt.y)) } }))],
     textBox: (w, h, p) => ({ x: 14, y: 0, w: Math.max(1, w - 28), h: Math.max(1, Math.min(h, pn(p, 'startSize'))) }),
     drawio: 'swimlane;startSize=36;rounded=1;arcSize=6;container=1;collapsible=0;',
+  },
+  {
+    // Cloud / network boundary (account, VNet, subnet…): the service logo in the
+    // top-left corner and the title beside it, no header rule.
+    kind: 'group',
+    label: 'Group',
+    rounded: true,
+    container: true,
+    params: [param.px('iconSize', 'Icon', 0, { max: 64 })],
+    render: ({ w, h, style, params, icon }) => {
+      const s = pn(params, 'iconSize');
+      return (
+        <>
+          <RoundRect w={w} h={h} s={style} />
+          {icon && s > 0 && (
+            <g transform={`translate(${GROUP_INSET} ${GROUP_INSET})`}>
+              <IconImage path={icon} w={s} h={s} />
+            </g>
+          )}
+        </>
+      );
+    },
+    textBox: (w, h, p) => {
+      const s = pn(p, 'iconSize');
+      const x = s > 0 ? GROUP_INSET + s + 8 : 14;
+      return { x, y: 0, w: Math.max(1, w - x - 12), h: Math.max(1, Math.min(h, Math.max(36, s + GROUP_INSET * 2))) };
+    },
+    drawio: 'rounded=1;arcSize=4;container=1;collapsible=0;align=left;verticalAlign=top;spacingLeft=10;spacingTop=4;',
   },
 
   // ----- Flowchart -----------------------------------------------------------

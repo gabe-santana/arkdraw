@@ -85,6 +85,54 @@ const GROUP_STYLES: Array<[RegExp, Partial<ElementStyle>]> = [
   [/aws|azure|google cloud|\bgcp\b|oracle|\boci\b|cloud|account|subscription|tenant/i, { stroke: '#232F3E', fill: 'none' }],
 ];
 
+/**
+ * Official group icons for cloud and network boundaries, matched on the label
+ * and picked for the diagram's cloud (`*` = any). Paths in the installed icon packs.
+ */
+const GROUP_ICONS: Array<[RegExp, Record<string, string>]> = [
+  [/public.*subnet|subnet.*public|\bdmz\b/i, { aws: 'aws/groups/public-subnet.svg', azure: 'azure/networking/subnet.svg', oci: 'oci/physical-grouping/subnet.svg', gcp: 'gcp/products/virtual-private-cloud.svg' }],
+  [/subnet/i, { aws: 'aws/groups/private-subnet.svg', azure: 'azure/networking/subnet.svg', oci: 'oci/physical-grouping/subnet.svg', gcp: 'gcp/products/virtual-private-cloud.svg' }],
+  [/\bvpc\b|\bvnet\b|virtual (private )?(cloud|network)|\bvcn\b/i, { aws: 'aws/groups/virtual-private-cloud-vpc.svg', azure: 'azure/networking/virtual-networks.svg', gcp: 'gcp/products/virtual-private-cloud.svg', oci: 'oci/physical-grouping/vcn.svg', '*': 'azure/networking/virtual-networks.svg' }],
+  [/auto ?scaling/i, { '*': 'aws/groups/auto-scaling-group.svg' }],
+  [/resource group|\brg\b/i, { '*': 'azure/general/resource-groups.svg' }],
+  [/management group/i, { '*': 'azure/general/management-groups.svg' }],
+  [/subscription/i, { '*': 'azure/general/subscriptions.svg' }],
+  [/compartment/i, { '*': 'oci/physical-grouping/compartment.svg' }],
+  [/\bproject\b/i, { '*': 'gcp/products/project.svg' }],
+  [/namespace/i, { '*': 'kubernetes/resources/namespace.svg' }],
+  [/\beks\b|\bgke\b|kubernetes|\bk8s\b|cluster/i, { aws: 'aws/containers/amazon-elastic-kubernetes-service.svg', gcp: 'gcp/core-products/gke.svg' }],
+  [/region/i, { aws: 'aws/groups/region.svg', azure: 'azure/general/region-management.svg', oci: 'oci/physical-grouping/oci-region.svg' }],
+  [/account/i, { aws: 'aws/groups/aws-account.svg' }],
+  [/on-?prem|data ?cent(er|re)|corporate/i, { '*': 'aws/groups/corporate-data-center.svg' }],
+  [/\baws\b|amazon web services/i, { '*': 'aws/groups/aws-cloud-logo.svg' }],
+  [/azure/i, { '*': 'azure/other/azure-a.svg' }],
+  [/google cloud|\bgcp\b/i, { '*': 'logos/icons/google.svg' }],
+  [/cloud/i, { aws: 'aws/groups/aws-cloud-logo.svg', azure: 'azure/other/azure-a.svg', gcp: 'logos/icons/google.svg' }],
+];
+
+/** The logo for a group label in a diagram built mostly on `cloud` (aws, azure, gcp, oci…). */
+export function groupIcon(label: string, cloud?: string): string | undefined {
+  for (const [re, icons] of GROUP_ICONS) {
+    if (!re.test(label)) continue;
+    const hit = (cloud && icons[cloud]) || icons['*'];
+    if (hit) return hit;
+  }
+  return undefined;
+}
+
+/** The icon pack most of the diagram's icons come from. */
+export function dominantCloud(nodes: Array<{ icon?: string }>): string | undefined {
+  const counts = new Map<string, number>();
+  for (const n of nodes) {
+    const pack = n.icon?.split('/')[0];
+    if (pack && pack !== 'logos') counts.set(pack, (counts.get(pack) ?? 0) + 1);
+  }
+  return [...counts].sort((a, b) => b[1] - a[1])[0]?.[0];
+}
+
+/** Logo size in a group's top-left corner. */
+export const GROUP_ICON_SIZE = 24;
+
 function containerStyle(n: SpecNode): Partial<ElementStyle> {
   const base: Partial<ElementStyle> = { textAlign: 'left', verticalAlign: 'middle', bold: true, fontSize: 13, radius: 10, strokeWidth: 1.5 };
   const group = GROUP_STYLES.find(([re]) => re.test(n.text))?.[1] ?? { stroke: '#94a3b8', fill: '#f8fafc' };
@@ -211,13 +259,15 @@ export function defaultDirection(type: DiagramType): 'TB' | 'LR' {
   return type === 'cloud' || type === 'erd' || type === 'network' ? 'LR' : 'TB';
 }
 
-export function resolveNode(n: SpecNode, type: DiagramType, hasChildren: boolean): ResolvedNode {
+export function resolveNode(n: SpecNode, type: DiagramType, hasChildren: boolean, cloud?: string): ResolvedNode {
   let kind = n.kind;
   let text = n.text;
   let style: Partial<ElementStyle> = {};
   const isC4 = kind.startsWith('c4.');
 
   if (hasChildren && !CONTAINER_KINDS.has(kind)) kind = type === 'c4' ? 'c4.boundary' : 'container';
+  // Generic containers are drawn as groups: logo + title, no header rule.
+  if (kind === 'container') kind = 'group';
   const container = CONTAINER_KINDS.has(kind);
 
   if (isC4 || kind === 'c4.boundary') {
@@ -240,7 +290,7 @@ export function resolveNode(n: SpecNode, type: DiagramType, hasChildren: boolean
     text = compartmentText(n);
     style = { ...KIND_STYLES[kind] };
   } else if (container) {
-    style = kind === 'container' ? containerStyle(n) : { fill: 'none', stroke: '#475569', textAlign: 'left', fontSize: 12, bold: true };
+    style = kind === 'group' ? containerStyle(n) : { fill: 'none', stroke: '#475569', textAlign: 'left', fontSize: 12, bold: true };
   } else if (kind.startsWith('net.')) {
     style = { fill: '#ffffff', stroke: '#2563eb', fontSize: 12, radius: 12 };
   } else {
@@ -264,7 +314,9 @@ export function resolveNode(n: SpecNode, type: DiagramType, hasChildren: boolean
     const labelW = Math.max(...text.split('\n').map((l) => measureText(l, { ...full, fontSize: full.fontSize + 2, bold: true })));
     const [bw, bh] = BASE_SIZE.container;
     const w = Math.ceil(Math.max(bw, labelW + padding.left + padding.right + 8));
-    return { id: n.id, parent: n.parent, kind, text, icon: undefined, style: full, w, h: bh, labelBelow: 0, boxW: w, container: true, padding };
+    const icon = kind === 'group' ? (n.icon ?? groupIcon(text, cloud)) : undefined;
+    const iconW = icon ? GROUP_ICON_SIZE + 8 : 0;
+    return { id: n.id, parent: n.parent, kind, text, icon, style: full, w: w + iconW, h: bh, labelBelow: 0, boxW: w + iconW, container: true, padding };
   }
 
   const size = sizeLeaf(kind, text, full);
@@ -283,5 +335,6 @@ export function resolveNode(n: SpecNode, type: DiagramType, hasChildren: boolean
 
 export function resolveSpec(spec: DiagramSpec): ResolvedNode[] {
   const parents = new Set(spec.nodes.map((n) => n.parent).filter((p): p is string => !!p));
-  return spec.nodes.map((n) => resolveNode(n, spec.type, parents.has(n.id)));
+  const cloud = dominantCloud(spec.nodes);
+  return spec.nodes.map((n) => resolveNode(n, spec.type, parents.has(n.id), cloud));
 }

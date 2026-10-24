@@ -77,7 +77,7 @@ flowchart LR
     const d = docOf(src);
     const pay = byText(d, 'Payment area');
     const inner = byText(d, 'Inner');
-    expect(pay.kind).toBe('container');
+    expect(pay.kind).toBe('group');
     expect(inner.containerId).toBe(pay.id);
     expect(byText(d, 'Orders DB').containerId).toBe(inner.id);
     expect(byText(d, 'Pay').containerId).toBe(pay.id);
@@ -251,7 +251,7 @@ describe('mermaid state diagram', () => {
     expect(s.filter((x) => x.kind === 'uml.final')).toHaveLength(2);
     expect(s.find((x) => x.kind === 'diamond')).toBeTruthy();
     const failed = s.find((x) => x.text === 'Failed')!;
-    expect(failed.kind).toBe('container');
+    expect(failed.kind).toBe('group');
     expect(s.find((x) => x.text === 'Retry')!.containerId).toBe(failed.id);
     expect(s.find((x) => x.text.startsWith('Idle'))!.text).toBe('Idle\nwaiting for work');
     expect(s.find((x) => x.kind === 'uml.note')!.text).toBe('busy');

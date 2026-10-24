@@ -35,7 +35,7 @@ describe('Graphviz DOT import', () => {
     const res = parseDotDiagram(`graph { subgraph cluster_1 { label=Team; a; b } a -- b; b -- c [style=dashed]; c [shape=cylinder, color=blue] }`);
     const els = Object.values(res.pages[0].doc.elements);
     const shapes = els.filter(isShape);
-    const container = shapes.find((s) => s.kind === 'container');
+    const container = shapes.find((s) => s.kind === 'group');
     expect(container?.text).toBe('Team');
     expect(shapes.filter((s) => s.containerId === container?.id)).toHaveLength(2);
     const cyl = shapes.find((s) => s.text === 'c')!;

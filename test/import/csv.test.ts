@@ -76,7 +76,7 @@ db,Postgres,grp,db,90,
 web,Web,,svc,120,api`).pages[0].doc;
     const s = shapes(d);
     const grp = s.find((x) => x.text === 'Backend')!;
-    expect(grp.kind).toBe('container');
+    expect(grp.kind).toBe('group');
     const api = s.find((x) => x.text === 'API')!;
     const db = s.find((x) => x.text === 'Postgres')!;
     expect(api.containerId).toBe(grp.id);
