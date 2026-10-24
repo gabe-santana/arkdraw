@@ -11,7 +11,7 @@
 // never stored in the repo. See docs/web.md#cloudflare-workers.
 {
   "name": "arkdraw",
-  "compatibility_date": "2026-10-01",
+  "compatibility_date": "2026-04-01",
   "assets": {
     "directory": "./dist",
     // Unknown paths load the app, which handles its own routes (share links, ?embed=1…).

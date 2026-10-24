@@ -8,7 +8,7 @@
 // secrets, never stored in the repo.
 {
   "name": "arkdraw-site",
-  "compatibility_date": "2026-10-01",
+  "compatibility_date": "2026-04-01",
   // Only /media/* runs code (range requests for the videos, see worker.js);
   // everything else is served straight from the assets.
   "main": "worker.js",
