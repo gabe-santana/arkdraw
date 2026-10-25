@@ -13,8 +13,12 @@ import { dist } from '@/lib/geometry';
 
 /** Seconds per build-sequence step. */
 export const STEP_DURATION = 0.8;
-export const SHAPE_REVEAL = 0.18;
-export const CONNECTOR_REVEAL = 0.4;
+/** A shape's pop-in (springs past full size and settles). */
+export const SHAPE_REVEAL = 0.5;
+/** A connector drawing itself. */
+export const CONNECTOR_REVEAL = 0.5;
+/** Leaving: a quick shrink and fade. */
+export const LEAVE_DURATION = 0.28;
 /** Hold on the final frame before the sequence loops. */
 export const SEQUENCE_HOLD = 1.5;
 
@@ -23,7 +27,13 @@ export const DOT_SPEED = 120; // px / s
 export const PULSE_PERIOD = 1.6; // s
 
 const easeOut = (k: number) => 1 - Math.pow(1 - k, 3);
+const easeIn = (k: number) => k * k * k;
+const easeInOut = (k: number) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
 const clamp01 = (k: number) => Math.min(1, Math.max(0, k));
+/** Damped spring from 0 to 1: overshoots once (about 9%), then settles. */
+const spring = (k: number) => (k >= 1 ? 1 : 1 - Math.exp(-5.5 * k) * Math.cos(2.8 * Math.PI * k));
+/** Fraction of the connector drawn, `k` being its linear reveal progress. */
+export const drawnFraction = (k: number) => easeInOut(clamp01(k));
 
 // ---------------------------------------------------------------------------
 // Build sequence
@@ -67,12 +77,16 @@ export function sequenceDuration(doc: Doc): number {
   return steps ? steps * STEP_DURATION + SEQUENCE_HOLD : 0;
 }
 
-/** 0 = hidden, 1 = fully shown. Time wraps around the sequence length. */
+/**
+ * Linear progress of the element's entrance: 0 = hidden, 1 = fully in. Effects
+ * apply their own easing (shapes spring in, connectors draw). Time wraps around
+ * the sequence length.
+ */
 export function revealProgress(step: number, isConn: boolean, t: number, seqDuration: number): number {
   if (!step || !seqDuration) return 1;
   const local = t % seqDuration;
   const start = (step - 1) * STEP_DURATION;
-  return easeOut(clamp01((local - start) / (isConn ? CONNECTOR_REVEAL : SHAPE_REVEAL)));
+  return clamp01((local - start) / (isConn ? CONNECTOR_REVEAL : SHAPE_REVEAL));
 }
 
 /**
@@ -83,7 +97,7 @@ export function hideProgress(step: number, t: number, seqDuration: number): numb
   if (!step || !seqDuration) return 1;
   const local = t % seqDuration;
   const start = (step - 1) * STEP_DURATION;
-  return 1 - easeOut(clamp01((local - start) / SHAPE_REVEAL));
+  return 1 - easeIn(clamp01((local - start) / LEAVE_DURATION));
 }
 
 // ---------------------------------------------------------------------------
@@ -96,13 +110,23 @@ export interface ShapeFx {
   glow?: number;
 }
 
-export function shapeEffect(el: ShapeElement, t: number, reveal: number): ShapeFx {
+/**
+ * `reveal`: linear entrance progress (0..1); `present`: 1 until the element
+ * leaves, then down to 0 (see hideProgress).
+ */
+export function shapeEffect(el: ShapeElement, t: number, reveal: number, present = 1): ShapeFx {
   const cx = el.x + el.w / 2;
   const cy = el.y + el.h / 2;
   let scale = 1;
   let dy = 0;
   let glow: number | undefined;
-  if (reveal < 1) scale *= 0.92 + 0.08 * reveal;
+  // Pops in: starts small, springs just past full size and settles, rising a little.
+  if (reveal < 1) {
+    scale *= 0.45 + 0.55 * spring(reveal);
+    dy += 12 * (1 - easeOut(reveal));
+  }
+  // Leaves: shrinks a touch while it fades.
+  if (present < 1) scale *= 0.85 + 0.15 * present;
   const a = el.animation;
   if (a && a.kind !== 'none') {
     const phase = (t * (a.speed || 1)) / PULSE_PERIOD;
@@ -115,7 +139,16 @@ export function shapeEffect(el: ShapeElement, t: number, reveal: number): ShapeF
     scale !== 1 || dy !== 0
       ? `translate(${cx} ${cy + dy}) scale(${scale}) translate(${-cx} ${-cy})`
       : undefined;
-  return { opacity: reveal, transform, glow };
+  return { opacity: easeOut(clamp01(reveal * 2.2)) * present, transform, glow };
+}
+
+/** A pulse travelling along a connector: a bright head with a tapering trail. */
+export interface Packet {
+  head: Vec;
+  /** Points behind the head, nearest first. */
+  trail: Vec[];
+  /** 0..1: packets fade in as they leave the source and out as they arrive. */
+  alpha: number;
 }
 
 export interface ConnectorFx {
@@ -123,9 +156,11 @@ export interface ConnectorFx {
   dashOffset?: number;
   /** Fraction of the path drawn (build sequence). */
   drawn: number;
-  dots?: Vec[];
+  packets?: Packet[];
   glow?: number;
 }
+
+const TRAIL = 7;
 
 export function polylineLength(pts: Vec[]): number {
   let total = 0;
@@ -153,7 +188,7 @@ export const flowDash = (strokeWidth: number) => [8 + strokeWidth * 2, 6 + strok
  * to place travelling dots on any routing style.
  */
 export function connectorEffect(el: ConnectorElement, t: number, reveal: number, samples: Vec[]): ConnectorFx {
-  const fx: ConnectorFx = { drawn: reveal };
+  const fx: ConnectorFx = { drawn: drawnFraction(reveal) };
   const a = el.animation;
   if (!a || a.kind === 'none') return fx;
   const speed = a.speed || 1;
@@ -167,9 +202,15 @@ export function connectorEffect(el: ConnectorElement, t: number, reveal: number,
     if (len > 0) {
       const count = len > 360 ? 3 : len > 160 ? 2 : 1;
       const travel = ((t * DOT_SPEED * speed) / len) % 1;
-      fx.dots = Array.from({ length: count }, (_, k) => {
+      // Trail spacing grows with speed, so faster packets streak longer.
+      const gap = Math.min(10, Math.max(3, len * 0.012)) * Math.sqrt(speed);
+      fx.packets = Array.from({ length: count }, (_, k) => {
         const f = (travel + k / count) % 1;
-        return pointAt(samples, (a.reverse ? 1 - f : f) * len);
+        // Accelerates out of the source, brakes into the target.
+        const d = easeInOut(f) * len;
+        const at = (x: number) => pointAt(samples, a.reverse ? len - x : x);
+        const trail = Array.from({ length: TRAIL }, (_, j) => at(Math.max(0, d - (j + 1) * gap * (0.6 + 0.8 * Math.sin(Math.PI * f)))));
+        return { head: at(d), trail, alpha: clamp01(Math.min(f, 1 - f) / 0.1) };
       });
     }
   } else if (a.kind === 'pulse') {

@@ -11,7 +11,7 @@ import { roughen, seedFor } from '@/shapes/sketch';
 import { connectorGeometry, type ConnectorGeometry, type Lookup } from '@/lib/connectorGeometry';
 import { lineHeight, measureText, wrapText } from '@/lib/text';
 import { connectorStroke, ExtraLabels, SketchConnector } from './connectorShapes';
-import { connectorEffect, hideProgress, revealProgress, shapeEffect } from '@/animation/timeline';
+import { connectorEffect, hideProgress, revealProgress, shapeEffect, type Packet } from '@/animation/timeline';
 import { CustomShadowFilter, hasCustomShadow, shadowFilterUrl } from '@/styling/shadow';
 import { shapeLabelBox } from '@/text/labelLayout';
 import { localizedText } from '@/text/translations';
@@ -126,8 +126,10 @@ export const ShapeBody = memo(function ShapeBody({ el, interactive, hideText, fr
   const def = getShapeDef(el.kind);
   const vars = useContext(LabelVarsContext);
   const { w, h } = el;
-  const reveal = frame ? revealProgress(el.reveal ?? 0, false, frame.t, frame.seq) * hideProgress(el.hide ?? 0, frame.t, frame.seq) : 1;
-  const fx = frame ? shapeEffect(el, frame.t, reveal) : null;
+  const entering = frame ? revealProgress(el.reveal ?? 0, false, frame.t, frame.seq) : 1;
+  const present = frame ? hideProgress(el.hide ?? 0, frame.t, frame.seq) : 1;
+  const reveal = entering * present;
+  const fx = frame ? shapeEffect(el, frame.t, entering, present) : null;
   const gradId = el.style.gradient && el.style.fill !== 'none' ? `od-g-${el.id}` : null;
   const style: ElementStyle = gradId ? { ...el.style, fill: `url(#${gradId})` } : el.style;
   const label = localizedText(el, vars.language);
@@ -238,6 +240,23 @@ interface ConnectorBodyProps {
   hideStep?: number;
 }
 
+/** A packet on a connector: soft halo, tapering trail, bright core. */
+function PacketMark({ packet: p, color, sw }: { packet: Packet; color: string; sw: number }) {
+  if (p.alpha <= 0) return null;
+  const r = 3.2 + sw * 0.8;
+  return (
+    <g pointerEvents="none" opacity={p.alpha}>
+      <circle cx={p.head.x} cy={p.head.y} r={r * 2.6} fill={color} opacity={0.18} />
+      {p.trail.map((q, j) => {
+        const k = 1 - (j + 1) / (p.trail.length + 1);
+        return <circle key={j} cx={q.x} cy={q.y} r={r * (0.35 + 0.6 * k)} fill={color} opacity={0.55 * k} />;
+      })}
+      <circle cx={p.head.x} cy={p.head.y} r={r} fill={color} />
+      <circle cx={p.head.x} cy={p.head.y} r={r * 0.48} fill="#ffffff" opacity={0.9} />
+    </g>
+  );
+}
+
 export const ConnectorBody = memo(function ConnectorBody({
   el, lookup, interactive, hideLabel, labelBg = '#ffffff', frame, geometry, revealStep, hideStep,
 }: ConnectorBodyProps) {
@@ -251,7 +270,7 @@ export const ConnectorBody = memo(function ConnectorBody({
   const s = strokeAttrs(el.style);
   const color = el.style.stroke === 'none' ? '#475569' : el.style.stroke;
   const sw = el.style.strokeWidth;
-  const drawing = reveal < 1;
+  const drawing = fx ? fx.drawn < 1 : false;
   const baseLabel = localizedText(el, vars.language);
   const label = el.style.placeholders ? expandPlaceholders(baseLabel, el, vars) : baseLabel;
   const lineWork = connectorStroke(el, g, {
@@ -259,7 +278,7 @@ export const ConnectorBody = memo(function ConnectorBody({
     heads: !drawing,
     strokeAttrs: s,
     pathLength: drawing ? 1 : undefined,
-    dashArray: drawing ? `${reveal} 1` : fx?.dashArray,
+    dashArray: drawing ? `${fx!.drawn} 1` : fx?.dashArray,
     dashOffset: drawing ? undefined : fx?.dashOffset,
   });
 
@@ -273,7 +292,7 @@ export const ConnectorBody = memo(function ConnectorBody({
         <path d={g.path} fill="none" stroke={color} strokeWidth={sw + 8} strokeOpacity={0.08 + 0.22 * fx.glow} strokeLinecap="round" strokeLinejoin="round" />
       )}
       {el.style.sketch && !drawing ? <SketchConnector el={el} node={lineWork} path={g.path} /> : lineWork}
-      {fx?.dots?.map((d, i) => <circle key={i} cx={d.x} cy={d.y} r={3 + sw} fill={color} />)}
+      {fx?.packets?.map((p, i) => <PacketMark key={i} packet={p} color={color} sw={sw} />)}
       {label && !hideLabel && !drawing && <ConnectorLabel el={el} text={label} at={g.label} bg={labelBg} />}
       {!drawing && <ExtraLabels el={el} g={g} bg={labelBg} />}
       {interactive && el.link && <LinkBadge x={g.label.x + 10} y={g.label.y - 10} />}
