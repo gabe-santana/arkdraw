@@ -155,6 +155,18 @@ describe('connector shadows', () => {
     expect(attr(tag, 'y') + attr(tag, 'height')).toBeGreaterThan(0);
   });
 
+  it('uses the default arrow size for the shadow region', () => {
+    const implicit = line({ shadow: true });
+    const explicit = line({ shadow: true });
+    explicit.endSize = 6;
+    const implicitTag = filterTag(exported(implicit), customShadowId(implicit.id));
+    const explicitTag = filterTag(exported(explicit), customShadowId(explicit.id));
+
+    for (const name of ['x', 'y', 'width', 'height']) {
+      expect(attr(implicitTag, name)).toBe(attr(explicitTag, name));
+    }
+  });
+
   it('uses the shadow options', () => {
     const c = line({ shadow: true, shadowColor: '#ff0000', shadowBlur: 9, shadowOffsetX: 3, shadowOffsetY: 6, shadowOpacity: 0.5 });
     const svg = exported(c);

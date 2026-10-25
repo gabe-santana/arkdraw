@@ -284,7 +284,7 @@ export const ConnectorBody = memo(function ConnectorBody({
   });
   const body = el.style.sketch && !drawing ? <SketchConnector el={el} node={lineWork} path={g.path} /> : lineWork;
   // Heads, bands and pipes stick out past the route.
-  const reach = el.style.shadow ? arrowSize(sw, Math.max(el.startSize ?? 0, el.endSize ?? 0)) + Math.max(el.headWidth ?? 0, el.bandWidth ?? 0) + 20 : 0;
+  const reach = el.style.shadow ? arrowSize(sw, Math.max(el.startSize ?? 6, el.endSize ?? 6)) + Math.max(el.headWidth ?? 0, el.bandWidth ?? 0) + 20 : 0;
 
   return (
     <g data-el={interactive ? el.id : undefined} {...(interactive && connectorAria(el))} opacity={el.style.opacity * leaving}>
