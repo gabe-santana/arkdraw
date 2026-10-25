@@ -31,7 +31,7 @@ export function PageTabs() {
   ];
 
   return (
-    <div className="animate-slide-up pointer-events-auto flex max-w-[44vw] items-center gap-0.5 rounded-xl bg-panel p-1 shadow-panel">
+    <div className="animate-slide-up pointer-events-auto flex max-w-full items-center gap-0.5 rounded-xl bg-panel p-1 shadow-panel">
       <div ref={scroller} className="no-scrollbar flex items-center gap-0.5 overflow-x-auto">
         {pages.map((p) => (
           <div
