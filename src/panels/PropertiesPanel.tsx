@@ -201,10 +201,18 @@ function FillStroke({ els }: { els: ShapeElement[] }) {
 }
 
 function StrokeOnly({ els }: { els: ConnectorElement[] }) {
-  return <StrokeGroup els={els} rounded={false} />;
+  const set = useStyleSetter(els);
+  const shadow = !!common(els.map((e) => e.style.shadow));
+  const t = useT();
+  return (
+    <StrokeGroup els={els} rounded={false}>
+      <Switch label={t('panels.dropShadow')} checked={shadow} onChange={(shadow) => set({ shadow })} />
+      {shadow && <ShadowOptions els={els} />}
+    </StrokeGroup>
+  );
 }
 
-function StrokeGroup({ els, rounded }: { els: DiagramElement[]; rounded: boolean }) {
+function StrokeGroup({ els, rounded, children }: { els: DiagramElement[]; rounded: boolean; children?: ReactNode }) {
   const set = useStyleSetter(els);
   const st = (k: keyof ElementStyle) => common(els.map((e) => e.style[k]));
   const t = useT();
@@ -229,6 +237,7 @@ function StrokeGroup({ els, rounded }: { els: DiagramElement[]; rounded: boolean
           { value: 'dotted', label: <svg width="28" height="6"><line x1="2" y1="3" x2="27" y2="3" stroke="currentColor" strokeWidth="2.2" strokeDasharray="0 5" strokeLinecap="round" /></svg>, title: t('panels.stroke.dotted') },
         ]}
       />
+      {children}
     </Section>
   );
 }
