@@ -1,6 +1,7 @@
 /**
- * Page tabs (mxGraph's bottom tab bar): switch, add, rename (double-click),
- * duplicate/delete via context menu, drag to reorder.
+ * Page tabs: a bar along the bottom of the window, under the canvas (like
+ * spreadsheet sheets). Switch, add, rename (double-click), duplicate/delete
+ * via context menu, drag to reorder.
  */
 import { useRef, useState } from 'react';
 import { Copy, Pencil, Plus, Trash } from 'lucide-react';
@@ -31,8 +32,8 @@ export function PageTabs() {
   ];
 
   return (
-    <div className="animate-slide-up pointer-events-auto flex max-w-full items-center gap-0.5 rounded-xl bg-panel p-1 shadow-panel">
-      <div ref={scroller} className="no-scrollbar flex items-center gap-0.5 overflow-x-auto">
+    <div className="flex h-8 shrink-0 items-stretch" role="tablist" aria-label={t('common.pages')}>
+      <div ref={scroller} className="no-scrollbar flex min-w-0 items-stretch overflow-x-auto">
         {pages.map((p) => (
           <div
             key={p.id}
@@ -54,9 +55,13 @@ export function PageTabs() {
               e.preventDefault();
               setMenu({ x: e.clientX, y: e.clientY, id: p.id });
             }}
+            role="tab"
+            aria-selected={p.id === active}
             className={cn(
-              'flex h-7 shrink-0 cursor-default items-center rounded-lg px-2.5 text-[12px] font-medium transition-colors',
-              p.id === active ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-hover hover:text-fg',
+              'relative flex shrink-0 cursor-default items-center border-r border-line px-3.5 text-[12px] font-medium transition-colors',
+              p.id === active
+                ? 'bg-panel text-fg after:absolute after:inset-x-0 after:top-0 after:h-[2px] after:bg-accent'
+                : 'text-muted hover:bg-hover hover:text-fg',
               dragId === p.id && 'opacity-40',
             )}
           >
@@ -89,7 +94,7 @@ export function PageTabs() {
             s().addPage();
             requestAnimationFrame(() => scroller.current?.scrollTo({ left: 1e6, behavior: 'smooth' }));
           }}
-          className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-hover hover:text-fg"
+          className="flex w-9 shrink-0 items-center justify-center text-muted hover:bg-hover hover:text-fg"
           aria-label={t('chrome.pageTabs.insertPage')}
         >
           <Plus className="size-4" />

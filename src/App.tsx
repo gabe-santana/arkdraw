@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Canvas } from '@/canvas/Canvas';
 import { TitleBar } from '@/chrome/TitleBar';
 import { Toolbar, ZoomControls } from '@/chrome/Toolbar';
@@ -48,17 +48,6 @@ export default function App() {
   const dark = useTheme();
   const leftInset = useUi((s) => columnInset(s, 'left'));
   const rightInset = useUi((s) => columnInset(s, 'right'));
-  // The page tabs stop short of the toolbar (they scroll inside); its width changes, so it's measured.
-  const toolbarRef = useRef<HTMLDivElement>(null);
-  const [toolbarW, setToolbarW] = useState(0);
-  useEffect(() => {
-    const el = toolbarRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => setToolbarW(el.offsetWidth));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  const tabsLeft = leftInset ? leftInset + 26 : 14;
   const aiSettingsOpen = useUi((s) => s.aiSettingsOpen);
   const [fontsVersion, setFontsVersion] = useState(0);
   useShortcuts();
@@ -125,8 +114,8 @@ export default function App() {
       }}
     >
       <TitleBar />
-      <main className="relative min-h-0 flex-1 px-1.5 pb-1.5">
-        <div className="relative h-full overflow-hidden rounded-[14px] shadow-[0_0_0_1px_var(--line)]">
+      <main className="relative flex min-h-0 flex-1 flex-col px-1.5">
+        <div className="relative min-h-0 flex-1 overflow-hidden rounded-[14px] shadow-[0_0_0_1px_var(--line)]">
           <Canvas key={fontsVersion} dark={dark} />
           <Rulers />
 
@@ -137,7 +126,6 @@ export default function App() {
             <DockDragGhost />
             {/* Centered in the canvas area the side panels leave free, so it never runs into the zoom controls. */}
             <div
-              ref={toolbarRef}
               data-od-toolbar
               className="absolute bottom-3.5 -translate-x-1/2 transition-[left] duration-300"
               style={{ left: `calc(${leftInset}px + (100% - ${leftInset + rightInset}px) / 2)` }}
@@ -147,12 +135,6 @@ export default function App() {
             <div className={cn('absolute bottom-3.5 flex flex-col items-end gap-2 transition-[right] duration-300', !rightInset && 'right-3.5')} style={rightInset ? { right: rightInset + 22 } : undefined}>
               <Outline />
               <ZoomControls />
-            </div>
-            <div
-              className="absolute bottom-3.5 transition-[left] duration-300"
-              style={{ left: tabsLeft, maxWidth: `max(120px, calc((100% - ${leftInset + rightInset}px) / 2 - ${toolbarW / 2 + tabsLeft - leftInset + 12}px))` }}
-            >
-              <PageTabs />
             </div>
             <FindPanel />
             <CommentsPanel />
@@ -164,6 +146,7 @@ export default function App() {
             </Suspense>
           )}
         </div>
+        <PageTabs />
       </main>
 
       <CommandPalette />
