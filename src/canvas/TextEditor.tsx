@@ -10,6 +10,7 @@ import { compartmentHeight, getShapeDef, textBoxOf, c4Layout } from '@/shapes/re
 import { connectorGeometryInDoc } from '@/lib/connectorGeometry';
 import { lineHeight, LINE_HEIGHT, wrapText } from '@/lib/text';
 import { useEditor } from '@/store/editor';
+import { useAdaptColors } from '@/canvas/useAdaptColors';
 import { cn } from '@/lib/cn';
 import { matchesCombo } from '@/app/useShortcuts';
 import { spellCheckEnabled, spellCheckLanguage } from '@/desktop/config';
@@ -65,7 +66,7 @@ export function TextEditor() {
   const el = useEditor((s) => (s.editingId ? s.doc.elements[s.editingId] : undefined));
   const elements = useEditor((s) => s.doc.elements);
   const camera = useEditor((s) => s.camera);
-  const adapt = useEditor((s) => s.settings.adaptColors);
+  const adapt = useAdaptColors();
   const lang = useEditor((s) => s.pages.find((p) => p.id === s.activePageId)?.settings.language);
   const ref = useRef<HTMLDivElement>(null);
   const committed = useRef(false);

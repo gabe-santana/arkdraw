@@ -11,7 +11,7 @@ import { roughen, seedFor } from '@/shapes/sketch';
 import { connectorGeometry, type ConnectorGeometry, type Lookup } from '@/lib/connectorGeometry';
 import { lineHeight, measureText, wrapText } from '@/lib/text';
 import { connectorStroke, ExtraLabels, SketchConnector } from './connectorShapes';
-import { connectorEffect, revealProgress, shapeEffect } from '@/animation/timeline';
+import { connectorEffect, hideProgress, revealProgress, shapeEffect } from '@/animation/timeline';
 import { CustomShadowFilter, hasCustomShadow, shadowFilterUrl } from '@/styling/shadow';
 import { shapeLabelBox } from '@/text/labelLayout';
 import { localizedText } from '@/text/translations';
@@ -126,7 +126,7 @@ export const ShapeBody = memo(function ShapeBody({ el, interactive, hideText, fr
   const def = getShapeDef(el.kind);
   const vars = useContext(LabelVarsContext);
   const { w, h } = el;
-  const reveal = frame ? revealProgress(el.reveal ?? 0, false, frame.t, frame.seq) : 1;
+  const reveal = frame ? revealProgress(el.reveal ?? 0, false, frame.t, frame.seq) * hideProgress(el.hide ?? 0, frame.t, frame.seq) : 1;
   const fx = frame ? shapeEffect(el, frame.t, reveal) : null;
   const gradId = el.style.gradient && el.style.fill !== 'none' ? `od-g-${el.id}` : null;
   const style: ElementStyle = gradId ? { ...el.style, fill: `url(#${gradId})` } : el.style;
@@ -234,15 +234,19 @@ interface ConnectorBodyProps {
   geometry?: ConnectorGeometry;
   /** Effective build step (clamped to its ends); see animation spec. */
   revealStep?: number;
+  /** Effective exit step (no later than its ends). */
+  hideStep?: number;
 }
 
 export const ConnectorBody = memo(function ConnectorBody({
-  el, lookup, interactive, hideLabel, labelBg = '#ffffff', frame, geometry, revealStep,
+  el, lookup, interactive, hideLabel, labelBg = '#ffffff', frame, geometry, revealStep, hideStep,
 }: ConnectorBodyProps) {
   const vars = useContext(LabelVarsContext);
   const g = geometry ?? connectorGeometry(el, lookup);
   const reveal = frame ? revealProgress(revealStep ?? el.reveal ?? 0, true, frame.t, frame.seq) : 1;
-  if (reveal <= 0) return null;
+  // Leaving fades the whole connector; arriving draws it.
+  const leaving = frame ? hideProgress(hideStep ?? el.hide ?? 0, frame.t, frame.seq) : 1;
+  if (reveal <= 0 || leaving <= 0) return null;
   const fx = frame ? connectorEffect(el, frame.t, reveal, g.samples) : null;
   const s = strokeAttrs(el.style);
   const color = el.style.stroke === 'none' ? '#475569' : el.style.stroke;
@@ -260,7 +264,7 @@ export const ConnectorBody = memo(function ConnectorBody({
   });
 
   return (
-    <g data-el={interactive ? el.id : undefined} {...(interactive && connectorAria(el))} opacity={el.style.opacity}>
+    <g data-el={interactive ? el.id : undefined} {...(interactive && connectorAria(el))} opacity={el.style.opacity * leaving}>
       {el.tooltip && <title>{el.tooltip}</title>}
       {interactive && (
         <path d={g.path} fill="none" stroke="transparent" strokeWidth={14} vectorEffect="non-scaling-stroke" pointerEvents="stroke" />

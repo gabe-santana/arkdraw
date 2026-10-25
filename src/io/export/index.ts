@@ -14,9 +14,10 @@ import { exportSubset, inlineIcons, renderSvgStandalone, visualBounds, type Appe
 import { encodeCanvas, exportRaster, type RasterFormat } from './raster';
 import { embedDiagramInPng, embedDiagramInSvg, pdfEmbedProps } from './embed';
 import { encodeShareUrl } from './share';
+import type { VideoAspect } from './videoPlan';
 import { placeholderLookup } from '@/automation/placeholders';
 
-export type ExportFormat = 'png' | 'jpeg' | 'webp' | 'svg' | 'pdf' | 'html' | 'gif' | 'drawio' | 'vsdx' | 'url';
+export type ExportFormat = 'png' | 'jpeg' | 'webp' | 'svg' | 'pdf' | 'html' | 'gif' | 'mp4' | 'drawio' | 'vsdx' | 'url';
 export type PageScope = 'current' | 'all' | 'selection' | 'range';
 export type BackgroundMode = 'page' | 'white' | 'transparent';
 
@@ -37,6 +38,7 @@ export const FORMATS: Record<ExportFormat, FormatInfo> = {
   pdf: { label: 'PDF', desc: 'Vector document', ext: 'pdf', mime: 'application/pdf', multiPage: 'native' },
   html: { label: 'HTML', desc: 'Interactive viewer', ext: 'html', mime: 'text/html', multiPage: 'native' },
   gif: { label: 'GIF', desc: 'Animated', ext: 'gif', mime: 'image/gif', multiPage: 'none' },
+  mp4: { label: 'MP4', desc: 'Video', ext: 'mp4', mime: 'video/mp4', multiPage: 'native' },
   drawio: { label: '.drawio', desc: 'Editable XML', ext: 'drawio', mime: 'application/xml', multiPage: 'native' },
   vsdx: { label: 'Visio', desc: 'VSDX drawing', ext: 'vsdx', mime: 'application/vnd.ms-visio.drawing', multiPage: 'native' },
   url: { label: 'Link', desc: 'Shareable URL', ext: 'txt', mime: 'text/plain', multiPage: 'native' },
@@ -70,6 +72,11 @@ export interface ExportSettings {
   // GIF
   fps: number;
   loop: boolean;
+  // MP4 (every page in scope is a scene)
+  /** Short side of the frame, px. */
+  videoResolution: number;
+  videoAspect: VideoAspect;
+  videoFps: number;
 }
 
 export const DEFAULT_EXPORT_SETTINGS: ExportSettings = {
@@ -91,6 +98,9 @@ export const DEFAULT_EXPORT_SETTINGS: ExportSettings = {
   compressed: false,
   fps: 20,
   loop: true,
+  videoResolution: 1080,
+  videoAspect: 'auto',
+  videoFps: 30,
 };
 
 export interface ExportSource {
@@ -124,16 +134,16 @@ export const supports = {
   scale: (f: ExportFormat) => isRaster(f) || f === 'gif',
   quality: (f: ExportFormat) => f === 'jpeg' || f === 'webp',
   transparent: (f: ExportFormat) => f === 'png' || f === 'svg' || f === 'webp' || f === 'gif' || f === 'html',
-  background: (f: ExportFormat) => isRaster(f) || f === 'svg' || f === 'pdf' || f === 'html' || f === 'gif',
-  border: (f: ExportFormat) => isRaster(f) || f === 'svg' || f === 'pdf' || f === 'html' || f === 'gif',
+  background: (f: ExportFormat) => isRaster(f) || f === 'svg' || f === 'pdf' || f === 'html' || f === 'gif' || f === 'mp4',
+  border: (f: ExportFormat) => isRaster(f) || f === 'svg' || f === 'pdf' || f === 'html' || f === 'gif' || f === 'mp4',
   area: (f: ExportFormat) => isRaster(f) || f === 'svg' || f === 'pdf' || f === 'html',
-  grid: (f: ExportFormat) => isRaster(f) || f === 'svg' || f === 'pdf' || f === 'html',
+  grid: (f: ExportFormat) => isRaster(f) || f === 'svg' || f === 'pdf' || f === 'html' || f === 'mp4',
   embed: (f: ExportFormat) => f === 'png' || f === 'svg' || f === 'pdf',
   appearance: (f: ExportFormat) => f === 'svg' || f === 'html',
   fonts: (f: ExportFormat) => f === 'svg' || f === 'html',
   images: (f: ExportFormat) => f === 'svg',
   scopes: (f: ExportFormat): PageScope[] =>
-    f === 'gif' ? ['current', 'selection'] : f === 'pdf' ? ['current', 'all', 'selection', 'range'] : ['current', 'all', 'selection'],
+    f === 'gif' ? ['current', 'selection'] : f === 'mp4' ? ['current', 'all', 'range'] : f === 'pdf' ? ['current', 'all', 'selection', 'range'] : ['current', 'all', 'selection'],
 };
 
 // ---------------------------------------------------------------------------
@@ -303,6 +313,12 @@ export async function exportFiles(src: ExportSource, s: ExportSettings, ctl: Exp
       const opts = svgOptionsFor(page, src, s);
       const data = await exportGif(page.doc, { ...opts, scale: s.scale, fps: s.fps, duration: 'auto', loop: s.loop, onProgress: progress, signal: ctl.signal });
       return [{ name: `${base}.gif`, mime: info.mime, data }];
+    }
+    case 'mp4': {
+      const { exportVideo } = await import('./video');
+      const scenes = pages.map((page) => ({ doc: page.doc, svg: svgOptionsFor(page, src, s) }));
+      const data = await exportVideo(scenes, { resolution: s.videoResolution, aspect: s.videoAspect, fps: s.videoFps, onProgress: progress, signal: ctl.signal });
+      return [{ name: `${base}.mp4`, mime: info.mime, data }];
     }
     case 'drawio': {
       let xml = await exportDrawioPages(pages.map((p) => ({ name: p.name, doc: p.doc })));

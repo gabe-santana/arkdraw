@@ -88,8 +88,9 @@ export default {
   'panels.animation.reverse': 'Reverse direction',
   // Row label: reveal step number in presentation/animation order.
   'panels.animation.step': 'Step',
+  'panels.animation.hideStep': 'Leaves at step',
   'panels.animation.revealInOrder': 'Reveal in selection order',
-  'panels.animation.hint': 'Step 0 = always visible. Export as GIF from File → Export.',
+  'panels.animation.hint': 'Step 0 = always visible; leaving at 0 = stays. Export as a GIF or MP4 video from File → Export.',
   // Section title (several shapes selected).
   'panels.arrange.align': 'Align',
   // Section title (one element selected): z-order, grouping, locking.

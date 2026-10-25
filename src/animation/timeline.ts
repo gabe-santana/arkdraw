@@ -41,9 +41,24 @@ export function effectiveReveal(el: DiagramElement, doc: Doc): number {
   return step;
 }
 
+/** Effective exit step: a connector leaves no later than the first of its ends (0 = never). */
+export function effectiveHide(el: DiagramElement, doc: Doc): number {
+  let step = el.hide ?? 0;
+  if (isConnector(el)) {
+    for (const end of [el.source, el.target]) {
+      const other = end.elementId ? doc.elements[end.elementId] : undefined;
+      if (other?.hide) step = step ? Math.min(step, other.hide) : other.hide;
+    }
+  }
+  return step;
+}
+
 export function maxRevealStep(doc: Doc): number {
   let max = 0;
-  for (const id of doc.order) max = Math.max(max, effectiveReveal(doc.elements[id], doc));
+  for (const id of doc.order) {
+    const el = doc.elements[id];
+    max = Math.max(max, effectiveReveal(el, doc), el.hide ?? 0);
+  }
   return max;
 }
 
@@ -58,6 +73,17 @@ export function revealProgress(step: number, isConn: boolean, t: number, seqDura
   const local = t % seqDuration;
   const start = (step - 1) * STEP_DURATION;
   return easeOut(clamp01((local - start) / (isConn ? CONNECTOR_REVEAL : SHAPE_REVEAL)));
+}
+
+/**
+ * 1 = still shown, 0 = gone: the element fades out when its exit step starts.
+ * An element leaving at the step another one appears at swaps cleanly with it.
+ */
+export function hideProgress(step: number, t: number, seqDuration: number): number {
+  if (!step || !seqDuration) return 1;
+  const local = t % seqDuration;
+  const start = (step - 1) * STEP_DURATION;
+  return 1 - easeOut(clamp01((local - start) / SHAPE_REVEAL));
 }
 
 // ---------------------------------------------------------------------------
@@ -156,7 +182,7 @@ export function connectorEffect(el: ConnectorElement, t: number, reveal: number,
 export function hasAnimation(doc: Doc): boolean {
   return doc.order.some((id) => {
     const el = doc.elements[id];
-    return (el.animation && el.animation.kind !== 'none') || !!el.reveal;
+    return (el.animation && el.animation.kind !== 'none') || !!el.reveal || !!el.hide;
   });
 }
 

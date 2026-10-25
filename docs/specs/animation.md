@@ -58,8 +58,15 @@ the shapes it attaches to (it is clamped to the later of its ends' steps).
 - Each step has a duration (default 0.8 s), and the sequence holds on the final
   frame for 1.5 s before looping.
 
+`element.hide?: number`: the step at which the element **fades out** (180 ms).
+Elements without `hide` stay. A connector leaves no later than the first of its
+ends. Appearing and leaving at the same step swaps two elements cleanly, which
+is how a scene changes something in place: a highlight moves to another option,
+a row gets crossed out, a counter shows its next value.
+
 Editing UI: an **Animation** section in the properties panel (effect, speed,
-reverse, reveal step), plus "Number steps by selection order" for multi-select.
+reverse, reveal step, leaving step), plus "Number steps by selection order" for
+multi-select.
 
 ### 4. Preview & presentation
 
@@ -91,7 +98,30 @@ Pipeline:
 
 Size estimate shown before export (`frames × area` heuristic); warn above 15 MB.
 
-### 6. Interop
+### 6. Video export (MP4) and scenes
+
+In the Export dialog, choose **MP4** (shown where the browser can encode video
+with WebCodecs: Chrome, Edge, Safari 16.4+, Firefox 130+). Every page in scope
+is a **scene**: scenes play in page order, each for its build sequence (or one
+loop of its animations, at least 3 s), and each one fades out over the first
+0.4 s of the next.
+
+| Option       | Default | Notes                                              |
+|--------------|---------|----------------------------------------------------|
+| Pages        | Current | Or all pages, or a range: one video, one scene per page. |
+| Resolution   | 1080p   | 720p / 1080p / 4K, on the frame's short side.       |
+| Aspect ratio | Auto    | Auto fits the scenes; 16:9, 9:16 (Shorts, Reels, TikTok) or 1:1. |
+| Frame rate   | 30 fps  | 24 / 30 / 60                                        |
+| Background   | Page    | Or white; video has no transparency.               |
+| Grid         | Off     | The editor grid behind every scene.                |
+
+Every scene shows the same world-space size, widened to the frame's shape and
+centered on its own content: text keeps its size from scene to scene, and the
+background and grid fill the whole frame. Frames are rendered with the same
+renderer as the canvas and the GIF export, encoded as H.264 by the browser and
+muxed into MP4 with Mediabunny (MPL-2.0), loaded only when exporting.
+
+### 7. Interop
 
 - `.arkdraw` stores the animation fields as-is.
 - `.drawio` export maps `flow` → `flowAnimation=1` (supported by mxGraph);

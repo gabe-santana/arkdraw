@@ -8,6 +8,7 @@ import { createContext, memo, useContext, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { ConnectorElement, DiagramElement, PageSettings, Vec } from '@/model/types';
 import { isHidden, renderOrder, useEditor } from '@/store/editor';
+import { useAdaptColors } from '@/canvas/useAdaptColors';
 import { boundsOf, computeJumps, connectorGeometry, routeObstacles } from '@/lib/connectorGeometry';
 import { cn } from '@/lib/cn';
 import { sequenceDuration, useClock } from '@/animation/timeline';
@@ -41,7 +42,7 @@ export function SceneLayer({ dark }: { dark: boolean }) {
   );
   const elements = useEditor((s) => s.doc.elements);
   const camera = useEditor((s) => s.camera);
-  const adapt = useEditor((s) => s.settings.adaptColors);
+  const adapt = useAdaptColors();
   const playing = useEditor((s) => s.playing);
   const doc = useEditor((s) => (s.playing ? s.doc : null));
   const page = useEditor((s) => s.pages.find((p) => p.id === s.activePageId));
@@ -125,7 +126,7 @@ function* shapesOf(elements: Record<string, DiagramElement>, order: string[]) {
 }
 
 const isAnimated = (el: DiagramElement | undefined) =>
-  !!el && ((!!el.animation && el.animation.kind !== 'none') || !!el.reveal);
+  !!el && ((!!el.animation && el.animation.kind !== 'none') || !!el.reveal || !!el.hide);
 
 /** Current animation frame for an element, or undefined when static. */
 function useFrame(animated: boolean): AnimFrame | undefined {
@@ -168,6 +169,8 @@ function ConnectorView({ el, editing, labelBg }: { el: ConnectorElement; editing
   const geometry = useMemo(() => connectorGeometry(el, lookup, obstacles.map(boundsOf), jumps), [el, lookup, obstacles, jumps]);
   // A connector never appears before the shapes it connects.
   const revealStep = Math.max(el.reveal ?? 0, src?.reveal ?? 0, tgt?.reveal ?? 0);
+  // …and leaves no later than they do.
+  const hideStep = Math.min(...[el.hide, src?.hide, tgt?.hide].map((h) => h || Infinity));
   const frame = useFrame(isAnimated(el) || isAnimated(src) || isAnimated(tgt));
   return (
     <ConnectorBody
@@ -179,6 +182,7 @@ function ConnectorView({ el, editing, labelBg }: { el: ConnectorElement; editing
       labelBg={labelBg}
       frame={frame}
       revealStep={revealStep}
+      hideStep={Number.isFinite(hideStep) ? hideStep : 0}
     />
   );
 }

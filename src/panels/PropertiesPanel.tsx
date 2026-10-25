@@ -3,7 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import {
   Bold, BringToFront, ChevronsDown, ChevronsUp, CornerDownRight, Group, Italic, Lock, LockOpen, Minus,
   Play, Pause, SendToBack, TextAlignCenter, TextAlignEnd, TextAlignStart, Ungroup, ArrowUpToLine,
-  ArrowDownToLine, FoldVertical, ListOrdered, Sparkles,
+  ArrowDownToLine, EyeOff, FoldVertical, ListOrdered, Sparkles,
 } from 'lucide-react';
 import type {
   ConnectorAnimation, ConnectorElement, DiagramElement, ElementStyle, FontFamily, ShapeAnimation, ShapeElement,
@@ -322,6 +322,7 @@ function AnimationProps({ els }: { els: DiagramElement[] }) {
   const shapeKind = common(shapes.map((c) => c.animation?.kind ?? 'none'));
   const speed = common(els.map((e) => e.animation?.speed ?? 1)) ?? 1;
   const reveal = common(els.map((e) => e.reveal ?? 0));
+  const hide = common(els.map((e) => e.hide ?? 0));
   const anyAnim = els.some((e) => e.animation && e.animation.kind !== 'none');
 
   return (
@@ -378,6 +379,15 @@ function AnimationProps({ els }: { els: DiagramElement[] }) {
           min={0}
           max={99}
           onChange={(v) => s().updateElements(Object.fromEntries(els.map((e) => [e.id, { reveal: Math.round(v) || undefined }])))}
+        />
+      </Row>
+      <Row label={t('panels.animation.hideStep')}>
+        <NumberField
+          label={<EyeOff />}
+          value={hide}
+          min={0}
+          max={99}
+          onChange={(v) => s().updateElements(Object.fromEntries(els.map((e) => [e.id, { hide: Math.round(v) || undefined }])))}
         />
       </Row>
       {els.length > 1 && (

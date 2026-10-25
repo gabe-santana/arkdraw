@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  AppWindow, Check, ChevronLeft, ChevronRight, Copy, FileCode2, FileImage, FileText, Film, Image, ImageDown, Info, Link2, Loader2, Network, Shapes, TriangleAlert,
+  AppWindow, Check, ChevronLeft, ChevronRight, Clapperboard, Copy, FileCode2, FileImage, FileText, Film, Image, ImageDown, Info, Link2, Loader2, Network, Shapes, TriangleAlert,
 } from 'lucide-react';
 import { useEditor } from '@/store/editor';
 import { useUi } from '@/store/ui';
@@ -8,6 +8,7 @@ import { cn } from '@/lib/cn';
 import { saveFile } from '@/io/native';
 import { exportSubset, inlineIcons, loadExportFonts, renderSvg } from '@/io/export/svg';
 import { autoGifDuration, estimateGifBytes } from '@/io/export/gif';
+import { estimateVideoBytes, videoDuration, videoFrameSize, videoSupported, type VideoAspect } from '@/io/export/videoPlan';
 import {
   DEFAULT_EXPORT_SETTINGS, FORMATS, estimateSize, exportBundle, formatBytes, isRaster, pagesInScope, supports, svgOptionsFor,
   type ExportFormat, type ExportSettings, type ExportSource, type PageScope,
@@ -20,7 +21,10 @@ import { Button } from '@/ui/Button';
 import { NumberField, Segmented, Slider, Switch } from '@/ui/controls';
 import { formatNumber, t as translate, useT, type MessageKey } from '@/i18n';
 
-const ORDER: ExportFormat[] = ['png', 'jpeg', 'webp', 'svg', 'gif', 'pdf', 'html', 'drawio', 'vsdx', 'url'];
+// MP4 only where the browser can encode video (WebCodecs).
+const ORDER: ExportFormat[] = (['png', 'jpeg', 'webp', 'svg', 'gif', 'mp4', 'pdf', 'html', 'drawio', 'vsdx', 'url'] as const).filter(
+  (f) => f !== 'mp4' || videoSupported(),
+);
 
 /** Icon and tint per format — a little color makes the grid scannable. */
 const LOOK: Record<ExportFormat, { icon: ReactNode; hue: string }> = {
@@ -29,6 +33,7 @@ const LOOK: Record<ExportFormat, { icon: ReactNode; hue: string }> = {
   webp: { icon: <ImageDown />, hue: '#06b6d4' },
   svg: { icon: <FileCode2 />, hue: '#8b5cf6' },
   gif: { icon: <Film />, hue: '#ec4899' },
+  mp4: { icon: <Clapperboard />, hue: '#f43f5e' },
   pdf: { icon: <FileText />, hue: '#ef4444' },
   html: { icon: <AppWindow />, hue: '#14b8a6' },
   drawio: { icon: <Network />, hue: '#f59e0b' },
@@ -43,6 +48,7 @@ const DESC_KEYS: Record<ExportFormat, MessageKey> = {
   webp: 'export.format.webp.desc',
   svg: 'export.format.svg.desc',
   gif: 'export.format.gif.desc',
+  mp4: 'export.format.mp4.desc',
   pdf: 'export.format.pdf.desc',
   html: 'export.format.html.desc',
   drawio: 'export.format.drawio.desc',
@@ -67,7 +73,7 @@ function loadPrefs(): ExportSettings {
   try {
     const saved = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}') as Partial<ExportSettings>;
     const s = { ...DEFAULT_EXPORT_SETTINGS, ...saved };
-    return FORMATS[s.format] ? s : DEFAULT_EXPORT_SETTINGS;
+    return FORMATS[s.format] && ORDER.includes(s.format) ? s : DEFAULT_EXPORT_SETTINGS;
   } catch {
     return DEFAULT_EXPORT_SETTINGS;
   }
@@ -163,15 +169,20 @@ function ExportBody({ close }: { close: () => void }) {
   const shareUrl = useMemo(() => (prefs.format === 'url' && !empty ? encodeShareUrl(pages) : ''), [prefs.format, pages, empty]);
 
   const gifDuration = useMemo(() => (animated ? autoGifDuration(doc) : 2), [doc, animated]);
+  const videoSeconds = useMemo(() => (prefs.format === 'mp4' ? Math.round(videoDuration(pages.map((p) => p.doc)) * 10) / 10 : 0), [prefs.format, pages]);
   const estimate = useMemo(() => {
     if (!preview) return null;
+    if (prefs.format === 'mp4') {
+      const size = videoFrameSize([{ width: preview.w, height: preview.h }], { resolution: prefs.videoResolution, aspect: prefs.videoAspect });
+      return { ...size, bytes: estimateVideoBytes(size.width, size.height, prefs.videoFps, videoSeconds) };
+    }
     if (prefs.format === 'gif') {
       const w = Math.round(preview.w * prefs.scale);
       const h = Math.round(preview.h * prefs.scale);
       return { bytes: estimateGifBytes(w, h, Math.round(gifDuration * prefs.fps)), width: w, height: h };
     }
     return estimateSize(src, prefs, preview.length, preview.w, preview.h);
-  }, [preview, prefs, src, gifDuration]);
+  }, [preview, prefs, src, gifDuration, videoSeconds]);
 
   const multiFile = pages.length > 1 && fmt.multiPage === 'zip';
   const busy = progress !== null;
@@ -226,7 +237,7 @@ function ExportBody({ close }: { close: () => void }) {
       <DialogHeader id="export-title" title={t('common.export')} subtitle={t('export.subtitle')} onClose={close} />
 
       {/* Format cards */}
-      <div className="grid grid-cols-5 gap-2 px-5 pb-4" role="radiogroup" aria-label={t('export.formatGroup')}>
+      <div className={cn('grid gap-2 px-5 pb-4', ORDER.length > 10 ? 'grid-cols-6' : 'grid-cols-5')} role="radiogroup" aria-label={t('export.formatGroup')}>
         {ORDER.map((id) => {
           const desc = t(DESC_KEYS[id]);
           const on = prefs.format === id;
@@ -277,13 +288,18 @@ function ExportBody({ close }: { close: () => void }) {
           {/* Badges */}
           {preview && (
             <div className="pointer-events-none absolute left-2.5 top-2.5 flex gap-1.5">
-              <Badge>{isRaster(prefs.format) || prefs.format === 'gif' ? `${estimate?.width ?? 0} × ${estimate?.height ?? 0}px` : `${preview.w} × ${preview.h}`}</Badge>
+              <Badge>{isRaster(prefs.format) || prefs.format === 'gif' || prefs.format === 'mp4' ? `${estimate?.width ?? 0} × ${estimate?.height ?? 0}px` : `${preview.w} × ${preview.h}`}</Badge>
               {pages.length > 1 && <Badge>{t('common.pageCount', { count: pages.length })}</Badge>}
             </div>
           )}
           {prefs.format === 'gif' && animated && (
             <span className="absolute right-2.5 top-2.5 flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 text-[11px] font-medium text-white">
               <Film className="size-3" /> {t('export.gifLoop', { seconds: gifDuration })}
+            </span>
+          )}
+          {prefs.format === 'mp4' && (
+            <span className="absolute right-2.5 top-2.5 flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 text-[11px] font-medium text-white">
+              <Clapperboard className="size-3" /> {t('export.videoLength', { seconds: videoSeconds })}
             </span>
           )}
 
@@ -419,6 +435,43 @@ function ExportBody({ close }: { close: () => void }) {
               </Field>
               <Switch label={t('export.loopForever')} checked={prefs.loop} onChange={(loop) => setPrefs({ loop })} />
               {!animated && (
+                <Callout tone="warn">
+                  {rich('export.gifNoAnimation', { flow: <b>{t('export.gifFlow')}</b>, dots: <b>{t('export.gifDots')}</b> })}
+                </Callout>
+              )}
+            </>
+          )}
+
+          {prefs.format === 'mp4' && (
+            <>
+              <Field label={t('export.videoResolution')}>
+                <Segmented
+                  value={String(prefs.videoResolution)}
+                  onChange={(v) => setPrefs({ videoResolution: Number(v) })}
+                  options={[
+                    { value: '720', label: '720p' },
+                    { value: '1080', label: '1080p' },
+                    { value: '2160', label: '4K' },
+                  ]}
+                />
+              </Field>
+              <Field label={t('export.videoAspect')}>
+                <Segmented<VideoAspect>
+                  value={prefs.videoAspect}
+                  onChange={(videoAspect) => setPrefs({ videoAspect })}
+                  options={[
+                    { value: 'auto', label: t('common.auto'), title: t('export.videoAspectAuto') },
+                    { value: '16:9', label: '16:9' },
+                    { value: '9:16', label: '9:16', title: t('export.videoAspectVertical') },
+                    { value: '1:1', label: '1:1' },
+                  ]}
+                />
+              </Field>
+              <Field label={t('export.frameRate')}>
+                <Segmented value={String(prefs.videoFps)} onChange={(v) => setPrefs({ videoFps: Number(v) })} options={['24', '30', '60'].map((v) => ({ value: v, label: `${v} fps` }))} />
+              </Field>
+              {pages.length > 1 && <Hint>{t('export.videoScenes')}</Hint>}
+              {!pages.some((p) => hasAnimation(p.doc)) && (
                 <Callout tone="warn">
                   {rich('export.gifNoAnimation', { flow: <b>{t('export.gifFlow')}</b>, dots: <b>{t('export.gifDots')}</b> })}
                 </Callout>

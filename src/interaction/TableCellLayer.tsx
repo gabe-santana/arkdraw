@@ -10,6 +10,7 @@ import { isShape } from '@/model/types';
 import { fontStack } from '@/text/fonts';
 import { LINE_HEIGHT } from '@/lib/text';
 import { useEditor } from '@/store/editor';
+import { useAdaptColors } from '@/canvas/useAdaptColors';
 import { cn } from '@/lib/cn';
 import { useInteraction } from './store';
 import { cellKey, cellRect, cellsInRange, isCovered, rangeBounds } from './table';
@@ -90,7 +91,7 @@ export function TableCellEditor() {
   const editing = useInteraction((s) => s.editingCell);
   const el = useEditor((s) => (editing ? s.doc.elements[editing.id] : undefined));
   const camera = useEditor((s) => s.camera);
-  const adapt = useEditor((s) => s.settings.adaptColors);
+  const adapt = useAdaptColors();
   const ref = useRef<HTMLDivElement>(null);
   const done = useRef(false);
 

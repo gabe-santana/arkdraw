@@ -43,6 +43,7 @@
     "jspdf": "^4.2.1",
     "lucide-react": "^1.61.0",
     "mathjax-full": "^3.2.2",
+    "mediabunny": "1.61.3",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "roughjs": "^4.6.6",

@@ -12,7 +12,7 @@ import { IconHrefContext, iconUrl } from '@/shapes/IconImage';
 import { getShapeDef } from '@/shapes/registry';
 import { connectorGeometryInDoc } from '@/lib/connectorGeometry';
 import { boundsOfPoints, unionRects } from '@/lib/geometry';
-import { effectiveReveal } from '@/animation/timeline';
+import { effectiveHide, effectiveReveal } from '@/animation/timeline';
 import { loadWebFonts, webFontCss } from '@/text/exportFonts';
 
 export type Appearance = 'light' | 'dark' | 'auto';
@@ -113,7 +113,7 @@ function collapsedAway(doc: Doc, el: DiagramElement): boolean {
 }
 
 /** Elements to draw, in render order (by layer, then z-order). */
-function drawable(doc: Doc, els: DiagramElement[], hidden: 'omit' | 'hide' | 'show'): DiagramElement[] {
+export function drawable(doc: Doc, els: DiagramElement[], hidden: 'omit' | 'hide' | 'show'): DiagramElement[] {
   const layers = docLayers(doc);
   const rank = new Map(layers.map((l, i) => [l.id, i]));
   return els
@@ -277,6 +277,7 @@ export function renderSvg(doc: Doc, opts: SvgExportOptions, resolveIcon = iconUr
           labelBg={opts.background ?? '#ffffff'}
           frame={opts.frame}
           revealStep={effectiveReveal(el, doc)}
+          hideStep={effectiveHide(el, doc)}
         />
       ),
     );

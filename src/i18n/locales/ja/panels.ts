@@ -86,8 +86,9 @@ export default {
   'panels.animation.reverse': '方向を反転',
   // Row label: reveal step number in presentation/animation order.
   'panels.animation.step': 'ステップ',
+  'panels.animation.hideStep': '消えるステップ',
   'panels.animation.revealInOrder': '選択順に表示',
-  'panels.animation.hint': 'ステップ 0 = 常に表示。[ファイル] → [エクスポート] で GIF として書き出せます。',
+  'panels.animation.hint': 'ステップ 0 = 常に表示、消えるステップ 0 = 消えません。[ファイル] → [エクスポート] で GIF または MP4 動画として書き出せます。',
   // Section title (several shapes selected).
   'panels.arrange.align': '整列',
   // Section title (one element selected): z-order, grouping, locking.

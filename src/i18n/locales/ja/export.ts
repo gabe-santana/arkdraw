@@ -13,6 +13,7 @@ export default {
   'export.format.webp.desc': '小さな Web 画像',
   'export.format.svg.desc': '拡大縮小可能なベクター',
   'export.format.gif.desc': 'アニメーション',
+  'export.format.mp4.desc': '動画',
   'export.format.pdf.desc': 'ベクタードキュメント',
   'export.format.html.desc': 'インタラクティブビューアー',
   'export.format.drawio.desc': '編集可能な XML',
@@ -23,6 +24,12 @@ export default {
   'export.rendering': 'プレビューをレンダリング中…',
   // badge on an animated GIF preview: its duration
   'export.gifLoop': '{seconds} 秒ループ',
+  'export.videoLength': '{seconds} 秒の動画',
+  'export.videoResolution': '解像度',
+  'export.videoAspect': 'アスペクト比',
+  'export.videoAspectAuto': '図に合わせる',
+  'export.videoAspectVertical': '縦長: Shorts、Reels、TikTok',
+  'export.videoScenes': '各ページが 1 つのシーンになり、短いクロスフェードで順に再生されます。',
   'export.prevPage': '前のページ',
   'export.nextPage': '次のページ',
   // page scope options (narrow segmented control)

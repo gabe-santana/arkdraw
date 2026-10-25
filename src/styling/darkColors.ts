@@ -75,6 +75,12 @@ export function preAdapt(wanted: string): string {
   return toHex(inv.map((x) => (INVERT - x) / (2 * INVERT - 1)) as Vec3);
 }
 
+/** A page on its own dark background (relative luminance under 0.35). */
+export function pageIsDark(background: string | null | undefined): boolean {
+  const c = background ? parseHex(background) : null;
+  return !!c && 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] < 0.35;
+}
+
 export const hasDarkColors = (s: ElementStyle) => !!(s.darkFill || s.darkStroke || s.darkText);
 
 /** Style with the user's dark colors swapped in (pre-compensated for the adapt filter). */

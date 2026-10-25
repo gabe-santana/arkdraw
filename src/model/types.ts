@@ -131,6 +131,8 @@ interface ElementBase {
   text: string;
   /** Build-sequence step at which the element appears (see docs/specs/animation.md). */
   reveal?: number;
+  /** Build-sequence step at which the element fades out (absent = it stays). */
+  hide?: number;
   /** Layer the element lives on (absent = the page's first layer). */
   layerId?: string;
   /** Custom key/value metadata (Edit Data). */

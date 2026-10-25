@@ -11,6 +11,7 @@ export default {
   'export.format.webp.desc': 'Small web image',
   'export.format.svg.desc': 'Scalable vector',
   'export.format.gif.desc': 'Animated',
+  'export.format.mp4.desc': 'Video',
   'export.format.pdf.desc': 'Vector document',
   'export.format.html.desc': 'Interactive viewer',
   'export.format.drawio.desc': 'Editable XML',
@@ -21,6 +22,12 @@ export default {
   'export.rendering': 'Rendering preview…',
   // badge on an animated GIF preview: its duration
   'export.gifLoop': '{seconds}s loop',
+  'export.videoLength': '{seconds}s video',
+  'export.videoResolution': 'Resolution',
+  'export.videoAspect': 'Aspect ratio',
+  'export.videoAspectAuto': 'Fits the diagram',
+  'export.videoAspectVertical': 'Vertical: Shorts, Reels, TikTok',
+  'export.videoScenes': 'Each page is a scene: they play in order, with a short crossfade.',
   'export.prevPage': 'Previous page',
   'export.nextPage': 'Next page',
   // page scope options (narrow segmented control)
