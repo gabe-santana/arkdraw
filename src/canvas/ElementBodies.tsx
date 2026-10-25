@@ -8,11 +8,12 @@ import type { ConnectorElement, ElementStyle, Rect, ShapeElement } from '@/model
 import { getShapeDef, strokeAttrs } from '@/shapes/registry';
 import { TextBlock, TextLines } from '@/shapes/TextLines';
 import { roughen, seedFor } from '@/shapes/sketch';
-import { connectorGeometry, type ConnectorGeometry, type Lookup } from '@/lib/connectorGeometry';
+import { arrowSize, connectorGeometry, type ConnectorGeometry, type Lookup } from '@/lib/connectorGeometry';
+import { boundsOfPoints } from '@/lib/geometry';
 import { lineHeight, measureText, wrapText } from '@/lib/text';
 import { connectorStroke, ExtraLabels, SketchConnector } from './connectorShapes';
 import { connectorEffect, revealProgress, shapeEffect } from '@/animation/timeline';
-import { CustomShadowFilter, hasCustomShadow, shadowFilterUrl } from '@/styling/shadow';
+import { ConnectorShadowFilter, CustomShadowFilter, customShadowId, hasCustomShadow, shadowFilterUrl } from '@/styling/shadow';
 import { shapeLabelBox } from '@/text/labelLayout';
 import { localizedText } from '@/text/translations';
 import { needsRich, richSize, RichTextBlock } from '@/text/RichTextBlock';
@@ -258,6 +259,9 @@ export const ConnectorBody = memo(function ConnectorBody({
     dashArray: drawing ? `${reveal} 1` : fx?.dashArray,
     dashOffset: drawing ? undefined : fx?.dashOffset,
   });
+  const body = el.style.sketch && !drawing ? <SketchConnector el={el} node={lineWork} path={g.path} /> : lineWork;
+  // Heads, bands and pipes stick out past the route.
+  const reach = el.style.shadow ? arrowSize(sw, Math.max(el.startSize ?? 0, el.endSize ?? 0)) + Math.max(el.headWidth ?? 0, el.bandWidth ?? 0) + 20 : 0;
 
   return (
     <g data-el={interactive ? el.id : undefined} {...(interactive && connectorAria(el))} opacity={el.style.opacity}>
@@ -268,7 +272,12 @@ export const ConnectorBody = memo(function ConnectorBody({
       {fx?.glow !== undefined && (
         <path d={g.path} fill="none" stroke={color} strokeWidth={sw + 8} strokeOpacity={0.08 + 0.22 * fx.glow} strokeLinecap="round" strokeLinejoin="round" />
       )}
-      {el.style.sketch && !drawing ? <SketchConnector el={el} node={lineWork} path={g.path} /> : lineWork}
+      {el.style.shadow ? (
+        <>
+          <defs><ConnectorShadowFilter elId={el.id} style={el.style} route={boundsOfPoints([...g.points, ...g.samples])} reach={reach} /></defs>
+          <g filter={`url(#${customShadowId(el.id)})`}>{body}</g>
+        </>
+      ) : body}
       {fx?.dots?.map((d, i) => <circle key={i} cx={d.x} cy={d.y} r={3 + sw} fill={color} />)}
       {label && !hideLabel && !drawing && <ConnectorLabel el={el} text={label} at={g.label} bg={labelBg} />}
       {!drawing && <ExtraLabels el={el} g={g} bg={labelBg} />}

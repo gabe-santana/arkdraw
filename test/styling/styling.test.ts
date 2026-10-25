@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { ConnectorElement, Doc, PageSettings, ShapeElement } from '@/model/types';
+import type { ConnectorElement, Doc, ElementStyle, PageSettings, ShapeElement } from '@/model/types';
 import { createConnector, createShape } from '@/model/defaults';
 import { PAPER_SIZES, paperSize } from '@/canvas/paper';
 import { exportDrawioPages, importDrawioPages, parseStyle } from '@/io/drawio';
@@ -7,7 +7,8 @@ import { newPage, useEditor } from '@/store/editor';
 import { effectiveSettings, pageGridPatch } from '@/styling/pageGrid';
 import { axisMetrics, dragTo, scrollMetrics } from '@/styling/scrollbarMath';
 import { adaptFilter, darkStyle, parseHex, preAdapt } from '@/styling/darkColors';
-import { hasCustomShadow, shadowFilterUrl, shadowParams } from '@/styling/shadow';
+import { customShadowId, hasCustomShadow, shadowFilterUrl, shadowParams } from '@/styling/shadow';
+import { renderSvg } from '@/io/export/svg';
 import { splitLightDark, styleExtrasFromDrawio, styleExtrasToDrawio } from '@/styling/drawioStyle';
 import { STYLE_PRESETS, matchesPreset, presetPatches } from '@/styling/presets';
 import { DIAGRAM_THEMES, themePatches } from '@/styling/themes';
@@ -128,6 +129,40 @@ describe('shadow options', () => {
     el.style.shadowBlur = 12;
     expect(shadowFilterUrl(el.id, el.style, 'od-shadow')).toContain('od-sh-');
     expect(shadowParams(el.style).blur).toBe(12);
+  });
+});
+
+describe('connector shadows', () => {
+  const line = (style: Partial<ElementStyle> = {}) => {
+    const c = createConnector({ x: 0, y: 0 }, { x: 200, y: 0 });
+    Object.assign(c.style, style);
+    return c;
+  };
+  const exported = (c: ConnectorElement) => renderSvg(docOf(c), { background: null, embedFont: false }).svg;
+  const filterTag = (svg: string, id: string) => svg.match(new RegExp(`<filter id="${id}"[^>]*>`))?.[0] ?? '';
+  const attr = (tag: string, name: string) => Number(tag.match(new RegExp(` ${name}="([^"]+)"`))?.[1]);
+
+  it('renders the drop shadow on the connector body', () => {
+    const c = line({ shadow: true });
+    const svg = exported(c);
+    expect(svg).toContain(`filter="url(#${customShadowId(c.id)})"`);
+    // A horizontal line has a zero-height bounding box, so the filter region must be in user space.
+    const tag = filterTag(svg, customShadowId(c.id));
+    expect(tag).toContain('filterUnits="userSpaceOnUse"');
+    expect(attr(tag, 'x')).toBeLessThan(0);
+    expect(attr(tag, 'y')).toBeLessThan(0);
+    expect(attr(tag, 'x') + attr(tag, 'width')).toBeGreaterThan(200);
+    expect(attr(tag, 'y') + attr(tag, 'height')).toBeGreaterThan(0);
+  });
+
+  it('uses the shadow options', () => {
+    const c = line({ shadow: true, shadowColor: '#ff0000', shadowBlur: 9, shadowOffsetX: 3, shadowOffsetY: 6, shadowOpacity: 0.5 });
+    const svg = exported(c);
+    expect(svg).toMatch(/<feDropShadow dx="3" dy="6" stdDeviation="9" flood-color="#ff0000" flood-opacity="0.5"/);
+  });
+
+  it('leaves connectors without a shadow alone', () => {
+    expect(exported(line())).not.toContain('od-sh-');
   });
 });
 
