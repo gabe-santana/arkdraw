@@ -90,6 +90,9 @@ export default {
   'ai.step.checkingChanges': '変更を確認中',
   'ai.step.operations': '{count, plural, other {# 件の操作}}',
   'ai.step.fixingChanges': '無効な変更を修正中',
+  'ai.step.readingGuide': '{topic} ガイドを確認中',
+  'ai.step.reviewingArchitecture': 'アーキテクチャを確認中',
+  'ai.step.reviewNotes': '{count} 件の指摘',
 
   // useAiReady — why the assistant can't run yet
   'ai.ready.chooseModel': 'モデルを選択して開始してください。',

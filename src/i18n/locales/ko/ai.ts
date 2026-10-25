@@ -83,6 +83,9 @@ export default {
   'ai.step.checkingChanges': '변경 사항 확인 중',
   'ai.step.operations': '{count, plural, other {작업 #개}}',
   'ai.step.fixingChanges': '잘못된 변경 사항 수정 중',
+  'ai.step.readingGuide': '{topic} 가이드 읽는 중',
+  'ai.step.reviewingArchitecture': '아키텍처 검토 중',
+  'ai.step.reviewNotes': '{count}개의 메모',
 
   // useAiReady — why the assistant can't run yet
   'ai.ready.chooseModel': '시작하려면 모델을 선택하세요.',

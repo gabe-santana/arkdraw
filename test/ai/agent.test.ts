@@ -77,7 +77,7 @@ describe('runAssistant', () => {
     if (toolMsg.role === 'tool') expect(JSON.parse(toolMsg.results[0].content).matches[0].icon).toBe('aws/compute/amazon-ec2.svg');
     const errMsg = requests[2].messages[4];
     expect(errMsg.role === 'tool' && errMsg.results[0].isError).toBe(true);
-    expect(requests[0].tools.map((t) => t.name)).toEqual(['search_icons', 'submit_diagram']);
+    expect(requests[0].tools.map((t) => t.name)).toEqual(['search_icons', 'get_architecture_guide', 'submit_diagram']);
     expect(events.some((e) => e.type === 'step' && e.label.includes('Searching icons'))).toBe(true);
   });
 
@@ -87,7 +87,7 @@ describe('runAssistant', () => {
     await expect(runAssistant({ config: { provider: 'ollama', model: 'qwen3' }, prompt: 'A to B', mode: 'generate', chat })).rejects.toThrow(/A -> B/);
     expect(chat).toHaveBeenCalledTimes(2);
     const tools = (chat.mock.calls[0] as unknown as [unknown, ChatRequest])[1].tools.map((t) => t.name);
-    expect(tools).toEqual(['submit_diagram']); // no icon tool without packs
+    expect(tools).toEqual(['get_architecture_guide', 'submit_diagram']); // no icon tool without packs
   });
 
   it('returns validated edit operations in edit mode', async () => {

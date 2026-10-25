@@ -83,6 +83,9 @@ export default {
   'ai.step.checkingChanges': 'Vérification des modifications',
   'ai.step.operations': '{count, plural, one {# opération} other {# opérations}}',
   'ai.step.fixingChanges': 'Correction des modifications non valides',
+  'ai.step.readingGuide': 'Lecture du guide {topic}',
+  'ai.step.reviewingArchitecture': 'Revue de l’architecture',
+  'ai.step.reviewNotes': '{count, plural, one {# remarque} other {# remarques}}',
 
   // useAiReady
   'ai.ready.chooseModel': 'Choisissez un modèle pour commencer.',

@@ -1,9 +1,12 @@
 /**
- * The tool-calling loop: prompt → (search_icons)* → submit_diagram / submit_edits.
+ * The tool-calling loop: prompt → (search_icons | get_architecture_guide)* →
+ * submit_diagram / submit_edits. A submitted diagram gets one architecture
+ * review (./architecture.ts): the model fixes it or justifies it in its reply.
  */
 import type { Doc } from '@/model/types';
 import { AiError, type ChatMessage, type ChatTool, type ProviderConfig, type ToolResult } from '../providers/types';
 import { chat as defaultChat } from '../transport';
+import { ARCHITECTURE_GUIDE_TOOL, architectureGuide, reviewArchitecture, reviewMessage } from './architecture';
 import { knownIconPaths, loadIconProviders, searchIcons } from './icons';
 import { validateOps, type EditOp } from './ops';
 import { editSystemPrompt, editUserMessage, generateSystemPrompt, SEARCH_ICONS_TOOL, SUBMIT_DIAGRAM_TOOL, SUBMIT_EDITS_TOOL } from './prompts';
@@ -76,6 +79,7 @@ export async function runAssistant(opts: RunOptions): Promise<AgentResult> {
   const providers = await loadIconProviders();
   const tools: ChatTool[] = [
     ...(providers.length ? [SEARCH_ICONS_TOOL] : []),
+    ARCHITECTURE_GUIDE_TOOL,
     SUBMIT_DIAGRAM_TOOL,
     ...(mode === 'edit' ? [SUBMIT_EDITS_TOOL] : []),
   ];
@@ -85,6 +89,14 @@ export async function runAssistant(opts: RunOptions): Promise<AgentResult> {
   let nudged = false;
   let stepSeq = 0;
   const lastText: string[] = [];
+  // A valid diagram the architecture review commented on: kept unless the model resubmits.
+  let reviewed: AgentResult | undefined;
+  const finish = async (result: AgentResult) => {
+    result.message = lastText.join('\n\n');
+    // Place shapes and route every edge together now, so the diagram comes out clean when inserted.
+    if (result.kind === 'spec') await prepareLayout(result.spec);
+    return result;
+  };
 
   for (let turn = 0; turn < maxTurns; turn++) {
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
@@ -106,6 +118,8 @@ export async function runAssistant(opts: RunOptions): Promise<AgentResult> {
     }
 
     if (!res.toolCalls.length) {
+      // The model kept its reviewed diagram and explained the choice.
+      if (reviewed) return finish(reviewed);
       if (res.stopReason === 'max_tokens') throw new AiError(t('ai.error.cutOff'));
       if (nudged) throw new AiError(res.text.trim() || t('ai.error.noDiagram'));
       nudged = true;
@@ -133,14 +147,28 @@ export async function runAssistant(opts: RunOptions): Promise<AgentResult> {
           name: call.name,
           content: JSON.stringify(hits.length ? { matches: hits } : { matches: [], hint: 'No icon found; try another name or use a generic shape.' }),
         });
+      } else if (call.name === 'get_architecture_guide') {
+        const topic = String(args.topic ?? '');
+        const guide = architectureGuide(topic);
+        emit({ type: 'step', id, label: t('ai.step.readingGuide', { topic }), state: guide ? 'done' : 'error', kind: 'think' });
+        results.push(guide ? { id: call.id, name: call.name, content: guide } : { id: call.id, name: call.name, content: `Unknown topic "${topic}".`, isError: true });
       } else if (call.name === 'submit_diagram') {
         emit({ type: 'step', id, label: t('ai.step.validating'), state: 'running', kind: 'check' });
         const known = await knownIconPaths(iconsIn(args));
         const v = validateSpec(args, { knownIcons: known });
         if (v.ok) {
           emit({ type: 'step', id, label: t('ai.step.validating'), state: 'done', kind: 'check', detail: t('ai.step.nodesEdges', { nodes: v.spec.nodes.length, edges: v.spec.edges.length }) });
-          results.push({ id: call.id, name: call.name, content: `Accepted: ${v.spec.nodes.length} nodes, ${v.spec.edges.length} edges.` });
-          final ??= { kind: 'spec', spec: v.spec, warnings: v.warnings, message: '' };
+          const result: AgentResult = { kind: 'spec', spec: v.spec, warnings: v.warnings, message: '' };
+          const notes = reviewed || final ? [] : reviewArchitecture(v.spec);
+          if (notes.length) {
+            const rid = `review-${stepSeq++}`;
+            emit({ type: 'step', id: rid, label: t('ai.step.reviewingArchitecture'), state: 'done', kind: 'check', detail: t('ai.step.reviewNotes', { count: notes.length }) });
+            results.push({ id: call.id, name: call.name, content: reviewMessage(notes) });
+            reviewed = result;
+          } else {
+            results.push({ id: call.id, name: call.name, content: `Accepted: ${v.spec.nodes.length} nodes, ${v.spec.edges.length} edges.` });
+            final ??= result;
+          }
         } else {
           emit({ type: 'step', id, label: t('ai.step.fixingValidation'), state: 'error', kind: 'check', detail: v.errors[0] });
           results.push({ id: call.id, name: call.name, content: `Invalid diagram:\n- ${v.errors.join('\n- ')}`, isError: true });
@@ -162,12 +190,8 @@ export async function runAssistant(opts: RunOptions): Promise<AgentResult> {
       }
     }
     messages.push({ role: 'tool', results });
-    if (final) {
-      final.message = lastText.join('\n\n');
-      // Place shapes and route every edge together now, so the diagram comes out clean when inserted.
-      if (final.kind === 'spec') await prepareLayout(final.spec);
-      return final;
-    }
+    if (final) return finish(final);
   }
+  if (reviewed) return finish(reviewed);
   throw new AiError(t('ai.error.notFinished'));
 }

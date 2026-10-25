@@ -186,7 +186,7 @@ const RULES = `Rules:
 - Include what the user asked for, at a sensible level of detail (typically 5–30 nodes). Don't add filler.
 - Only set style for meaningful emphasis; conventions already give each kind its colors.
 - If the request is ambiguous, make reasonable assumptions instead of asking.
-- After the tool accepts your submission, answer with at most one short sentence.`;
+- After the tool accepts your submission, answer with at most two short sentences. For cloud architectures, name the main design choice and its alternative (e.g. "Each region keeps its own logs; ask for a central workspace to merge them.").`;
 
 function iconSection(providers: IconProviderInfo[]): string {
   if (!providers.length)
@@ -201,8 +201,8 @@ export function generateSystemPrompt(providers: IconProviderInfo[]): string {
 
 Workflow:
 1. Decide the diagram type (${DIAGRAM_TYPES.join(', ')}).
-2. Look up vendor icons with search_icons when the diagram shows cloud services.
-3. Call submit_diagram once with the complete spec. If it returns errors, fix them and call it again.
+2. For cloud architectures, call get_architecture_guide for each pattern involved (e.g. multi-region, observability, networking, data, security, event-driven) and follow it; look up vendor icons with search_icons.
+3. Call submit_diagram once with the complete spec. If it returns errors, fix them and call it again. If it returns architecture review notes, fix the diagram or keep it and explain the choice.
 
 ${CATALOG}
 
@@ -216,7 +216,7 @@ export function editSystemPrompt(providers: IconProviderInfo[]): string {
 
 Workflow:
 1. Work out the smallest set of changes that fulfils the request. Nodes/edges marked "selected": true are the user's current selection — "this", "these" and "the selected…" refer to them.
-2. Look up vendor icons with search_icons if you add cloud services.
+2. For cloud architectures, call get_architecture_guide for the patterns the change involves; look up vendor icons with search_icons if you add cloud services.
 3. Call submit_edits with operations that reference existing ids exactly; new nodes need new unique ids. Removing a node also removes its edges. To animate many edges at once use one animate_edges op (edges: "all" or a list); to play the diagram step by step use set_build (enabled true / false); animation "none" or step 0 removes them.
 4. Call submit_diagram with a complete spec instead when the user asks for a new or separate diagram (something unrelated to the current one), or to redo, restructure or re-layout the whole diagram (or the change touches most of it). The user doesn't choose a mode: decide from the request.
 If a tool returns errors, fix them and call it again.

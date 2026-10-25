@@ -83,6 +83,9 @@ export default {
   'ai.step.checkingChanges': '正在检查修改',
   'ai.step.operations': '{count, plural, other {# 项操作}}',
   'ai.step.fixingChanges': '正在修复无效的修改',
+  'ai.step.readingGuide': '正在阅读 {topic} 指南',
+  'ai.step.reviewingArchitecture': '正在检查架构',
+  'ai.step.reviewNotes': '{count} 条建议',
 
   // useAiReady — why the assistant can't run yet
   'ai.ready.chooseModel': '选择一个模型即可开始。',

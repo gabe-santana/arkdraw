@@ -83,6 +83,9 @@ export default {
   'ai.step.checkingChanges': 'Verificando alterações',
   'ai.step.operations': '{count, plural, =0 {0 operações} one {# operação} other {# operações}}',
   'ai.step.fixingChanges': 'Corrigindo alterações inválidas',
+  'ai.step.readingGuide': 'Lendo o guia de {topic}',
+  'ai.step.reviewingArchitecture': 'Revisando a arquitetura',
+  'ai.step.reviewNotes': '{count, plural, one {# observação} other {# observações}}',
 
   // useAiReady — why the assistant can't run yet
   'ai.ready.chooseModel': 'Escolha um modelo para começar.',
