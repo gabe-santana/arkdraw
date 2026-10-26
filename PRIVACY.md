@@ -23,6 +23,7 @@ Linux, including the Microsoft Store version) or the web app.
 | --- | --- | --- |
 | **AI assistant** (off until you add your own API key) | The prompt you type and, in edit mode, a text summary of the current diagram | The AI provider **you** configure (for example Anthropic, OpenAI, Google, or a local Ollama server). Their privacy policy applies. Your API key is stored in your operating system's keychain on desktop. In the web app it is encrypted with a non-exportable key and kept in your browser's storage on this device (you can turn this off to keep it in memory only); it is only ever sent to that provider. |
 | **Web fonts** (only if a diagram uses a Google Font) | A standard request for the font file | Google Fonts |
+| **Reporting an AI response** (the flag on an AI result) | The reason you pick, your note and, if you leave it ticked, your request and the AI's output, plus the model name and ArkDraw version | The maintainer, as an email you send from your own mail app. Nothing is sent until you send that email. |
 | **Update check** (desktop) | A request for the latest version information | GitHub |
 | **Images or diagrams opened from a URL** | A request for that URL | The website you entered |
 | **Share links** | Nothing: the diagram is encoded in the link itself, in the part of the URL that browsers never send to servers | — |

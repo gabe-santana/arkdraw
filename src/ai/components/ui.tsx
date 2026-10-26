@@ -8,6 +8,21 @@ import { Laptop, LoaderCircle, Plug } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { t, type MessageKey } from '@/i18n';
 import { PROVIDER_META, type ProviderId } from '../providers';
+import { isTauri } from '../transport';
+
+/** Opens a web page or mail link in the system browser or mail app. */
+export async function openLink(url: string) {
+  if (isTauri()) {
+    const { openUrl } = await import('@tauri-apps/plugin-opener');
+    await openUrl(url);
+  } else if (url.startsWith('mailto:')) {
+    // A mail link hands off to the mail app; a new window would stay behind empty.
+    const a = Object.assign(document.createElement('a'), { href: url });
+    a.click();
+  } else {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+}
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 

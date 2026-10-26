@@ -14,7 +14,7 @@ import { ADAPTERS, AiError, checkKeyPrefix, PROVIDERS, PROVIDER_META, type Model
 import { azureBase, normalizeBaseUrl } from '../providers/openai';
 import { authStyleFor, baseUrlFor, modelFor, paramFor, providerConfig, updateAiSettings, useAiSettings, type CustomAuthStyle } from '../settings';
 import { deleteKey, hasKey, isTauri, saveKey, setRememberKeys, testConnection } from '../transport';
-import { Btn, IconBtn, inputClass, modelHint, ProviderMark, providerKeyPlaceholder, providerName, providerTagline, stopKeys } from './ui';
+import { Btn, IconBtn, inputClass, modelHint, openLink, ProviderMark, providerKeyPlaceholder, providerName, providerTagline, stopKeys } from './ui';
 import { notifyKeysChanged, useHasKey } from './useAiReady';
 
 export interface AiSettingsDialogProps {
@@ -25,16 +25,6 @@ export interface AiSettingsDialogProps {
 type TestState = { kind: 'idle' } | { kind: 'testing' } | { kind: 'ok'; models: number } | { kind: 'error'; message: string; detail?: string };
 
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : typeof e === 'string' ? e : tNow('ai.settings.somethingWrong'));
-
-/** Opens a provider's key page in the system browser. */
-async function openLink(url: string) {
-  if (isTauri()) {
-    const { openUrl } = await import('@tauri-apps/plugin-opener');
-    await openUrl(url);
-  } else {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  }
-}
 
 const GROUPS: Array<{ id: ProviderMeta['group']; label: MessageKey }> = [
   { id: 'popular', label: 'ai.settings.group.popular' },

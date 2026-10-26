@@ -74,6 +74,19 @@ export default {
   // Button: replace the whole canvas with the generated diagram
   'ai.result.replaceDiagram': 'Replace diagram',
   'ai.result.applyChanges': 'Apply changes',
+  'ai.report.title': 'Report this response',
+  'ai.report.reason.harmful': 'Harmful or dangerous',
+  'ai.report.reason.offensive': 'Offensive or inappropriate',
+  'ai.report.reason.inaccurate': 'Wrong or misleading',
+  'ai.report.reason.other': 'Something else',
+  'ai.report.details': 'What went wrong? (optional)',
+  'ai.report.include': 'Include my request and the AI\'s response',
+  'ai.report.hint': 'Opens your email app with a report to the ArkDraw maintainer. Nothing is sent until you send the email.',
+  'ai.report.send': 'Send report',
+  'ai.report.sent': 'Thanks for reporting. Send the email to finish.',
+  'ai.report.noMail': 'No email app? Copy the report and send it to {email}.',
+  'ai.report.copy': 'Copy report',
+  'ai.report.copied': 'Copied',
 
   // Progress steps (src/ai/generate/agent.ts)
   'ai.step.planning': 'Planning the diagram',

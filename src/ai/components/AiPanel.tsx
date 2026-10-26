@@ -6,7 +6,7 @@
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
-  Activity, ArrowRight, ArrowRightLeft, ArrowUp, Boxes, Check, ChevronDown, CircleAlert, CircleCheck, Cloud, Database, DatabaseZap,
+  Activity, ArrowRight, ArrowRightLeft, ArrowUp, Boxes, Check, ChevronDown, CircleAlert, CircleCheck, Cloud, Database, DatabaseZap, Flag,
   History, LoaderCircle, MessageSquarePlus, Palette, Plus, Replace, RotateCcw, Settings, ShieldCheck, Sparkles, Square, Tag, Undo2, Workflow, X,
   Zap, type LucideIcon,
 } from 'lucide-react';
@@ -21,6 +21,7 @@ import { applyOps } from '../generate/ops';
 import { convertSpec } from '../generate/toElements';
 import { loadRuns, MAX_SAVED_RUNS, saveRuns } from '../history';
 import { AiSettingsDialog } from './AiSettingsDialog';
+import { ReportForm } from './ReportForm';
 import { Btn, IconBtn, IS_MAC, ProviderMark, stopKeys } from './ui';
 import { useAiReady, type AiSetupNeed } from './useAiReady';
 
@@ -640,6 +641,7 @@ function RunCard({ run, onRetry, onOpenSettings, ...apply }: { run: Run; onRetry
 function ResultCard({ run, result, docEmpty, onApply, onUndo }: { run: Run; result: AgentResult } & ApplyProps) {
   const t = useT();
   const [showNotes, setShowNotes] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const stats = useMemo(() => {
     if (result.kind !== 'spec') {
       const count = (op: string) => result.ops.filter((o) => o.op.startsWith(op)).length;
@@ -656,6 +658,10 @@ function ResultCard({ run, result, docEmpty, onApply, onUndo }: { run: Run; resu
           <CircleCheck className="size-4 text-success" />
           <span className="font-medium">{result.kind === 'spec' ? (result.spec.title ?? t('ai.result.diagramReady')) : t('ai.result.changesReady')}</span>
           <span className="ml-auto truncate text-[11px] text-subtle">{run.model}</span>
+          {/* Store policy and plain decency: AI output can be reported (see ../report.ts). */}
+          <IconBtn size="sm" label={t('ai.report.title')} aria-expanded={reporting} onClick={() => setReporting((v) => !v)} className={cn('-my-1 -mr-1 size-6', reporting && 'text-danger')}>
+            <Flag />
+          </IconBtn>
         </div>
         <div className="mt-1 text-[12px] text-muted">
           {result.kind === 'spec' ? (
@@ -694,6 +700,8 @@ function ResultCard({ run, result, docEmpty, onApply, onUndo }: { run: Run; resu
             )}
           </div>
         )}
+
+        {reporting && <ReportForm prompt={run.prompt} result={result} model={run.model} onClose={() => setReporting(false)} />}
 
         {(!run.restored || run.applied) && (
           <div className="mt-3 flex items-center gap-2">

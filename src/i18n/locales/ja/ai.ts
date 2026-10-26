@@ -76,6 +76,19 @@ export default {
   // Button: replace the whole canvas with the generated diagram
   'ai.result.replaceDiagram': 'ダイアグラムを置き換え',
   'ai.result.applyChanges': '変更を適用',
+  'ai.report.title': 'この回答を報告',
+  'ai.report.reason.harmful': '有害または危険',
+  'ai.report.reason.offensive': '不快または不適切',
+  'ai.report.reason.inaccurate': '誤りまたは誤解を招く',
+  'ai.report.reason.other': 'その他',
+  'ai.report.details': '何が問題でしたか？（任意）',
+  'ai.report.include': '自分のリクエストと AI の回答を含める',
+  'ai.report.hint': 'ArkDraw のメンテナー宛ての報告がメールアプリで開きます。メールを送信するまで何も送られません。',
+  'ai.report.send': '報告を送信',
+  'ai.report.sent': '報告ありがとうございます。メールを送信して完了してください。',
+  'ai.report.noMail': 'メールアプリがない場合は、報告をコピーして {email} に送ってください。',
+  'ai.report.copy': '報告をコピー',
+  'ai.report.copied': 'コピーしました',
 
   // Progress steps (src/ai/generate/agent.ts)
   'ai.step.planning': 'ダイアグラムを計画中',
