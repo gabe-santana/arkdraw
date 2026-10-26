@@ -37,7 +37,7 @@ body:
     id: version
     attributes:
       label: Version or commit
-      placeholder: v0.1.0, or the commit hash if you built from source
+      placeholder: v1.0.0, or the commit hash if you built from source
   - type: input
     id: browser
     attributes:

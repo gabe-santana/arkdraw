@@ -1,6 +1,6 @@
 [package]
 name = "arkdraw"
-version = "0.1.0"
+version = "1.0.0"
 description = "ArkDraw — an open-source, native desktop diagramming app"
 authors = ["Gabriel Santana"]
 license = "MIT"
