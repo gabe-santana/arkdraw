@@ -15,7 +15,7 @@
   <Identity Name="{{IDENTITY_NAME}}" Publisher="{{PUBLISHER}}" Version="{{VERSION}}" ProcessorArchitecture="x64" />
 
   <Properties>
-    <DisplayName>OpenDraw</DisplayName>
+    <DisplayName>ArkDraw</DisplayName>
     <PublisherDisplayName>{{PUBLISHER_DISPLAY_NAME}}</PublisherDisplayName>
     <Logo>assets\StoreLogo.png</Logo>
     <Description>Open-source, local-first diagram editor for flowcharts, cloud architecture, UML, ER and BPMN.</Description>
@@ -41,7 +41,7 @@
   <Applications>
     <Application Id="ArkDraw" Executable="ArkDraw.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
-        DisplayName="OpenDraw"
+        DisplayName="ArkDraw"
         Description="Open-source, local-first diagram editor"
         BackgroundColor="transparent"
         Square150x150Logo="assets\Square150x150Logo.png"

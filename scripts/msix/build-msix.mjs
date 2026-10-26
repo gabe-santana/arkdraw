@@ -4,9 +4,9 @@
  *
  *   node scripts/msix/build-msix.mjs --exe src-tauri/target/release/arkdraw.exe --out ArkDraw.msix
  *
- * Package identity comes from Partner Center (Apps → OpenDraw → Product identity)
+ * Package identity comes from Partner Center (Apps → ArkDraw → Product identity)
  * through environment variables, or placeholders for a local test build:
- *   MSIX_IDENTITY_NAME            Package/Identity/Name           (e.g. 12345GabrielSantana.ArkDraw)
+ *   MSIX_IDENTITY_NAME            Package/Identity/Name           (e.g. GabrielSantana.Opendraw: fixed when the product was created)
  *   MSIX_PUBLISHER                Package/Identity/Publisher      (e.g. CN=ABCD1234-…)
  *   MSIX_PUBLISHER_DISPLAY_NAME   Package/Properties/PublisherDisplayName
  *
