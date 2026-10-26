@@ -53,7 +53,7 @@
         <uap:Extension Category="windows.fileTypeAssociation">
           <uap:FileTypeAssociation Name="arkdraw">
             <uap:DisplayName>ArkDraw Diagram</uap:DisplayName>
-            <uap:Logo>assets\Square44x44Logo.png</uap:Logo>
+            <uap:Logo>assets\FileLogo.png</uap:Logo>
             <uap:SupportedFileTypes>
               <uap:FileType ContentType="application/x-arkdraw+json">.arkdraw</uap:FileType>
             </uap:SupportedFileTypes>

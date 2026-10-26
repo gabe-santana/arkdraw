@@ -16,6 +16,7 @@
     "app:build": "tauri build",
     "app:build:mac-universal": "tauri build --target universal-apple-darwin",
     "app:icons": "tauri icon app-icon.svg",
+    "app:file-icons": "node scripts/icons/file-icons.mjs",
     "icons:fetch": "node scripts/icons/fetch-icons.mjs",
     "icons:check-descriptions": "node scripts/icons/check-descriptions.mjs",
     "build:web": "tsc --noEmit && vite build",

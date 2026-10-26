@@ -84,6 +84,14 @@ await wide('Wide310x150Logo.png', 310, 150);
 for (const s of [16, 24, 32, 48, 256]) {
   await square(`Square44x44Logo.targetsize-${s}_altform-unplated.png`, s);
 }
+// The .arkdraw document icon, at the sizes Explorer asks for.
+const fileIcon = readFileSync(join(ROOT, 'file-icon.svg'));
+const fileLogo = (file, size) => sharp(fileIcon, { density: 512 }).resize(size, size).png().toFile(join(stage, 'assets', file));
+await fileLogo('FileLogo.png', 44);
+for (const s of [16, 24, 32, 48, 256]) {
+  await fileLogo(`FileLogo.targetsize-${s}.png`, s);
+  await fileLogo(`FileLogo.targetsize-${s}_altform-unplated.png`, s);
+}
 
 let manifest = readFileSync(join(ROOT, 'src-tauri/msix/AppxManifest.xml'), 'utf8');
 for (const [k, v] of Object.entries(identity)) manifest = manifest.replaceAll(`{{${k}}}`, v.replace(/&/g, '&amp;').replace(/"/g, '&quot;'));

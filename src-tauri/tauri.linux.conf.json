@@ -3,8 +3,34 @@
   "bundle": {
     "targets": ["appimage", "deb", "rpm"],
     "linux": {
-      "deb": { "section": "graphics" },
-      "rpm": { "release": "1" },
+      "deb": {
+        "section": "graphics",
+        "files": {
+          "/usr/share/mime/packages/arkdraw.xml": "linux/arkdraw-mime.xml",
+          "/usr/share/icons/hicolor/16x16/mimetypes/application-x-arkdraw+json.png": "icons/file/16.png",
+          "/usr/share/icons/hicolor/24x24/mimetypes/application-x-arkdraw+json.png": "icons/file/24.png",
+          "/usr/share/icons/hicolor/32x32/mimetypes/application-x-arkdraw+json.png": "icons/file/32.png",
+          "/usr/share/icons/hicolor/48x48/mimetypes/application-x-arkdraw+json.png": "icons/file/48.png",
+          "/usr/share/icons/hicolor/64x64/mimetypes/application-x-arkdraw+json.png": "icons/file/64.png",
+          "/usr/share/icons/hicolor/128x128/mimetypes/application-x-arkdraw+json.png": "icons/file/128.png",
+          "/usr/share/icons/hicolor/256x256/mimetypes/application-x-arkdraw+json.png": "icons/file/256.png",
+          "/usr/share/icons/hicolor/512x512/mimetypes/application-x-arkdraw+json.png": "icons/file/512.png"
+        }
+      },
+      "rpm": {
+        "release": "1",
+        "files": {
+          "/usr/share/mime/packages/arkdraw.xml": "linux/arkdraw-mime.xml",
+          "/usr/share/icons/hicolor/16x16/mimetypes/application-x-arkdraw+json.png": "icons/file/16.png",
+          "/usr/share/icons/hicolor/24x24/mimetypes/application-x-arkdraw+json.png": "icons/file/24.png",
+          "/usr/share/icons/hicolor/32x32/mimetypes/application-x-arkdraw+json.png": "icons/file/32.png",
+          "/usr/share/icons/hicolor/48x48/mimetypes/application-x-arkdraw+json.png": "icons/file/48.png",
+          "/usr/share/icons/hicolor/64x64/mimetypes/application-x-arkdraw+json.png": "icons/file/64.png",
+          "/usr/share/icons/hicolor/128x128/mimetypes/application-x-arkdraw+json.png": "icons/file/128.png",
+          "/usr/share/icons/hicolor/256x256/mimetypes/application-x-arkdraw+json.png": "icons/file/256.png",
+          "/usr/share/icons/hicolor/512x512/mimetypes/application-x-arkdraw+json.png": "icons/file/512.png"
+        }
+      },
       "appimage": { "bundleMediaFramework": false }
     }
   }

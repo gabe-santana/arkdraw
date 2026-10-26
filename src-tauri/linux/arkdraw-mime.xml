@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Declares the .arkdraw type so file managers show it with the ArkDraw document icon. -->
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-arkdraw+json">
+    <comment>ArkDraw Diagram</comment>
+    <sub-class-of type="application/json"/>
+    <icon name="application-x-arkdraw+json"/>
+    <glob pattern="*.arkdraw"/>
+  </mime-type>
+</mime-info>

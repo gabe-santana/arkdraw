@@ -24,6 +24,7 @@
     "targets": ["app", "dmg"],
     "macOS": {
       "minimumSystemVersion": "11.0",
+      "files": { "Resources/arkdraw-file.icns": "icons/file/arkdraw-file.icns" },
       "dmg": {
         "windowSize": { "width": 660, "height": 400 },
         "appPosition": { "x": 180, "y": 190 },

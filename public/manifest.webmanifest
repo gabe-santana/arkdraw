@@ -22,7 +22,8 @@
       "accept": {
         "application/x-arkdraw+json": [".arkdraw"],
         "application/vnd.jgraph.mxfile": [".drawio"]
-      }
+      },
+      "icons": [{ "src": "pwa/file-256.png", "sizes": "256x256", "type": "image/png" }]
     }
   ],
   "launch_handler": { "client_mode": "focus-existing" }

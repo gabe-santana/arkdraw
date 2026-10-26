@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- MSI: .arkdraw files get the ArkDraw document icon (bundle.windows.wix.componentRefs).
+     The ProgId is the one Tauri declares for the association: "<productName>.<ext>". -->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Fragment>
+    <DirectoryRef Id="INSTALLDIR">
+      <Component Id="ArkDrawFileIcon" Guid="*">
+        <RegistryValue Root="HKMU" Key="Software\Classes\ArkDraw.arkdraw\DefaultIcon" Type="string" Value="&quot;[INSTALLDIR]icons\arkdraw-file.ico&quot;" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+  </Fragment>
+</Wix>

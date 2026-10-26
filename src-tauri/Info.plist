@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Merged into the macOS bundle's Info.plist by the Tauri CLI. These keys replace
+  the ones generated from bundle.fileAssociations (tauri.conf.json), which have no
+  way to give .arkdraw files their document icon; keep the two lists in step.
+  The icon is copied to Contents/Resources by bundle.macOS.files.
+-->
+<plist version="1.0">
+<dict>
+  <key>UTExportedTypeDeclarations</key>
+  <array>
+    <dict>
+      <key>UTTypeIdentifier</key>
+      <string>app.arkdraw.diagram</string>
+      <key>UTTypeDescription</key>
+      <string>ArkDraw Diagram</string>
+      <key>UTTypeConformsTo</key>
+      <array>
+        <string>public.json</string>
+      </array>
+      <key>UTTypeIconFile</key>
+      <string>arkdraw-file.icns</string>
+      <key>UTTypeTagSpecification</key>
+      <dict>
+        <key>public.filename-extension</key>
+        <array>
+          <string>arkdraw</string>
+        </array>
+        <key>public.mime-type</key>
+        <string>application/x-arkdraw+json</string>
+      </dict>
+    </dict>
+  </array>
+  <key>CFBundleDocumentTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleTypeName</key>
+      <string>ArkDraw Diagram</string>
+      <key>CFBundleTypeRole</key>
+      <string>Editor</string>
+      <key>LSHandlerRank</key>
+      <string>Owner</string>
+      <key>LSItemContentTypes</key>
+      <array>
+        <string>app.arkdraw.diagram</string>
+      </array>
+      <key>CFBundleTypeIconFile</key>
+      <string>arkdraw-file.icns</string>
+    </dict>
+    <dict>
+      <key>CFBundleTypeName</key>
+      <string>Diagram XML</string>
+      <key>CFBundleTypeRole</key>
+      <string>Editor</string>
+      <key>LSHandlerRank</key>
+      <string>Default</string>
+      <key>CFBundleTypeExtensions</key>
+      <array>
+        <string>drawio</string>
+      </array>
+    </dict>
+    <dict>
+      <key>CFBundleTypeName</key>
+      <string>VSDX Drawing</string>
+      <key>CFBundleTypeRole</key>
+      <string>Viewer</string>
+      <key>LSHandlerRank</key>
+      <string>Alternate</string>
+      <key>CFBundleTypeExtensions</key>
+      <array>
+        <string>vsdx</string>
+      </array>
+    </dict>
+  </array>
+</dict>
+</plist>

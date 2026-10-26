@@ -2,13 +2,19 @@
   "$schema": "https://schema.tauri.app/config/2",
   "bundle": {
     "targets": ["msi", "nsis"],
+    "resources": { "icons/file/arkdraw-file.ico": "icons/arkdraw-file.ico" },
     "windows": {
       "webviewInstallMode": { "type": "downloadBootstrapper" },
-      "wix": { "language": "en-US" },
+      "wix": {
+        "language": "en-US",
+        "fragmentPaths": ["windows/file-icon.wxs"],
+        "componentRefs": ["ArkDrawFileIcon"]
+      },
       "nsis": {
         "installMode": "currentUser",
         "displayLanguageSelector": false,
-        "installerIcon": "icons/icon.ico"
+        "installerIcon": "icons/icon.ico",
+        "installerHooks": "windows/hooks.nsh"
       }
     }
   }

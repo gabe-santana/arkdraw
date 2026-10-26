@@ -168,6 +168,7 @@ Configure it in *Extras → AI provider & API key…*.
 | `npm run tauri <cmd>` | Tauri CLI, e.g. `npm run tauri dev`, `npm run tauri build` |
 | `npm run app:build:mac-universal` | `tauri build --target universal-apple-darwin` |
 | `npm run app:icons` / `pwa:icons` | Regenerate desktop / PWA icons from `app-icon.svg` |
+| `npm run app:file-icons` | Regenerate the `.arkdraw` document icon from `file-icon.svg` |
 | `npm run icons:fetch` | Download and sanitise vendor icon packs into `public/icons/` |
 | `npm run icons:check-descriptions` | Check icon description coverage |
 | `npm run build:web` / `preview:web` | Web build with `dist/_headers` (CSP, caching) / serve it on :4173 with the service worker |
