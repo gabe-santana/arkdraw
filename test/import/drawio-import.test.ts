@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { exportDrawioPages, importDrawioPages } from '@/io/drawio';
 import { connectorGeometry } from '@/lib/connectorGeometry';
@@ -6,6 +5,9 @@ import type { ConnectorElement, ShapeElement } from '@/model/types';
 
 const cell = (id: string, image: string) =>
   `<mxCell id="${id}" value="" style="aspect=fixed;html=1;image;image=${image};" vertex="1" parent="1"><mxGeometry width="64" height="64" as="geometry"/></mxCell>`;
+// Vendor packs are fetched at build time (not in git), so tests serve a tiny one.
+const pack = (provider: string, files: string[]) =>
+  JSON.stringify({ provider, name: provider, version: '1', source: '', license: '', icons: files.map((file) => ({ id: file, name: file, category: file.split('/')[0], file, keywords: [] })) });
 const file = (...cells: string[]) =>
   `<mxfile><diagram name="P"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>${cells.join('')}</root></mxGraphModel></diagram></mxfile>`;
 
@@ -13,8 +15,8 @@ describe('draw.io built-in images', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('maps azure2 images to the bundled pack and others to app.diagrams.net', async () => {
-    const pack = readFileSync('public/icons/azure/index.json', 'utf8');
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(pack)));
+    const azure = pack('azure', ['networking/virtual-networks.svg', 'dev-ops/application-insights.svg']);
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(azure)));
     const [{ doc }] = await importDrawioPages(file(
       cell('vnet', 'img/lib/azure2/networking/Virtual_Networks.svg'),
       cell('moved', 'img/lib/azure2/management_governance/Application_Insights.svg'),
@@ -37,8 +39,8 @@ describe('draw.io vendor shapes', () => {
     `<mxCell id="${id}" value="" style="${style}" vertex="1" parent="1"><mxGeometry width="48" height="48" as="geometry"/></mxCell>`;
 
   it('maps aws4 resource icons to the bundled AWS pack and keeps unknown ones as boxes', async () => {
-    const pack = readFileSync('public/icons/aws/index.json', 'utf8');
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(pack)));
+    const aws = pack('aws', ['compute/aws-lambda.svg', 'application-integration/amazon-simple-queue-service.svg']);
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(aws)));
     const [{ doc }] = await importDrawioPages(file(
       vertex('lambda', 'shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.lambda;fillColor=#ED7100;'),
       vertex('sqs', 'shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.sqs;'),
