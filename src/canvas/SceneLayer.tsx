@@ -59,7 +59,8 @@ export function SceneLayer({ dark }: { dark: boolean }) {
     [page?.name, pageIndex, pageCount, fileName, placeholderSig, page?.settings.language],
   );
   const settings = page?.settings;
-  const labelBg = settings?.background ?? (dark && !adapt ? '#000000' : '#f7f7f9');
+  // The dark-adapt filter can't turn any fill into the black canvas, so labels cut the line instead.
+  const labelBg = settings?.background ?? (dark ? (adapt ? 'none' : '#000000') : '#f7f7f9');
 
   return (
     <svg className={cn('absolute inset-0 h-full w-full', adapt && 'diagram-adapt')} style={{ overflow: 'visible' }}>

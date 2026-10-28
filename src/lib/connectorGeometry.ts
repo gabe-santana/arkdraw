@@ -157,9 +157,18 @@ export function endpointPositions(conn: ConnectorElement, lookup: Lookup) {
   const tEdge = tShape ? undefined : edgeAt(conn.target, lookup, conn.id);
   const spacing = conn.perimeterSpacing ?? 0;
   return {
-    a: sEdge ? edgeEnd(conn.source, sEdge, lookup, sRef) : resolveEnd(conn.source, sShape, sRef, mode, spacing),
-    b: tEdge ? edgeEnd(conn.target, tEdge, lookup, tRef) : resolveEnd(conn.target, tShape, tRef, mode, spacing),
+    a: sEdge ? edgeEnd(conn.source, sEdge, lookup, sRef) : alignToWaypoint(resolveEnd(conn.source, sShape, sRef, mode, spacing), conn.source, sShape, wps[0]),
+    b: tEdge ? edgeEnd(conn.target, tEdge, lookup, tRef) : alignToWaypoint(resolveEnd(conn.target, tShape, tRef, mode, spacing), conn.target, tShape, wps[wps.length - 1]),
   };
+}
+
+/** A floating side end lines up with its waypoint when the shape spans it, like mxGraph's orthogonal edges. */
+function alignToWaypoint(end: RouteEnd, e: Endpoint, shape: ShapeElement | undefined, wp: Vec | undefined): RouteEnd {
+  if (!wp || !shape || !end.rect || e.fixed || (e.side && e.side !== 'auto') || shape.rotation) return end;
+  const r = rectOf(shape);
+  if (end.dir.x !== 0 && end.dir.y === 0 && wp.y > r.y && wp.y < r.y + r.h) return { ...end, point: { x: end.point.x, y: wp.y } };
+  if (end.dir.y !== 0 && end.dir.x === 0 && wp.x > r.x && wp.x < r.x + r.w) return { ...end, point: { x: wp.x, y: end.point.y } };
+  return end;
 }
 
 // ---------------------------------------------------------------------------

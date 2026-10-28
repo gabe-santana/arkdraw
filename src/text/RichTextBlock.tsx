@@ -30,6 +30,7 @@ interface TextLine {
   width: number;
   height: number;
   ascent: number;
+  descent: number;
 }
 
 interface TableCellLayout {
@@ -42,7 +43,7 @@ interface TableLine {
   width: number;
   height: number;
   cols: number[];
-  rows: Array<{ h: number; ascent: number; cells: TableCellLayout[] }>;
+  rows: Array<{ h: number; ascent: number; descent: number; cells: TableCellLayout[] }>;
   border: boolean;
 }
 
@@ -72,11 +73,13 @@ export const baseInline = (style: ElementStyle): InlineStyle => ({
 
 const runHeight = (r: Run) => (r.math ? r.math.h + 4 : r.img ? r.img.h + 2 : lineHeight(r.size));
 const runAscent = (r: Run) => (r.math ? r.math.h - r.math.descent : r.img ? r.img.h : r.size * 0.8);
+const runDescent = (r: Run) => (r.math ? r.math.descent : r.img ? 0 : r.size * 0.2);
 
 function lineMetrics(runs: Run[], size: number) {
   return {
     height: Math.max(lineHeight(size), ...runs.map(runHeight)),
     ascent: Math.max(size * 0.8, ...runs.map(runAscent)),
+    descent: Math.max(size * 0.2, ...runs.map(runDescent)),
   };
 }
 
@@ -99,7 +102,7 @@ function layoutTable(line: string, style: ElementStyle, base: InlineStyle): Tabl
     });
     const all = cells.flatMap((c) => c.runs);
     const m = lineMetrics(all, base.size);
-    return { h: m.height + CELL_PAD_Y * 2, ascent: m.ascent, cells };
+    return { h: m.height + CELL_PAD_Y * 2, ascent: m.ascent, descent: m.descent, cells };
   });
   return {
     kind: 'table',
@@ -271,7 +274,7 @@ export function RichTextBlock({ box, text, style, math, wrap = true }: { box: Re
                 const rowTop = ry;
                 ry += row.h;
                 let cx = x0;
-                const baseline = rowTop + CELL_PAD_Y + (row.h - CELL_PAD_Y * 2 - lineHeight(style.fontSize)) / 2 + row.ascent + (lineHeight(style.fontSize) - style.fontSize) / 2;
+                const baseline = rowTop + CELL_PAD_Y + (row.h - CELL_PAD_Y * 2 + row.ascent - row.descent) / 2;
                 return (
                   <Fragment key={ri}>
                     {line.cols.map((cw, ci) => {
@@ -306,7 +309,8 @@ export function RichTextBlock({ box, text, style, math, wrap = true }: { box: Re
             </g>
           );
         }
-        const baseline = lineTop + (line.height - lineHeight(style.fontSize)) / 2 + line.ascent + (lineHeight(style.fontSize) - style.fontSize) / 2;
+        // Centre the tallest run's ascent + descent in the line (the base size alone pushed larger runs down).
+        const baseline = lineTop + (line.height + line.ascent - line.descent) / 2;
         return (
           <Fragment key={li}>
             {line.runs.map((r, ri) => (

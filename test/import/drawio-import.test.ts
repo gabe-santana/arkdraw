@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { exportDrawioPages, importDrawioPages } from '@/io/drawio';
+import { connectorGeometry } from '@/lib/connectorGeometry';
 import type { ConnectorElement, ShapeElement } from '@/model/types';
 
 const cell = (id: string, image: string) =>
@@ -101,5 +102,17 @@ describe('draw.io geometry and labels', () => {
     expect(e.waypoints).toEqual([{ x: 130, y: 90 }]);
     expect(e.style.richText).toBe(true);
     expect(e.text).toContain('30');
+  });
+
+  it('leaves a shape at the height of its first waypoint, like mxGraph', async () => {
+    const [{ doc }] = await importDrawioPages(file(
+      vertex('a', 'rounded=1;', 200, 400, 0, 0),
+      vertex('b', 'rounded=1;', 200, 100, -400, 300),
+      `<mxCell id="e" style="edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="a" target="b"><mxGeometry relative="1" as="geometry">` +
+        `<Array as="points"><mxPoint x="-100" y="50"/><mxPoint x="-100" y="350"/></Array></mxGeometry></mxCell>`,
+    ));
+    const pts = connectorGeometry(doc.elements.e as ConnectorElement, (id) => doc.elements[id]).points;
+    expect(pts[0]).toEqual({ x: 0, y: 50 });
+    expect(pts[pts.length - 1]).toEqual({ x: -200, y: 350 });
   });
 });

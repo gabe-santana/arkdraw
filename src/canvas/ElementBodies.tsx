@@ -3,12 +3,12 @@
  * them with subscriptions; exporters call them directly with a static doc.
  */
 import { connectorAria, shapeAria } from '@/interaction/aria';
-import { createContext, memo, useContext, useMemo } from 'react';
+import { createContext, memo, useContext, useMemo, type ReactNode } from 'react';
 import type { ConnectorElement, ElementStyle, Rect, ShapeElement } from '@/model/types';
 import { getShapeDef, strokeAttrs } from '@/shapes/registry';
 import { TextBlock, TextLines } from '@/shapes/TextLines';
 import { roughen, seedFor } from '@/shapes/sketch';
-import { arrowSize, connectorGeometry, type ConnectorGeometry, type Lookup } from '@/lib/connectorGeometry';
+import { arrowSize, connectorGeometry, labelAt, type ConnectorGeometry, type Lookup } from '@/lib/connectorGeometry';
 import { boundsOfPoints } from '@/lib/geometry';
 import { lineHeight, measureText, wrapText } from '@/lib/text';
 import { connectorStroke, ExtraLabels, SketchConnector } from './connectorShapes';
@@ -230,7 +230,7 @@ interface ConnectorBodyProps {
   lookup: Lookup;
   interactive?: boolean;
   hideLabel?: boolean;
-  /** Background behind the label so the line doesn't run through the text. */
+  /** Background behind the label so the line doesn't run through the text; 'none' cuts the line instead. */
   labelBg?: string;
   frame?: AnimFrame;
   /** Precomputed geometry (the canvas memoizes it). */
@@ -295,12 +295,14 @@ export const ConnectorBody = memo(function ConnectorBody({
       {fx?.glow !== undefined && (
         <path d={g.path} fill="none" stroke={color} strokeWidth={sw + 8} strokeOpacity={0.08 + 0.22 * fx.glow} strokeLinecap="round" strokeLinejoin="round" />
       )}
-      {el.style.shadow ? (
-        <>
-          <defs><ConnectorShadowFilter elId={el.id} style={el.style} route={boundsOfPoints([...g.points, ...g.samples])} reach={reach} /></defs>
-          <g filter={`url(#${customShadowId(el.id)})`}>{body}</g>
-        </>
-      ) : body}
+      <LabelKnockout el={el} g={g} label={labelBg === 'none' && !hideLabel && !drawing ? label : ''} extras={labelBg === 'none' && !drawing}>
+        {el.style.shadow ? (
+          <>
+            <defs><ConnectorShadowFilter elId={el.id} style={el.style} route={boundsOfPoints([...g.points, ...g.samples])} reach={reach} /></defs>
+            <g filter={`url(#${customShadowId(el.id)})`}>{body}</g>
+          </>
+        ) : body}
+      </LabelKnockout>
       {fx?.packets?.map((p, i) => <PacketMark key={i} packet={p} color={color} sw={sw} />)}
       {label && !hideLabel && !drawing && <ConnectorLabel el={el} text={label} at={g.label} bg={labelBg} />}
       {!drawing && <ExtraLabels el={el} g={g} bg={labelBg} />}
@@ -310,6 +312,41 @@ export const ConnectorBody = memo(function ConnectorBody({
 });
 
 const LABEL_MAX_WIDTH = 220;
+
+/**
+ * Cuts the line under its labels. Used where no fill can match the canvas
+ * (the dark-adapt filter never reaches black), so the label needs no box.
+ */
+function LabelKnockout({ el, g, label, extras, children }: { el: ConnectorElement; g: ConnectorGeometry; label: string; extras: boolean; children: ReactNode }) {
+  const holes: Rect[] = [];
+  const hole = (at: { x: number; y: number }, w: number, h: number) => holes.push({ x: at.x - w / 2 - 6, y: at.y - h / 2 - 3, w: w + 12, h: h + 6 });
+  if (label) {
+    const { w, h } = labelLayout(el, label);
+    hole(g.label, w, h);
+  }
+  if (extras) {
+    for (const l of el.labels ?? []) {
+      if (!l.text) continue;
+      const lines = wrapText(l.text, LABEL_MAX_WIDTH, el.style);
+      hole(labelAt(g.samples, l.t, l.offset), Math.max(...lines.map((s) => measureText(s, el.style)), 4), lines.length * lineHeight(el.style.fontSize));
+    }
+  }
+  if (!holes.length) return <>{children}</>;
+  const b = boundsOfPoints([...g.points, ...g.samples]);
+  const pad = 40 + el.style.strokeWidth * 6;
+  const id = `lbl-knock-${el.id}`;
+  return (
+    <>
+      <defs>
+        <mask id={id} maskUnits="userSpaceOnUse" x={b.x - pad} y={b.y - pad} width={b.w + pad * 2} height={b.h + pad * 2}>
+          <rect x={b.x - pad} y={b.y - pad} width={b.w + pad * 2} height={b.h + pad * 2} fill="#fff" />
+          {holes.map((r, i) => <rect key={i} x={r.x} y={r.y} width={r.w} height={r.h} rx={5} fill="#000" />)}
+        </mask>
+      </defs>
+      <g mask={`url(#${id})`}>{children}</g>
+    </>
+  );
+}
 
 /** Wrapped lines and size of a connector label. */
 export function labelLayout(el: ConnectorElement, text = el.text) {
