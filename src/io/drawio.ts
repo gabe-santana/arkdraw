@@ -26,6 +26,7 @@ import { styleExtrasFromDrawio, styleExtrasToDrawio } from '@/styling/drawioStyl
 import { stencilFromStyleValue, stencilStyleValue } from '@/stencils/codec';
 import { stencilPoints } from '@/stencils/parse';
 import { EXTRA_STYLE_KEY, mergeStyleExtras } from '@/extensibility/styleExtras';
+import { iconPath, loadPack } from '@/icons/iconPacks';
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -325,6 +326,8 @@ const KIND_BY_DRAWIO: Map<string, string> = (() => {
     trapezoid: 'trapezoid',
     triangle: 'triangle',
     cloud: 'cloud',
+    'mxgraph.azure.cloud': 'cloud',
+    'mxgraph.ios7.icons.cloud': 'cloud',
     callout: 'callout',
     singleArrow: 'blockArrow',
     text: 'text',
@@ -392,7 +395,9 @@ export async function importDrawioPages(xml: string): Promise<Array<{ name: stri
   if (!diagrams.length) {
     const model = dom.querySelector('mxGraphModel');
     if (!model) throw new Error('No diagram found in this file.');
-    return [{ name: 'Page 1', doc: modelToDoc(model) }];
+    const doc = modelToDoc(model);
+    await resolveBuiltinImages([doc]);
+    return [{ name: 'Page 1', doc }];
   }
   for (const [i, diagram] of diagrams.entries()) {
     let model = diagram.querySelector('mxGraphModel');
@@ -404,7 +409,46 @@ export async function importDrawioPages(xml: string): Promise<Array<{ name: stri
     if (model) out.push({ name: diagram.getAttribute('name') || `Page ${i + 1}`, doc: modelToDoc(model) });
   }
   if (!out.length) throw new Error('No diagram found in this file.');
+  await resolveBuiltinImages(out.map((p) => p.doc));
   return out;
+}
+
+/** draw.io aws4 icon names whose bundled file spells out the acronym. */
+const AWS_ALIASES: Record<string, string> = {
+  sqs: 'simple_queue_service', sns: 'simple_notification_service', s3: 'simple_storage_service', iam: 'identity_and_access_management',
+  ecs: 'elastic_container_service', eks: 'elastic_kubernetes_service', ecr: 'elastic_container_registry', vpc: 'virtual_private_cloud',
+  kms: 'key_management_service', elb: 'elastic_load_balancing', efs: 'elastic_file_system', ebs: 'elastic_block_store',
+};
+
+/**
+ * draw.io's built-in images (`image=img/lib/…`) are relative to app.diagrams.net.
+ * Azure ones (`img/lib/azure2/<category>/<Name>.svg`) map to the bundled Azure
+ * pack so they work offline; anything else points at app.diagrams.net.
+ * AWS resource icons (`resIcon=mxgraph.aws4.<name>`) map to the bundled AWS pack;
+ * unknown ones stay the plain box they were before.
+ */
+async function resolveBuiltinImages(docs: Doc[]): Promise<void> {
+  const icons = docs.flatMap((d) => Object.values(d.elements)).filter((el): el is ShapeElement => isShape(el) && /^(img\/|mxgraph\.aws4\.)/.test(el.icon ?? ''));
+  if (!icons.length) return;
+  const load = async (provider: string, prefix: string) => {
+    const pack = icons.some((el) => el.icon!.startsWith(prefix)) ? await loadPack(provider).catch(() => null) : null;
+    return { byFile: new Map(pack?.icons.map((i) => [i.file, i]) ?? []), byName: new Map(pack?.icons.map((i) => [i.file.split('/').pop()!, i]) ?? []) };
+  };
+  const [azure, aws] = await Promise.all([load('azure', 'img/lib/azure2/'), load('aws', 'mxgraph.aws4.')]);
+  const kebab = (s: string) => s.toLowerCase().replace(/_/g, '-');
+  for (const el of icons) {
+    if (el.icon!.startsWith('mxgraph.aws4.')) {
+      const name = kebab(AWS_ALIASES[el.icon!.slice(13)] ?? el.icon!.slice(13));
+      const hit = aws.byName.get(`amazon-${name}.svg`) ?? aws.byName.get(`aws-${name}.svg`) ?? aws.byName.get(`${name}.svg`);
+      if (hit) el.icon = iconPath('aws', hit);
+      else Object.assign(el, { kind: 'rectangle', icon: undefined });
+      continue;
+    }
+    const m = /^img\/lib\/azure2\/([^/]+)\/([^/]+\.svg)$/.exec(el.icon!);
+    // Same category first; the pack moved some icons (Application Insights → dev-ops).
+    const hit = m && (azure.byFile.get(`${kebab(m[1])}/${kebab(m[2])}`) ?? azure.byName.get(kebab(m[2])));
+    el.icon = hit ? iconPath('azure', hit) : `https://app.diagrams.net/${el.icon}`;
+  }
 }
 
 function modelToDoc(model: Element): Doc {
@@ -523,10 +567,21 @@ function modelToDoc(model: Element): Doc {
       // mxGraph's "data:mime,base64" → standard "data:mime;base64,base64".
       icon = img.startsWith('data:') && !img.includes(';base64') ? img.replace(/^data:([^,]+),/, 'data:$1;base64,') : img;
     }
+    // AWS resource/product icons: resolved against the bundled pack in resolveBuiltinImages.
+    const awsIcon = c.style.get('resIcon') ?? c.style.get('prIcon');
+    if (awsIcon?.startsWith('mxgraph.aws4.')) {
+      kind = 'icon';
+      icon = awsIcon;
+    }
     const stencilXml = stencilFromStyleValue(c.style.get('shape'));
     if (stencilXml) kind = 'stencil';
     const base = kind === 'text' ? { ...DEFAULT_STYLE, fill: 'none', stroke: 'none' } : DEFAULT_STYLE;
     const style = styleFromDrawio(c.style, false, base);
+    // mxGraph corners are square unless rounded=1; relative arcSize is a percentage of the shorter side (default 15).
+    if (c.style.get('rounded') !== '1') style.radius = 0;
+    else if (c.style.get('absoluteArcSize') !== '1') style.radius = (Math.min(w, h) * Number(c.style.get('arcSize') ?? 15)) / 100;
+    // mxGraph labels only wrap with whiteSpace=wrap; otherwise they overflow the box.
+    if (c.style.get('whiteSpace') !== 'wrap') style.wrap = false;
     if (kind === 'text') {
       style.fill = c.style.get('fillColor') && c.style.get('fillColor') !== 'none' ? style.fill : 'none';
       style.stroke = c.style.get('strokeColor') && c.style.get('strokeColor') !== 'none' ? style.stroke : 'none';
@@ -583,9 +638,12 @@ function modelToDoc(model: Element): Doc {
   for (const c of cells) {
     if (!c.edge) continue;
     const m = c.style;
+    // Edge points are relative to a vertex parent, like vertex geometry.
+    const parent = c.parent ? byId.get(c.parent) : undefined;
+    const off = parent?.vertex ? absOf(parent) : { x: 0, y: 0 };
     const pointOf = (as: string) => {
       const pt = c.geo?.querySelector(`mxPoint[as="${as}"]`);
-      return pt ? { x: Number(pt.getAttribute('x') ?? 0), y: Number(pt.getAttribute('y') ?? 0) } : null;
+      return pt ? { x: Number(pt.getAttribute('x') ?? 0) + off.x, y: Number(pt.getAttribute('y') ?? 0) + off.y } : null;
     };
     const end = (id: string | undefined, as: string, prefix: 'exit' | 'entry'): Endpoint => {
       const p = pointOf(as);
@@ -612,8 +670,8 @@ function modelToDoc(model: Element): Doc {
     behaviorFromDrawio(m, conn);
     Object.assign(conn, meta(c));
     const pts = Array.from(c.geo?.querySelectorAll('Array[as="points"] > mxPoint') ?? []).map((pt) => ({
-      x: Number(pt.getAttribute('x') ?? 0),
-      y: Number(pt.getAttribute('y') ?? 0),
+      x: Number(pt.getAttribute('x') ?? 0) + off.x,
+      y: Number(pt.getAttribute('y') ?? 0) + off.y,
     }));
     if (pts.length) conn.waypoints = pts;
     const es = m.get('edgeStyle');
@@ -628,7 +686,10 @@ function modelToDoc(model: Element): Doc {
   // Child edge labels: the first fills an empty main label, the rest become extra labels.
   for (const lbl of edgeLabels) {
     const conn = elements[lbl.parent!];
-    if (isConnector(conn)) elements[conn.id] = applyEdgeLabel(conn, text(lbl), lbl.geo);
+    if (!isConnector(conn)) continue;
+    // Keep inline formatting (font size, colour) when the label becomes the main one.
+    const rich = conn.text ? null : richLabelFromDrawio(lbl.value, lbl.style.get('html') === '1', conn.style);
+    elements[conn.id] = rich ? { ...applyEdgeLabel(conn, rich, lbl.geo), style: { ...conn.style, richText: true } } : applyEdgeLabel(conn, text(lbl), lbl.geo);
   }
 
   return layers.length > 1 ? { elements, order, layers } : { elements, order };

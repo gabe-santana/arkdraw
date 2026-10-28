@@ -148,7 +148,7 @@ const BUILT_IN: ShapeLibrary[] = [
         text: 'Customer\n--\nid\nname\nemail',
         style: { radius: 6, ...left },
       },
-      { kind: 'erd.weakEntity', label: 'Weak entity', w: 140, h: 70, text: 'Entity' },
+      { kind: 'erd.weakEntity', label: 'Weak entity', w: 140, h: 70, text: 'Entity', style: { radius: 0 } },
       { kind: 'diamond', label: 'Relationship', w: 130, h: 80, text: 'has' },
       { kind: 'ellipse', label: 'Attribute', w: 120, h: 60, text: 'attribute' },
       { kind: 'erd.multivalued', label: 'Multivalued', w: 130, h: 64, text: 'phones' },

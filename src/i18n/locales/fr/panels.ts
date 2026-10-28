@@ -391,6 +391,7 @@ export default {
   'panels.library.rack': 'Baie',
   'panels.library.signs': 'Signes et clipart',
   'panels.library.sitemap': 'Plan de site',
+  'panels.library.drawioGlyphs': 'Glyphes',
   'panels.library.veeam': 'Style Veeam (sauvegarde)',
 
   // UserLibrariesSection

@@ -82,6 +82,8 @@ export function textStyleToDrawio(m: StyleMap, s: ElementStyle) {
   if (!isFontKey(s.fontFamily) && isGoogleFont(s.fontFamily)) m.set('fontSource', encodeURIComponent(`https://fonts.googleapis.com/css?family=${cleanFontName(s.fontFamily).replace(/ /g, '+')}`));
   const bits = (s.bold ? 1 : 0) | (s.italic ? 2 : 0) | (s.underline ? 4 : 0) | (s.strike ? 8 : 0);
   m.set('fontStyle', String(bits));
+  if (s.wrap === false) m.delete('whiteSpace');
+  else m.set('whiteSpace', 'wrap');
   if (s.spacing) m.set('spacing', String(s.spacing));
   for (const side of ['Top', 'Right', 'Bottom', 'Left'] as const) {
     const v = s[`spacing${side}`];

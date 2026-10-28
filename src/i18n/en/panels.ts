@@ -493,6 +493,7 @@ export default {
   'panels.library.rack': 'Rack',
   'panels.library.signs': 'Signs & Clipart',
   'panels.library.sitemap': 'Sitemap',
+  'panels.library.drawioGlyphs': 'Glyphs',
   'panels.library.veeam': 'Veeam style (Backup)',
 
   // UserLibrariesSection
