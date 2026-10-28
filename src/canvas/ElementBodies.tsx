@@ -3,7 +3,7 @@
  * them with subscriptions; exporters call them directly with a static doc.
  */
 import { connectorAria, shapeAria } from '@/interaction/aria';
-import { createContext, memo, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, memo, useContext, useLayoutEffect, useMemo } from 'react';
 import type { ConnectorElement, ElementStyle, Rect, ShapeElement } from '@/model/types';
 import { getShapeDef, strokeAttrs } from '@/shapes/registry';
 import { TextBlock, TextLines } from '@/shapes/TextLines';
@@ -230,7 +230,7 @@ interface ConnectorBodyProps {
   lookup: Lookup;
   interactive?: boolean;
   hideLabel?: boolean;
-  /** Background behind the label so the line doesn't run through the text; 'none' cuts the line instead. */
+  /** Background behind the label so the line doesn't run through the text ('none' with LabelHolesContext). */
   labelBg?: string;
   frame?: AnimFrame;
   /** Precomputed geometry (the canvas memoizes it). */
@@ -262,7 +262,16 @@ export const ConnectorBody = memo(function ConnectorBody({
   el, lookup, interactive, hideLabel, labelBg = '#ffffff', frame, geometry, revealStep, hideStep,
 }: ConnectorBodyProps) {
   const vars = useContext(LabelVarsContext);
+  const holesCtx = useContext(LabelHolesContext);
   const g = geometry ?? connectorGeometry(el, lookup);
+  const baseLabel = localizedText(el, vars.language);
+  const label = el.style.placeholders ? expandPlaceholders(baseLabel, el, vars) : baseLabel;
+  const holesKey = holesCtx ? JSON.stringify(labelHoles(el, g, hideLabel ? '' : label)) : '';
+  useLayoutEffect(() => {
+    if (!holesCtx || holesKey === '[]') return;
+    holesCtx.set(el.id, JSON.parse(holesKey));
+    return () => holesCtx.set(el.id, null);
+  }, [holesCtx, el.id, holesKey]);
   const reveal = frame ? revealProgress(revealStep ?? el.reveal ?? 0, true, frame.t, frame.seq) : 1;
   // Leaving fades the whole connector; arriving draws it.
   const leaving = frame ? hideProgress(hideStep ?? el.hide ?? 0, frame.t, frame.seq) : 1;
@@ -272,8 +281,6 @@ export const ConnectorBody = memo(function ConnectorBody({
   const color = el.style.stroke === 'none' ? '#475569' : el.style.stroke;
   const sw = el.style.strokeWidth;
   const drawing = fx ? fx.drawn < 1 : false;
-  const baseLabel = localizedText(el, vars.language);
-  const label = el.style.placeholders ? expandPlaceholders(baseLabel, el, vars) : baseLabel;
   const lineWork = connectorStroke(el, g, {
     color,
     heads: !drawing,
@@ -295,14 +302,14 @@ export const ConnectorBody = memo(function ConnectorBody({
       {fx?.glow !== undefined && (
         <path d={g.path} fill="none" stroke={color} strokeWidth={sw + 8} strokeOpacity={0.08 + 0.22 * fx.glow} strokeLinecap="round" strokeLinejoin="round" />
       )}
-      <LabelKnockout el={el} g={g} label={labelBg === 'none' && !hideLabel && !drawing ? label : ''} extras={labelBg === 'none' && !drawing}>
+      <g mask={holesCtx ? `url(#${holesCtx.mask})` : undefined}>
         {el.style.shadow ? (
           <>
             <defs><ConnectorShadowFilter elId={el.id} style={el.style} route={boundsOfPoints([...g.points, ...g.samples])} reach={reach} /></defs>
             <g filter={`url(#${customShadowId(el.id)})`}>{body}</g>
           </>
         ) : body}
-      </LabelKnockout>
+      </g>
       {fx?.packets?.map((p, i) => <PacketMark key={i} packet={p} color={color} sw={sw} />)}
       {label && !hideLabel && !drawing && <ConnectorLabel el={el} text={label} at={g.label} bg={labelBg} />}
       {!drawing && <ExtraLabels el={el} g={g} bg={labelBg} />}
@@ -314,38 +321,26 @@ export const ConnectorBody = memo(function ConnectorBody({
 const LABEL_MAX_WIDTH = 220;
 
 /**
- * Cuts the line under its labels. Used where no fill can match the canvas
- * (the dark-adapt filter never reaches black), so the label needs no box.
+ * Lets the scene cut every line under connector labels. Used where no label
+ * fill can match the canvas (the dark-adapt filter never reaches black), so
+ * labels need no box; one shared mask also clears lines drawn on top.
  */
-function LabelKnockout({ el, g, label, extras, children }: { el: ConnectorElement; g: ConnectorGeometry; label: string; extras: boolean; children: ReactNode }) {
+export const LabelHolesContext = createContext<{ mask: string; set: (id: string, holes: Rect[] | null) => void } | null>(null);
+
+/** Boxes of a connector's labels (main + extra), padded like their backgrounds. */
+function labelHoles(el: ConnectorElement, g: ConnectorGeometry, label: string): Rect[] {
   const holes: Rect[] = [];
   const hole = (at: { x: number; y: number }, w: number, h: number) => holes.push({ x: at.x - w / 2 - 6, y: at.y - h / 2 - 3, w: w + 12, h: h + 6 });
   if (label) {
     const { w, h } = labelLayout(el, label);
     hole(g.label, w, h);
   }
-  if (extras) {
-    for (const l of el.labels ?? []) {
-      if (!l.text) continue;
-      const lines = wrapText(l.text, LABEL_MAX_WIDTH, el.style);
-      hole(labelAt(g.samples, l.t, l.offset), Math.max(...lines.map((s) => measureText(s, el.style)), 4), lines.length * lineHeight(el.style.fontSize));
-    }
+  for (const l of el.labels ?? []) {
+    if (!l.text) continue;
+    const lines = wrapText(l.text, LABEL_MAX_WIDTH, el.style);
+    hole(labelAt(g.samples, l.t, l.offset), Math.max(...lines.map((s) => measureText(s, el.style)), 4), lines.length * lineHeight(el.style.fontSize));
   }
-  if (!holes.length) return <>{children}</>;
-  const b = boundsOfPoints([...g.points, ...g.samples]);
-  const pad = 40 + el.style.strokeWidth * 6;
-  const id = `lbl-knock-${el.id}`;
-  return (
-    <>
-      <defs>
-        <mask id={id} maskUnits="userSpaceOnUse" x={b.x - pad} y={b.y - pad} width={b.w + pad * 2} height={b.h + pad * 2}>
-          <rect x={b.x - pad} y={b.y - pad} width={b.w + pad * 2} height={b.h + pad * 2} fill="#fff" />
-          {holes.map((r, i) => <rect key={i} x={r.x} y={r.y} width={r.w} height={r.h} rx={5} fill="#000" />)}
-        </mask>
-      </defs>
-      <g mask={`url(#${id})`}>{children}</g>
-    </>
-  );
+  return holes;
 }
 
 /** Wrapped lines and size of a connector label. */

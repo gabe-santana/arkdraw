@@ -4,16 +4,16 @@
  * attached to it — the key to staying at 60fps with large diagrams. Pan/zoom
  * only touches the single transform group.
  */
-import { createContext, memo, useContext, useMemo } from 'react';
+import { createContext, memo, useCallback, useContext, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import type { ConnectorElement, DiagramElement, PageSettings, Vec } from '@/model/types';
+import type { ConnectorElement, DiagramElement, PageSettings, Rect, Vec } from '@/model/types';
 import { isHidden, renderOrder, useEditor } from '@/store/editor';
 import { useAdaptColors } from '@/canvas/useAdaptColors';
 import { boundsOf, computeJumps, connectorGeometry, routeObstacles } from '@/lib/connectorGeometry';
 import { cn } from '@/lib/cn';
 import { sequenceDuration, useClock } from '@/animation/timeline';
 import { iconUrl } from '@/shapes/IconImage';
-import { ConnectorBody, LabelVarsContext, ShapeBody, SvgDefs, type AnimFrame } from './ElementBodies';
+import { ConnectorBody, LabelHolesContext, LabelVarsContext, ShapeBody, SvgDefs, type AnimFrame } from './ElementBodies';
 import { paperSize } from './paper';
 import { editorPlaceholderLookup, editorPlaceholderSignature } from '@/automation/placeholders';
 import { useDarkElement } from '@/styling/darkColors';
@@ -61,6 +61,9 @@ export function SceneLayer({ dark }: { dark: boolean }) {
   const settings = page?.settings;
   // The dark-adapt filter can't turn any fill into the black canvas, so labels cut the line instead.
   const labelBg = settings?.background ?? (dark ? (adapt ? 'none' : '#000000') : '#f7f7f9');
+  const [holes, setHoles] = useState<Record<string, Rect[]>>({});
+  const setHole = useCallback((id: string, r: Rect[] | null) => setHoles(({ [id]: _, ...rest }) => (r ? { ...rest, [id]: r } : rest)), []);
+  const holesCtx = useMemo(() => (labelBg === 'none' ? { mask: 'scene-label-holes', set: setHole } : null), [labelBg, setHole]);
 
   return (
     <svg className={cn('absolute inset-0 h-full w-full', adapt && 'diagram-adapt')} style={{ overflow: 'visible' }}>
@@ -69,12 +72,20 @@ export function SceneLayer({ dark }: { dark: boolean }) {
         <JumpsContext.Provider value={jumps}>
           <PageShadowContext.Provider value={!!settings?.shadow}>
             <LabelVarsContext.Provider value={vars}>
-              <g transform={`translate(${camera.x} ${camera.y}) scale(${camera.z})`}>
-                {settings && <PageBackdrop settings={settings} order={order} />}
-                {order.map((id) => (
-                  <ElementView key={id} id={id} labelBg={labelBg} darkAdapt={dark && adapt} />
-                ))}
-              </g>
+              <LabelHolesContext.Provider value={holesCtx}>
+                <g transform={`translate(${camera.x} ${camera.y}) scale(${camera.z})`}>
+                  {holesCtx && (
+                    <mask id={holesCtx.mask} maskUnits="userSpaceOnUse" x={-1e6} y={-1e6} width={2e6} height={2e6}>
+                      <rect x={-1e6} y={-1e6} width={2e6} height={2e6} fill="#fff" />
+                      {Object.values(holes).flat().map((r, i) => <rect key={i} x={r.x} y={r.y} width={r.w} height={r.h} rx={5} fill="#000" />)}
+                    </mask>
+                  )}
+                  {settings && <PageBackdrop settings={settings} order={order} />}
+                  {order.map((id) => (
+                    <ElementView key={id} id={id} labelBg={labelBg} darkAdapt={dark && adapt} />
+                  ))}
+                </g>
+              </LabelHolesContext.Provider>
             </LabelVarsContext.Provider>
           </PageShadowContext.Provider>
         </JumpsContext.Provider>
