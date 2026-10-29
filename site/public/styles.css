@@ -6,7 +6,35 @@
   font-display: swap;
 }
 
+/* Light by default; dark when the visitor picks it (theme.js sets data-theme). */
 :root {
+  --bg: #f7f7fb;
+  --bg-2: #ffffff;
+  --panel: #ffffff;
+  --line: rgb(20 20 60 / 0.09);
+  --line-2: rgb(20 20 60 / 0.15);
+  --fg: #14141f;
+  --muted: #545470;
+  --subtle: #85859e;
+  --accent: #6d63ff;
+  --accent-2: #8a8dff;
+  --accent-deep: #3a2bb8;
+  --accent-text: #5b4bf5;
+  --tint: rgb(20 20 60 / 0.04);
+  --tint-2: rgb(20 20 60 / 0.07);
+  --dots: rgb(20 20 60 / 0.09);
+  --glow: rgb(109 99 255 / 0.16);
+  --glow-2: rgb(58 43 184 / 0.07);
+  --nav-bg: rgb(247 247 251 / 0.88), rgb(247 247 251 / 0.6);
+  --card-bg: #ffffff, #fbfbfe;
+  --shadow: rgb(30 30 70 / 0.18);
+  --gradient: #7b72ff 0%, #5b4bf5 40%, #3a2bb8 75%, #7c3aed 100%;
+  --tick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235b4bf5' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E");
+  --radius: 18px;
+  --max: 1160px;
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
   --bg: #0b0b12;
   --bg-2: #11111b;
   --panel: #14141f;
@@ -15,11 +43,17 @@
   --fg: #f4f4fa;
   --muted: #a3a3bd;
   --subtle: #6e6e88;
-  --accent: #6d63ff;
-  --accent-2: #8a8dff;
-  --accent-deep: #3a2bb8;
-  --radius: 18px;
-  --max: 1160px;
+  --accent-text: #8a8dff;
+  --tint: rgb(255 255 255 / 0.04);
+  --tint-2: rgb(255 255 255 / 0.08);
+  --dots: rgb(255 255 255 / 0.07);
+  --glow: rgb(109 99 255 / 0.28);
+  --glow-2: rgb(58 43 184 / 0.18);
+  --nav-bg: rgb(11 11 18 / 0.85), rgb(11 11 18 / 0.55);
+  --card-bg: rgb(255 255 255 / 0.035), rgb(255 255 255 / 0.015);
+  --shadow: rgb(0 0 0 / 0.8);
+  --gradient: #c9c5ff 0%, var(--accent-2) 35%, var(--accent) 70%, #a78bfa 100%;
+  --tick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b4b0ff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E");
   color-scheme: dark;
 }
 
@@ -39,7 +73,7 @@ code, kbd {
   font: 500 0.85em ui-monospace, 'SFMono-Regular', Consolas, monospace;
   padding: 0.1em 0.4em;
   border-radius: 6px;
-  background: rgb(255 255 255 / 0.06);
+  background: var(--tint);
   border: 1px solid var(--line);
 }
 
@@ -49,9 +83,9 @@ code, kbd {
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(60rem 36rem at 50% -8rem, rgb(109 99 255 / 0.28), transparent 70%),
-    radial-gradient(40rem 30rem at 85% 30%, rgb(58 43 184 / 0.18), transparent 70%),
-    radial-gradient(circle, rgb(255 255 255 / 0.07) 1px, transparent 1.4px) 0 0 / 22px 22px,
+    radial-gradient(60rem 36rem at 50% -8rem, var(--glow), transparent 70%),
+    radial-gradient(40rem 30rem at 85% 30%, var(--glow-2), transparent 70%),
+    radial-gradient(circle, var(--dots) 1px, transparent 1.4px) 0 0 / 22px 22px,
     var(--bg);
   mask-image: linear-gradient(to bottom, #000 0%, #000 55%, rgb(0 0 0 / 0.35) 100%);
 }
@@ -68,7 +102,7 @@ code, kbd {
   margin: 0 auto;
   padding: 16px 24px;
   backdrop-filter: blur(14px) saturate(140%);
-  background: linear-gradient(to bottom, rgb(11 11 18 / 0.85), rgb(11 11 18 / 0.55));
+  background: linear-gradient(to bottom, var(--nav-bg));
   border-bottom: 1px solid transparent;
 }
 .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 19px; letter-spacing: -0.02em; }
@@ -76,6 +110,24 @@ code, kbd {
 .brand b { font-weight: 700; background: linear-gradient(120deg, var(--accent-2), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .nav-links { display: flex; gap: 24px; margin-left: auto; font-size: 14.5px; color: var(--muted); }
 .nav-links a:hover { color: var(--fg); }
+.theme-toggle {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  color: var(--muted);
+  background: var(--tint);
+  box-shadow: 0 0 0 1px var(--line) inset;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.theme-toggle:hover { color: var(--fg); background: var(--tint-2); }
+.theme-toggle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.theme-toggle .sun, :root[data-theme='dark'] .theme-toggle .moon { display: none; }
+:root[data-theme='dark'] .theme-toggle .sun { display: block; }
 
 /* ------------------------------------------------------------ buttons */
 .btn {
@@ -97,8 +149,8 @@ code, kbd {
   box-shadow: 0 0 0 1px rgb(255 255 255 / 0.12) inset, 0 10px 30px -10px rgb(109 99 255 / 0.8);
 }
 .btn-primary:hover { box-shadow: 0 0 0 1px rgb(255 255 255 / 0.18) inset, 0 14px 40px -10px rgb(109 99 255 / 0.95); }
-.btn-ghost { color: var(--fg); background: rgb(255 255 255 / 0.04); box-shadow: 0 0 0 1px var(--line-2) inset; }
-.btn-ghost:hover { background: rgb(255 255 255 / 0.08); }
+.btn-ghost { color: var(--fg); background: var(--tint); box-shadow: 0 0 0 1px var(--line-2) inset; }
+.btn-ghost:hover { background: var(--tint-2); }
 
 /* --------------------------------------------------------------- hero */
 .hero { max-width: var(--max); margin: 0 auto; padding: 72px 24px 40px; text-align: center; }
@@ -111,7 +163,7 @@ code, kbd {
   border-radius: 999px;
   font-size: 13.5px;
   color: var(--muted);
-  background: rgb(255 255 255 / 0.04);
+  background: var(--tint);
   box-shadow: 0 0 0 1px var(--line) inset;
 }
 .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-2); box-shadow: 0 0 0 4px rgb(138 141 255 / 0.18); }
@@ -123,7 +175,7 @@ h1 {
   font-weight: 750;
 }
 .gradient {
-  background: linear-gradient(100deg, #c9c5ff 0%, var(--accent-2) 35%, var(--accent) 70%, #a78bfa 100%);
+  background: linear-gradient(100deg, var(--gradient));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -133,13 +185,14 @@ h1 {
 .fineprint { margin: 18px 0 0; font-size: 13.5px; color: var(--subtle); }
 
 /* ------------------------------------------------------------ windows */
+/* The demo windows hold dark recordings, so their frame stays dark in both themes. */
 .window {
   position: relative;
   margin: 0;
   border-radius: var(--radius);
   overflow: hidden;
-  background: var(--panel);
-  box-shadow: 0 0 0 1px var(--line-2), 0 30px 80px -30px rgb(0 0 0 / 0.8);
+  background: #14141f;
+  box-shadow: 0 0 0 1px var(--line-2), 0 30px 80px -30px var(--shadow);
 }
 .window-bar {
   display: flex;
@@ -147,11 +200,11 @@ h1 {
   gap: 7px;
   height: 38px;
   padding: 0 14px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
   background: #101019;
 }
 .window-bar i { width: 11px; height: 11px; border-radius: 50%; background: #2a2a3a; }
-.window-bar span { margin: 0 auto; transform: translateX(-24px); font-size: 12.5px; color: var(--subtle); }
+.window-bar span { margin: 0 auto; transform: translateX(-24px); font-size: 12.5px; color: #6e6e88; }
 .demo { width: 100%; height: auto; aspect-ratio: 16 / 9; background: #0e0e11; }
 
 .hero-window { margin-top: 64px; }
@@ -164,20 +217,20 @@ h1 {
   pointer-events: none;
   box-shadow: inset 0 0 0 1px rgb(138 141 255 / 0.35);
 }
-.hero-window { box-shadow: 0 0 0 1px rgb(138 141 255 / 0.25), 0 40px 140px -30px rgb(109 99 255 / 0.55), 0 30px 80px -30px rgb(0 0 0 / 0.9); }
-.window figcaption { padding: 12px 16px; font-size: 13px; color: var(--subtle); border-top: 1px solid var(--line); background: #101019; text-align: center; }
+.hero-window { box-shadow: 0 0 0 1px rgb(138 141 255 / 0.25), 0 40px 140px -30px rgb(109 99 255 / 0.55), 0 30px 80px -30px var(--shadow); }
+.window figcaption { padding: 12px 16px; font-size: 13px; color: #8a8aa3; border-top: 1px solid rgb(255 255 255 / 0.08); background: #101019; text-align: center; }
 
 /* ------------------------------------------------------------- models */
 .models { max-width: var(--max); margin: 56px auto 0; padding: 0 24px; text-align: center; }
 .models p { margin: 0 0 16px; font-size: 14px; color: var(--subtle); }
 .models ul { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.models li { padding: 7px 14px; border-radius: 999px; font-size: 14px; font-weight: 550; color: var(--muted); background: rgb(255 255 255 / 0.03); box-shadow: 0 0 0 1px var(--line) inset; }
-.models li.local { color: #c9c5ff; box-shadow: 0 0 0 1px rgb(138 141 255 / 0.35) inset; }
+.models li { padding: 7px 14px; border-radius: 999px; font-size: 14px; font-weight: 550; color: var(--muted); background: var(--tint); box-shadow: 0 0 0 1px var(--line) inset; }
+.models li.local { color: var(--accent-text); box-shadow: 0 0 0 1px rgb(138 141 255 / 0.35) inset; }
 
 /* ----------------------------------------------------------- sections */
 .section { max-width: var(--max); margin: 0 auto; padding: 120px 24px 0; }
 .section-head { max-width: 720px; margin: 0 auto 56px; text-align: center; }
-.kicker { margin: 0 0 10px; font-size: 13px; font-weight: 650; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-2); }
+.kicker { margin: 0 0 10px; font-size: 13px; font-weight: 650; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-text); }
 h2 { margin: 0; font-size: clamp(30px, 4.2vw, 48px); line-height: 1.08; letter-spacing: -0.035em; font-weight: 720; }
 .section-head p:not(.kicker) { margin: 18px 0 0; font-size: 18px; color: var(--muted); }
 
@@ -194,19 +247,19 @@ h2 { margin: 0; font-size: clamp(30px, 4.2vw, 48px); line-height: 1.08; letter-s
   width: 18px;
   height: 18px;
   border-radius: 6px;
-  background: rgb(109 99 255 / 0.18) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b4b0ff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E") center / 12px no-repeat;
+  background: rgb(109 99 255 / 0.16) var(--tick) center / 12px no-repeat;
 }
 
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .card {
   padding: 26px;
   border-radius: var(--radius);
-  background: linear-gradient(180deg, rgb(255 255 255 / 0.035), rgb(255 255 255 / 0.015));
+  background: linear-gradient(180deg, var(--card-bg));
   box-shadow: 0 0 0 1px var(--line) inset;
   transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 .card:hover { transform: translateY(-2px); box-shadow: 0 0 0 1px rgb(138 141 255 / 0.3) inset, 0 20px 40px -24px rgb(109 99 255 / 0.5); }
-.card svg { width: 40px; height: 40px; padding: 9px; border-radius: 11px; fill: none; stroke: #c9c5ff; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; background: rgb(109 99 255 / 0.16); box-shadow: 0 0 0 1px rgb(138 141 255 / 0.25) inset; }
+.card svg { width: 40px; height: 40px; padding: 9px; border-radius: 11px; fill: none; stroke: var(--accent-text); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; background: rgb(109 99 255 / 0.16); box-shadow: 0 0 0 1px rgb(138 141 255 / 0.25) inset; }
 .card h3 { margin: 18px 0 8px; font-size: 18px; letter-spacing: -0.01em; }
 .card p { margin: 0; font-size: 15px; color: var(--muted); }
 
@@ -216,8 +269,8 @@ h2 { margin: 0; font-size: clamp(30px, 4.2vw, 48px); line-height: 1.08; letter-s
   border-radius: 28px;
   text-align: center;
   background:
-    radial-gradient(30rem 16rem at 50% 0%, rgb(109 99 255 / 0.35), transparent 70%),
-    radial-gradient(circle, rgb(255 255 255 / 0.06) 1px, transparent 1.4px) 0 0 / 22px 22px,
+    radial-gradient(30rem 16rem at 50% 0%, var(--glow), transparent 70%),
+    radial-gradient(circle, var(--dots) 1px, transparent 1.4px) 0 0 / 22px 22px,
     var(--bg-2);
   box-shadow: 0 0 0 1px var(--line-2) inset;
 }
@@ -247,7 +300,7 @@ h2 { margin: 0; font-size: clamp(30px, 4.2vw, 48px); line-height: 1.08; letter-s
 @media (max-width: 640px) {
   .nav { gap: 12px; padding: 12px 16px; }
   .nav-links { display: none; }
-  .nav .btn { margin-left: auto; }
+  .theme-toggle { margin-left: auto; }
   .hero { padding: 48px 16px 24px; }
   .hero-window { margin-top: 44px; }
   .window-bar span { display: none; }

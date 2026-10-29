@@ -90,8 +90,8 @@ let toastId = 0;
 
 export const useUi = create<UiState>((set, get) => ({
   ...panels,
-  // Dark until the user picks a theme, like the site and the demos.
-  theme: load(THEME_KEY, { theme: 'dark' as ThemeMode }).theme,
+  // Light until the user picks a theme (View → Theme, or the toolbar toggle).
+  theme: load(THEME_KEY, { theme: 'light' as ThemeMode }).theme,
   contextMenu: null,
   paletteOpen: false,
   exportOpen: false,

@@ -387,7 +387,7 @@ async function browserTests() {
         await sleep(2000);
         assert(!b.problems.length, b.problems.join('\n        '));
       });
-      await test('first visit looks like the landing: ArkDraw, dark, AI tab open, no dialog', async () => {
+      await test('first visit: ArkDraw, light theme, AI tab open, no dialog', async () => {
         const s = await b.evaluate(`({
           title: document.title,
           dark: document.documentElement.classList.contains('dark'),
@@ -396,7 +396,7 @@ async function browserTests() {
           oldName: document.body.innerText.includes('OpenDraw'),
         })`);
         assert(s.title.includes('ArkDraw'), `title: ${s.title}`);
-        assert(s.dark, 'not dark');
+        assert(!s.dark, 'opens dark: light is the default');
         assert(s.ai, 'AI tab not open');
         assert(!s.dialog, 'a dialog covers the canvas');
         assert(!s.oldName, 'the page still says ArkDraw');
