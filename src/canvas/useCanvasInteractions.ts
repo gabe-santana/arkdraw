@@ -555,7 +555,10 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
         const target = shapeAtPoint(s.doc, p, exclude, 6 / s.camera.z);
         const fromEdge = isConnector(s.doc.elements[d.from.elementId ?? '']) ? d.from.elementId : undefined;
         const drop = dropAt(s.doc, p, target, e.shiftKey, fromEdge);
-        useEditor.setState({ connectDraft: { from: { x: d.from.x, y: d.from.y }, to: drop.preview, targetId: drop.targetId }, hoverId: target?.id ?? null });
+        useEditor.setState({
+          connectDraft: { from: { x: d.from.x, y: d.from.y }, to: drop.preview, targetId: drop.targetId, source: d.from, target: drop.ep },
+          hoverId: target?.id ?? null,
+        });
         return;
       }
       case 'endpoint': {

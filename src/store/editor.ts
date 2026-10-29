@@ -8,7 +8,7 @@
  * gesture becomes a single undo step.
  */
 import { create } from 'zustand';
-import type { ConnectorElement, DiagramElement, Doc, DocumentMeta, ElementStyle, Layer, Page, PageSettings, Rect, ShapeElement, Vec } from '@/model/types';
+import type { ConnectorElement, DiagramElement, Doc, DocumentMeta, ElementStyle, Endpoint, Layer, Page, PageSettings, Rect, ShapeElement, Vec } from '@/model/types';
 import { isConnector, isShape } from '@/model/types';
 import { uid } from '@/lib/id';
 import { rememberConnectorStyle } from '@/model/defaults';
@@ -99,8 +99,12 @@ export interface EditorState {
   marquee: Rect | null;
   hoverId: string | null;
   dropTargetId: string | null;
-  /** Preview while dragging a new connector. */
-  connectDraft: { from: Vec; to: Vec; targetId: string | null } | null;
+  /**
+   * Preview while dragging a new connector. With both ends known (`source`,
+   * `target`) the overlay draws the connector itself, routed and styled as it
+   * will be created; otherwise a line from `from` to `to`.
+   */
+  connectDraft: { from: Vec; to: Vec; targetId: string | null; source?: Endpoint; target?: Endpoint } | null;
   past: Doc[];
   future: Doc[];
   interactionBase: Doc | null;

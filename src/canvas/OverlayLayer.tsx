@@ -7,11 +7,13 @@
 import { canDragSegment, segmentCursor } from '@/interaction/segmentDrag';
 import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import type { AnchorSide, ConnectorElement, DiagramElement, ShapeElement, Vec } from '@/model/types';
+import type { AnchorSide, ConnectorElement, DiagramElement, Endpoint, ShapeElement, Vec } from '@/model/types';
 import { isConnector, isShape } from '@/model/types';
 import { anchorPoint, boxCorners, center, rotatePoint, rotatedBounds, SIDES, SIDE_NORMALS, unionRects } from '@/lib/geometry';
 import { connectorGeometryInDoc } from '@/lib/connectorGeometry';
 import { ConnectionPointMarkers, ExtraLabelHandles } from './ConnectionPointMarkers';
+import { ConnectorBody } from './ElementBodies';
+import { createConnector } from '@/model/defaults';
 import { useEndpointDrag } from './connectorDrop';
 import { ParamHandles } from './ParamHandles';
 import { isLocked, shapeRect, useEditor } from '@/store/editor';
@@ -215,8 +217,10 @@ export function OverlayLayer({ freehand }: { freehand?: Vec[] | null }) {
           />
         )}
 
-        {/* Connect preview */}
-        {draft && (
+        {/* Connect preview: the connector as it will be created, or a plain line until both ends are known */}
+        {draft?.source && draft.target ? (
+          <DraftConnector source={draft.source} target={draft.target} elements={elements} />
+        ) : draft && (
           <g>
             <line x1={draft.from.x} y1={draft.from.y} x2={draft.to.x} y2={draft.to.y} stroke={ACCENT} strokeWidth={1.75 * px} strokeDasharray={`${5 * px} ${4 * px}`} />
             <circle cx={draft.to.x} cy={draft.to.y} r={4 * px} fill={ACCENT} />
@@ -347,6 +351,17 @@ function Anchors({ shape, z, highlight, quick, cornersResize }: { shape: ShapeEl
         );
       })}
       <ConnectionPointMarkers shape={shape} z={z} highlight={highlight} cornersResize={cornersResize} />
+    </g>
+  );
+}
+
+/** The connector being dragged out, routed and styled exactly as it will be created on release. */
+function DraftConnector({ source, target, elements }: { source: Endpoint; target: Endpoint; elements: Record<string, DiagramElement> }) {
+  const conn = useMemo(() => createConnector(source, target), [source, target]);
+  const geometry = useMemo(() => connectorGeometryInDoc(conn, elements), [conn, elements]);
+  return (
+    <g opacity={0.9}>
+      <ConnectorBody el={conn} lookup={(id) => elements[id]} geometry={geometry} />
     </g>
   );
 }
