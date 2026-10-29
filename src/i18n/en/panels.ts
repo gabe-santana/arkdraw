@@ -33,9 +33,6 @@ export default {
   'panels.header.icon': 'Icon',
   'panels.header.elements': '{count, plural, one {# element} other {# elements}}',
   'panels.header.connectorCount': '{count, plural, one {# connector} other {# connectors}}',
-  'panels.canvas.theme': 'Theme',
-  'panels.canvas.themeLight': 'Light',
-  'panels.canvas.themeDark': 'Dark',
   'panels.canvas.adaptColors': 'Adapt diagram colors in dark mode',
   // Section title: canvas settings (grid, snapping…).
   'panels.canvas.title': 'Canvas',

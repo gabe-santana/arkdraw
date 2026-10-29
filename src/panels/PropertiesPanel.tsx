@@ -19,7 +19,7 @@ import { ACTION_MAP, runAction } from '@/app/actions';
 import { togglePlayback } from '@/app/playback';
 import { ColorField, NumberField, Segmented, Select, Slider, Switch } from '@/ui/controls';
 import { IconButton } from '@/ui/Button';
-import { Row, Section, begin, common, end, richText, segLabel } from './sections';
+import { Row, Section, begin, common, end, richText } from './sections';
 import { useT } from '@/i18n';
 import { actionLabel } from '@/i18n/catalog';
 import { UNIT_PER_PX } from '@/canvas/paper';
@@ -108,23 +108,10 @@ function CanvasSettings() {
   const settings = useEditor((s) => s.settings);
   const update = useEditor((s) => s.updateSettings);
   const count = useEditor((s) => s.doc.order.length);
-  const theme = useUi((s) => s.theme);
-  const setUi = useUi((s) => s.set);
   const t = useT();
+  // The theme itself is switched from the title bar (moon/sun) and View → Theme.
   return (
     <>
-      <Section title={t('panels.canvas.theme')}>
-        <Segmented
-          value={theme}
-          onChange={(theme) => setUi({ theme })}
-          options={[
-            { value: 'light', label: segLabel(t('panels.canvas.themeLight')), title: t('panels.canvas.themeLight') },
-            { value: 'dark', label: segLabel(t('panels.canvas.themeDark')), title: t('panels.canvas.themeDark') },
-            { value: 'system', label: segLabel(t('common.auto')), title: t('common.auto') },
-          ]}
-        />
-        <Switch label={t('panels.canvas.adaptColors')} checked={settings.adaptColors} onChange={(v) => update({ adaptColors: v })} />
-      </Section>
       <Section title={t('panels.canvas.title')}>
         <Switch label={t('panels.canvas.showGrid')} checked={settings.grid} onChange={(v) => update({ grid: v })} />
         <Switch label={t('panels.canvas.snapToGrid')} checked={settings.snap} onChange={(v) => update({ snap: v })} />
@@ -133,6 +120,7 @@ function CanvasSettings() {
           <NumberField label="#" value={settings.gridSize} min={2} max={100} onChange={(v) => update({ gridSize: Math.round(v) })} suffix="px" />
         </Row>
         <GridExtras />
+        <Switch label={t('panels.canvas.adaptColors')} checked={settings.adaptColors} onChange={(v) => update({ adaptColors: v })} />
       </Section>
       <Section title={t('panels.tips.title')}>
         <ul className="space-y-1.5 text-[12px] leading-relaxed text-muted">

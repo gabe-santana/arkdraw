@@ -31,9 +31,6 @@ export default {
   'panels.header.icon': 'アイコン',
   'panels.header.elements': '{count, plural, other {# 個の要素}}',
   'panels.header.connectorCount': '{count, plural, other {# 本のコネクタ}}',
-  'panels.canvas.theme': 'テーマ',
-  'panels.canvas.themeLight': 'ライト',
-  'panels.canvas.themeDark': 'ダーク',
   'panels.canvas.adaptColors': 'ダークモードでダイアグラムの色を調整',
   // Section title: canvas settings (grid, snapping…).
   'panels.canvas.title': 'キャンバス',
