@@ -1243,4 +1243,9 @@ export const SHAPE_DESCRIPTIONS: Record<string, string> = {
   'eip.smartProxy': 'EIP smart proxy: intercepts requests and replies to track and correct return addresses.',
   'eip.testMessage': 'EIP test message: a known message injected into the stream to check that components work.',
   'eip.channelPurger': 'EIP channel purger: removes unwanted messages from a channel, for example before a test.',
+  'drawio.user': 'Filled person silhouette for a user, actor or team, as in the draw.io Azure library.',
+  'drawio.check': 'Filled check mark used to show something is approved, valid, done or allowed.',
+  'drawio.redX': 'Filled X mark used to show an error, a blocked path, a failure or something removed.',
+  'drawio.clock': 'Filled clock face used for schedules, timers, cron jobs or time-based triggers.',
+  'drawio.json': 'Curly-brace JSON glyph used for JSON data, payloads, configuration or API formats.',
 };

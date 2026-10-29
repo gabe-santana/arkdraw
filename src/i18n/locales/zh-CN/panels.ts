@@ -393,6 +393,7 @@ export default {
   'panels.library.rack': '机架',
   'panels.library.signs': '标志和剪贴画',
   'panels.library.sitemap': '站点地图',
+  'panels.library.drawioGlyphs': '字形',
   'panels.library.veeam': 'Veeam 风格（备份）',
 
   // UserLibrariesSection

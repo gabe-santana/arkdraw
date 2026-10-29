@@ -394,6 +394,7 @@ export default {
   'panels.library.rack': '랙',
   'panels.library.signs': '표지판 및 클립아트',
   'panels.library.sitemap': '사이트맵',
+  'panels.library.drawioGlyphs': '글리프',
   'panels.library.veeam': 'Veeam 스타일(백업)',
 
   // UserLibrariesSection

@@ -396,6 +396,7 @@ export default {
   'panels.library.rack': 'Стойка',
   'panels.library.signs': 'Знаки и клипарт',
   'panels.library.sitemap': 'Карта сайта',
+  'panels.library.drawioGlyphs': 'Глифы',
   'panels.library.veeam': 'В стиле Veeam (резервное копирование)',
 
   // UserLibrariesSection

@@ -396,6 +396,7 @@ export default {
   'panels.library.rack': 'Rack',
   'panels.library.signs': 'Señales e imágenes prediseñadas',
   'panels.library.sitemap': 'Mapa del sitio',
+  'panels.library.drawioGlyphs': 'Glifos',
   'panels.library.veeam': 'Estilo Veeam (copias de seguridad)',
 
   // UserLibrariesSection

@@ -509,10 +509,11 @@ const defs: ShapeDef[] = [
   {
     kind: 'erd.weakEntity',
     label: 'Weak entity',
+    rounded: true,
     render: ({ w, h, style }) => (
       <>
-        <RoundRect w={w} h={h} s={style} r={0} />
-        <rect x={4} y={4} width={Math.max(1, w - 8)} height={Math.max(1, h - 8)} fill="none" {...strokeAttrs(style)} />
+        <RoundRect w={w} h={h} s={style} />
+        <rect x={4} y={4} width={Math.max(1, w - 8)} height={Math.max(1, h - 8)} rx={Math.max(0, style.radius - 4)} fill="none" {...strokeAttrs(style)} />
       </>
     ),
     textBox: (w, h) => inset(w, h, 10),

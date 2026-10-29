@@ -491,6 +491,7 @@ export default {
   'panels.library.rack': 'ラック',
   'panels.library.signs': '標識とクリップアート',
   'panels.library.sitemap': 'サイトマップ',
+  'panels.library.drawioGlyphs': 'グリフ',
   'panels.library.veeam': 'Veeam スタイル (バックアップ)',
 
   // UserLibrariesSection
