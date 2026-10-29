@@ -219,7 +219,11 @@ export function OverlayLayer({ freehand }: { freehand?: Vec[] | null }) {
 
         {/* Connect preview: the connector as it will be created, or a plain line until both ends are known */}
         {draft?.source && draft.target ? (
-          <DraftConnector source={draft.source} target={draft.target} elements={elements} />
+          <g>
+            <DraftConnector source={draft.source} target={draft.target} elements={elements} />
+            {/* A connection point is being made for this drop: show where it will sit. */}
+            {draft.made && <circle cx={draft.to.x} cy={draft.to.y} r={6 * px} fill={ACCENT} fillOpacity={0.18} stroke={ACCENT} strokeWidth={1.5 * px} />}
+          </g>
         ) : draft && (
           <g>
             <line x1={draft.from.x} y1={draft.from.y} x2={draft.to.x} y2={draft.to.y} stroke={ACCENT} strokeWidth={1.75 * px} strokeDasharray={`${5 * px} ${4 * px}`} />

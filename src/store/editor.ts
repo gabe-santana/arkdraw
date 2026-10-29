@@ -104,7 +104,7 @@ export interface EditorState {
    * `target`) the overlay draws the connector itself, routed and styled as it
    * will be created; otherwise a line from `from` to `to`.
    */
-  connectDraft: { from: Vec; to: Vec; targetId: string | null; source?: Endpoint; target?: Endpoint } | null;
+  connectDraft: { from: Vec; to: Vec; targetId: string | null; source?: Endpoint; target?: Endpoint; made?: boolean } | null;
   past: Doc[];
   future: Doc[];
   interactionBase: Doc | null;

@@ -22,6 +22,7 @@ import {
   rotatedBounds, SIDE_NORMALS, unionRects,
 } from '@/lib/geometry';
 import { connectorGeometryInDoc, endpointPositions } from '@/lib/connectorGeometry';
+import { straightenMove, straightenResize } from '@/assistants/straighten';
 import {
   cloneElements, containedShapes, elementBounds, isHidden, isLocked, shapeRect, useEditor, type Guide,
 } from '@/store/editor';
@@ -106,9 +107,18 @@ export function shapeAtPoint(doc: Doc, p: Vec, exclude: Set<string> = new Set(),
   return null;
 }
 
-/** Where a dragged connector end lands: connection point, exact outline point (Shift), another connector, or free. */
-const dropAt = (doc: Doc, p: Vec, shape: ShapeElement | null, exact: boolean, selfConn?: string) =>
-  resolveDrop(doc, p, shape, { z: useEditor.getState().camera.z, exact, selfConn });
+/** Where a new connector leaves its start, aiming at `toward` (a floating start picks the side facing it). */
+function startPoint(doc: Doc, from: Endpoint, toward: Vec): Vec {
+  if (!from.elementId || from.fixed || (from.side && from.side !== 'auto')) return { x: from.x, y: from.y };
+  return endpointPositions(createConnector(from, { x: toward.x, y: toward.y }), (id) => doc.elements[id]).a.point;
+}
+
+/**
+ * Where a dragged connector end lands: connection point, exact outline point (Shift), another connector,
+ * a point made for it (micro-assistant, off with Alt: `assist.on`), or free.
+ */
+const dropAt = (doc: Doc, p: Vec, shape: ShapeElement | null, exact: boolean, selfConn?: string, assist?: { other?: Vec; on: boolean }) =>
+  resolveDrop(doc, p, shape, { z: useEditor.getState().camera.z, exact, selfConn, other: assist?.other, assist: assist?.on ?? false });
 
 function snapTargetsExcluding(doc: Doc, exclude: Set<string>): SnapTargets {
   const rects: Rect[] = [];
@@ -490,6 +500,15 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
           dy += snap.dy;
           guides = snap.guides;
         }
+        // Micro-assistant: a nearly straight connector pulls the shapes the rest of the way (wins over other snaps).
+        if (!e.altKey) {
+          const pull = straightenMove(s.doc, d.start, dx, dy, s.camera.z);
+          if (pull.dx) guides = guides.filter((g) => g.axis !== 'x');
+          if (pull.dy) guides = guides.filter((g) => g.axis !== 'y');
+          dx += pull.dx;
+          dy += pull.dy;
+          guides = [...guides, ...pull.guides];
+        }
         const patches: Record<string, Partial<DiagramElement>> = {};
         for (const [id, el] of d.start) {
           if (isShape(el)) patches[id] = { x: el.x + dx, y: el.y + dy };
@@ -554,9 +573,9 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
         const exclude = new Set<string>(d.from.elementId ? [d.from.elementId] : []);
         const target = shapeAtPoint(s.doc, p, exclude, 6 / s.camera.z);
         const fromEdge = isConnector(s.doc.elements[d.from.elementId ?? '']) ? d.from.elementId : undefined;
-        const drop = dropAt(s.doc, p, target, e.shiftKey, fromEdge);
+        const drop = dropAt(s.doc, p, target, e.shiftKey, fromEdge, { other: startPoint(s.doc, d.from, p), on: !e.altKey });
         useEditor.setState({
-          connectDraft: { from: { x: d.from.x, y: d.from.y }, to: drop.preview, targetId: drop.targetId, source: d.from, target: drop.ep },
+          connectDraft: { from: { x: d.from.x, y: d.from.y }, to: drop.preview, targetId: drop.targetId, source: d.from, target: drop.ep, made: drop.made },
           hoverId: target?.id ?? null,
         });
         return;
@@ -567,7 +586,8 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
         const other = d.end === 'source' ? conn.target : conn.source;
         const exclude = new Set<string>(other.elementId ? [other.elementId] : []);
         const target = shapeAtPoint(s.doc, p, exclude, 6 / s.camera.z);
-        const ep: Endpoint = dropAt(s.doc, p, target, e.shiftKey, d.connId).ep;
+        const ends = endpointPositions(conn, (id) => s.doc.elements[id]);
+        const ep: Endpoint = dropAt(s.doc, p, target, e.shiftKey, d.connId, { other: (d.end === 'source' ? ends.b : ends.a).point, on: !e.altKey }).ep;
         s.updateElements({ [d.connId]: { [d.end]: ep } as Partial<ConnectorElement> });
         useEditor.setState({ hoverId: target?.id ?? null });
         useEndpointDrag.setState({ active: true });
@@ -694,7 +714,9 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
           const p = clientToWorld(e.clientX, e.clientY);
           const target = draft.targetId ? s.doc.elements[draft.targetId] : null;
           const fromEdge = isConnector(s.doc.elements[d.from.elementId ?? '']) ? d.from.elementId : undefined;
-          const to: Endpoint = target ? dropAt(s.doc, p, isShape(target) ? target : null, e.shiftKey, fromEdge).ep : { x: draft.to.x, y: draft.to.y };
+          const to: Endpoint = target
+            ? dropAt(s.doc, p, isShape(target) ? target : null, e.shiftKey, fromEdge, { other: startPoint(s.doc, d.from, p), on: !e.altKey }).ep
+            : { x: draft.to.x, y: draft.to.y };
           const conn = createConnector(d.from, to);
           const pos = endpointPositions(conn, (id) => s.doc.elements[id]);
           conn.source = { ...conn.source, x: pos.a.point.x, y: pos.a.point.y };
@@ -836,7 +858,14 @@ function resizeTo(d: Extract<Drag, { type: 'resize' }>, pw: Vec, e: React.Pointe
     if (h.includes('w')) x1 = x2 - nw;
     if (h.includes('n')) y1 = y2 - nh;
   }
-  const nb = { x: Math.min(x1, x2), y: Math.min(y1, y2), w: nw, h: nh };
+  let nb = { x: Math.min(x1, x2), y: Math.min(y1, y2), w: nw, h: nh };
+  // Micro-assistant: the dragged edge stops where a nearly straight connector on the shape runs straight.
+  const only = d.start.size === 1 ? [...d.start.values()][0] : null;
+  if (only && !d.single && !e.altKey) {
+    const pull = straightenResize(s.doc, only, nb, h, s.camera.z);
+    nb = pull.rect;
+    guides.push(...pull.guides);
+  }
   if (d.single && c0) {
     // Keep the opposite edge fixed in world space: the new local box's center
     // moved, so rotate its offset back into world coordinates.
