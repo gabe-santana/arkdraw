@@ -30,6 +30,14 @@ const HANDLES = [
   ['w', 0, 0.5, 'ew-resize'],
 ] as const;
 
+/** Each side of the frame, between two corners (as fractions of the frame). */
+const EDGES = [
+  ['n', [0, 0], [1, 0], 'ns-resize'],
+  ['e', [1, 0], [1, 1], 'ew-resize'],
+  ['s', [0, 1], [1, 1], 'ns-resize'],
+  ['w', [0, 0], [0, 1], 'ew-resize'],
+] as const;
+
 const ACCENT = 'var(--selection)';
 const GUIDE = '#f43f5e';
 const CURSORS = ['ns-resize', 'nesw-resize', 'ew-resize', 'nwse-resize'];
@@ -117,6 +125,37 @@ export function OverlayLayer({ freehand }: { freehand?: Vec[] | null }) {
             {shapes.length > 1 && (
               <rect x={frame.x} y={frame.y} width={frame.w} height={frame.h} fill="none" stroke={ACCENT} strokeWidth={1 * px} strokeDasharray={`${4 * px} ${3 * px}`} />
             )}
+            {/* The whole edge resizes too, not only its middle handle: width on the sides, height on top and bottom. */}
+            {canResize &&
+              EDGES.map(([id, a, b, cursor]) => (
+                <line
+                  key={`edge-${id}`}
+                  data-handle={id}
+                  {...pts('x1', 'y1', at(a[0], a[1]))}
+                  {...pts('x2', 'y2', at(b[0], b[1]))}
+                  stroke="transparent"
+                  strokeWidth={8 * px}
+                  style={{ cursor: rotatedCursor(cursor, frame.rot), pointerEvents: 'stroke' }}
+                />
+              ))}
+            {/* Corners resize width and height together; their grab area is wider than the visible handle. */}
+            {canResize &&
+              HANDLES.filter(([id]) => id.length === 2).map(([id, fx, fy, cursor]) => {
+                const p = at(fx, fy);
+                return (
+                  <rect
+                    key={`corner-${id}`}
+                    data-handle={id}
+                    x={p.x - 8 * px}
+                    y={p.y - 8 * px}
+                    width={16 * px}
+                    height={16 * px}
+                    fill="transparent"
+                    transform={frame.rot ? `rotate(${frame.rot} ${p.x} ${p.y})` : undefined}
+                    style={{ cursor: rotatedCursor(cursor, frame.rot), pointerEvents: 'all' }}
+                  />
+                );
+              })}
             {canRotate && (
               <g data-rotate style={{ pointerEvents: 'all', cursor: 'grab' }}>
                 <line {...pts('x1', 'y1', at(0.5, 0))} {...pts('x2', 'y2', rotatePoint({ x: frameCenter!.x, y: frame.y - 22 * px }, frameCenter!, frame.rot))} stroke={ACCENT} strokeWidth={1 * px} />
