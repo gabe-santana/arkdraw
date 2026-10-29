@@ -47,8 +47,12 @@ describe('specToElements', () => {
     // Connectors are on top.
     const firstConn = elements.findIndex(isConnector);
     expect(elements.slice(firstConn).every(isConnector)).toBe(true);
-    // Provider-style container colors.
-    expect((byId.get(idMap.get('vpc')!) as ShapeElement).style.stroke).toBe('#8C4FFF');
+    // Every group shares one look: VPC, subnets, cloud.
+    const looks = ['vpc', 'pub', 'priv'].map((id) => {
+      const { stroke, fill, strokeStyle } = (byId.get(idMap.get(id)!) as ShapeElement).style;
+      return `${stroke} ${fill} ${strokeStyle}`;
+    });
+    expect(new Set(looks)).toEqual(new Set(['#232F3E none solid']));
   });
 
   it('applies C4 conventions and text format', () => {

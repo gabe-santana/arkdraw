@@ -1,6 +1,6 @@
 /**
  * Cloud and network groups (AWS cloud, VPC, Azure subscription, VNet,
- * subnets…): their colors, their official logo from the installed icon
+ * subnets…): their shared style, their official logo from the installed icon
  * packs, and the catalog offered in the library. Shared by the AI diagram
  * builder and the shapes panel. Icon paths point into `public/icons`, which
  * is downloaded by `npm run icons:fetch`, never committed.
@@ -11,25 +11,16 @@ import { createShape } from '@/model/defaults';
 /** Logo size in a group's top-left corner. */
 export const GROUP_ICON_SIZE = 24;
 
-/** Group colors for cloud/network containers, matched on the label. */
-const GROUP_STYLES: Array<[RegExp, Partial<ElementStyle>]> = [
-  [/security group/i, { stroke: '#DD344C', fill: 'none', strokeStyle: 'dashed' }],
-  [/public.*subnet|subnet.*public|\bdmz\b/i, { stroke: '#7AA116', fill: '#F2F6E8' }],
-  [/subnet/i, { stroke: '#00A4A6', fill: '#E6F6F7' }],
-  [/\bvpc\b|\bvnet\b|virtual network|\bvcn\b/i, { stroke: '#8C4FFF', fill: 'none' }],
-  [/availability zone|\baz\b|\bzone\b/i, { stroke: '#147EBA', fill: 'none', strokeStyle: 'dashed' }],
-  [/region/i, { stroke: '#00A4A6', fill: 'none', strokeStyle: 'dashed' }],
-  [/resource group|compartment|\bproject\b/i, { stroke: '#767676', fill: 'none', strokeStyle: 'dashed' }],
-  [/kubernetes|\bk8s\b|\baks\b|\beks\b|\bgke\b|cluster|namespace/i, { stroke: '#326CE5', fill: '#EEF3FD' }],
-  [/on-?prem|data ?cent(er|re)|corporate|office/i, { stroke: '#5A6B86', fill: '#F4F5F7' }],
-  [/aws|azure|google cloud|\bgcp\b|oracle|\boci\b|cloud|account|subscription|tenant/i, { stroke: '#232F3E', fill: 'none' }],
-];
+/**
+ * One look for every group (cloud, subscription, VPC, subnet, resource group…):
+ * a solid outline and a bold title in the same color, no fill, so nested groups
+ * read as one system. The official logo and the label tell them apart.
+ */
+const GROUP_COLOR = '#232F3E';
 
-/** Style of a group box for this label: provider colors, title in the stroke color. */
-export function groupStyle(label: string): Partial<ElementStyle> {
-  const base: Partial<ElementStyle> = { textAlign: 'left', verticalAlign: 'middle', bold: true, fontSize: 13, radius: 10, strokeWidth: 1.5 };
-  const group = GROUP_STYLES.find(([re]) => re.test(label))?.[1] ?? { stroke: '#94a3b8', fill: '#f8fafc' };
-  return { ...base, ...group, textColor: group.stroke };
+/** Style of a group box; the same for every label. */
+export function groupStyle(_label: string): Partial<ElementStyle> {
+  return { textAlign: 'left', verticalAlign: 'middle', bold: true, fontSize: 13, radius: 10, strokeWidth: 1.5, stroke: GROUP_COLOR, fill: 'none', strokeStyle: 'solid', textColor: GROUP_COLOR };
 }
 
 /**
