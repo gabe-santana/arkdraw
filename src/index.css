@@ -246,6 +246,27 @@
 }
 
 /* Group / ungroup feedback: quick, quiet confirmations. */
+/* Connection points light up under the pointer: dragging from one starts a connector
+   (the rest of a selected shape's edge resizes it). */
+.od-anchor-dot,
+.od-cpoint-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.12s ease, fill 0.12s ease, opacity 0.12s ease;
+}
+[data-anchor]:hover .od-anchor-dot {
+  transform: scale(1.5);
+  fill: var(--selection);
+}
+.od-cpoint-ring {
+  opacity: 0;
+  transform: scale(0.6);
+}
+[data-cpoint]:hover .od-cpoint-ring {
+  opacity: 1;
+  transform: scale(1);
+}
+
 @keyframes od-flash-group {
   0% {
     opacity: 0;

@@ -413,7 +413,10 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
       // Hover: reveal anchor dots / quick-connect arrows on the shape under the cursor.
       if (s.tool === 'select' || s.tool === 'connector') {
         const t = e.target as Element;
-        const id = attr(t, 'data-anchor-el') ?? attr(t, 'data-quick-el') ?? t.closest('[data-el]')?.getAttribute('data-el') ?? null;
+        // On a resize edge or corner the shape stays hovered, so its connection points stay
+        // within reach on top of the edge (they start a connector; the rest of the edge resizes).
+        const onFrame = !!t.closest('[data-handle]');
+        const id = attr(t, 'data-anchor-el') ?? attr(t, 'data-quick-el') ?? t.closest('[data-el]')?.getAttribute('data-el') ?? (onFrame ? (s.hoverId ?? (s.selection.length === 1 ? s.selection[0] : null)) : null);
         const hover = id && isShape(s.doc.elements[id]) ? id : null;
         if (hover !== s.hoverId) useEditor.setState({ hoverId: hover });
         setHoverCursor(s.tool === 'select' ? segmentHoverCursor(t, p) : null);

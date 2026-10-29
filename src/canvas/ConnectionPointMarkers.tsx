@@ -9,7 +9,7 @@ import { labelAt, type ConnectorGeometry } from '@/lib/connectorGeometry';
 
 const ACCENT = 'var(--selection)';
 
-export function ConnectionPointMarkers({ shape, z, highlight }: { shape: ShapeElement; z: number; highlight: boolean }) {
+export function ConnectionPointMarkers({ shape, z, highlight, cornersResize = false }: { shape: ShapeElement; z: number; highlight: boolean; cornersResize?: boolean }) {
   const px = 1 / z;
   const k = 3.2 * px;
   return (
@@ -19,9 +19,18 @@ export function ConnectionPointMarkers({ shape, z, highlight }: { shape: ShapeEl
         .filter((f) => !sideOfFraction(f))
         .map((f) => {
           const p = fractionToWorld(shape, f);
+          // On a selected shape a corner resizes: its point stays visible but takes no pointer.
+          const corner = cornersResize && (f.x === 0 || f.x === 1) && (f.y === 0 || f.y === 1);
           return (
-            <g key={`${f.x},${f.y}`} data-cpoint={`${f.x},${f.y}`} data-cpoint-el={shape.id} data-anchor-el={shape.id} style={{ pointerEvents: 'all', cursor: 'crosshair' }}>
+            <g
+              key={`${f.x},${f.y}`}
+              data-cpoint={`${f.x},${f.y}`}
+              data-cpoint-el={shape.id}
+              data-anchor-el={shape.id}
+              style={{ pointerEvents: corner ? 'none' : 'all', cursor: 'crosshair' }}
+            >
               <circle cx={p.x} cy={p.y} r={8 * px} fill="transparent" />
+              <circle className="od-cpoint-ring" cx={p.x} cy={p.y} r={6 * px} fill={ACCENT} fillOpacity={0.18} stroke={ACCENT} strokeWidth={1.25 * px} />
               <path
                 d={`M${p.x - k},${p.y - k} L${p.x + k},${p.y + k} M${p.x - k},${p.y + k} L${p.x + k},${p.y - k}`}
                 stroke={ACCENT}

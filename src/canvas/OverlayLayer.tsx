@@ -205,7 +205,15 @@ export function OverlayLayer({ freehand }: { freehand?: Vec[] | null }) {
           ))}
 
         {/* Anchor dots + quick-connect arrows */}
-        {showAnchorsFor && <Anchors shape={showAnchorsFor} z={z} highlight={!!draft || endpointDrag} quick={!draft && !dragging && tool === 'select'} />}
+        {showAnchorsFor && (
+          <Anchors
+            shape={showAnchorsFor}
+            z={z}
+            highlight={!!draft || endpointDrag}
+            quick={!draft && !dragging && tool === 'select'}
+            cornersResize={canResize && !draft && selected.includes(showAnchorsFor)}
+          />
+        )}
 
         {/* Connect preview */}
         {draft && (
@@ -303,7 +311,8 @@ function GapGuide({ g, px }: { g: { axis: 'x' | 'y'; at: number; from: number; t
 const pts = (kx: string, ky: string, p: Vec) => ({ [kx]: p.x, [ky]: p.y });
 const cxy = (p: Vec) => ({ cx: p.x, cy: p.y });
 
-function Anchors({ shape, z, highlight, quick }: { shape: ShapeElement; z: number; highlight: boolean; quick: boolean }) {
+/** `cornersResize`: the shape's corner handles are live, so points on the corners leave the pointer to them. */
+function Anchors({ shape, z, highlight, quick, cornersResize }: { shape: ShapeElement; z: number; highlight: boolean; quick: boolean; cornersResize: boolean }) {
   const r = shapeRect(shape);
   const c = center(shape);
   const rot = shape.rotation ?? 0;
@@ -319,7 +328,7 @@ function Anchors({ shape, z, highlight, quick }: { shape: ShapeElement; z: numbe
           <g key={side}>
             <g data-anchor={side} data-anchor-el={shape.id} style={{ pointerEvents: 'all', cursor: 'crosshair' }}>
               <circle cx={p.x} cy={p.y} r={10 * px} fill="transparent" />
-              <circle cx={p.x} cy={p.y} r={(highlight ? 5 : 4.5) * px} fill={highlight ? ACCENT : '#ffffff'} stroke={ACCENT} strokeWidth={1.5 * px} />
+              <circle className="od-anchor-dot" cx={p.x} cy={p.y} r={(highlight ? 5 : 4.5) * px} fill={highlight ? ACCENT : '#ffffff'} stroke={ACCENT} strokeWidth={1.5 * px} />
             </g>
             {quick && (
               <g data-quick={side} data-quick-el={shape.id} style={{ pointerEvents: 'all', cursor: 'pointer' }} transform={`translate(${arrowAt.x} ${arrowAt.y}) rotate(${angle})`}>
@@ -337,7 +346,7 @@ function Anchors({ shape, z, highlight, quick }: { shape: ShapeElement; z: numbe
           </g>
         );
       })}
-      <ConnectionPointMarkers shape={shape} z={z} highlight={highlight} />
+      <ConnectionPointMarkers shape={shape} z={z} highlight={highlight} cornersResize={cornersResize} />
     </g>
   );
 }
