@@ -58,6 +58,79 @@ export function perimeterPoint(s: ShapeElement, toward: Vec): Vec {
   return rotatePoint({ x: c.x + d.x * t, y: c.y + d.y * t }, c, s.rotation ?? 0);
 }
 
+/** Half-planes n·(u, v) <= 1 bounding a shape in its unit frame (rect and diamond outlines). */
+const HALF_PLANES: Record<'rect' | 'diamond', Vec[]> = {
+  rect: [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }],
+  diamond: [{ x: 1, y: 1 }, { x: 1, y: -1 }, { x: -1, y: 1 }, { x: -1, y: -1 }],
+};
+
+/**
+ * Where segment p→q first enters `shape`'s outline, as a fraction along it,
+ * or null when it doesn't run into the shape (grazing an edge or ending on it
+ * doesn't count). Exact for rectangles, ellipses and diamonds at any rotation.
+ */
+function entryAlong(shape: ShapeElement, p: Vec, q: Vec): number | null {
+  const len = dist(p, q);
+  if (len < 1e-6 || shape.w < 1e-6 || shape.h < 1e-6) return null;
+  const c = center(rectOf(shape));
+  const deg = shape.rotation ?? 0;
+  // The shape's unit frame: centered, unrotated, scaled so the outline is |u|,|v| <= 1 (or u²+v² <= 1…).
+  const unit = (v: Vec) => {
+    const l = rotatePoint(v, c, -deg);
+    return { x: (l.x - c.x) / (shape.w / 2), y: (l.y - c.y) / (shape.h / 2) };
+  };
+  const a = unit(p);
+  const d = sub(unit(q), a);
+  const kind = getShapeDef(shape.kind).perimeter ?? 'rect';
+  let enter = 0;
+  let exit = 1;
+  if (kind === 'ellipse') {
+    // |a + t·d|² = 1
+    const A = d.x * d.x + d.y * d.y;
+    const B = 2 * (a.x * d.x + a.y * d.y);
+    const C = a.x * a.x + a.y * a.y - 1;
+    const disc = B * B - 4 * A * C;
+    if (disc <= 0) return null;
+    const r = Math.sqrt(disc);
+    enter = Math.max(0, (-B - r) / (2 * A));
+    exit = Math.min(1, (-B + r) / (2 * A));
+  } else {
+    // Cyrus–Beck against the outline's half-planes.
+    for (const n of HALF_PLANES[kind]) {
+      const num = 1 - (n.x * a.x + n.y * a.y);
+      const den = n.x * d.x + n.y * d.y;
+      if (Math.abs(den) < 1e-12) {
+        if (num < 0) return null;
+        continue;
+      }
+      const t = num / den;
+      if (den > 0) exit = Math.min(exit, t);
+      else enter = Math.max(enter, t);
+    }
+  }
+  // Inside for more than a pixel, and coming from outside (a route that starts inside is left alone).
+  if ((exit - enter) * len < 1 || enter * len < 0.5) return null;
+  return enter;
+}
+
+/**
+ * A connector stops where it first reaches the shape it ends on: when the
+ * route runs into that shape before its end (whatever left it so: a move, a
+ * resize, a rotation, an old file…), it is cut at the outline there.
+ */
+function stopAtEndShape(points: Vec[], shape: ShapeElement | undefined): Vec[] {
+  if (!shape || points.length < 2) return points;
+  for (let k = 0; k < points.length - 1; k++) {
+    const t = entryAlong(shape, points[k], points[k + 1]);
+    if (t === null) continue;
+    const at = { x: points[k].x + (points[k + 1].x - points[k].x) * t, y: points[k].y + (points[k + 1].y - points[k].y) * t };
+    // Already the end, reached from outside: nothing to cut.
+    if (k === points.length - 2 && dist(at, points[k + 1]) < 1) return points;
+    return [...points.slice(0, k + 1), at];
+  }
+  return points;
+}
+
 function shapeAt(e: Endpoint, lookup: Lookup): ShapeElement | undefined {
   if (!e.elementId) return undefined;
   const el = lookup(e.elementId);
@@ -364,12 +437,20 @@ export function connectorGeometry(conn: ConnectorElement, lookup: Lookup, obstac
     default:
       points = wps.length ? orthoThrough(a, b, wps) : routeOrthogonal(a, b, obstacles);
   }
+  // Never through the shapes it connects: stop at the first contact with each end's shape.
+  points = stopAtEndShape(points, shapeAt(conn.target, lookup));
+  points = stopAtEndShape([...points].reverse(), shapeAt(conn.source, lookup)).reverse();
+  return polylineGeometry(conn, points, jumps);
+}
+
+/** The drawing of a polyline connector through `points`: path (arrow insets, rounded bends, jumps), ends and label. */
+export function polylineGeometry(conn: ConnectorElement, points: Vec[], jumps: Vec[] = []): ConnectorGeometry {
   const n = points.length;
   const startDir = normalize(sub(points[0], points[1]));
   const endDir = normalize(sub(points[n - 1], points[n - 2]));
   const drawn = points.slice();
-  drawn[0] = shorten(points[0], startDir, startInset);
-  drawn[n - 1] = shorten(points[n - 1], endDir, endInset);
+  drawn[0] = shorten(points[0], startDir, arrowInset(conn.startArrow, conn.style.strokeWidth, conn.startSize));
+  drawn[n - 1] = shorten(points[n - 1], endDir, arrowInset(conn.endArrow, conn.style.strokeWidth, conn.endSize));
   const jumpStyle = conn.lineJumps && conn.lineJumps !== 'none' ? conn.lineJumps : 'arc';
   return {
     points,

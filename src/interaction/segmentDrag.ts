@@ -1,10 +1,11 @@
 /**
  * Dragging one segment of an orthogonal connector sideways, like mxGraph:
  * hover a segment (the cursor turns into a resize cursor), drag it, and it
- * snaps to positions that remove bends. An end attached to a shape never
- * moves: the connector still leaves it at the same point, by a short stub,
- * and turns to reach the dragged segment (so a straight connector becomes a
- * detour, and an L or Z can be shaped from it). A free end follows the segment.
+ * snaps to positions that remove bends. The first or last segment slides its
+ * end along the shape's edge (past the shape, into the side facing it). A
+ * straight connector keeps both ends: it leaves them by a short stub and turns
+ * to reach the dragged segment (a detour, from which an L or Z can be shaped).
+ * A free end follows the segment.
  * A middle segment dragged across a shape at either end (level with it, or
  * under it) makes the connector enter that shape from the side the segment
  * comes from, at that spot, and drops the rest of the detour: the route stays
@@ -12,9 +13,10 @@
  * any drag (or a move of the shapes, uncrossConnector), the connector stops
  * where it first reaches its end's shape, on the edge it hits.
  */
-import type { ConnectorElement, DiagramElement, Endpoint, ShapeElement, Vec } from '@/model/types';
+import type { ConnectorElement, DiagramElement, Endpoint, Rect, ShapeElement, Vec } from '@/model/types';
+import { rotatedBounds } from '@/lib/geometry';
 import { endpointAtFraction, fractionToWorld, worldToFraction } from '@/lib/connectionPoints';
-import { connectorGeometryInDoc } from '@/lib/connectorGeometry';
+import { connectorGeometryInDoc, endpointPositions } from '@/lib/connectorGeometry';
 import type { Guide } from '@/store/editor';
 
 export interface SegmentHit {
@@ -23,14 +25,16 @@ export interface SegmentHit {
   horizontal: boolean;
 }
 
-type EndKind = { kind: 'free' } | { kind: 'shape'; shape: ShapeElement } | { kind: 'locked' };
+/** An end on a shape, with the box the shape covers on screen (`box`, its rotation applied). */
+type EndKind = { kind: 'free' } | { kind: 'shape'; shape: ShapeElement; box: Rect } | { kind: 'locked' };
 
 function endKind(e: Endpoint, elements: Record<string, DiagramElement>): EndKind {
   if (!e.elementId) return { kind: 'free' };
   const el = elements[e.elementId];
-  // Rotated shapes and connector-to-connector ends keep their attachment as it is.
-  if (!el || el.type !== 'shape' || el.rotation) return { kind: 'locked' };
-  return { kind: 'shape', shape: el };
+  // Shapes turned by a right angle are still boxes on screen; other angles and connector-to-connector
+  // ends keep their attachment as it is.
+  if (!el || el.type !== 'shape' || (el.rotation ?? 0) % 90 !== 0) return { kind: 'locked' };
+  return { kind: 'shape', shape: el, box: rotatedBounds(el) };
 }
 
 const axisOf = (horizontal: boolean): 'x' | 'y' => (horizontal ? 'y' : 'x');
@@ -64,6 +68,40 @@ export function canDragSegment(conn: ConnectorElement, points: Vec[], index: num
 /** How far an attached end's stub reaches before the route turns towards the dragged segment. */
 const STUB = 20;
 
+/**
+ * `route` ends on `kind`'s shape with a last segment just moved along `axis`.
+ * Over the shape, its end slides along the edge with it. Past the shape, the
+ * segment runs on to the side facing it and turns into that side, as deep as
+ * it went past (up to the side's middle). Updates `route`; returns the end.
+ */
+function slideAlong(kind: EndKind, route: Vec[], axis: 'x' | 'y'): Endpoint | null {
+  if (kind.kind !== 'shape') return null;
+  const n = route.length;
+  const end = route[n - 1];
+  const b = kind.box;
+  const other: 'x' | 'y' = axis === 'x' ? 'y' : 'x';
+  const [lo, size] = axis === 'x' ? [b.x, b.w] : [b.y, b.h];
+  const [olo, osize] = other === 'x' ? [b.x, b.w] : [b.y, b.h];
+  const c = end[axis];
+  const past = c > lo + size ? c - (lo + size) : c < lo ? c - lo : 0;
+  let at: Vec = end;
+  if (Math.abs(past) >= 0.5) {
+    const side = past > 0 ? lo + size : lo;
+    // Into the shape from the edge it was on, by how far the segment went past (the side's middle at most).
+    const into = Math.sign(olo + osize / 2 - end[other]) || 1;
+    const depth = Math.min(Math.abs(past), osize / 2);
+    at = { [axis]: side, [other]: end[other] + into * depth } as unknown as Vec;
+  }
+  const ep = endpointAtFraction(kind.shape, worldToFraction(kind.shape, at));
+  // Where the point is drawn (from its rounded fraction), so the route lines up with it exactly.
+  const drawn = ep.fixed ? fractionToWorld(kind.shape, ep.fixed) : { x: ep.x, y: ep.y };
+  if (at === end) {
+    route[n - 1] = { ...drawn };
+    route[n - 2][axis] = drawn[axis];
+  } else route.splice(n - 1, 1, { [axis]: c, [other]: drawn[other] } as unknown as Vec, { ...drawn });
+  return { ...ep, ...drawn };
+}
+
 /** The point `STUB` along the segment from `end` towards `next` (or a third of the way when shorter). */
 function stubFrom(end: Vec, next: Vec): Vec {
   const len = Math.hypot(next.x - end.x, next.y - end.y) || 1;
@@ -73,8 +111,12 @@ function stubFrom(end: Vec, next: Vec): Vec {
 
 /**
  * Moves segment `index` of `base` (the route when the drag started) to the
- * coordinate `c` across it. Attached ends stay where they are (the route
- * leaves them by a stub, then turns); free ends follow. Returns the patch.
+ * coordinate `c` across it. The first or last segment slides its end along
+ * the edge it is attached to, staying straight; dragged past the shape, it
+ * turns once more and enters the side facing it (deeper the further it goes,
+ * so nothing jumps). A connector that is one straight segment keeps both ends
+ * where they are instead: the route leaves them by a stub and turns. Free ends
+ * follow. Returns the patch.
  */
 export function dragSegment(
   conn: ConnectorElement,
@@ -86,23 +128,36 @@ export function dragSegment(
 ): { patch: Partial<ConnectorElement>; at: number } | null {
   const axis = axisOf(horizontal);
   const last = base.length - 2;
-  const freeStart = index === 0 && endKind(conn.source, elements).kind === 'free';
-  const freeEnd = index === last && endKind(conn.target, elements).kind === 'free';
+  const startKind = endKind(conn.source, elements);
+  const endKindT = endKind(conn.target, elements);
+  const freeStart = index === 0 && startKind.kind === 'free';
+  const freeEnd = index === last && endKindT.kind === 'free';
+  // The first or last segment of a route with bends slides its end along the edge it is on.
+  const slideStart = index === 0 && last > 0 && startKind.kind === 'shape';
+  const slideEnd = index === last && last > 0 && endKindT.kind === 'shape';
   const pts = base.map((v) => ({ ...v }));
   let i = index;
-  // An attached start: keep it, add its stub (stays on the line) and the turn (moves with the segment).
-  if (index === 0 && !freeStart) {
+  // An end that can't slide (a single straight segment): keep it, add its stub (stays on the line) and the
+  // turn (moves with the segment).
+  if (index === 0 && !freeStart && !slideStart) {
     const s = stubFrom(pts[0], pts[1]);
     pts.splice(1, 0, { ...s }, { ...s });
     i += 2;
   }
-  if (index === last && !freeEnd) {
+  if (index === last && !freeEnd && !slideEnd) {
     const n = pts.length;
     const s = stubFrom(pts[n - 1], pts[n - 2]);
     pts.splice(n - 1, 0, { ...s }, { ...s });
   }
   pts[i][axis] = c;
   pts[i + 1][axis] = c;
+  const slid: { source: Endpoint | null; target: Endpoint | null } = { source: null, target: null };
+  if (slideEnd) slid.target = slideAlong(endKindT, pts, axis);
+  if (slideStart) {
+    pts.reverse();
+    slid.source = slideAlong(startKind, pts, axis);
+    pts.reverse();
+  }
   const patch: Partial<ConnectorElement> = {};
   let from = 1;
   let to = pts.length - 1;
@@ -136,6 +191,8 @@ export function dragSegment(
     full = source.route.reverse();
   }
   patch.waypoints = dropDoublings(full).slice(1, -1);
+  if (slid.source && !source && !enterSource) patch.source = slid.source;
+  if (slid.target && !target && !enterTarget) patch.target = slid.target;
   if (freeStart) patch.source = { ...conn.source, [axis]: c };
   if (freeEnd) patch.target = { ...conn.target, [axis]: c };
   // Ends not touched are written back as they were, undoing an entry made earlier in the same drag.
@@ -152,22 +209,25 @@ export function dragSegment(
  */
 export function uncrossConnector(conn: ConnectorElement, elements: Record<string, DiagramElement>): Partial<ConnectorElement> | null {
   if (conn.routing !== 'orthogonal') return null;
-  let route = connectorGeometryInDoc(conn, elements).points;
+  // The drawing already stops at the first contact (connectorGeometry); this makes the ends say so too.
+  const route = connectorGeometryInDoc(conn, elements).points;
+  const ends = endpointPositions(conn, (id) => elements[id]);
   const patch: Partial<ConnectorElement> = {};
-  const target = uncross(endKind(conn.target, elements), route);
-  if (target) {
-    patch.target = target.end;
-    route = target.route;
-  }
-  const source = uncross(endKind(conn.source, elements), [...route].reverse());
-  if (source) {
-    patch.source = source.end;
-    route = source.route.reverse();
-  }
+  const target = attachAt(endKind(conn.target, elements), route[route.length - 1], ends.b.point);
+  if (target) patch.target = target;
+  const source = attachAt(endKind(conn.source, elements), route[0], ends.a.point);
+  if (source) patch.source = source;
   if (!target && !source) return null;
   // An auto-routed connector stays auto-routed: only its ends change, the router redraws the rest.
   if (conn.waypoints?.length) patch.waypoints = dropDoublings(route).slice(1, -1);
   return patch;
+}
+
+/** The end pinned where the route is drawn to (`drawn`), when that isn't where it was attached (`was`). */
+function attachAt(kind: EndKind, drawn: Vec, was: Vec): Endpoint | null {
+  if (kind.kind !== 'shape' || Math.hypot(drawn.x - was.x, drawn.y - was.y) < 1) return null;
+  const ep = endpointAtFraction(kind.shape, worldToFraction(kind.shape, drawn));
+  return ep.fixed ? { ...ep, ...fractionToWorld(kind.shape, ep.fixed) } : ep;
 }
 
 /**
@@ -208,18 +268,19 @@ function dropDoublings(route: Vec[]): Vec[] {
 function uncross(kind: EndKind, route: Vec[]): { end: Endpoint; route: Vec[] } | null {
   if (kind.kind !== 'shape' || route.length < 2) return null;
   const s = kind.shape;
+  const box = kind.box;
   const inside = (v: number, lo: number, size: number) => v > lo + 0.5 && v < lo + size - 0.5;
   for (let k = 0; k < route.length - 1; k++) {
     const p = route[k];
     const q = route[k + 1];
     // A route that starts inside the shape (overlapping shapes) is left alone.
-    if (inside(p.x, s.x, s.w) && inside(p.y, s.y, s.h)) return null;
+    if (inside(p.x, box.x, box.w) && inside(p.y, box.y, box.h)) return null;
     const horizontal = Math.abs(p.y - q.y) < 0.5;
     if (!horizontal && Math.abs(p.x - q.x) >= 0.5) continue;
     const along: 'x' | 'y' = horizontal ? 'x' : 'y';
     const across: 'x' | 'y' = horizontal ? 'y' : 'x';
-    const [lo, size] = along === 'x' ? [s.x, s.w] : [s.y, s.h];
-    const [alo, asize] = across === 'x' ? [s.x, s.w] : [s.y, s.h];
+    const [lo, size] = along === 'x' ? [box.x, box.w] : [box.y, box.h];
+    const [alo, asize] = across === 'x' ? [box.x, box.w] : [box.y, box.h];
     // Level with the shape, and running into it (not just touching its edge where it ends).
     if (!inside(p[across], alo, asize)) continue;
     const a = Math.min(p[along], q[along]);
@@ -248,15 +309,16 @@ function uncross(kind: EndKind, route: Vec[]): { end: Endpoint; route: Vec[] } |
 function entry(kind: EndKind, far: Vec, axis: 'x' | 'y', c: number): Endpoint | null {
   if (kind.kind !== 'shape') return null;
   const s = kind.shape;
-  const [lo, size] = axis === 'x' ? [s.x, s.w] : [s.y, s.h];
+  const b = kind.box;
+  const [lo, size] = axis === 'x' ? [b.x, b.w] : [b.y, b.h];
   if (!(c > lo && c < lo + size)) return null;
   const f = (c - lo) / size;
   let at: Vec | null = null;
   if (axis === 'x') {
-    if (far.y >= s.y + s.h) at = { x: c, y: s.y + s.h };
-    else if (far.y <= s.y) at = { x: c, y: s.y };
-  } else if (far.x >= s.x + s.w) at = { x: s.x + s.w, y: c };
-  else if (far.x <= s.x) at = { x: s.x, y: c };
+    if (far.y >= b.y + b.h) at = { x: c, y: b.y + b.h };
+    else if (far.y <= b.y) at = { x: c, y: b.y };
+  } else if (far.x >= b.x + b.w) at = { x: b.x + b.w, y: c };
+  else if (far.x <= b.x) at = { x: b.x, y: c };
   if (!at || !Number.isFinite(f)) return null;
   const ep = endpointAtFraction(s, worldToFraction(s, at));
   // Where the point is drawn: from its stored (rounded) fraction.
@@ -284,8 +346,8 @@ export function snapSegment(
   const shapeCenter = (e: Endpoint) => {
     const k = endKind(e, elements);
     if (k.kind !== 'shape') return;
-    const s = k.shape;
-    candidates.push({ at: horizontal ? s.y + s.h / 2 : s.x + s.w / 2, span: horizontal ? [s.x, s.x + s.w] : [s.y, s.y + s.h] });
+    const b = k.box;
+    candidates.push({ at: horizontal ? b.y + b.h / 2 : b.x + b.w / 2, span: horizontal ? [b.x, b.x + b.w] : [b.y, b.y + b.h] });
   };
   shapeCenter(conn.source);
   shapeCenter(conn.target);

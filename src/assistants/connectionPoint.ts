@@ -8,7 +8,7 @@
 import type { Endpoint, ShapeElement, Vec } from '@/model/types';
 import { endpointAtFraction, outlineFraction, worldToFraction, fractionToWorld } from '@/lib/connectionPoints';
 import { getShapeDef } from '@/shapes/registry';
-import { dist } from '@/lib/geometry';
+import { dist, rotatedBounds } from '@/lib/geometry';
 
 /** Screen px from the outline within which a drop makes a point right there. */
 export const OUTLINE_REACH = 14;
@@ -22,7 +22,7 @@ const CORNER = 0.03;
  * `other`, or null to leave the end floating (the connector then picks a side).
  */
 export function connectionPointFor(shape: ShapeElement, p: Vec, other: Vec | undefined, z: number): Endpoint | null {
-  if (shape.rotation) return null;
+  if ((shape.rotation ?? 0) % 90 !== 0) return null;
   // The other end faces a side: put the point level with it, so the connector runs straight.
   const straight = straightPoint(shape, other);
   if (straight) return straight;
@@ -37,18 +37,15 @@ export function connectionPointFor(shape: ShapeElement, p: Vec, other: Vec | und
  * side it faces (rectangular outlines only), or null when it faces a corner.
  */
 export function straightPoint(shape: ShapeElement, other: Vec | undefined): Endpoint | null {
-  if (!other || shape.rotation || (getShapeDef(shape.kind).perimeter ?? 'rect') !== 'rect') return null;
-  const { x, y, w, h } = shape;
+  if (!other || (shape.rotation ?? 0) % 90 !== 0 || (getShapeDef(shape.kind).perimeter ?? 'rect') !== 'rect') return null;
+  // The box on screen (a shape turned by a right angle is still one).
+  const { x, y, w, h } = rotatedBounds(shape);
   const within = (v: number, lo: number, size: number) => v > lo + size * CORNER && v < lo + size * (1 - CORNER);
-  let f: Vec | null = null;
-  if (within(other.y, y, h) && other.x <= x) f = { x: 0, y: (other.y - y) / h };
-  else if (within(other.y, y, h) && other.x >= x + w) f = { x: 1, y: (other.y - y) / h };
-  else if (within(other.x, x, w) && other.y <= y) f = { x: (other.x - x) / w, y: 0 };
-  else if (within(other.x, x, w) && other.y >= y + h) f = { x: (other.x - x) / w, y: 1 };
-  return f ? endpointAtFraction(shape, unflip(shape, f)) : null;
-}
-
-/** Fractions are stored in the shape's unflipped frame. */
-function unflip(shape: ShapeElement, f: Vec): Vec {
-  return worldToFraction(shape, { x: shape.x + f.x * shape.w, y: shape.y + f.y * shape.h });
+  let at: Vec | null = null;
+  if (within(other.y, y, h) && other.x <= x) at = { x, y: other.y };
+  else if (within(other.y, y, h) && other.x >= x + w) at = { x: x + w, y: other.y };
+  else if (within(other.x, x, w) && other.y <= y) at = { x: other.x, y };
+  else if (within(other.x, x, w) && other.y >= y + h) at = { x: other.x, y: y + h };
+  // Stored in the shape's own frame (unflipped, unrotated).
+  return at ? endpointAtFraction(shape, worldToFraction(shape, at)) : null;
 }

@@ -29,17 +29,35 @@ describe('segment dragging', () => {
     expect(canDragSegment({ ...conn, routing: 'straight' }, points, 0, elements)).toBe(false);
   });
 
-  it('keeps an attached end where it is: the dragged end segment detours by a stub', () => {
-    const { conn, elements, points } = zRoute();
-    const res = dragSegment(conn, points, 0, true, 50, elements)!;
-    expect(res.at).toBe(50);
-    expect(res.patch.source).toEqual(conn.source);
+  it('slides an attached end along its edge with the end segment, which stays straight', () => {
+    const { a, conn, elements, points } = zRoute();
+    const res = dragSegment(conn, points, 0, true, 40, elements)!;
+    expect(res.at).toBe(40);
     const next = { ...conn, ...res.patch } as ConnectorElement;
     const route = connectorGeometryInDoc(next, { ...elements, [conn.id]: next }).points;
-    // Same start, a short stub along the original direction, then down to the dragged height.
-    expect(route[0]).toEqual(points[0]);
-    expect(route[1]).toEqual({ x: points[0].x + 20, y: points[0].y });
-    expect(route.some((p) => p.y === 50)).toBe(true);
+    // Still on A's right edge, now level with the dragged segment: no stub, no extra bend.
+    expect(route[0].x).toBe(a.x + a.w);
+    expect(route[0].y).toBeCloseTo(40, 1);
+    expect(route[1].y).toBeCloseTo(route[0].y, 1);
+    expect(route).toHaveLength(points.length);
+  });
+
+  it('past the shape, the end segment turns into the side facing it, gradually (nothing jumps)', () => {
+    const { a, conn, elements, points } = zRoute();
+    const routeAt = (c: number) => {
+      const next = { ...conn, ...dragSegment(conn, points, 0, true, c, elements)!.patch } as ConnectorElement;
+      return connectorGeometryInDoc(next, { ...elements, [conn.id]: next }).points;
+    };
+    // Far below A: leaves A's bottom (at most its middle), goes down, then on as before.
+    const far = routeAt(150);
+    expect(far[0]).toEqual({ x: a.x + a.w / 2, y: a.y + a.h });
+    expect(far[1]).toEqual({ x: a.x + a.w / 2, y: 150 });
+    // Just past the corner, the end has moved only as far as the segment did.
+    const near = routeAt(a.y + a.h + 4);
+    expect(near[0].x).toBeCloseTo(a.x + a.w - 4, 1);
+    expect(near[0].y).toBe(a.y + a.h);
+    // And never through A.
+    for (const r of [far, near]) expect(r.every((p) => !(p.x > a.x + 1 && p.x < a.x + a.w - 1 && p.y > a.y + 1 && p.y < a.y + a.h - 1))).toBe(true);
   });
 
   it('snaps a dragged segment to line up with the far end', () => {
