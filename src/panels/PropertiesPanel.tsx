@@ -43,31 +43,41 @@ export function PropertiesPanel() {
     <aside aria-label={t('panels.formatPanel')} className={cn('pointer-events-auto flex min-h-0 max-h-full w-full flex-col overflow-hidden', card)}>
       <Header selected={selected} />
       <div className="scroll-thin flex-1 overflow-y-auto pb-2">
+        {/* Nothing selected: the page and the canvas. */}
         {!selected.length && <PageSection />}
         {!selected.length && <CanvasSettings />}
-        {shapes.length === 1 && <Geometry shape={shapes[0]} />}
-        {selected.length === 1 && shapes[0]?.table && <TableSection el={shapes[0]} />}
-        {selected.length === 1 && shapes[0]?.kind === 'freehand' && <FreehandSection el={shapes[0]} />}
-        {selected.length === 1 && shapes[0]?.kind === 'image' && <ImageSection el={shapes[0]} />}
-        {shapes.length > 0 && <TransformSection els={shapes} />}
-        {shapes.length > 0 && <ShapeParamsSection els={shapes} />}
-        {selected.length > 1 && <Arrange multi={shapes.length} />}
-        {connectors.length > 0 && <ConnectorSection connectors={connectors} />}
-        {connectors.length > 0 && <ConnectorRouteSection connectors={connectors} />}
-        {connectors.length === 1 && !shapes.length && <ConnectorLabelsSection conn={connectors[0]} />}
-        {shapes.length === 1 && !connectors.length && <ConnectionPointsSection shape={shapes[0]} />}
+
+        {/* Sections in mxGraph's order: Style, then Text, then Arrange; data, animation and behavior last. */}
+        {/* Style */}
         {selected.length > 0 && <StylePresetsSection els={selected} />}
         {shapes.length > 0 && <FillStroke els={shapes} />}
         {connectors.length > 0 && !shapes.length && <StrokeOnly els={connectors} />}
+        {connectors.length > 0 && <ConnectorSection connectors={connectors} />}
+        {connectors.length > 0 && <ConnectorRouteSection connectors={connectors} />}
+        {selected.length === 1 && shapes[0]?.table && <TableSection el={shapes[0]} />}
+        {selected.length === 1 && shapes[0]?.kind === 'freehand' && <FreehandSection el={shapes[0]} />}
+        {selected.length === 1 && shapes[0]?.kind === 'image' && <ImageSection el={shapes[0]} />}
+        {shapes.length > 0 && <ShapeParamsSection els={shapes} />}
         {shapes.length > 0 && <EffectsSection els={shapes} />}
-        {selected.length > 0 && <TextProps els={selected} />}
-        {selected.length > 0 && <TextExtras els={selected} />}
         {selected.length > 0 && <Appearance els={selected} />}
         {selected.length > 0 && <DarkColorsSection els={selected} />}
+
+        {/* Text */}
+        {selected.length > 0 && <TextProps els={selected} />}
+        {selected.length > 0 && <TextExtras els={selected} />}
+        {connectors.length === 1 && !shapes.length && <ConnectorLabelsSection conn={connectors[0]} />}
+
+        {/* Arrange */}
+        {shapes.length === 1 && <Geometry shape={shapes[0]} />}
+        {shapes.length > 0 && <TransformSection els={shapes} />}
+        {selected.length > 1 && <Arrange multi={shapes.length} />}
+        {selected.length === 1 && <Arrange multi={0} />}
+        {shapes.length === 1 && !connectors.length && <ConnectionPointsSection shape={shapes[0]} />}
+
+        {/* Data, animation, behavior */}
         {selected.length === 1 && <DataSection el={selected[0]} />}
         {selected.length === 1 && <TranslationsSection el={selected[0]} />}
         {selected.length > 0 && <AnimationProps els={selected} />}
-        {selected.length === 1 && <Arrange multi={0} />}
         {selected.length > 0 && <BehaviorSection key={selected.map((e) => e.id).join()} els={selected} />}
       </div>
     </aside>
