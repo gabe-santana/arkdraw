@@ -4,12 +4,13 @@
  * another position, or use the grip's menu; the layout is persisted with the
  * rest of the panel state in the UI store.
  *
- * The right column has two tabs: Design (the panels docked there) and AI (the
- * assistant, src/chrome/AiHost.tsx), each with its own width.
+ * The left column stacks its panels as floating cards. The right column is one
+ * full-height card whose tabs are the panels docked there (Design, Layers…)
+ * plus AI (the assistant, src/chrome/AiHost.tsx), which has its own width.
  */
 import { Fragment, lazy, Suspense, useState, type ReactNode } from 'react';
 import { create } from 'zustand';
-import { ArrowDown, ArrowLeftRight, ArrowUp, GripHorizontal, LoaderCircle, RotateCcw, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { ArrowDown, ArrowLeftRight, ArrowUp, GripHorizontal, Layers3, LoaderCircle, RotateCcw, Shapes, SlidersHorizontal, Sparkles } from 'lucide-react';
 import { useUi, type DockLayout, type DockSide, type PanelId } from '@/store/ui';
 import { cn } from '@/lib/cn';
 import { ContextMenu, type MenuEntry } from '@/ui/Menu';
@@ -19,6 +20,7 @@ import { LeftPanel } from '@/panels/LeftPanel';
 import { PropertiesPanel } from '@/panels/PropertiesPanel';
 import { LayersPanel } from '@/panels/LayersPanel';
 import { t, useT } from '@/i18n';
+import { InTabs } from './panelFrame';
 
 export const DEFAULT_DOCK: DockLayout = { left: ['shapes'], right: ['format', 'layers'] };
 
@@ -50,22 +52,26 @@ export function movePanel(id: PanelId, side: DockSide, index: number) {
   const { dock } = useUi.getState();
   const next: DockLayout = { left: dock.left.filter((p) => p !== id), right: dock.right.filter((p) => p !== id) };
   next[side].splice(Math.max(0, Math.min(index, next[side].length)), 0, id);
-  // Dropping on the right shows the Design tab, where the panel landed.
-  useUi.getState().set({ dock: next, ...(side === 'left' ? { leftOpen: true } : { rightOpen: true, aiOpen: false }) });
+  // Dropping on the right shows the panel's tab, where it landed.
+  useUi.getState().set({ dock: next, ...(side === 'left' ? { leftOpen: true } : { rightOpen: true, aiOpen: false, rightPanel: id }) });
 }
 
-/** Toggles the column that holds `id` (View → Shapes panel / Format panel). */
+/** The right column's panel tab (when AI isn't showing). */
+export const activeRightPanel = (s: Pick<UiState, 'dock' | 'rightPanel'>): PanelId | undefined =>
+  s.dock.right.includes(s.rightPanel) ? s.rightPanel : s.dock.right[0];
+
+/** Shows or hides `id` (View → Shapes / Format / Layers): its column on the left, its tab on the right. */
 export function togglePanelColumn(id: PanelId) {
   const s = useUi.getState();
   const side = sideOf(s.dock, id);
   if (side === 'left') s.set({ leftOpen: !s.leftOpen });
-  else if (s.rightOpen && s.aiOpen) s.set({ aiOpen: false });
-  else s.set({ rightOpen: !s.rightOpen });
+  else if (panelColumnOpen(id)) s.set({ rightOpen: false });
+  else s.set({ rightOpen: true, aiOpen: false, rightPanel: id });
 }
 
 export const panelColumnOpen = (id: PanelId) => {
   const s = useUi.getState();
-  return sideOf(s.dock, id) === 'left' ? s.leftOpen : s.rightOpen && !s.aiOpen;
+  return sideOf(s.dock, id) === 'left' ? s.leftOpen : s.rightOpen && !s.aiOpen && activeRightPanel(s) === id;
 };
 
 /** The AI button and Mod+I: open the AI tab, or go back to Design when it's showing. */
@@ -212,14 +218,31 @@ function DropLine({ show }: { show: boolean }) {
   );
 }
 
-function RightTabs({ ai }: { ai: boolean }) {
-  const t = useT();
-  const hasPanels = useUi((s) => s.dock.right.length > 0);
-  const show = (tab: 'design' | 'ai') => useUi.getState().set({ aiOpen: tab === 'ai' });
-  const tabs = [
-    { id: 'design' as const, active: !ai, disabled: !hasPanels, icon: <SlidersHorizontal />, label: t('chrome.rightTabs.design'), hint: t('chrome.rightTabs.designHint'), shortcut: undefined },
-    { id: 'ai' as const, active: ai, disabled: false, icon: <Sparkles />, label: t('chrome.rightTabs.ai'), hint: t('chrome.rightTabs.aiHint'), shortcut: 'Mod+I' },
-  ];
+type RightTab = PanelId | 'ai';
+
+const TAB_ICON: Record<RightTab, ReactNode> = { format: <SlidersHorizontal />, layers: <Layers3 />, shapes: <Shapes />, ai: <Sparkles /> };
+
+function tabLabel(id: RightTab): string {
+  if (id === 'format') return t('chrome.rightTabs.design');
+  if (id === 'layers') return t('common.layers');
+  if (id === 'ai') return t('chrome.rightTabs.ai');
+  return panelName(id);
+}
+
+const TAB_HINT: Partial<Record<RightTab, () => string>> = {
+  format: () => t('chrome.rightTabs.designHint'),
+  layers: () => t('chrome.rightTabs.layersHint'),
+  ai: () => t('chrome.rightTabs.aiHint'),
+};
+
+const TAB_SHORTCUT: Partial<Record<RightTab, string>> = { layers: 'Mod+Shift+L', ai: 'Mod+I' };
+
+/** The tab strip at the top of the right card: one tab per docked panel, then AI. */
+function RightTabs({ ids, active }: { ids: PanelId[]; active: RightTab }) {
+  useT();
+  const [menu, setMenu] = useState<{ id: PanelId; x: number; y: number } | null>(null);
+  const tabs: RightTab[] = [...ids, 'ai'];
+  const show = (tab: RightTab) => useUi.getState().set(tab === 'ai' ? { aiOpen: true } : { aiOpen: false, rightPanel: tab });
   return (
     <div
       role="tablist"
@@ -228,29 +251,56 @@ function RightTabs({ ai }: { ai: boolean }) {
         if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
         e.preventDefault();
         e.stopPropagation();
-        if (hasPanels) show(ai ? 'design' : 'ai');
+        const i = tabs.indexOf(active) + (e.key === 'ArrowRight' ? 1 : -1);
+        show(tabs[(i + tabs.length) % tabs.length]);
       }}
-      className="animate-slide-up pointer-events-auto mb-2 grid h-9 shrink-0 grid-cols-2 gap-0.5 rounded-xl bg-panel p-[3px] shadow-panel"
+      className="flex h-11 shrink-0 items-center gap-0.5 border-b border-line px-1.5"
     >
-      {tabs.map((tab) => (
-        <Tooltip key={tab.id} label={tab.hint} shortcut={tab.shortcut}>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab.active}
-            tabIndex={tab.active ? 0 : -1}
-            disabled={tab.disabled}
-            onClick={() => show(tab.id)}
-            className={cn(
-              'flex min-w-0 items-center justify-center gap-1.5 rounded-[9px] px-2 text-[12.5px] font-medium outline-none transition-[background,color] duration-150 focus-visible:ring-2 focus-visible:ring-accent/50 disabled:opacity-40 [&_svg]:size-3.5 [&_svg]:shrink-0',
-              tab.active ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-hover hover:text-fg',
-            )}
-          >
-            {tab.icon}
-            <span className="truncate">{tab.label}</span>
-          </button>
-        </Tooltip>
-      ))}
+      {tabs.map((tab) => {
+        const panel = tab === 'ai' ? null : tab;
+        return (
+          <Tooltip key={tab} label={TAB_HINT[tab]?.() ?? tabLabel(tab)} shortcut={TAB_SHORTCUT[tab]}>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === active}
+              tabIndex={tab === active ? 0 : -1}
+              data-dock-item={panel ?? undefined}
+              // A panel tab can be dragged to the left column, or moved from its menu.
+              onPointerDown={panel ? (e) => startPanelDrag(panel, e, null, true) : undefined}
+              onContextMenu={
+                panel
+                  ? (e) => {
+                      e.preventDefault();
+                      setMenu({ id: panel, x: e.clientX, y: e.clientY });
+                    }
+                  : undefined
+              }
+              onClick={() => show(tab)}
+              className={cn(
+                'flex h-8 min-w-0 flex-auto items-center justify-center gap-1.5 rounded-lg px-2 text-[12.5px] font-medium outline-none transition-[background,color] duration-150 focus-visible:ring-2 focus-visible:ring-accent/50 [&_svg]:size-3.5 [&_svg]:shrink-0',
+                tab === active ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-hover hover:text-fg',
+              )}
+            >
+              {TAB_ICON[tab]}
+              <span className="truncate">{tabLabel(tab)}</span>
+            </button>
+          </Tooltip>
+        );
+      })}
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          minWidth={200}
+          onClose={() => setMenu(null)}
+          items={[
+            { label: t('chrome.dock.moveLeft'), icon: <ArrowLeftRight />, onSelect: () => movePanel(menu.id, 'left', Infinity) },
+            { type: 'separator' },
+            { label: t('chrome.dock.reset'), icon: <RotateCcw />, onSelect: resetDock },
+          ]}
+        />
+      )}
     </div>
   );
 }
@@ -271,17 +321,17 @@ function DropZone({ active, overlay }: { active: boolean; overlay?: boolean }) {
 }
 
 export function DockColumn({ side }: { side: DockSide }) {
-  const ids = useUi((s) => s.dock[side]);
-  const open = useUi((s) => (side === 'left' ? s.leftOpen : s.rightOpen));
-  const ai = useUi((s) => side === 'right' && s.aiOpen);
-  const width = useUi((s) => (side === 'left' ? s.leftWidth : s.aiOpen ? s.aiWidth : s.rightWidth));
+  return side === 'right' ? <RightColumn /> : <LeftColumn />;
+}
+
+function LeftColumn() {
+  const ids = useUi((s) => s.dock.left);
+  const open = useUi((s) => s.leftOpen);
+  const width = useUi((s) => s.leftWidth);
   const drag = useDockDrag();
   const t = useT();
-  // The AI tab mounts on first use, then stays mounted while hidden so the conversation survives tab switches.
-  const [aiMounted, setAiMounted] = useState(false);
-  if (ai && open && !aiMounted) setAiMounted(true);
-  const shown = open && (ids.length > 0 || ai);
-  const dropping = !!drag.id && drag.target?.side === side;
+  const shown = open && ids.length > 0;
+  const dropping = !!drag.id && drag.target?.side === 'left';
   // While dragging, an empty or hidden column still shows a drop zone.
   if (!shown && !drag.id) return null;
 
@@ -289,35 +339,73 @@ export function DockColumn({ side }: { side: DockSide }) {
   const lastFlex = ids.includes('shapes') || growFormat;
   return (
     <div
-      data-dock-side={side}
-      data-od-panel={side}
+      data-dock-side="left"
+      data-od-panel="left"
       style={{ width }}
-      className={cn(
-        'absolute bottom-2.5 top-2.5 flex flex-col transition-[transform,opacity] duration-300 ease-[cubic-bezier(.2,.9,.3,1)]',
-        side === 'left' ? 'left-2.5' : 'right-2.5',
-      )}
+      className="absolute bottom-2.5 left-2.5 top-2.5 flex flex-col transition-[transform,opacity] duration-300 ease-[cubic-bezier(.2,.9,.3,1)]"
     >
       {shown ? (
-        <>
-          {side === 'right' && <RightTabs ai={ai} />}
+        <div className="flex min-h-0 flex-1 flex-col" style={{ gap: GAP }}>
+          {ids.map((id, i) => (
+            <Fragment key={id}>
+              <DropLine show={dropping && drag.target!.index === i && drag.id !== id} />
+              {/* Layers sits at the bottom when nothing above it stretches. */}
+              {id === 'layers' && !lastFlex && i > 0 && <div className="-mt-2 flex-1" />}
+              <DockItem id={id} side="left" index={i} count={ids.length} grow={growFormat && id === 'format'} />
+            </Fragment>
+          ))}
+          <DropLine show={dropping && drag.target!.index >= ids.filter((p) => p !== drag.id).length} />
+        </div>
+      ) : (
+        <DropZone active={dropping} />
+      )}
+      {shown && (
+        <PanelResizer
+          edge="right"
+          width={width}
+          defaultWidth={PANEL_WIDTH.left}
+          label={t('chrome.dock.resizeLeft')}
+          onChange={(w) => useUi.getState().set({ leftWidth: w })}
+        />
+      )}
+    </div>
+  );
+}
+
+function RightColumn() {
+  const ids = useUi((s) => s.dock.right);
+  const open = useUi((s) => s.rightOpen);
+  const panel = useUi((s) => activeRightPanel(s));
+  const ai = useUi((s) => s.aiOpen) || !panel;
+  const width = useUi((s) => (ai ? s.aiWidth : s.rightWidth));
+  const drag = useDockDrag();
+  const t = useT();
+  // The AI tab mounts on first use, then stays mounted while hidden so the conversation survives tab switches.
+  const [aiMounted, setAiMounted] = useState(false);
+  if (ai && open && !aiMounted) setAiMounted(true);
+  const dropping = !!drag.id && drag.target?.side === 'right';
+  if (!open && !drag.id) return null;
+
+  return (
+    <div
+      data-dock-side="right"
+      data-od-panel="right"
+      style={{ width }}
+      className="absolute bottom-2.5 right-2.5 top-2.5 flex flex-col transition-[transform,opacity] duration-300 ease-[cubic-bezier(.2,.9,.3,1)]"
+    >
+      {open ? (
+        <div className="animate-slide-up pointer-events-auto relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-panel shadow-panel">
+          <RightTabs ids={ids} active={ai ? 'ai' : panel!} />
           <div className="relative flex min-h-0 flex-1 flex-col">
-            <div className={cn('flex min-h-0 flex-1 flex-col', ai && 'hidden')} style={{ gap: GAP }}>
-              {ids.map((id, i) => (
-                <Fragment key={id}>
-                  <DropLine show={dropping && drag.target!.index === i && drag.id !== id} />
-                  {/* Layers sits at the bottom when nothing above it stretches. */}
-                  {id === 'layers' && !lastFlex && i > 0 && <div className="-mt-2 flex-1" />}
-                  <DockItem id={id} side={side} index={i} count={ids.length} grow={growFormat && id === 'format'} />
-                </Fragment>
-              ))}
-              <DropLine show={dropping && drag.target!.index >= ids.filter((p) => p !== drag.id).length} />
-            </div>
+            {!ai && panel && (
+              <div key={panel} role="tabpanel" aria-label={tabLabel(panel)} className="animate-fade flex min-h-0 flex-1 flex-col [&>aside]:h-full">
+                <InTabs.Provider value>
+                  <PanelBody id={panel} />
+                </InTabs.Provider>
+              </div>
+            )}
             {aiMounted && (
-              <div
-                role="tabpanel"
-                aria-label={t('chrome.rightTabs.ai')}
-                className={cn('pointer-events-auto min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-panel shadow-panel', ai ? 'animate-slide-up flex' : 'hidden')}
-              >
+              <div role="tabpanel" aria-label={t('chrome.rightTabs.ai')} className={cn('min-h-0 flex-1 flex-col overflow-hidden', ai ? 'flex' : 'hidden')}>
                 <Suspense
                   fallback={
                     <div className="flex flex-1 items-center justify-center text-accent">
@@ -329,13 +417,13 @@ export function DockColumn({ side }: { side: DockSide }) {
                 </Suspense>
               </div>
             )}
-            {ai && drag.id && <DropZone active={dropping} overlay />}
+            {drag.id && <DropZone active={dropping} overlay />}
           </div>
-        </>
+        </div>
       ) : (
         <DropZone active={dropping} />
       )}
-      {shown &&
+      {open &&
         (ai ? (
           <PanelResizer
             edge="left"
@@ -348,11 +436,11 @@ export function DockColumn({ side }: { side: DockSide }) {
           />
         ) : (
           <PanelResizer
-            edge={side === 'left' ? 'right' : 'left'}
+            edge="left"
             width={width}
-            defaultWidth={side === 'left' ? PANEL_WIDTH.left : PANEL_WIDTH.right}
-            label={side === 'left' ? t('chrome.dock.resizeLeft') : t('chrome.dock.resizeRight')}
-            onChange={(w) => useUi.getState().set(side === 'left' ? { leftWidth: w } : { rightWidth: w })}
+            defaultWidth={PANEL_WIDTH.right}
+            label={t('chrome.dock.resizeRight')}
+            onChange={(w) => useUi.getState().set({ rightWidth: w })}
           />
         ))}
     </div>

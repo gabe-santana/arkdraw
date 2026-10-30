@@ -1,7 +1,8 @@
 /**
- * Layers dock: the right-hand panel under Format. Document layers (and the
- * tag filter) on top, then every element front-to-back — select, rename,
- * lock and drag to reorder. Collapsible; drag its top edge to resize.
+ * Layers: document layers (and the tag filter) on top, then every element
+ * front-to-back — select, rename, lock and drag to reorder. A tab of the
+ * right column (full height); stacked in the left column it gets a header to
+ * collapse it and a top edge to resize it.
  */
 import { useMemo, useRef, useState } from 'react';
 import { Boxes, ChevronDown, ChevronRight, Eye, EyeOff, Layers3, Lock, LockOpen, Shapes, Spline, Type } from 'lucide-react';
@@ -14,6 +15,7 @@ import { useUi } from '@/store/ui';
 import { cn } from '@/lib/cn';
 import { SearchInput } from '@/ui/controls';
 import { LayersManager } from './LayersManager';
+import { useInTabs, usePanelCard } from '@/chrome/panelFrame';
 import { ShapePreview } from './ShapePreview';
 import { t, useT } from '@/i18n';
 
@@ -26,6 +28,8 @@ export function LayersPanel() {
   const count = useEditor((s) => s.doc.order.length);
   const ref = useRef<HTMLElement>(null);
   const t = useT();
+  const inTabs = useInTabs();
+  const card = usePanelCard();
 
   // Drag the top edge: the dock grows upwards, leaving the Format panel at least ~140px.
   const startResize = (e: React.PointerEvent) => {
@@ -44,11 +48,24 @@ export function LayersPanel() {
     window.addEventListener('pointerup', up);
   };
 
+  if (inTabs) {
+    return (
+      <aside aria-label={t('panels.layers.panel')} className="pointer-events-auto flex h-full min-h-0 w-full flex-col overflow-hidden">
+        <div className="scroll-thin max-h-[40%] shrink-0 overflow-y-auto pt-1">
+          <LayersManager />
+        </div>
+        <div className="flex min-h-0 flex-1 flex-col border-t border-line">
+          <ElementList />
+        </div>
+      </aside>
+    );
+  }
+
   return (
     <aside
       ref={ref}
       aria-label={t('panels.layers.panel')}
-      className="animate-slide-up pointer-events-auto relative flex max-h-full w-full shrink-0 flex-col overflow-hidden rounded-2xl bg-panel shadow-panel"
+      className={cn('pointer-events-auto relative flex max-h-full w-full shrink-0 flex-col overflow-hidden', card)}
       style={{ height: open ? height : undefined }}
     >
       {open && (

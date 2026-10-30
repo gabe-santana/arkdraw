@@ -15,6 +15,7 @@ import { getShapeDef } from '@/shapes/registry';
 import { useEditor } from '@/store/editor';
 import { useUi } from '@/store/ui';
 import { cn } from '@/lib/cn';
+import { usePanelCard } from '@/chrome/panelFrame';
 import { ACTION_MAP, runAction } from '@/app/actions';
 import { togglePlayback } from '@/app/playback';
 import { ColorField, NumberField, Segmented, Select, Slider, Switch } from '@/ui/controls';
@@ -36,9 +37,10 @@ export function PropertiesPanel() {
   const shapes = selected.filter(isShape);
   const connectors = selected.filter(isConnector);
   const t = useT();
+  const card = usePanelCard();
 
   return (
-    <aside aria-label={t('panels.formatPanel')} className="animate-slide-up pointer-events-auto flex min-h-0 max-h-full w-full flex-col overflow-hidden rounded-2xl bg-panel shadow-panel">
+    <aside aria-label={t('panels.formatPanel')} className={cn('pointer-events-auto flex min-h-0 max-h-full w-full flex-col overflow-hidden', card)}>
       <Header selected={selected} />
       <div className="scroll-thin flex-1 overflow-y-auto pb-2">
         {!selected.length && <PageSection />}

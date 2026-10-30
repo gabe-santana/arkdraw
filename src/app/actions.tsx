@@ -41,7 +41,7 @@ import { showConfigFile } from '@/desktop/startup';
 import { STYLING_ACTIONS } from '@/styling/actions';
 import { INTERACTION_ACTIONS } from '@/interaction/actions';
 import { CONNECTOR_ACTIONS } from '@/panels/connectorActions';
-import { columnInset, panelColumnOpen, resetDock, toggleAiTab, togglePanelColumn } from '@/chrome/Dock';
+import { columnInset, panelColumnOpen, resetDock, sideOf, toggleAiTab, togglePanelColumn } from '@/chrome/Dock';
 
 export type ActionGroup = 'File' | 'Edit' | 'View' | 'Arrange' | 'Tools' | 'Help' | 'AI' | 'Layout';
 
@@ -233,11 +233,18 @@ export const ACTIONS: Action[] = [
     icon: <Layers3 />,
     shortcuts: ['Mod+Shift+L'],
     run: () => {
+      // A tab on the right: show it, or go back to Design when it's showing.
+      if (sideOf(ui().dock, 'layers') === 'right') {
+        if (!panelColumnOpen('layers')) togglePanelColumn('layers');
+        else if (ui().dock.right.includes('format')) ui().set({ rightPanel: 'format' });
+        else togglePanelColumn('layers');
+        return;
+      }
       const show = !(panelColumnOpen('layers') && ui().layersOpen);
       if (show && !panelColumnOpen('layers')) togglePanelColumn('layers');
       ui().set({ layersOpen: show });
     },
-    checked: () => panelColumnOpen('layers') && ui().layersOpen,
+    checked: () => panelColumnOpen('layers') && (sideOf(ui().dock, 'layers') === 'right' || ui().layersOpen),
   },
   {
     id: 'view.adapt',

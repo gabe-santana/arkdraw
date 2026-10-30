@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useUi } from '@/store/ui';
-import { columnInset, columnVisible, DEFAULT_DOCK, movePanel, resetDock, togglePanelColumn } from '@/chrome/Dock';
+import { activeRightPanel, columnInset, columnVisible, DEFAULT_DOCK, movePanel, panelColumnOpen, resetDock, togglePanelColumn } from '@/chrome/Dock';
 
 describe('panel dock', () => {
   beforeEach(() => resetDock());
@@ -30,6 +30,23 @@ describe('panel dock', () => {
     togglePanelColumn('shapes');
     expect(useUi.getState().rightOpen).toBe(false);
     expect(useUi.getState().leftOpen).toBe(true);
+  });
+
+  it('shows the panels docked on the right as tabs, one at a time, AI aside', () => {
+    useUi.getState().set({ aiOpen: false, rightPanel: 'format', rightOpen: true });
+    expect(panelColumnOpen('format')).toBe(true);
+    expect(panelColumnOpen('layers')).toBe(false);
+    // View → Layers shows its tab…
+    togglePanelColumn('layers');
+    expect(useUi.getState().rightPanel).toBe('layers');
+    expect(panelColumnOpen('layers')).toBe(true);
+    expect(panelColumnOpen('format')).toBe(false);
+    // …and moving a tab away falls back to the one that's left.
+    movePanel('layers', 'left', Infinity);
+    expect(activeRightPanel(useUi.getState())).toBe('format');
+    // Dropping a panel on the right opens its tab.
+    movePanel('layers', 'right', Infinity);
+    expect(useUi.getState()).toMatchObject({ rightPanel: 'layers', aiOpen: false, rightOpen: true });
   });
 
   it('resets to the default layout and widths', () => {

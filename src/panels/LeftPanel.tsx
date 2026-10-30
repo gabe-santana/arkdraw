@@ -6,6 +6,7 @@ import { getShapeDef } from '@/shapes/registry';
 import type { LibraryItem } from '@/shapes/types';
 import { useEditor } from '@/store/editor';
 import { cn } from '@/lib/cn';
+import { usePanelCard } from '@/chrome/panelFrame';
 import { iconUrl } from '@/shapes/IconImage';
 import {
   createIconElement, ICON_STYLE, iconPath, loadPack, loadProviders, useIconPacks, ICON_SIZE, type IconEntry, type IconPack,
@@ -32,6 +33,7 @@ const libraryName = (id: string, name: string) => tx(`panels.library.${id}`, nam
  */
 export function LeftPanel() {
   const t = useT();
+  const card = usePanelCard();
   const [query, setQuery] = useState('');
   const [collapsed, toggle] = useCollapsed(COLLAPSE_KEY, (id) => !id.startsWith('__') && !OPEN_BY_DEFAULT.has(id));
   const providers = useIconPacks((s) => s.providers);
@@ -76,7 +78,7 @@ export function LeftPanel() {
   );
 
   return (
-    <aside aria-label={t('panels.left.aria')} className="animate-slide-up pointer-events-auto flex h-full w-full flex-col overflow-hidden rounded-2xl bg-panel shadow-panel">
+    <aside aria-label={t('panels.left.aria')} className={cn('pointer-events-auto flex h-full w-full flex-col overflow-hidden', card)}>
       <div data-dock-handle className="p-2">
         <SearchInput value={query} onChange={setQuery} placeholder={t('panels.left.searchShapes')} />
       </div>

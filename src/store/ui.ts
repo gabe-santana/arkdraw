@@ -31,7 +31,9 @@ interface UiState {
   /** Width of the right column while its AI tab is showing (chat wants more room). */
   aiWidth: number;
   dock: DockLayout;
-  /** Layers dock (right, under Format): expanded, and its height. */
+  /** The right column's tab when it isn't showing AI: one of the panels docked there. */
+  rightPanel: PanelId;
+  /** Layers docked on the left (stacked under Shapes): expanded, and its height. */
   layersOpen: boolean;
   layersHeight: number;
   theme: ThemeMode;
@@ -39,7 +41,7 @@ interface UiState {
   paletteOpen: boolean;
   exportOpen: boolean;
   shortcutsOpen: boolean;
-  /** The right column shows the AI tab (instead of Design: Format + Layers). */
+  /** The right column shows the AI tab (instead of one of its panels, `rightPanel`). */
   aiOpen: boolean;
   aiSettingsOpen: boolean;
   /** Quick shape picker (double-click on empty canvas). */
@@ -79,7 +81,7 @@ function load<T>(key: string, fallback: T): T {
 
 // First visit (nothing saved yet): the AI tab open, the library only where there's room for it.
 const wide = typeof window === 'undefined' || window.innerWidth >= 1500;
-const panels = load(PANELS_KEY, { leftOpen: wide, rightOpen: true, layersOpen: true, layersHeight: 300, leftWidth: 264, rightWidth: 268, aiWidth: 360, aiOpen: true, dock: { left: ['shapes'], right: ['format', 'layers'] } as DockLayout });
+const panels = load(PANELS_KEY, { leftOpen: wide, rightOpen: true, layersOpen: true, layersHeight: 300, leftWidth: 264, rightWidth: 268, aiWidth: 360, aiOpen: true, rightPanel: 'format' as PanelId, dock: { left: ['shapes'], right: ['format', 'layers'] } as DockLayout });
 // A saved layout must still contain each panel exactly once.
 {
   const all = [...panels.dock.left, ...panels.dock.right];
@@ -121,9 +123,9 @@ export const useUi = create<UiState>((set, get) => ({
       if ('theme' in patch) localStorage.setItem(THEME_KEY, JSON.stringify({ theme: s.theme }));
       if ('rulers' in patch) localStorage.setItem('arkdraw:rulers', JSON.stringify({ rulers: s.rulers }));
       if ('units' in patch) localStorage.setItem('arkdraw:units', JSON.stringify({ units: s.units }));
-      if ('leftOpen' in patch || 'rightOpen' in patch || 'layersOpen' in patch || 'layersHeight' in patch || 'leftWidth' in patch || 'rightWidth' in patch || 'aiWidth' in patch || 'aiOpen' in patch || 'dock' in patch) {
-        const { leftOpen, rightOpen, layersOpen, layersHeight, leftWidth, rightWidth, aiWidth, aiOpen, dock } = s;
-        localStorage.setItem(PANELS_KEY, JSON.stringify({ leftOpen, rightOpen, layersOpen, layersHeight, leftWidth, rightWidth, aiWidth, aiOpen, dock }));
+      if (['leftOpen', 'rightOpen', 'layersOpen', 'layersHeight', 'leftWidth', 'rightWidth', 'aiWidth', 'aiOpen', 'rightPanel', 'dock'].some((k) => k in patch)) {
+        const { leftOpen, rightOpen, layersOpen, layersHeight, leftWidth, rightWidth, aiWidth, aiOpen, rightPanel, dock } = s;
+        localStorage.setItem(PANELS_KEY, JSON.stringify({ leftOpen, rightOpen, layersOpen, layersHeight, leftWidth, rightWidth, aiWidth, aiOpen, rightPanel, dock }));
       }
     } catch {
       /* storage unavailable */
