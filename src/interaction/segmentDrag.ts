@@ -8,7 +8,9 @@
  * A middle segment dragged across a shape at either end (level with it, or
  * under it) makes the connector enter that shape from the side the segment
  * comes from, at that spot, and drops the rest of the detour: the route stays
- * the natural one instead of crossing the shape to reach its old side.
+ * the natural one instead of crossing the shape to reach its old side. Likewise
+ * the segment beside an end's last turn, dragged past the shape, makes the end
+ * move to the side now facing it, at the same height.
  */
 import type { ConnectorElement, DiagramElement, Endpoint, ShapeElement, Vec } from '@/model/types';
 import { endpointAtFraction, fractionToWorld, worldToFraction } from '@/lib/connectionPoints';
@@ -119,6 +121,23 @@ export function dragSegment(
     from = i + 1;
     pts[i][axis] = pts[i + 1][axis] = enterSource[axis];
   }
+  // Beside an end's last turn and dragged past the shape: the last stretch would cross the shape,
+  // so the end moves to the side it now faces.
+  if (!enterTarget && index === last - 1 && index > 0) {
+    const n = pts.length;
+    const flipped = facingSide(endKind(conn.target, elements), pts[n - 1], axis, c);
+    if (flipped) {
+      patch.target = flipped;
+      pts[n - 2][axis === 'x' ? 'y' : 'x'] = flipped[axis === 'x' ? 'y' : 'x'];
+    }
+  }
+  if (!enterSource && index === 1 && index < last) {
+    const flipped = facingSide(endKind(conn.source, elements), pts[0], axis, c);
+    if (flipped) {
+      patch.source = flipped;
+      pts[1][axis === 'x' ? 'y' : 'x'] = flipped[axis === 'x' ? 'y' : 'x'];
+    }
+  }
   patch.waypoints = pts.slice(from, to);
   if (freeStart) patch.source = { ...conn.source, [axis]: c };
   if (freeEnd) patch.target = { ...conn.target, [axis]: c };
@@ -126,6 +145,25 @@ export function dragSegment(
   patch.source ??= conn.source;
   patch.target ??= conn.target;
   return { patch, at: c };
+}
+
+/**
+ * When the stretch from `c` (on `axis`) to an end at `end` would cross the
+ * end's shape (the end sits on the far side), the same spot on the side
+ * facing `c`; null when it doesn't cross.
+ */
+function facingSide(kind: EndKind, end: Vec, axis: 'x' | 'y', c: number): Endpoint | null {
+  if (kind.kind !== 'shape') return null;
+  const s = kind.shape;
+  const [lo, size] = axis === 'x' ? [s.x, s.w] : [s.y, s.h];
+  const at = end[axis];
+  let to: number | null = null;
+  if (Math.abs(at - (lo + size)) < 0.5 && c < lo) to = lo;
+  else if (Math.abs(at - lo) < 0.5 && c > lo + size) to = lo + size;
+  if (to === null) return null;
+  const point = { ...end, [axis]: to };
+  const ep = endpointAtFraction(s, worldToFraction(s, point));
+  return ep.fixed ? { ...ep, ...fractionToWorld(s, ep.fixed) } : ep;
 }
 
 /**

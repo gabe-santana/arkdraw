@@ -108,6 +108,26 @@ describe('segment dragging', () => {
     expect(pts[pts.length - 2].y).toBe(pts[pts.length - 1].y);
   });
 
+  it('moves an end to the facing side when the segment before it is dragged past the shape', () => {
+    // A leaves from its bottom, runs under B and climbs into B's right side; the climb is dragged left of B.
+    const a = createShape('rect', { x: 0, y: 0, w: 80, h: 140 }, {}, 'A');
+    const b = createShape('rect', { x: 400, y: 20, w: 140, h: 80 }, {}, 'B');
+    const conn = createConnector({ elementId: a.id, side: 'bottom', x: 0, y: 0 }, { elementId: b.id, side: 'right', x: 0, y: 0 }, { routing: 'orthogonal' });
+    const elements: Record<string, DiagramElement> = { [a.id]: a, [b.id]: b, [conn.id]: conn };
+    const hook = { ...conn, waypoints: [{ x: 40, y: 240 }, { x: 600, y: 240 }, { x: 600, y: 60 }] } as ConnectorElement;
+    const route = connectorGeometryInDoc(hook, { ...elements, [conn.id]: hook }).points;
+    const climb = route.findIndex((p, i) => i < route.length - 1 && p.x === 600 && route[i + 1].x === 600);
+    const res = dragSegment(hook, route, climb, false, 300, elements)!;
+    expect(res.patch.target).toMatchObject({ elementId: b.id, side: 'left' });
+    const next = { ...hook, ...res.patch } as ConnectorElement;
+    const pts = connectorGeometryInDoc(next, { ...elements, [conn.id]: next }).points;
+    expect(pts[pts.length - 1]).toEqual({ x: 400, y: 60 });
+    // Nothing crosses B any more.
+    expect(pts.every((p) => p.x <= 400)).toBe(true);
+    // Dragged back to the right of B, the end returns to its right side.
+    expect(dragSegment(hook, route, climb, false, 600, elements)!.patch.target).toEqual(hook.target);
+  });
+
   it('lets a free end follow its segment', () => {
     const conn = createConnector({ x: 0, y: 0 }, { x: 200, y: 0 }, { routing: 'orthogonal' });
     const res = dragSegment(conn, [{ x: 0, y: 0 }, { x: 200, y: 0 }], 0, true, 40, { [conn.id]: conn })!;
