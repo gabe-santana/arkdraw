@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ConnectorElement, DiagramElement } from '@/model/types';
 import { createConnector, createShape } from '@/model/defaults';
 import { connectorGeometryInDoc } from '@/lib/connectorGeometry';
-import { canDragSegment, dragSegment, segmentAt, snapSegment } from '@/interaction/segmentDrag';
+import { canDragSegment, dragSegment, segmentAt, snapSegment, uncrossConnector } from '@/interaction/segmentDrag';
 
 /** Two boxes side by side, B a bit lower than A: the default route is a Z (horizontal, vertical, horizontal). */
 function zRoute() {
@@ -151,6 +151,26 @@ describe('segment dragging', () => {
     // The old out-and-back under B is gone: right along the bottom, then straight up at x 480.
     expect(pts).toContainEqual({ x: 480, y: 300 });
     expect(pts.some((p) => p.x === 620)).toBe(false);
+  });
+
+  it('stops a connector where it first runs into its end shape after the shape moves', () => {
+    // Out of A, up, then right across B's top half, down past B and back into its right side.
+    const a = createShape('rect', { x: 0, y: 0, w: 80, h: 140 }, {}, 'A');
+    const b = createShape('rect', { x: 400, y: 20, w: 200, h: 120 }, {}, 'B');
+    const conn = createConnector({ elementId: a.id, side: 'right', x: 0, y: 0 }, { elementId: b.id, side: 'right', x: 0, y: 0 }, { routing: 'orthogonal' });
+    const route = [{ x: 120, y: 70 }, { x: 120, y: 50 }, { x: 620, y: 50 }, { x: 620, y: 80 }];
+    const c = { ...conn, waypoints: route } as ConnectorElement;
+    const elements: Record<string, DiagramElement> = { [a.id]: a, [b.id]: b, [c.id]: c };
+    const fix = uncrossConnector(c, elements)!;
+    // It reaches B's left edge at y 50 first: the arrow ends there.
+    expect(fix.target).toMatchObject({ elementId: b.id, x: 400, y: 50 });
+    const next = { ...c, ...fix } as ConnectorElement;
+    const pts = connectorGeometryInDoc(next, { ...elements, [c.id]: next }).points;
+    expect(pts[pts.length - 1]).toEqual({ x: 400, y: 50 });
+    expect(pts.every((p) => p.x <= 400)).toBe(true);
+    // A connector that only meets B at its end is left alone.
+    const toLeft = { ...conn, target: { ...conn.target, side: 'left' }, waypoints: [{ x: 120, y: 70 }, { x: 120, y: 80 }] } as ConnectorElement;
+    expect(uncrossConnector(toLeft, elements)).toBeNull();
   });
 
   it('lets a free end follow its segment', () => {

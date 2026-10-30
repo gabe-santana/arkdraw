@@ -23,6 +23,7 @@ import {
 } from '@/lib/geometry';
 import { connectorGeometryInDoc, endpointPositions } from '@/lib/connectorGeometry';
 import { straightenMove, straightenResize } from '@/assistants/straighten';
+import { uncrossConnector } from '@/interaction/segmentDrag';
 import {
   cloneElements, containedShapes, elementBounds, isHidden, isLocked, shapeRect, useEditor, type Guide,
 } from '@/store/editor';
@@ -528,6 +529,17 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
               waypoints: el.waypoints?.map((w) => ({ x: w.x + dx, y: w.y + dy })),
             } as Partial<ConnectorElement>;
           }
+        }
+        // Connectors on the moved shapes: an end whose last stretch now runs through its own shape takes
+        // the edge facing it. Worked out from each connector as the drag found it, so it undoes itself.
+        const base = s.interactionBase ?? s.doc;
+        const now = { ...s.doc.elements };
+        for (const [id, p] of Object.entries(patches)) now[id] = { ...now[id], ...p } as DiagramElement;
+        for (const el of Object.values(base.elements)) {
+          if (!isConnector(el) || d.start.has(el.id)) continue;
+          if (!(el.source.elementId && d.start.has(el.source.elementId)) && !(el.target.elementId && d.start.has(el.target.elementId))) continue;
+          const fix = uncrossConnector(el, { ...now, [el.id]: el });
+          patches[el.id] = { source: el.source, target: el.target, waypoints: el.waypoints, ...fix };
         }
         s.updateElements(patches);
         const doc = useEditor.getState().doc;

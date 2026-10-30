@@ -9,11 +9,12 @@
  * under it) makes the connector enter that shape from the side the segment
  * comes from, at that spot, and drops the rest of the detour: the route stays
  * the natural one instead of crossing the shape to reach its old side. And after
- * any drag, a last straight stretch that would run through its end's own shape
- * moves that end to the side facing it, at the same height.
+ * any drag (or a move of the shapes, uncrossConnector), the connector stops
+ * where it first reaches its end's shape, on the edge it hits.
  */
 import type { ConnectorElement, DiagramElement, Endpoint, ShapeElement, Vec } from '@/model/types';
 import { endpointAtFraction, fractionToWorld, worldToFraction } from '@/lib/connectionPoints';
+import { connectorGeometryInDoc } from '@/lib/connectorGeometry';
 import type { Guide } from '@/store/editor';
 
 export interface SegmentHit {
@@ -144,6 +145,32 @@ export function dragSegment(
 }
 
 /**
+ * For a connector whose shapes just moved (`elements` holds them where they
+ * are now): if it runs into an end's shape before reaching that end, the end
+ * moved to where it first hits the shape, and the route cut there. Null when
+ * nothing crosses.
+ */
+export function uncrossConnector(conn: ConnectorElement, elements: Record<string, DiagramElement>): Partial<ConnectorElement> | null {
+  if (conn.routing !== 'orthogonal') return null;
+  let route = connectorGeometryInDoc(conn, elements).points;
+  const patch: Partial<ConnectorElement> = {};
+  const target = uncross(endKind(conn.target, elements), route);
+  if (target) {
+    patch.target = target.end;
+    route = target.route;
+  }
+  const source = uncross(endKind(conn.source, elements), [...route].reverse());
+  if (source) {
+    patch.source = source.end;
+    route = source.route.reverse();
+  }
+  if (!target && !source) return null;
+  // An auto-routed connector stays auto-routed: only its ends change, the router redraws the rest.
+  if (conn.waypoints?.length) patch.waypoints = dropDoublings(route).slice(1, -1);
+  return patch;
+}
+
+/**
  * Removes the places where the route doubles back on itself: out one way, a
  * short side step, back the other way over the same stretch, then a turn. The
  * route turns where it comes back to instead (one bend instead of three).
@@ -173,34 +200,44 @@ function dropDoublings(route: Vec[]): Vec[] {
 
 /**
  * `route` runs from the far end to the end on `kind`'s shape (its last point).
- * When its last straight stretch reaches that end through the shape (the end
- * sits on the far side), returns the end moved to the side the stretch comes
- * from, at the same height, and the route without the points past it.
+ * The connector should stop where it first reaches that shape: when an earlier
+ * stretch already runs into it, returns the end moved to that spot on the edge
+ * it hits, and the route cut there. Null when the route only meets the shape
+ * at its end.
  */
 function uncross(kind: EndKind, route: Vec[]): { end: Endpoint; route: Vec[] } | null {
   if (kind.kind !== 'shape' || route.length < 2) return null;
   const s = kind.shape;
-  const n = route.length;
-  const end = route[n - 1];
-  // The stretch: back from the end while the points stay on its line.
-  const horizontal = Math.abs(route[n - 2].y - end.y) < 0.5;
-  if (!horizontal && Math.abs(route[n - 2].x - end.x) >= 0.5) return null;
-  const along: 'x' | 'y' = horizontal ? 'x' : 'y';
-  const across: 'x' | 'y' = horizontal ? 'y' : 'x';
-  let k = n - 2;
-  while (k > 0 && Math.abs(route[k - 1][across] - end[across]) < 0.5) k--;
-  const from = route[k];
-  const [lo, size] = along === 'x' ? [s.x, s.w] : [s.y, s.h];
-  let to: number | null = null;
-  if (Math.abs(end[along] - (lo + size)) < 0.5 && from[along] < lo) to = lo;
-  else if (Math.abs(end[along] - lo) < 0.5 && from[along] > lo + size) to = lo + size;
-  if (to === null) return null;
-  const ep = endpointAtFraction(s, worldToFraction(s, { ...end, [along]: to }));
-  // Where the point is drawn (from its rounded fraction): the stretch lines up with it exactly.
-  const at = ep.fixed ? fractionToWorld(s, ep.fixed) : { x: ep.x, y: ep.y };
-  const kept = route.slice(0, k + 1).map((p) => ({ ...p }));
-  if (k > 0) kept[k][across] = at[across];
-  return { end: { ...ep, ...at }, route: [...kept, at] };
+  const inside = (v: number, lo: number, size: number) => v > lo + 0.5 && v < lo + size - 0.5;
+  for (let k = 0; k < route.length - 1; k++) {
+    const p = route[k];
+    const q = route[k + 1];
+    // A route that starts inside the shape (overlapping shapes) is left alone.
+    if (inside(p.x, s.x, s.w) && inside(p.y, s.y, s.h)) return null;
+    const horizontal = Math.abs(p.y - q.y) < 0.5;
+    if (!horizontal && Math.abs(p.x - q.x) >= 0.5) continue;
+    const along: 'x' | 'y' = horizontal ? 'x' : 'y';
+    const across: 'x' | 'y' = horizontal ? 'y' : 'x';
+    const [lo, size] = along === 'x' ? [s.x, s.w] : [s.y, s.h];
+    const [alo, asize] = across === 'x' ? [s.x, s.w] : [s.y, s.h];
+    // Level with the shape, and running into it (not just touching its edge where it ends).
+    if (!inside(p[across], alo, asize)) continue;
+    const a = Math.min(p[along], q[along]);
+    const b = Math.max(p[along], q[along]);
+    if (!(a < lo + size - 0.5 && b > lo + 0.5)) continue;
+    // The edge it hits first, coming from p.
+    const to = p[along] <= lo ? lo : p[along] >= lo + size ? lo + size : null;
+    if (to === null) continue;
+    // Already the end, on that edge: nothing to fix.
+    if (k === route.length - 2 && Math.abs(q[along] - to) < 0.5) return null;
+    const ep = endpointAtFraction(s, worldToFraction(s, { ...p, [along]: to }));
+    // Where the point is drawn (from its rounded fraction): the stretch lines up with it exactly.
+    const at = ep.fixed ? fractionToWorld(s, ep.fixed) : { x: ep.x, y: ep.y };
+    const kept = route.slice(0, k + 1).map((v) => ({ ...v }));
+    if (k > 0) kept[k][across] = at[across];
+    return { end: { ...ep, ...at }, route: [...kept, at] };
+  }
+  return null;
 }
 
 /**
