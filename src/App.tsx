@@ -114,8 +114,8 @@ export default function App() {
       }}
     >
       <TitleBar />
-      <main className="relative flex min-h-0 flex-1 flex-col px-1.5">
-        <div className="relative min-h-0 flex-1 overflow-hidden rounded-[14px] shadow-[0_0_0_1px_var(--line)]">
+      <main className="relative flex min-h-0 flex-1 flex-col">
+        <div className="relative min-h-0 flex-1 overflow-hidden border-y border-line">
           <Canvas key={fontsVersion} dark={dark} />
           <Rulers />
 
