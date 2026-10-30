@@ -128,6 +128,31 @@ describe('segment dragging', () => {
     expect(dragSegment(hook, route, climb, false, 600, elements)!.patch.target).toEqual(hook.target);
   });
 
+  it('never leaves the last stretch running through its end shape, however many bends', () => {
+    // The user's route: out of A's right side, down, right, a short climb, back left, up, then right through B.
+    const a = createShape('rect', { x: 0, y: 0, w: 80, h: 140 }, {}, 'A');
+    const b = createShape('rect', { x: 560, y: 40, w: 140, h: 80 }, {}, 'B');
+    const conn = createConnector({ elementId: a.id, side: 'right', x: 0, y: 0 }, { elementId: b.id, side: 'right', x: 0, y: 0 }, { routing: 'orthogonal' });
+    const elements: Record<string, DiagramElement> = { [a.id]: a, [b.id]: b, [conn.id]: conn };
+    const wps = [{ x: 120, y: 70 }, { x: 120, y: 300 }, { x: 620, y: 300 }, { x: 620, y: 270 }, { x: 760, y: 270 }, { x: 760, y: 80 }];
+    const hook = { ...conn, waypoints: wps } as ConnectorElement;
+    const route = connectorGeometryInDoc(hook, { ...elements, [conn.id]: hook }).points;
+    // Drag the climb at x 760 to x 480, left of B.
+    const climb = route.findIndex((p, i) => i < route.length - 1 && p.x === 760 && route[i + 1].x === 760);
+    const res = dragSegment(hook, route, climb, false, 480, elements)!;
+    expect(res.patch.target).toMatchObject({ elementId: b.id, side: 'left' });
+    const next = { ...hook, ...res.patch } as ConnectorElement;
+    const pts = connectorGeometryInDoc(next, { ...elements, [conn.id]: next }).points;
+    expect(pts[pts.length - 1].x).toBe(560);
+    // The last stretch comes from the left and stops at B's left side.
+    const lastRun = pts.slice(-2);
+    expect(lastRun[0].x).toBeLessThan(560);
+    expect(lastRun[0].y).toBe(lastRun[1].y);
+    // The old out-and-back under B is gone: right along the bottom, then straight up at x 480.
+    expect(pts).toContainEqual({ x: 480, y: 300 });
+    expect(pts.some((p) => p.x === 620)).toBe(false);
+  });
+
   it('lets a free end follow its segment', () => {
     const conn = createConnector({ x: 0, y: 0 }, { x: 200, y: 0 }, { routing: 'orthogonal' });
     const res = dragSegment(conn, [{ x: 0, y: 0 }, { x: 200, y: 0 }], 0, true, 40, { [conn.id]: conn })!;
