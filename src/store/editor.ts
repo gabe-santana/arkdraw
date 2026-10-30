@@ -955,3 +955,7 @@ export function isDirtyState(s: EditorState): boolean {
   if (pagesMeta(s.pages) !== s.file.savedMeta) return true;
   return s.pages.some((p) => p.id !== s.activePageId && p.doc !== s.file.savedDocs[p.id]);
 }
+
+// Dev server only: an edit to this store reloads the page instead of hot-swapping the module,
+// which would leave part of the app on a new, empty copy of the store (a blank screen on the next click).
+if (import.meta.hot) import.meta.hot.accept(() => window.location.reload());
