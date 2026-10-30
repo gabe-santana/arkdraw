@@ -119,6 +119,14 @@ describe('dark colors', () => {
     expect(s.stroke).toBe(el.style.stroke);
     expect(darkStyle(rect('#fff').style)).toEqual(rect('#fff').style);
   });
+  it('keeps shadows dark instead of inverting them into glows', () => {
+    const el = rect('#ffffff');
+    el.style.shadow = true;
+    const shown = parseHex(adaptFilter(darkStyle(el.style).shadowColor!))!;
+    for (const v of shown) expect(v).toBeLessThan(0.2);
+    el.style.shadowColor = '#000000';
+    expect(darkStyle(el.style).shadowColor).toBe(preAdapt('#000000'));
+  });
 });
 
 describe('shadow options', () => {

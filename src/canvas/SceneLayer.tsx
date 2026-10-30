@@ -67,7 +67,7 @@ export function SceneLayer({ dark }: { dark: boolean }) {
 
   return (
     <svg className={cn('absolute inset-0 h-full w-full', adapt && 'diagram-adapt')} style={{ overflow: 'visible' }}>
-      <SvgDefs />
+      <SvgDefs adapt={dark && adapt} />
       <PlaybackContext.Provider value={playing ? seq : null}>
         <JumpsContext.Provider value={jumps}>
           <PageShadowContext.Provider value={!!settings?.shadow}>
