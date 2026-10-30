@@ -10,6 +10,7 @@
  */
 import { useMemo } from 'react';
 import type { DiagramElement, ElementStyle } from '@/model/types';
+import { hasCustomShadow, shadowParams } from './shadow';
 
 type Vec3 = [number, number, number];
 type Mat3 = [Vec3, Vec3, Vec3];
@@ -83,17 +84,26 @@ export function pageIsDark(background: string | null | undefined): boolean {
 
 export const hasDarkColors = (s: ElementStyle) => !!(s.darkFill || s.darkStroke || s.darkText);
 
-/** Style with the user's dark colors swapped in (pre-compensated for the adapt filter). */
+/**
+ * Style with the user's dark colors swapped in (pre-compensated for the adapt filter).
+ * The shadow color is pre-compensated too, so shadows stay shadows instead of turning into glows.
+ */
 export function darkStyle(s: ElementStyle): ElementStyle {
-  if (!hasDarkColors(s)) return s;
+  const shadow = s.shadow || hasCustomShadow(s);
+  if (!hasDarkColors(s) && !shadow) return s;
   const out = { ...s };
   if (s.darkFill && s.fill !== 'none') out.fill = preAdapt(s.darkFill);
   if (s.darkStroke && s.stroke !== 'none') out.stroke = preAdapt(s.darkStroke);
   if (s.darkText) out.textColor = preAdapt(s.darkText);
+  if (shadow) out.shadowColor = preAdapt(shadowParams(s).color);
   return out;
 }
 
 /** The element as the adapted (dark) canvas should draw it; stable identity when unchanged. */
 export function useDarkElement<T extends DiagramElement | undefined>(el: T, on: boolean): T {
-  return useMemo(() => (on && el && hasDarkColors(el.style) ? ({ ...el, style: darkStyle(el.style) } as T) : el), [el, on]);
+  return useMemo(() => {
+    if (!on || !el) return el;
+    const style = darkStyle(el.style);
+    return style === el.style ? el : ({ ...el, style } as T);
+  }, [el, on]);
 }

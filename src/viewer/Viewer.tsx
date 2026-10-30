@@ -346,7 +346,7 @@ function DiagramViewer({ pages, name, launch, dark, onToggleTheme }: { pages: Pa
     <>
       <div ref={containerRef} className="absolute inset-0 touch-none select-none data-[panning]:cursor-grabbing" role="img" aria-label={`${name} — ${page.name}`}>
         <svg className={cn('absolute inset-0 h-full w-full', dark && 'diagram-adapt')} style={{ overflow: 'visible' }}>
-          <SvgDefs />
+          <SvgDefs adapt={dark} />
           <g transform={`translate(${camera.x} ${camera.y}) scale(${camera.z})`}>
             <ViewerScene key={`${page.id}:${fontsVersion}`} doc={doc} order={order} settings={page.settings} bounds={bounds} vars={vars} labelBg={labelBg} />
             {actions.overlay}

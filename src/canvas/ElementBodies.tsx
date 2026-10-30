@@ -13,7 +13,8 @@ import { boundsOfPoints } from '@/lib/geometry';
 import { lineHeight, measureText, wrapText } from '@/lib/text';
 import { connectorStroke, ExtraLabels, SketchConnector } from './connectorShapes';
 import { connectorEffect, hideProgress, revealProgress, shapeEffect, type Packet } from '@/animation/timeline';
-import { ConnectorShadowFilter, CustomShadowFilter, customShadowId, hasCustomShadow, shadowFilterUrl } from '@/styling/shadow';
+import { ConnectorShadowFilter, CustomShadowFilter, customShadowId, hasCustomShadow, SHADOW_DEFAULTS, shadowFilterUrl } from '@/styling/shadow';
+import { preAdapt } from '@/styling/darkColors';
 import { shapeLabelBox } from '@/text/labelLayout';
 import { localizedText } from '@/text/translations';
 import { needsRich, richSize, RichTextBlock } from '@/text/RichTextBlock';
@@ -21,12 +22,16 @@ import { needsRich, richSize, RichTextBlock } from '@/text/RichTextBlock';
 export const SHADOW_FILTER_ID = 'od-shadow';
 export const GLASS_GRADIENT_ID = 'od-glass';
 
-/** Shared <defs> — must be present in any SVG that renders elements. */
-export function SvgDefs() {
+/**
+ * Shared <defs> — must be present in any SVG that renders elements. `adapt`: the
+ * SVG sits under the dark-mode adapt filter, so the shadow color is pre-compensated.
+ */
+export function SvgDefs({ adapt }: { adapt?: boolean }) {
+  const s = SHADOW_DEFAULTS;
   return (
     <defs>
       <filter id={SHADOW_FILTER_ID} x="-20%" y="-20%" width="140%" height="160%" colorInterpolationFilters="sRGB">
-        <feDropShadow dx="0" dy="4" stdDeviation="5" floodColor="#0f172a" floodOpacity="0.16" />
+        <feDropShadow dx={s.offsetX} dy={s.offsetY} stdDeviation={s.blur} floodColor={adapt ? preAdapt(s.color) : s.color} floodOpacity={s.opacity} />
       </filter>
       <linearGradient id={GLASS_GRADIENT_ID} x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stopColor="#ffffff" stopOpacity="0.75" />
