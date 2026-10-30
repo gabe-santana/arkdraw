@@ -354,7 +354,24 @@ function flashFeedback(set: (p: Partial<EditorState>) => void, f: { kind: 'group
   flashTimer = window.setTimeout(() => set({ flash: null }), 700);
 }
 
+/**
+ * The page settings (background, paper, grid…) in force at each history step,
+ * so undo and redo restore them along with the document. Keyed by the
+ * history entry (a document snapshot), so the history stays a list of documents.
+ */
+const settingsAt = new WeakMap<Doc, PageSettings>();
+/** Settings changes this close together (dragging a color) are one undo step. */
+const SETTINGS_COALESCE_MS = 600;
+
 export const useEditor = create<EditorState>((set, get) => {
+  const pageSettings = () => get().pages.find((p) => p.id === get().activePageId)?.settings;
+  /** A history entry for `doc`, remembering the page settings that go with it. */
+  const remember = (doc: Doc, settings = pageSettings()) => {
+    if (settings) settingsAt.set(doc, settings);
+    return doc;
+  };
+  let lastSettingsStep: { entry: Doc; at: number } | null = null;
+
   /** Apply a document change, recording history unless inside an interaction. */
   const commit = (next: Doc, extra: Partial<EditorState> = {}) => {
     const s = get();
@@ -363,7 +380,18 @@ export const useEditor = create<EditorState>((set, get) => {
       set({ doc: next, ...extra });
       return;
     }
-    set({ doc: next, past: [...s.past.slice(-HISTORY_LIMIT + 1), s.doc], future: [], ...extra });
+    set({ doc: next, past: [...s.past.slice(-HISTORY_LIMIT + 1), remember(s.doc)], future: [], ...extra });
+  };
+
+  /** Puts the page settings recorded with a history entry back on the active page. */
+  const restoreSettings = (entry: Doc) => {
+    const saved = settingsAt.get(entry);
+    const { pages, activePageId } = get();
+    if (!saved || saved === pageSettings()) return {};
+    return {
+      pages: pages.map((p) => (p.id === activePageId ? { ...p, settings: saved } : p)),
+      settings: effectiveSettings(loadSettings(), saved),
+    };
   };
 
   const selected = () => {
@@ -717,26 +745,29 @@ export const useEditor = create<EditorState>((set, get) => {
       const { past, doc, future, selection } = get();
       if (!past.length) return;
       const prev = past[past.length - 1];
+      lastSettingsStep = null;
       set({
         doc: prev,
         past: past.slice(0, -1),
-        future: [doc, ...future],
+        future: [remember(doc), ...future],
         selection: selection.filter((id) => prev.elements[id]),
         editingId: null,
+        ...restoreSettings(prev),
       });
     },
     redo: () => {
       const { past, doc, future, selection } = get();
       if (!future.length) return;
       const next = future[0];
-      set({ doc: next, past: [...past, doc], future: future.slice(1), selection: selection.filter((id) => next.elements[id]) });
+      lastSettingsStep = null;
+      set({ doc: next, past: [...past, remember(doc)], future: future.slice(1), selection: selection.filter((id) => next.elements[id]), ...restoreSettings(next) });
     },
     beginInteraction: () => set({ interactionBase: get().doc }),
     endInteraction: () => {
       const { interactionBase, doc, past } = get();
       if (!interactionBase) return;
       if (interactionBase !== doc) {
-        set({ interactionBase: null, past: [...past.slice(-HISTORY_LIMIT + 1), interactionBase], future: [] });
+        set({ interactionBase: null, past: [...past.slice(-HISTORY_LIMIT + 1), remember(interactionBase)], future: [] });
       } else set({ interactionBase: null });
     },
     setDoc: (doc) => set({ doc }),
@@ -852,8 +883,21 @@ export const useEditor = create<EditorState>((set, get) => {
       });
     },
     updatePageSettings: (patch) => {
-      const { pages, activePageId } = get();
-      set({ pages: pages.map((p) => (p.id === activePageId ? { ...p, settings: { ...p.settings, ...patch } } : p)) });
+      const { pages, activePageId, past, doc } = get();
+      const before = pageSettings();
+      if (!before || Object.entries(patch).every(([k, v]) => before[k as keyof PageSettings] === v)) return;
+      const settings = { ...before, ...patch };
+      // One undo step (coalescing a burst, like dragging a color), unless a drag is recording its own.
+      const now = Date.now();
+      const coalesce = lastSettingsStep && past[past.length - 1] === lastSettingsStep.entry && now - lastSettingsStep.at < SETTINGS_COALESCE_MS;
+      let history = {};
+      if (!get().interactionBase && !coalesce) {
+        // A copy of the document marks the step: same drawing, the settings before the change.
+        const entry = remember({ ...doc }, before);
+        lastSettingsStep = { entry, at: now };
+        history = { past: [...past.slice(-HISTORY_LIMIT + 1), entry], future: [] };
+      } else if (coalesce) lastSettingsStep!.at = now;
+      set({ pages: pages.map((p) => (p.id === activePageId ? { ...p, settings } : p)), ...history });
     },
 
     // --- layers -------------------------------------------------------------
