@@ -26,6 +26,11 @@ export default {
   // context menu on a page tab: edit the page's custom data
   'chrome.pageTabs.editData': 'Edit data…',
   'chrome.pageTabs.insertPage': 'Insert page',
+  'chrome.pageTabs.allPages': 'All pages',
+  'chrome.pageTabs.findPage': 'Find a page by name or number',
+  'chrome.pageTabs.noMatch': 'No page matches',
+  'chrome.pageTabs.deleteTitle': 'Delete “{name}”?',
+  'chrome.pageTabs.deleteMessage': '{count, plural, one {It has # element} other {It has # elements}}. Deleting a page can’t be undone.',
 
   // StartScreen
   'chrome.start.title': 'Welcome to ArkDraw',

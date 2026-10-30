@@ -24,6 +24,11 @@ export default {
   // PageTabs
   'chrome.pageTabs.editData': '데이터 편집…',
   'chrome.pageTabs.insertPage': '페이지 삽입',
+  'chrome.pageTabs.allPages': '모든 페이지',
+  'chrome.pageTabs.findPage': '이름이나 번호로 페이지 찾기',
+  'chrome.pageTabs.noMatch': '일치하는 페이지 없음',
+  'chrome.pageTabs.deleteTitle': '“{name}”을(를) 삭제할까요?',
+  'chrome.pageTabs.deleteMessage': '요소가 {count}개 있습니다. 페이지 삭제는 되돌릴 수 없습니다.',
 
   // StartScreen
   'chrome.start.title': 'ArkDraw에 오신 것을 환영합니다',

@@ -24,6 +24,11 @@ export default {
   // PageTabs
   'chrome.pageTabs.editData': 'Изменить данные…',
   'chrome.pageTabs.insertPage': 'Вставить страницу',
+  'chrome.pageTabs.allPages': 'Все страницы',
+  'chrome.pageTabs.findPage': 'Найти страницу по имени или номеру',
+  'chrome.pageTabs.noMatch': 'Страниц не найдено',
+  'chrome.pageTabs.deleteTitle': 'Удалить «{name}»?',
+  'chrome.pageTabs.deleteMessage': '{count, plural, one {На ней # элемент} few {На ней # элемента} other {На ней # элементов}}. Удаление страницы нельзя отменить.',
 
   // StartScreen
   'chrome.start.title': 'Добро пожаловать в ArkDraw',

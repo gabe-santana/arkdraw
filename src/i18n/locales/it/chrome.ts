@@ -22,6 +22,11 @@ export default {
   // PageTabs
   'chrome.pageTabs.editData': 'Modifica dati…',
   'chrome.pageTabs.insertPage': 'Inserisci pagina',
+  'chrome.pageTabs.allPages': 'Tutte le pagine',
+  'chrome.pageTabs.findPage': 'Cerca una pagina per nome o numero',
+  'chrome.pageTabs.noMatch': 'Nessuna pagina corrisponde',
+  'chrome.pageTabs.deleteTitle': 'Eliminare “{name}”?',
+  'chrome.pageTabs.deleteMessage': '{count, plural, one {Contiene # elemento} other {Contiene # elementi}}. L’eliminazione di una pagina non si può annullare.',
 
   // StartScreen
   'chrome.start.title': 'Benvenuto in ArkDraw',
