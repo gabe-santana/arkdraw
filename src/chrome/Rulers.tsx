@@ -34,7 +34,11 @@ function Ruler({ axis }: { axis: 'x' | 'y' }) {
   const camera = useEditor((s) => s.camera);
   const viewport = useEditor((s) => s.viewport);
   const units = useUi((s) => s.units);
-  const sel = useEditor((s) => (s.selection.length ? selectionBounds(s.doc, s.selection) : null));
+  // The selection's extent, highlighted on the ruler. Computed outside the store selector: a selector
+  // returning a new object on every read makes React re-render forever (a blank screen on any click).
+  const selection = useEditor((s) => s.selection);
+  const doc = useEditor((s) => s.doc);
+  const sel = useMemo(() => (selection.length ? selectionBounds(doc, selection) : null), [doc, selection]);
   const len = axis === 'x' ? viewport.w : viewport.h;
   const offset = axis === 'x' ? camera.x : camera.y;
   const perPx = UNIT_PER_PX[units];
