@@ -25,7 +25,7 @@ export default {
   'chrome.pageTabs.editData': 'Editar datos…',
   'chrome.pageTabs.insertPage': 'Insertar página',
   'chrome.pageTabs.allPages': 'Todas las páginas',
-  'chrome.pageTabs.findPage': 'Buscar página por nombre o número',
+  'chrome.pageTabs.findPage': 'Buscar página',
   'chrome.pageTabs.noMatch': 'Ninguna página coincide',
   'chrome.pageTabs.deleteTitle': '¿Eliminar «{name}»?',
   'chrome.pageTabs.deleteMessage': '{count, plural, one {Tiene # elemento} other {Tiene # elementos}}. Eliminar una página no se puede deshacer.',

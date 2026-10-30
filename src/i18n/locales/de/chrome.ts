@@ -23,7 +23,7 @@ export default {
   'chrome.pageTabs.editData': 'Daten bearbeiten…',
   'chrome.pageTabs.insertPage': 'Seite einfügen',
   'chrome.pageTabs.allPages': 'Alle Seiten',
-  'chrome.pageTabs.findPage': 'Seite nach Name oder Nummer suchen',
+  'chrome.pageTabs.findPage': 'Seite suchen',
   'chrome.pageTabs.noMatch': 'Keine passende Seite',
   'chrome.pageTabs.deleteTitle': '„{name}“ löschen?',
   'chrome.pageTabs.deleteMessage': '{count, plural, one {Sie enthält # Element} other {Sie enthält # Elemente}}. Das Löschen einer Seite lässt sich nicht rückgängig machen.',

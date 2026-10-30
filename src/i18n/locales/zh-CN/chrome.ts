@@ -23,7 +23,7 @@ export default {
   'chrome.pageTabs.editData': '编辑数据…',
   'chrome.pageTabs.insertPage': '插入页面',
   'chrome.pageTabs.allPages': '所有页面',
-  'chrome.pageTabs.findPage': '按名称或编号查找页面',
+  'chrome.pageTabs.findPage': '查找页面',
   'chrome.pageTabs.noMatch': '没有匹配的页面',
   'chrome.pageTabs.deleteTitle': '删除“{name}”？',
   'chrome.pageTabs.deleteMessage': '该页面有 {count} 个元素。删除页面后无法撤销。',

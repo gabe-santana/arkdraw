@@ -29,7 +29,7 @@ export default {
   'chrome.pageTabs.editData': 'データを編集…',
   'chrome.pageTabs.insertPage': 'ページを挿入',
   'chrome.pageTabs.allPages': 'すべてのページ',
-  'chrome.pageTabs.findPage': '名前または番号でページを検索',
+  'chrome.pageTabs.findPage': 'ページを検索',
   'chrome.pageTabs.noMatch': '一致するページがありません',
   'chrome.pageTabs.deleteTitle': '「{name}」を削除しますか？',
   'chrome.pageTabs.deleteMessage': '{count} 個の要素があります。ページの削除は元に戻せません。',

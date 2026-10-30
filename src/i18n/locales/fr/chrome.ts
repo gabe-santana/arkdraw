@@ -23,7 +23,7 @@ export default {
   'chrome.pageTabs.editData': 'Modifier les données…',
   'chrome.pageTabs.insertPage': 'Insérer une page',
   'chrome.pageTabs.allPages': 'Toutes les pages',
-  'chrome.pageTabs.findPage': 'Chercher une page par nom ou numéro',
+  'chrome.pageTabs.findPage': 'Chercher une page',
   'chrome.pageTabs.noMatch': 'Aucune page ne correspond',
   'chrome.pageTabs.deleteTitle': 'Supprimer « {name} » ?',
   'chrome.pageTabs.deleteMessage': '{count, plural, one {Elle contient # élément} other {Elle contient # éléments}}. La suppression d’une page est définitive.',

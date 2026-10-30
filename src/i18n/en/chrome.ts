@@ -27,7 +27,7 @@ export default {
   'chrome.pageTabs.editData': 'Edit data…',
   'chrome.pageTabs.insertPage': 'Insert page',
   'chrome.pageTabs.allPages': 'All pages',
-  'chrome.pageTabs.findPage': 'Find a page by name or number',
+  'chrome.pageTabs.findPage': 'Find a page',
   'chrome.pageTabs.noMatch': 'No page matches',
   'chrome.pageTabs.deleteTitle': 'Delete “{name}”?',
   'chrome.pageTabs.deleteMessage': '{count, plural, one {It has # element} other {It has # elements}}. Deleting a page can’t be undone.',
