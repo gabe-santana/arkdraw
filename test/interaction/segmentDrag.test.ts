@@ -87,6 +87,27 @@ describe('segment dragging', () => {
     expect(dragSegment(c1, route, up, false, 280, elements)!.patch.target).toEqual(c1.target);
   });
 
+  it('enters the facing side when a middle segment is dragged level with the shape', () => {
+    // The connector reaches B's right side by a hook around it; its lowest segment is dragged up level with B.
+    const a = createShape('rect', { x: 0, y: 20, w: 100, h: 60 }, {}, 'A');
+    const b = createShape('rect', { x: 300, y: 0, w: 100, h: 60 }, {}, 'B');
+    const conn = createConnector({ elementId: a.id, side: 'right', x: 0, y: 0 }, { elementId: b.id, side: 'right', x: 0, y: 0 }, { routing: 'orthogonal' });
+    const elements: Record<string, DiagramElement> = { [a.id]: a, [b.id]: b, [conn.id]: conn };
+    const hook = { ...conn, waypoints: [{ x: 200, y: 50 }, { x: 200, y: 150 }, { x: 440, y: 150 }, { x: 440, y: 30 }] } as ConnectorElement;
+    const route = connectorGeometryInDoc(hook, { ...elements, [conn.id]: hook }).points;
+    const low = route.findIndex((p, i) => i < route.length - 1 && p.y === 150 && route[i + 1].y === 150);
+    const res = dragSegment(hook, route, low, true, 20, elements)!;
+    // Now it comes from the left at y 20: it enters B's left side there, the hook is gone.
+    expect(res.patch.target).toMatchObject({ elementId: b.id, fixed: { x: 0, y: 0.3333 } });
+    const next = { ...hook, ...res.patch } as ConnectorElement;
+    const pts = connectorGeometryInDoc(next, { ...elements, [conn.id]: next }).points;
+    expect(pts[pts.length - 1].x).toBe(300);
+    expect(pts[pts.length - 1].y).toBeCloseTo(20, 1);
+    // A straight run in from the left: no point past B's left side, no tiny step before it.
+    expect(pts.every((p) => p.x <= 300)).toBe(true);
+    expect(pts[pts.length - 2].y).toBe(pts[pts.length - 1].y);
+  });
+
   it('lets a free end follow its segment', () => {
     const conn = createConnector({ x: 0, y: 0 }, { x: 200, y: 0 }, { routing: 'orthogonal' });
     const res = dragSegment(conn, [{ x: 0, y: 0 }, { x: 200, y: 0 }], 0, true, 40, { [conn.id]: conn })!;

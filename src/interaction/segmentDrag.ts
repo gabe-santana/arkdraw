@@ -5,12 +5,13 @@
  * moves: the connector still leaves it at the same point, by a short stub,
  * and turns to reach the dragged segment (so a straight connector becomes a
  * detour, and an L or Z can be shaped from it). A free end follows the segment.
- * The segment next to an end's last turn, dragged over the shape (say under
- * it), makes the connector enter that shape from the side it now faces, at
- * that spot: one bend less, an L instead of a hook.
+ * A middle segment dragged across a shape at either end (level with it, or
+ * under it) makes the connector enter that shape from the side the segment
+ * comes from, at that spot, and drops the rest of the detour: the route stays
+ * the natural one instead of crossing the shape to reach its old side.
  */
 import type { ConnectorElement, DiagramElement, Endpoint, ShapeElement, Vec } from '@/model/types';
-import { endpointAtFraction, worldToFraction } from '@/lib/connectionPoints';
+import { endpointAtFraction, fractionToWorld, worldToFraction } from '@/lib/connectionPoints';
 import type { Guide } from '@/store/editor';
 
 export interface SegmentHit {
@@ -102,16 +103,21 @@ export function dragSegment(
   const patch: Partial<ConnectorElement> = {};
   let from = 1;
   let to = pts.length - 1;
-  // Over the shape at the far end: enter it from the side the segment now comes from.
-  const enterTarget = index === last - 1 && last > 0 ? entry(endKind(conn.target, elements), pts[i], axis, c) : null;
+  // Across the shape at an end: enter it from the side the segment comes from (middle segments only,
+  // a segment on an end keeps that end where it is).
+  const middle = index > 0 && index < last;
+  const enterTarget = middle ? entry(endKind(conn.target, elements), pts[i], axis, c) : null;
   if (enterTarget) {
     patch.target = enterTarget;
     to = i + 1;
+    // Level with where the point really sits (stored as a rounded fraction), so no tiny step shows.
+    pts[i][axis] = pts[i + 1][axis] = enterTarget[axis];
   }
-  const enterSource = index === 1 && last > 1 ? entry(endKind(conn.source, elements), pts[i + 1], axis, c) : null;
+  const enterSource = middle ? entry(endKind(conn.source, elements), pts[i + 1], axis, c) : null;
   if (enterSource) {
     patch.source = enterSource;
     from = i + 1;
+    pts[i][axis] = pts[i + 1][axis] = enterSource[axis];
   }
   patch.waypoints = pts.slice(from, to);
   if (freeStart) patch.source = { ...conn.source, [axis]: c };
@@ -123,9 +129,9 @@ export function dragSegment(
 }
 
 /**
- * The end a connector gets when the segment beside its last turn moves to `c`
- * (on `axis`) over the shape, coming from `far`: a point on the side facing
- * `far`, at `c`. Null when `c` is off the shape or `far` doesn't face a side.
+ * The end a connector gets when a segment moves to `c` (on `axis`) across the
+ * shape, coming from `far`: a point on the side facing `far`, at `c`. Null
+ * when `c` is off the shape or `far` doesn't face a side.
  */
 function entry(kind: EndKind, far: Vec, axis: 'x' | 'y', c: number): Endpoint | null {
   if (kind.kind !== 'shape') return null;
@@ -140,7 +146,9 @@ function entry(kind: EndKind, far: Vec, axis: 'x' | 'y', c: number): Endpoint | 
   } else if (far.x >= s.x + s.w) at = { x: s.x + s.w, y: c };
   else if (far.x <= s.x) at = { x: s.x, y: c };
   if (!at || !Number.isFinite(f)) return null;
-  return endpointAtFraction(s, worldToFraction(s, at));
+  const ep = endpointAtFraction(s, worldToFraction(s, at));
+  // Where the point is drawn: from its stored (rounded) fraction.
+  return ep.fixed ? { ...ep, ...fractionToWorld(s, ep.fixed) } : ep;
 }
 
 /**
