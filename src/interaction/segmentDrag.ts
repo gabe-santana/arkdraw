@@ -5,8 +5,12 @@
  * moves: the connector still leaves it at the same point, by a short stub,
  * and turns to reach the dragged segment (so a straight connector becomes a
  * detour, and an L or Z can be shaped from it). A free end follows the segment.
+ * The segment next to an end's last turn, dragged over the shape (say under
+ * it), makes the connector enter that shape from the side it now faces, at
+ * that spot: one bend less, an L instead of a hook.
  */
 import type { ConnectorElement, DiagramElement, Endpoint, ShapeElement, Vec } from '@/model/types';
+import { endpointAtFraction, worldToFraction } from '@/lib/connectionPoints';
 import type { Guide } from '@/store/editor';
 
 export interface SegmentHit {
@@ -95,10 +99,48 @@ export function dragSegment(
   }
   pts[i][axis] = c;
   pts[i + 1][axis] = c;
-  const patch: Partial<ConnectorElement> = { waypoints: pts.slice(1, -1) };
+  const patch: Partial<ConnectorElement> = {};
+  let from = 1;
+  let to = pts.length - 1;
+  // Over the shape at the far end: enter it from the side the segment now comes from.
+  const enterTarget = index === last - 1 && last > 0 ? entry(endKind(conn.target, elements), pts[i], axis, c) : null;
+  if (enterTarget) {
+    patch.target = enterTarget;
+    to = i + 1;
+  }
+  const enterSource = index === 1 && last > 1 ? entry(endKind(conn.source, elements), pts[i + 1], axis, c) : null;
+  if (enterSource) {
+    patch.source = enterSource;
+    from = i + 1;
+  }
+  patch.waypoints = pts.slice(from, to);
   if (freeStart) patch.source = { ...conn.source, [axis]: c };
   if (freeEnd) patch.target = { ...conn.target, [axis]: c };
+  // Ends not touched are written back as they were, undoing an entry made earlier in the same drag.
+  patch.source ??= conn.source;
+  patch.target ??= conn.target;
   return { patch, at: c };
+}
+
+/**
+ * The end a connector gets when the segment beside its last turn moves to `c`
+ * (on `axis`) over the shape, coming from `far`: a point on the side facing
+ * `far`, at `c`. Null when `c` is off the shape or `far` doesn't face a side.
+ */
+function entry(kind: EndKind, far: Vec, axis: 'x' | 'y', c: number): Endpoint | null {
+  if (kind.kind !== 'shape') return null;
+  const s = kind.shape;
+  const [lo, size] = axis === 'x' ? [s.x, s.w] : [s.y, s.h];
+  if (!(c > lo && c < lo + size)) return null;
+  const f = (c - lo) / size;
+  let at: Vec | null = null;
+  if (axis === 'x') {
+    if (far.y >= s.y + s.h) at = { x: c, y: s.y + s.h };
+    else if (far.y <= s.y) at = { x: c, y: s.y };
+  } else if (far.x >= s.x + s.w) at = { x: s.x + s.w, y: c };
+  else if (far.x <= s.x) at = { x: s.x, y: c };
+  if (!at || !Number.isFinite(f)) return null;
+  return endpointAtFraction(s, worldToFraction(s, at));
 }
 
 /**

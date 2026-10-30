@@ -33,7 +33,7 @@ describe('segment dragging', () => {
     const { conn, elements, points } = zRoute();
     const res = dragSegment(conn, points, 0, true, 50, elements)!;
     expect(res.at).toBe(50);
-    expect(res.patch.source).toBeUndefined();
+    expect(res.patch.source).toEqual(conn.source);
     const next = { ...conn, ...res.patch } as ConnectorElement;
     const route = connectorGeometryInDoc(next, { ...elements, [conn.id]: next }).points;
     // Same start, a short stub along the original direction, then down to the dragged height.
@@ -57,13 +57,34 @@ describe('segment dragging', () => {
     const pts = connectorGeometryInDoc(conn, elements).points;
     expect(pts).toHaveLength(2);
     const res = dragSegment(conn, pts, 0, true, 120, elements)!;
-    expect(res.patch.source).toBeUndefined();
-    expect(res.patch.target).toBeUndefined();
+    expect(res.patch.source).toEqual(conn.source);
+    expect(res.patch.target).toEqual(conn.target);
     const next = { ...conn, ...res.patch } as ConnectorElement;
     const route = connectorGeometryInDoc(next, { ...elements, [conn.id]: next }).points;
     expect(route[0]).toEqual(pts[0]);
     expect(route[route.length - 1]).toEqual(pts[1]);
     expect(route.filter((p) => p.y === 120)).toHaveLength(2);
+  });
+
+  it('enters the shape from below when the segment beside its end moves under it (an L)', () => {
+    const a = createShape('rect', { x: 0, y: 0, w: 100, h: 60 }, {}, 'A');
+    const b = createShape('rect', { x: 300, y: 0, w: 100, h: 60 }, {}, 'B');
+    const conn = createConnector({ elementId: a.id, side: 'right', x: 0, y: 0 }, { elementId: b.id, side: 'left', x: 0, y: 0 }, { routing: 'orthogonal' });
+    const elements: Record<string, DiagramElement> = { [a.id]: a, [b.id]: b, [conn.id]: conn };
+    // First a detour under both shapes: A → down → across at y 150 → up → B.
+    const detour = dragSegment(conn, connectorGeometryInDoc(conn, elements).points, 0, true, 150, elements)!;
+    const c1 = { ...conn, ...detour.patch } as ConnectorElement;
+    const route = connectorGeometryInDoc(c1, { ...elements, [conn.id]: c1 }).points;
+    // The vertical segment rising into B's left side, dragged under B (x 330).
+    const up = route.length - 3;
+    const res = dragSegment(c1, route, up, false, 330, elements)!;
+    expect(res.patch.target).toMatchObject({ elementId: b.id, fixed: { x: 0.3, y: 1 } });
+    const c2 = { ...c1, ...res.patch } as ConnectorElement;
+    const l = connectorGeometryInDoc(c2, { ...elements, [conn.id]: c2 }).points;
+    expect(l[l.length - 1]).toEqual({ x: 330, y: 60 });
+    expect(l[l.length - 2]).toEqual({ x: 330, y: 150 });
+    // Back out from under B, the end returns to B's left side.
+    expect(dragSegment(c1, route, up, false, 280, elements)!.patch.target).toEqual(c1.target);
   });
 
   it('lets a free end follow its segment', () => {

@@ -61,7 +61,7 @@ type Drag =
   | { type: 'freehand'; points: Vec[] }
   | { type: 'connect'; from: Endpoint; origin: Vec; quick: { side: AnchorSide; shapeId: string } | null; moved: boolean }
   | { type: 'endpoint'; connId: string; end: 'source' | 'target' }
-  | { type: 'segment'; connId: string; index: number; base: Vec[]; origin: Vec; horizontal: boolean; mode: 'ortho' | 'insert'; started?: boolean }
+  | { type: 'segment'; connId: string; index: number; base: Vec[]; origin: Vec; horizontal: boolean; mode: 'ortho' | 'insert'; started?: boolean; conn: ConnectorElement }
   | { type: 'waypoint'; connId: string; index: number }
   | { type: 'label'; connId: string; index?: number };
 
@@ -350,7 +350,7 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
         } else {
           const a = g.points[index];
           const b = g.points[index + 1];
-          drag.current = { type: 'segment', connId, index, base: g.points, origin: p, horizontal: Math.abs(a.y - b.y) < 0.5, mode: 'ortho' };
+          drag.current = { type: 'segment', connId, index, base: g.points, origin: p, horizontal: Math.abs(a.y - b.y) < 0.5, mode: 'ortho', conn };
         }
         return;
       }
@@ -380,7 +380,7 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
         if (hit && canDragSegment(el, g.points, hit.index, s.doc.elements)) {
           if (s.selection.length !== 1 || s.selection[0] !== el.id) s.select([el.id]);
           s.beginInteraction();
-          drag.current = { type: 'segment', connId: el.id, index: hit.index, base: g.points, origin: p, horizontal: hit.horizontal, mode: 'ortho' };
+          drag.current = { type: 'segment', connId: el.id, index: hit.index, base: g.points, origin: p, horizontal: hit.horizontal, mode: 'ortho', conn: el };
           return;
         }
       }
@@ -608,8 +608,9 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
           if (dist(d.origin, p) * s.camera.z < DRAG_THRESHOLD) return;
           d.started = true;
         }
-        const conn = s.doc.elements[d.connId];
-        if (!isConnector(conn)) return;
+        if (!isConnector(s.doc.elements[d.connId])) return;
+        // Always from the connector as the drag found it: its ends may change during the drag and change back.
+        const conn = d.conn;
         const o = snapOptions(e.altKey);
         const axis = d.horizontal ? 'y' : 'x';
         let at = d.base[d.index][axis] + (p[axis] - d.origin[axis]);
