@@ -5,6 +5,7 @@ export type PanelId = 'shapes' | 'format' | 'layers';
 export type DockSide = 'left' | 'right';
 export type DockLayout = Record<DockSide, PanelId[]>;
 export type ThemeMode = 'system' | 'light' | 'dark';
+export type FormatTab = 'style' | 'text' | 'arrange';
 type UiUnits = 'px' | 'pt' | 'in' | 'mm' | 'm';
 
 export interface Toast {
@@ -33,6 +34,8 @@ interface UiState {
   dock: DockLayout;
   /** The right column's tab when it isn't showing AI: one of the panels docked there. */
   rightPanel: PanelId;
+  /** The Design panel's tab for a selection: Style, Text or Arrange. */
+  formatTab: FormatTab;
   /** Layers docked on the left (stacked under Shapes): expanded, and its height. */
   layersOpen: boolean;
   layersHeight: number;
@@ -94,6 +97,7 @@ export const useUi = create<UiState>((set, get) => ({
   ...panels,
   // Light until the user picks a theme (View → Theme, or the toolbar toggle).
   theme: load(THEME_KEY, { theme: 'light' as ThemeMode }).theme,
+  formatTab: 'style',
   contextMenu: null,
   paletteOpen: false,
   exportOpen: false,

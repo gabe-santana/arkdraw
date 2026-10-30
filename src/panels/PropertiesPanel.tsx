@@ -13,7 +13,7 @@ import { PALETTE } from '@/model/defaults';
 import { FontPicker, TranslationsSection } from './TextSection';
 import { getShapeDef } from '@/shapes/registry';
 import { useEditor } from '@/store/editor';
-import { useUi } from '@/store/ui';
+import { useUi, type FormatTab } from '@/store/ui';
 import { cn } from '@/lib/cn';
 import { usePanelCard } from '@/chrome/panelFrame';
 import { ACTION_MAP, runAction } from '@/app/actions';
@@ -21,7 +21,7 @@ import { togglePlayback } from '@/app/playback';
 import { ColorField, NumberField, Segmented, Select, Slider, Switch } from '@/ui/controls';
 import { IconButton } from '@/ui/Button';
 import { Row, Section, begin, common, end, richText } from './sections';
-import { useT } from '@/i18n';
+import { t, useT } from '@/i18n';
 import { actionLabel } from '@/i18n/catalog';
 import { UNIT_PER_PX } from '@/canvas/paper';
 import { ConnectorLabelsSection, ConnectorRouteSection, ConnectorSection } from './ConnectorSection';
@@ -38,47 +38,55 @@ export function PropertiesPanel() {
   const connectors = selected.filter(isConnector);
   const t = useT();
   const card = usePanelCard();
+  const tab = useUi((s) => s.formatTab);
 
   return (
     <aside aria-label={t('panels.formatPanel')} className={cn('pointer-events-auto flex min-h-0 max-h-full w-full flex-col overflow-hidden', card)}>
       <Header selected={selected} />
+      {selected.length > 0 && <FormatTabs />}
       <div className="scroll-thin flex-1 overflow-y-auto pb-2">
         {/* Nothing selected: the page and the canvas. */}
         {!selected.length && <PageSection />}
         {!selected.length && <CanvasSettings />}
 
-        {/* Sections in mxGraph's order: Style, then Text, then Arrange; data, animation and behavior last. */}
-        {/* Style */}
-        {selected.length > 0 && <StylePresetsSection els={selected} />}
-        {shapes.length > 0 && <FillStroke els={shapes} />}
-        {connectors.length > 0 && !shapes.length && <StrokeOnly els={connectors} />}
-        {connectors.length > 0 && <ConnectorSection connectors={connectors} />}
-        {connectors.length > 0 && <ConnectorRouteSection connectors={connectors} />}
-        {selected.length === 1 && shapes[0]?.table && <TableSection el={shapes[0]} />}
-        {selected.length === 1 && shapes[0]?.kind === 'freehand' && <FreehandSection el={shapes[0]} />}
-        {selected.length === 1 && shapes[0]?.kind === 'image' && <ImageSection el={shapes[0]} />}
-        {shapes.length > 0 && <ShapeParamsSection els={shapes} />}
-        {shapes.length > 0 && <EffectsSection els={shapes} />}
-        {selected.length > 0 && <Appearance els={selected} />}
-        {selected.length > 0 && <DarkColorsSection els={selected} />}
+        {/* A selection: Style, Text and Arrange tabs, as in the classic diagram editors. */}
+        {tab === 'style' && selected.length > 0 && (
+          <>
+            <StylePresetsSection els={selected} />
+            {shapes.length > 0 && <FillStroke els={shapes} />}
+            {connectors.length > 0 && !shapes.length && <StrokeOnly els={connectors} />}
+            {connectors.length > 0 && <ConnectorSection connectors={connectors} />}
+            {connectors.length > 0 && <ConnectorRouteSection connectors={connectors} />}
+            {selected.length === 1 && shapes[0]?.table && <TableSection el={shapes[0]} />}
+            {selected.length === 1 && shapes[0]?.kind === 'freehand' && <FreehandSection el={shapes[0]} />}
+            {selected.length === 1 && shapes[0]?.kind === 'image' && <ImageSection el={shapes[0]} />}
+            {shapes.length > 0 && <ShapeParamsSection els={shapes} />}
+            {shapes.length > 0 && <EffectsSection els={shapes} />}
+            <Appearance els={selected} />
+            <DarkColorsSection els={selected} />
+            <AnimationProps els={selected} />
+          </>
+        )}
 
-        {/* Text */}
-        {selected.length > 0 && <TextProps els={selected} />}
-        {selected.length > 0 && <TextExtras els={selected} />}
-        {connectors.length === 1 && !shapes.length && <ConnectorLabelsSection conn={connectors[0]} />}
+        {tab === 'text' && selected.length > 0 && (
+          <>
+            <TextProps els={selected} />
+            <TextExtras els={selected} />
+            {connectors.length === 1 && !shapes.length && <ConnectorLabelsSection conn={connectors[0]} />}
+            {selected.length === 1 && <TranslationsSection el={selected[0]} />}
+          </>
+        )}
 
-        {/* Arrange */}
-        {shapes.length === 1 && <Geometry shape={shapes[0]} />}
-        {shapes.length > 0 && <TransformSection els={shapes} />}
-        {selected.length > 1 && <Arrange multi={shapes.length} />}
-        {selected.length === 1 && <Arrange multi={0} />}
-        {shapes.length === 1 && !connectors.length && <ConnectionPointsSection shape={shapes[0]} />}
-
-        {/* Data, animation, behavior */}
-        {selected.length === 1 && <DataSection el={selected[0]} />}
-        {selected.length === 1 && <TranslationsSection el={selected[0]} />}
-        {selected.length > 0 && <AnimationProps els={selected} />}
-        {selected.length > 0 && <BehaviorSection key={selected.map((e) => e.id).join()} els={selected} />}
+        {tab === 'arrange' && selected.length > 0 && (
+          <>
+            {shapes.length === 1 && <Geometry shape={shapes[0]} />}
+            {shapes.length > 0 && <TransformSection els={shapes} />}
+            <Arrange multi={selected.length > 1 ? shapes.length : 0} />
+            {shapes.length === 1 && !connectors.length && <ConnectionPointsSection shape={shapes[0]} />}
+            {selected.length === 1 && <DataSection el={selected[0]} />}
+            <BehaviorSection key={selected.map((e) => e.id).join()} els={selected} />
+          </>
+        )}
       </div>
     </aside>
   );
@@ -87,6 +95,50 @@ export function PropertiesPanel() {
 // ---------------------------------------------------------------------------
 // Layout primitives
 // ---------------------------------------------------------------------------
+
+const FORMAT_TABS: Array<{ id: FormatTab; label: () => string }> = [
+  { id: 'style', label: () => t('panels.style.title') },
+  { id: 'text', label: () => t('common.text') },
+  { id: 'arrange', label: () => t('menu.arrange') },
+];
+
+/** Style, Text and Arrange: one part of the selection's settings at a time. */
+function FormatTabs() {
+  useT();
+  const tab = useUi((s) => s.formatTab);
+  const set = useUi((s) => s.set);
+  return (
+    <div
+      role="tablist"
+      aria-label={t('panels.formatPanel')}
+      onKeyDown={(e) => {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        e.preventDefault();
+        e.stopPropagation();
+        const i = FORMAT_TABS.findIndex((x) => x.id === tab) + (e.key === 'ArrowRight' ? 1 : -1);
+        set({ formatTab: FORMAT_TABS[(i + FORMAT_TABS.length) % FORMAT_TABS.length].id });
+      }}
+      className="mx-3 mb-1 grid shrink-0 grid-cols-3 gap-0.5 rounded-lg bg-panel-2 p-0.5"
+    >
+      {FORMAT_TABS.map((x) => (
+        <button
+          key={x.id}
+          type="button"
+          role="tab"
+          aria-selected={x.id === tab}
+          tabIndex={x.id === tab ? 0 : -1}
+          onClick={() => set({ formatTab: x.id })}
+          className={cn(
+            'h-7 truncate rounded-md px-2 text-[12px] font-medium outline-none transition-[background,color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-accent/50',
+            x.id === tab ? 'bg-panel text-fg shadow-[0_1px_2px_rgb(0_0_0/0.08),0_0_0_1px_var(--line)]' : 'text-muted hover:text-fg',
+          )}
+        >
+          {x.label()}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function Header({ selected }: { selected: DiagramElement[] }) {
   const t = useT();

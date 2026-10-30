@@ -46,8 +46,14 @@ describe('panels i18n', () => {
 
     act(() => s.select(['a']));
     text = await render(createElement(PropertiesPanel));
+    // Style, Text and Arrange tabs, Style first.
     expect(text).toContain('Drop shadow');
+    expect(text).not.toContain('Connection points');
+    act(() => useUi.getState().set({ formatTab: 'arrange' }));
+    text = await render(createElement(PropertiesPanel));
     expect(text).toContain('Connection points');
+    expect(text).not.toContain('Drop shadow');
+    act(() => useUi.getState().set({ formatTab: 'style' }));
 
     act(() => s.select(['c']));
     text = await render(createElement(PropertiesPanel));
