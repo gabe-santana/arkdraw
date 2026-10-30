@@ -68,6 +68,21 @@ export function resolveDrop(
   return { ep: { x: p.x, y: p.y }, preview: p, targetId: null };
 }
 
+/** Screen px a self-loop's end must land away from its start. */
+const SELF_GAP = 16;
+
+/**
+ * A connector end dropped back on the shape its other end is attached to (a
+ * self-loop, as in mxGraph): only on a connection point or the outline, away
+ * from the other end, so a drag that never left the shape doesn't loop.
+ */
+export function resolveSelfDrop(doc: Doc, p: Vec, shape: ShapeElement, otherEnd: Vec, opts: { z: number; exact?: boolean }): Drop | null {
+  const d = resolveDrop(doc, p, shape, { z: opts.z, exact: opts.exact, assist: true });
+  if (d.targetId !== shape.id || (!d.ep.fixed && (!d.ep.side || d.ep.side === 'auto'))) return null;
+  if (Math.hypot(d.preview.x - otherEnd.x, d.preview.y - otherEnd.y) * opts.z < SELF_GAP) return null;
+  return d;
+}
+
 /** Start endpoint when a drag begins on a connection-point marker (`data-cpoint`). */
 export function endpointFromPointMarker(target: Element, doc: Doc): Endpoint | null {
   const node = target.closest('[data-cpoint]');

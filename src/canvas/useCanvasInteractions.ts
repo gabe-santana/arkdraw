@@ -31,7 +31,7 @@ import { buildSnapTargets, snapRect, snapValue, type SnapTargets } from './snapp
 import { presetForTool } from './tools';
 import { clientToWorld } from './viewport';
 import { followLink } from './links';
-import { endpointFromPointMarker, resolveDrop, useEndpointDrag } from './connectorDrop';
+import { endpointFromPointMarker, resolveDrop, resolveSelfDrop, useEndpointDrag } from './connectorDrop';
 import { moveExtraLabel, openExtraLabelEditorAt } from './ExtraLabelEditor';
 import { canDragSegment, dragSegment, segmentAt, segmentCursor, snapSegment } from '@/interaction/segmentDrag';
 import { canPick, finishFreehandStroke, handleDoubleClick, isContainerShape, keepsAspect, pickMembers, strokePoint } from '@/interaction/canvasHooks';
@@ -105,6 +105,15 @@ export function shapeAtPoint(doc: Doc, p: Vec, exclude: Set<string> = new Set(),
     if (containsPoint(inflate(shapeRect(el), slop), local)) return el;
   }
   return null;
+}
+
+/** A self-loop drop at `p` back on the shape the other end (`from`, sitting at `fromAt`) is attached to. */
+function selfLoopAt(doc: Doc, p: Vec, from: Endpoint, fromAt: Vec, exact: boolean) {
+  const shape = from.elementId ? doc.elements[from.elementId] : undefined;
+  if (!isShape(shape) || isLocked(doc, shape) || shape.behavior?.connectable === false) return null;
+  const z = useEditor.getState().camera.z;
+  if (shapeAtPoint(doc, p, new Set(), 6 / z)?.id !== shape.id) return null;
+  return resolveSelfDrop(doc, p, shape, fromAt, { z, exact });
 }
 
 /** Where a new connector leaves its start, aiming at `toward` (a floating start picks the side facing it). */
@@ -573,10 +582,13 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
         const exclude = new Set<string>(d.from.elementId ? [d.from.elementId] : []);
         const target = shapeAtPoint(s.doc, p, exclude, 6 / s.camera.z);
         const fromEdge = isConnector(s.doc.elements[d.from.elementId ?? '']) ? d.from.elementId : undefined;
-        const drop = dropAt(s.doc, p, target, e.shiftKey, fromEdge, { other: startPoint(s.doc, d.from, p), on: !e.altKey });
+        let drop = dropAt(s.doc, p, target, e.shiftKey, fromEdge, { other: startPoint(s.doc, d.from, p), on: !e.altKey });
+        // Back on the start shape, at a connection point or its outline: a self-loop.
+        const self = target ? null : selfLoopAt(s.doc, p, d.from, { x: d.from.x, y: d.from.y }, e.shiftKey);
+        if (self) drop = self;
         useEditor.setState({
           connectDraft: { from: { x: d.from.x, y: d.from.y }, to: drop.preview, targetId: drop.targetId, source: d.from, target: drop.ep, made: drop.made },
-          hoverId: target?.id ?? null,
+          hoverId: target?.id ?? (self ? self.targetId : null),
         });
         return;
       }
@@ -587,9 +599,11 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
         const exclude = new Set<string>(other.elementId ? [other.elementId] : []);
         const target = shapeAtPoint(s.doc, p, exclude, 6 / s.camera.z);
         const ends = endpointPositions(conn, (id) => s.doc.elements[id]);
-        const ep: Endpoint = dropAt(s.doc, p, target, e.shiftKey, d.connId, { other: (d.end === 'source' ? ends.b : ends.a).point, on: !e.altKey }).ep;
+        const otherAt = (d.end === 'source' ? ends.b : ends.a).point;
+        const self = target ? null : selfLoopAt(s.doc, p, other, otherAt, e.shiftKey);
+        const ep: Endpoint = self ? self.ep : dropAt(s.doc, p, target, e.shiftKey, d.connId, { other: otherAt, on: !e.altKey }).ep;
         s.updateElements({ [d.connId]: { [d.end]: ep } as Partial<ConnectorElement> });
-        useEditor.setState({ hoverId: target?.id ?? null });
+        useEditor.setState({ hoverId: target?.id ?? (self ? self.targetId : null) });
         useEndpointDrag.setState({ active: true });
         return;
       }
@@ -714,10 +728,8 @@ export function useCanvasInteractions(ref: RefObject<HTMLDivElement | null>) {
           }
           const p = clientToWorld(e.clientX, e.clientY);
           const target = draft.targetId ? s.doc.elements[draft.targetId] : null;
-          const fromEdge = isConnector(s.doc.elements[d.from.elementId ?? '']) ? d.from.elementId : undefined;
-          const to: Endpoint = target
-            ? dropAt(s.doc, p, isShape(target) ? target : null, e.shiftKey, fromEdge, { other: startPoint(s.doc, d.from, p), on: !e.altKey }).ep
-            : { x: draft.to.x, y: draft.to.y };
+          // The end the preview showed (a self-loop included); recomputed only for a drag that never moved.
+          const to: Endpoint = draft.target ?? (target ? dropAt(s.doc, p, isShape(target) ? target : null, e.shiftKey, undefined, { on: !e.altKey }).ep : { x: draft.to.x, y: draft.to.y });
           const conn = createConnector(d.from, to);
           const pos = endpointPositions(conn, (id) => s.doc.elements[id]);
           conn.source = { ...conn.source, x: pos.a.point.x, y: pos.a.point.y };
