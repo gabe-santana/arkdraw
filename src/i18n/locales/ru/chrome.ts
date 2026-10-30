@@ -107,5 +107,4 @@ export default {
   'chrome.rightTabs.layersHint': 'Слои и все элементы, от переднего к заднему',
   'chrome.rightTabs.ai': 'ИИ',
   'chrome.rightTabs.aiHint': 'Скажите, что нужно: ассистент нарисует или изменит',
-  'chrome.dock.resizeAi': 'Изменить ширину панели ИИ',
 } satisfies Translation<typeof en>;

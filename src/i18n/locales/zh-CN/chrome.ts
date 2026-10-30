@@ -105,5 +105,4 @@ export default {
   'chrome.rightTabs.layersHint': '图层和所有元素（从前到后）',
   'chrome.rightTabs.ai': 'AI',
   'chrome.rightTabs.aiHint': '说出你想要的：助手会绘制或修改',
-  'chrome.dock.resizeAi': '调整 AI 面板大小',
 } satisfies Translation<typeof en>;

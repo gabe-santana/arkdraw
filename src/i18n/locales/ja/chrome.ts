@@ -128,5 +128,4 @@ export default {
   'chrome.rightTabs.layersHint': 'レイヤーと全要素（前面から背面）',
   'chrome.rightTabs.ai': 'AI',
   'chrome.rightTabs.aiHint': '望むことを伝えるだけで、アシスタントが描画や編集をします',
-  'chrome.dock.resizeAi': 'AI パネルのサイズを変更',
 } satisfies Translation<typeof en>;

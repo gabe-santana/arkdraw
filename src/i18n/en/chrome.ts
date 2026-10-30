@@ -126,5 +126,4 @@ export default {
   'chrome.rightTabs.layersHint': 'Layers and every element, front to back',
   'chrome.rightTabs.ai': 'AI',
   'chrome.rightTabs.aiHint': 'Say what you want: the assistant draws or edits it',
-  'chrome.dock.resizeAi': 'Resize the AI panel',
 } as const;

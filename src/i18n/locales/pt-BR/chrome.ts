@@ -107,5 +107,4 @@ export default {
   'chrome.rightTabs.layersHint': 'Camadas e todos os elementos, da frente para trás',
   'chrome.rightTabs.ai': 'IA',
   'chrome.rightTabs.aiHint': 'Diga o que você quer: o assistente desenha ou edita',
-  'chrome.dock.resizeAi': 'Redimensionar o painel de IA',
 } satisfies Translation<typeof en>;

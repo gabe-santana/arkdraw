@@ -47,14 +47,14 @@ export function Toasts() {
         <div
           key={t.id}
           role="status"
-          className="animate-slide-up pointer-events-auto flex max-w-[480px] items-center gap-2.5 rounded-xl bg-[#18181d] px-3.5 py-2.5 text-[13px] text-white shadow-pop dark:bg-[#26262d]"
+          className="animate-slide-up pointer-events-auto flex max-w-[480px] items-center gap-2.5 rounded-xl bg-panel px-3.5 py-2.5 text-[13px] text-fg shadow-pop ring-1 ring-line"
         >
           {t.kind === 'success' ? (
-            <CheckCircle2 className="size-4 shrink-0 text-emerald-400" />
+            <CheckCircle2 className="size-4 shrink-0 text-success" />
           ) : t.kind === 'error' ? (
-            <AlertCircle className="size-4 shrink-0 text-red-400" />
+            <AlertCircle className="size-4 shrink-0 text-danger" />
           ) : (
-            <Info className="size-4 shrink-0 text-sky-400" />
+            <Info className="size-4 shrink-0 text-accent" />
           )}
           {t.message}
         </div>

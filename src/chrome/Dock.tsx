@@ -6,7 +6,7 @@
  *
  * The left column stacks its panels as floating cards. The right column is one
  * full-height card whose tabs are the panels docked there (Design, Layers…)
- * plus AI (the assistant, src/chrome/AiHost.tsx), which has its own width.
+ * plus AI (the assistant, src/chrome/AiHost.tsx), all at one width.
  */
 import { Fragment, lazy, Suspense, useState, type ReactNode } from 'react';
 import { create } from 'zustand';
@@ -14,7 +14,7 @@ import { ArrowDown, ArrowLeftRight, ArrowUp, GripHorizontal, Layers3, LoaderCirc
 import { useUi, type DockLayout, type DockSide, type PanelId } from '@/store/ui';
 import { cn } from '@/lib/cn';
 import { ContextMenu, type MenuEntry } from '@/ui/Menu';
-import { AI_WIDTH, PANEL_WIDTH, PanelResizer } from '@/ui/PanelResizer';
+import { PANEL_WIDTH, PanelResizer, RIGHT_MAX } from '@/ui/PanelResizer';
 import { Tooltip } from '@/ui/Tooltip';
 import { LeftPanel } from '@/panels/LeftPanel';
 import { PropertiesPanel } from '@/panels/PropertiesPanel';
@@ -43,9 +43,9 @@ export function columnVisible(s: Pick<UiState, 'dock' | 'leftOpen' | 'rightOpen'
 }
 
 /** Space a docked column takes from the canvas edge (0 when hidden). */
-export function columnInset(s: Pick<UiState, 'dock' | 'leftOpen' | 'rightOpen' | 'aiOpen' | 'leftWidth' | 'rightWidth' | 'aiWidth'>, side: DockSide): number {
+export function columnInset(s: Pick<UiState, 'dock' | 'leftOpen' | 'rightOpen' | 'aiOpen' | 'leftWidth' | 'rightWidth'>, side: DockSide): number {
   if (!columnVisible(s, side)) return 0;
-  return side === 'left' ? s.leftWidth : s.aiOpen ? s.aiWidth : s.rightWidth;
+  return side === 'left' ? s.leftWidth : s.rightWidth;
 }
 
 export function movePanel(id: PanelId, side: DockSide, index: number) {
@@ -81,7 +81,7 @@ export function toggleAiTab() {
 }
 
 export const resetDock = () =>
-  useUi.getState().set({ dock: DEFAULT_DOCK, leftWidth: PANEL_WIDTH.left, rightWidth: PANEL_WIDTH.right, aiWidth: AI_WIDTH.default, leftOpen: true, rightOpen: true });
+  useUi.getState().set({ dock: DEFAULT_DOCK, leftWidth: PANEL_WIDTH.left, rightWidth: PANEL_WIDTH.right, leftOpen: true, rightOpen: true });
 
 // ---------------------------------------------------------------------------
 // Drag state
@@ -220,6 +220,9 @@ function DropLine({ show }: { show: boolean }) {
 
 type RightTab = PanelId | 'ai';
 
+/** Tabs always read Design, Layers, (Shapes), AI, whatever order the panels were docked in. */
+const TAB_ORDER: PanelId[] = ['format', 'layers', 'shapes'];
+
 const TAB_ICON: Record<RightTab, ReactNode> = { format: <SlidersHorizontal />, layers: <Layers3 />, shapes: <Shapes />, ai: <Sparkles /> };
 
 function tabLabel(id: RightTab): string {
@@ -241,7 +244,7 @@ const TAB_SHORTCUT: Partial<Record<RightTab, string>> = { layers: 'Mod+Shift+L',
 function RightTabs({ ids, active }: { ids: PanelId[]; active: RightTab }) {
   useT();
   const [menu, setMenu] = useState<{ id: PanelId; x: number; y: number } | null>(null);
-  const tabs: RightTab[] = [...ids, 'ai'];
+  const tabs: RightTab[] = [...TAB_ORDER.filter((id) => ids.includes(id)), 'ai'];
   const show = (tab: RightTab) => useUi.getState().set(tab === 'ai' ? { aiOpen: true } : { aiOpen: false, rightPanel: tab });
   return (
     <div
@@ -377,7 +380,7 @@ function RightColumn() {
   const open = useUi((s) => s.rightOpen);
   const panel = useUi((s) => activeRightPanel(s));
   const ai = useUi((s) => s.aiOpen) || !panel;
-  const width = useUi((s) => (ai ? s.aiWidth : s.rightWidth));
+  const width = useUi((s) => s.rightWidth);
   const drag = useDockDrag();
   const t = useT();
   // The AI tab mounts on first use, then stays mounted while hidden so the conversation survives tab switches.
@@ -423,26 +426,16 @@ function RightColumn() {
       ) : (
         <DropZone active={dropping} />
       )}
-      {open &&
-        (ai ? (
-          <PanelResizer
-            edge="left"
-            width={width}
-            min={AI_WIDTH.min}
-            max={AI_WIDTH.max}
-            defaultWidth={AI_WIDTH.default}
-            label={t('chrome.dock.resizeAi')}
-            onChange={(w) => useUi.getState().set({ aiWidth: w })}
-          />
-        ) : (
-          <PanelResizer
-            edge="left"
-            width={width}
-            defaultWidth={PANEL_WIDTH.right}
-            label={t('chrome.dock.resizeRight')}
-            onChange={(w) => useUi.getState().set({ rightWidth: w })}
-          />
-        ))}
+      {open && (
+        <PanelResizer
+          edge="left"
+          width={width}
+          max={RIGHT_MAX}
+          defaultWidth={PANEL_WIDTH.right}
+          label={t('chrome.dock.resizeRight')}
+          onChange={(w) => useUi.getState().set({ rightWidth: w })}
+        />
+      )}
     </div>
   );
 }

@@ -108,5 +108,4 @@ export default {
   'chrome.rightTabs.layersHint': '레이어와 모든 요소(앞에서 뒤로)',
   'chrome.rightTabs.ai': 'AI',
   'chrome.rightTabs.aiHint': '원하는 것을 말하면 어시스턴트가 그리거나 편집합니다',
-  'chrome.dock.resizeAi': 'AI 패널 크기 조정',
 } satisfies Translation<typeof en>;

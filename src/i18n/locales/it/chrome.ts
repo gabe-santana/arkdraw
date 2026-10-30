@@ -105,5 +105,4 @@ export default {
   'chrome.rightTabs.layersHint': 'Livelli e tutti gli elementi, dal primo all’ultimo',
   'chrome.rightTabs.ai': 'IA',
   'chrome.rightTabs.aiHint': 'Di\' cosa vuoi: l\'assistente lo disegna o lo modifica',
-  'chrome.dock.resizeAi': 'Ridimensiona il pannello IA',
 } satisfies Translation<typeof en>;

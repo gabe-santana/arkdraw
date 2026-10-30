@@ -105,5 +105,4 @@ export default {
   'chrome.rightTabs.layersHint': 'Ebenen und alle Elemente, von vorne nach hinten',
   'chrome.rightTabs.ai': 'KI',
   'chrome.rightTabs.aiHint': 'Sagen Sie, was Sie möchten: Der Assistent zeichnet oder bearbeitet es',
-  'chrome.dock.resizeAi': 'KI-Bereich skalieren',
 } satisfies Translation<typeof en>;

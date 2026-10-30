@@ -105,5 +105,4 @@ export default {
   'chrome.rightTabs.layersHint': 'Calques et tous les éléments, de l’avant vers l’arrière',
   'chrome.rightTabs.ai': 'IA',
   'chrome.rightTabs.aiHint': 'Dites ce que vous voulez : l\'assistant le dessine ou le modifie',
-  'chrome.dock.resizeAi': 'Redimensionner le panneau IA',
 } satisfies Translation<typeof en>;

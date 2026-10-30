@@ -29,8 +29,6 @@ interface UiState {
   /** Floating panel widths in px (user-resizable). */
   leftWidth: number;
   rightWidth: number;
-  /** Width of the right column while its AI tab is showing (chat wants more room). */
-  aiWidth: number;
   dock: DockLayout;
   /** The right column's tab when it isn't showing AI: one of the panels docked there. */
   rightPanel: PanelId;
@@ -84,7 +82,7 @@ function load<T>(key: string, fallback: T): T {
 
 // First visit (nothing saved yet): the AI tab open, the library only where there's room for it.
 const wide = typeof window === 'undefined' || window.innerWidth >= 1500;
-const panels = load(PANELS_KEY, { leftOpen: wide, rightOpen: true, layersOpen: true, layersHeight: 300, leftWidth: 264, rightWidth: 268, aiWidth: 360, aiOpen: true, rightPanel: 'format' as PanelId, dock: { left: ['shapes'], right: ['format', 'layers'] } as DockLayout });
+const panels = load(PANELS_KEY, { leftOpen: wide, rightOpen: true, layersOpen: true, layersHeight: 300, leftWidth: 264, rightWidth: 268, aiOpen: true, rightPanel: 'format' as PanelId, dock: { left: ['shapes'], right: ['format', 'layers'] } as DockLayout });
 // A saved layout must still contain each panel exactly once.
 {
   const all = [...panels.dock.left, ...panels.dock.right];
@@ -127,15 +125,17 @@ export const useUi = create<UiState>((set, get) => ({
       if ('theme' in patch) localStorage.setItem(THEME_KEY, JSON.stringify({ theme: s.theme }));
       if ('rulers' in patch) localStorage.setItem('arkdraw:rulers', JSON.stringify({ rulers: s.rulers }));
       if ('units' in patch) localStorage.setItem('arkdraw:units', JSON.stringify({ units: s.units }));
-      if (['leftOpen', 'rightOpen', 'layersOpen', 'layersHeight', 'leftWidth', 'rightWidth', 'aiWidth', 'aiOpen', 'rightPanel', 'dock'].some((k) => k in patch)) {
-        const { leftOpen, rightOpen, layersOpen, layersHeight, leftWidth, rightWidth, aiWidth, aiOpen, rightPanel, dock } = s;
-        localStorage.setItem(PANELS_KEY, JSON.stringify({ leftOpen, rightOpen, layersOpen, layersHeight, leftWidth, rightWidth, aiWidth, aiOpen, rightPanel, dock }));
+      if (['leftOpen', 'rightOpen', 'layersOpen', 'layersHeight', 'leftWidth', 'rightWidth', 'aiOpen', 'rightPanel', 'dock'].some((k) => k in patch)) {
+        const { leftOpen, rightOpen, layersOpen, layersHeight, leftWidth, rightWidth, aiOpen, rightPanel, dock } = s;
+        localStorage.setItem(PANELS_KEY, JSON.stringify({ leftOpen, rightOpen, layersOpen, layersHeight, leftWidth, rightWidth, aiOpen, rightPanel, dock }));
       }
     } catch {
       /* storage unavailable */
     }
   },
   toast: (message, kind = 'info') => {
+    // The same notice twice (say, two restores in a row) shows once.
+    if (get().toasts.some((t) => t.message === message && t.kind === kind)) return;
     const id = ++toastId;
     set({ toasts: [...get().toasts, { id, message, kind }] });
     setTimeout(() => set({ toasts: get().toasts.filter((t) => t.id !== id) }), kind === 'error' ? 6000 : 3200);
