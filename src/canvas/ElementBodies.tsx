@@ -3,8 +3,8 @@
  * them with subscriptions; exporters call them directly with a static doc.
  */
 import { connectorAria, shapeAria } from '@/interaction/aria';
-import { createContext, memo, useContext, useLayoutEffect, useMemo } from 'react';
-import type { ConnectorElement, ElementStyle, Rect, ShapeElement } from '@/model/types';
+import { createContext, memo, useContext, useLayoutEffect, useMemo, type ReactNode } from 'react';
+import type { ConnectorElement, ElementStyle, Rect, ShapeElement, Vec } from '@/model/types';
 import { getShapeDef, strokeAttrs } from '@/shapes/registry';
 import { TextBlock, TextLines } from '@/shapes/TextLines';
 import { roughen, seedFor } from '@/shapes/sketch';
@@ -265,6 +265,25 @@ function PacketMark({ packet: p, color, sw }: { packet: Packet; color: string; s
   );
 }
 
+/** Cuts the line work where it runs through text (ConnectorGeometry.holes), so the text stays readable. */
+function TextHoles({ id, holes, route, children }: { id: string; holes?: Rect[]; route: Vec[]; children: ReactNode }) {
+  if (!holes?.length) return <>{children}</>;
+  // Room for heads, bands and shadows around the route.
+  const b = boundsOfPoints(route);
+  const maskId = `text-holes-${id}`;
+  return (
+    <>
+      <defs>
+        <mask id={maskId} maskUnits="userSpaceOnUse" x={b.x - 100} y={b.y - 100} width={b.w + 200} height={b.h + 200}>
+          <rect x={b.x - 100} y={b.y - 100} width={b.w + 200} height={b.h + 200} fill="#fff" />
+          {holes.map((r, i) => <rect key={i} x={r.x} y={r.y} width={r.w} height={r.h} rx={3} fill="#000" />)}
+        </mask>
+      </defs>
+      <g mask={`url(#${maskId})`}>{children}</g>
+    </>
+  );
+}
+
 export const ConnectorBody = memo(function ConnectorBody({
   el, lookup, interactive, hideLabel, labelBg = '#ffffff', frame, geometry, revealStep, hideStep,
 }: ConnectorBodyProps) {
@@ -310,12 +329,14 @@ export const ConnectorBody = memo(function ConnectorBody({
         <path d={g.path} fill="none" stroke={color} strokeWidth={sw + 8} strokeOpacity={0.08 + 0.22 * fx.glow} strokeLinecap="round" strokeLinejoin="round" />
       )}
       <g mask={holesCtx ? `url(#${holesCtx.mask})` : undefined}>
-        {el.style.shadow ? (
-          <>
-            <defs><ConnectorShadowFilter elId={el.id} style={el.style} route={boundsOfPoints([...g.points, ...g.samples])} reach={reach} /></defs>
-            <g filter={`url(#${customShadowId(el.id)})`}>{body}</g>
-          </>
-        ) : body}
+        <TextHoles id={el.id} holes={g.holes} route={g.samples}>
+          {el.style.shadow ? (
+            <>
+              <defs><ConnectorShadowFilter elId={el.id} style={el.style} route={boundsOfPoints([...g.points, ...g.samples])} reach={reach} /></defs>
+              <g filter={`url(#${customShadowId(el.id)})`}>{body}</g>
+            </>
+          ) : body}
+        </TextHoles>
       </g>
       {fx?.packets?.map((p, i) => <PacketMark key={i} packet={p} color={color} sw={sw} />)}
       {label && !hideLabel && !drawing && <ConnectorLabel el={el} text={label} at={g.label} bg={labelBg} />}

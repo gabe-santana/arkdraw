@@ -6,7 +6,7 @@
 import { memo, useMemo } from 'react';
 import type { ConnectorElement, DiagramElement, Doc, PageSettings, ShapeElement } from '@/model/types';
 import { ConnectorBody, LabelVarsContext, ShapeBody, type LabelVars } from '@/canvas/ElementBodies';
-import { boundsOf, computeJumps, connectorGeometry, routeObstacles } from '@/lib/connectorGeometry';
+import { computeJumps, connectorGeometry, obstacleRects, routeObstacles, textRects } from '@/lib/connectorGeometry';
 import { iconUrl } from '@/shapes/IconImage';
 import { paperSize } from '@/canvas/paper';
 import type { Rect } from '@/model/types';
@@ -34,7 +34,8 @@ export const ViewerScene = memo(function ViewerScene({ doc, order, settings, bou
       // Tooltips are shown by the viewer's own hover card, not the native <title>.
       if (el.type === 'shape') return <ShapeBody key={id} el={NO_TOOLTIP(el)} interactive pageShadow={!!settings.shadow} />;
       const c = el as ConnectorElement;
-      const geometry = connectorGeometry(c, lookup, routeObstacles(c, shapes, lookup).map(boundsOf), jumps.get(id) ?? []);
+      const near = routeObstacles(c, shapes, lookup);
+      const geometry = connectorGeometry(c, lookup, obstacleRects(c, near, lookup), jumps.get(id) ?? [], textRects(c, near, lookup));
       return <ConnectorBody key={id} el={NO_TOOLTIP(c)} lookup={lookup} geometry={geometry} interactive labelBg={labelBg} />;
     });
   }, [doc, order, settings.shadow, labelBg]);

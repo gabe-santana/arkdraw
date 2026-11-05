@@ -144,6 +144,8 @@ export function createConnector(
     text: '',
     style: { ...DEFAULT_CONNECTOR_STYLE },
     groupIds: [],
+    // New connectors keep clear of text; files and imported diagrams without the flag keep their routing.
+    avoidText: true,
     ...connectorDefaults,
     ...overrides,
   };

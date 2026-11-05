@@ -9,7 +9,7 @@ import { useShallow } from 'zustand/react/shallow';
 import type { ConnectorElement, DiagramElement, PageSettings, Rect, Vec } from '@/model/types';
 import { isHidden, renderOrder, useEditor } from '@/store/editor';
 import { useAdaptColors } from '@/canvas/useAdaptColors';
-import { boundsOf, computeJumps, connectorGeometry, obstacleRects, routeObstacles } from '@/lib/connectorGeometry';
+import { boundsOf, computeJumps, connectorGeometry, obstacleRects, routeObstacles, textRects } from '@/lib/connectorGeometry';
 import { cn } from '@/lib/cn';
 import { sequenceDuration, useClock } from '@/animation/timeline';
 import { iconUrl } from '@/shapes/IconImage';
@@ -178,7 +178,7 @@ function ConnectorView({ el, editing, labelBg }: { el: ConnectorElement; editing
   const obstacles = useEditor(
     useShallow((s) => routeObstacles(el, shapesOf(s.doc.elements, s.doc.order), (id) => s.doc.elements[id])),
   );
-  const geometry = useMemo(() => connectorGeometry(el, lookup, obstacleRects(el, obstacles, lookup), jumps), [el, lookup, obstacles, jumps]);
+  const geometry = useMemo(() => connectorGeometry(el, lookup, obstacleRects(el, obstacles, lookup), jumps, textRects(el, obstacles, lookup)), [el, lookup, obstacles, jumps]);
   // A connector never appears before the shapes it connects.
   const revealStep = Math.max(el.reveal ?? 0, src?.reveal ?? 0, tgt?.reveal ?? 0);
   // …and leaves no later than they do.

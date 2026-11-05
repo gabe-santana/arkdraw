@@ -113,8 +113,10 @@ export function checkLayout(doc: Doc): LayoutIssue[] {
 
   for (const c of conns) {
     const pts = geos.get(c.id)!.samples;
+    // The line is cut under these (avoidText), so the text stays readable.
+    const cut = geos.get(c.id)!.holes ?? [];
     for (const { s, ink } of texts) {
-      if (crosses(pts, ink)) issues.push({ kind: 'connector-crosses-text', ids: [s.id, c.id], rect: ink });
+      if (crosses(pts, ink) && !cut.some((h) => containsRect(h, ink))) issues.push({ kind: 'connector-crosses-text', ids: [s.id, c.id], rect: ink });
     }
     for (const l of labels) {
       if (l.c.id !== c.id && crosses(pts, l.box)) issues.push({ kind: 'connector-crosses-text', ids: [l.c.id, c.id], rect: l.box });

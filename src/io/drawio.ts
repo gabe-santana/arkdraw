@@ -220,6 +220,8 @@ function diagramXml(doc: Doc, title: string, iconHref: (p: string) => string): s
     // Heads (+ size/fill), fixed points, spacing, jumps and edge shape: src/io/drawioConnectors.ts.
     connectorStyleToDrawio(el, m);
     if (el.animation?.kind === 'flow') m.set('flowAnimation', '1');
+    // ArkDraw-only (draw.io ignores it): keeps the routing when the file comes back.
+    if (el.avoidText) m.set('avoidText', '1');
     if (el.routing === 'elbow-h' || el.routing === 'elbow-v') {
       m.set('edgeStyle', 'elbowEdgeStyle');
       m.set('elbow', el.routing === 'elbow-v' ? 'vertical' : 'horizontal');
@@ -656,6 +658,8 @@ function modelToDoc(model: Element): Doc {
     };
     const edgeStyle = m.get('edgeStyle');
     const conn: ConnectorElement = createConnector(end(c.source, 'sourcePoint', 'exit'), end(c.target, 'targetPoint', 'entry'), {
+      // An existing diagram keeps its routing as drawn, unless ArkDraw wrote the flag.
+      avoidText: m.get('avoidText') === '1' || undefined,
       routing: m.get('curved') === '1' ? 'curved' : edgeStyle && edgeStyle !== 'none' ? 'orthogonal' : 'straight',
       text: text(c),
     });

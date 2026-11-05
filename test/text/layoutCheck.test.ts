@@ -7,6 +7,8 @@ const doc = (...els: DiagramElement[]): Doc => ({ elements: Object.fromEntries(e
 const text = (x: number, y: number, w: number, h: number, t: string, wrap = false): ShapeElement =>
   createShape('text', { x, y, w, h }, { fill: 'none', stroke: 'none', fontSize: 12, wrap, textAlign: 'left', verticalAlign: 'top' }, t);
 const card = (x: number, y: number, w: number, h: number, fill = '#ffffff') => createShape('rectangle', { x, y, w, h }, { fill }, '');
+/** Connectors as in an existing file: no avoidText, the original routing. */
+const LEGACY = { avoidText: undefined };
 const kinds = (d: Doc) => checkLayout(d).map((i) => i.kind);
 
 describe('layout check', () => {
@@ -52,7 +54,7 @@ describe('layout check', () => {
     const a = card(0, 0, 60, 60);
     const b = card(0, 300, 60, 60);
     const caption = text(-50, 100, 160, 20, 'Caption under nothing');
-    const conn = createConnector({ elementId: a.id, side: 'bottom', x: 0, y: 0 }, { elementId: b.id, side: 'top', x: 0, y: 0 });
+    const conn = createConnector({ elementId: a.id, side: 'bottom', x: 0, y: 0 }, { elementId: b.id, side: 'top', x: 0, y: 0 }, LEGACY);
     expect(checkLayout(doc(a, b, caption, conn))).toContainEqual(expect.objectContaining({ kind: 'connector-crosses-text', ids: [caption.id, conn.id] }));
   });
 
@@ -67,7 +69,7 @@ describe('layout check', () => {
   it('flags a connector label over a caption', () => {
     const a = card(0, 0, 60, 60);
     const b = card(0, 300, 60, 60);
-    const conn = createConnector({ elementId: a.id, side: 'bottom', x: 0, y: 0 }, { elementId: b.id, side: 'top', x: 0, y: 0 }, { text: 'calls' });
+    const conn = createConnector({ elementId: a.id, side: 'bottom', x: 0, y: 0 }, { elementId: b.id, side: 'top', x: 0, y: 0 }, { ...LEGACY, text: 'calls' });
     const caption = text(200, 0, 160, 20, 'Far away');
     expect(kinds(doc(a, b, caption, conn))).toEqual([]);
     const near = text(10, 175, 60, 20, 'Near');
@@ -77,14 +79,14 @@ describe('layout check', () => {
   it('flags a connector leaving an icon through its own caption', () => {
     const icon = createShape('icon', { x: 0, y: 0, w: 48, h: 48 }, { fontSize: 12 }, 'Caption');
     const b = card(-6, 300, 60, 60);
-    const conn = createConnector({ elementId: icon.id, side: 'auto', x: 0, y: 0 }, { elementId: b.id, side: 'auto', x: 0, y: 0 });
+    const conn = createConnector({ elementId: icon.id, side: 'auto', x: 0, y: 0 }, { elementId: b.id, side: 'auto', x: 0, y: 0 }, LEGACY);
     expect(checkLayout(doc(icon, b, conn))).toContainEqual(expect.objectContaining({ kind: 'connector-crosses-text', ids: [icon.id, conn.id] }));
   });
 
   it('routes around a shape in the way, but not around a text element (current behaviour)', () => {
     const a = card(0, 0, 60, 60);
     const b = card(0, 300, 60, 60);
-    const conn = createConnector({ elementId: a.id, side: 'auto', x: 0, y: 0 }, { elementId: b.id, side: 'auto', x: 0, y: 0 });
+    const conn = createConnector({ elementId: a.id, side: 'auto', x: 0, y: 0 }, { elementId: b.id, side: 'auto', x: 0, y: 0 }, LEGACY);
     const blocker = card(-20, 150, 100, 30);
     const caption = text(0, 150, 100, 30, 'Caption text');
     // routeObstacles (src/lib/connectorGeometry.ts) skips `kind: 'text'`, so the same box only deflects the route when it is a rectangle.

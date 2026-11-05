@@ -10,7 +10,7 @@
 import type { AnchorSide, ArrowHead, ConnectorElement, DiagramElement, Endpoint, Rect, ShapeElement, Vec } from '@/model/types';
 import { getShapeDef } from '@/shapes/registry';
 import {
-  anchorPoint, axisDirection, center, dist, normalize, pointAlongPolyline, rotatePoint, rotateVec, rotatedBounds,
+  anchorPoint, axisDirection, center, dist, inflate, normalize, pointAlongPolyline, rotatePoint, rotateVec, rotatedBounds,
   segmentHitsRect, segmentIntersection, SIDE_NORMALS, sideFacing, snapToAxis, sub, unionRects,
 } from './geometry';
 import { connectorLabelBox, hasOutsideLabel, labelInkBox } from '@/text/labelLayout';
@@ -32,6 +32,8 @@ export interface ConnectorGeometry {
   samples: Vec[];
   /** Whether the route is a polyline (segment handles make sense). */
   polyline: boolean;
+  /** Text the line still runs through (avoidText): the line is cut there so the text stays readable. */
+  holes?: Rect[];
 }
 
 /** Unrotated bounds of a shape. */
@@ -408,7 +410,11 @@ export function polylinePath(points: Vec[], radius: number, jumps: Vec[] = [], j
   return d;
 }
 
-export function connectorGeometry(conn: ConnectorElement, lookup: Lookup, obstacles: Rect[] = [], jumps: Vec[] = []): ConnectorGeometry {
+/**
+ * @param obstacles Boxes to route around (see obstacleRects).
+ * @param texts Text boxes near the route (see textRects): avoidText cuts the line where it still crosses one.
+ */
+export function connectorGeometry(conn: ConnectorElement, lookup: Lookup, obstacles: Rect[] = [], jumps: Vec[] = [], texts: Rect[] = []): ConnectorGeometry {
   const { a, b } = endpointPositions(conn, lookup);
   const startInset = arrowInset(conn.startArrow, conn.style.strokeWidth, conn.startSize);
   const endInset = arrowInset(conn.endArrow, conn.style.strokeWidth, conn.endSize);
@@ -460,7 +466,10 @@ export function connectorGeometry(conn: ConnectorElement, lookup: Lookup, obstac
   points = stopAtEndShape(points, shapeAt(conn.target, lookup));
   points = stopAtEndShape([...points].reverse(), shapeAt(conn.source, lookup)).reverse();
   const labelT = freeLabelT(conn, points, [...obstacles, a.rect, b.rect].filter((r): r is Rect => !!r));
-  return polylineGeometry(labelT === undefined ? conn : { ...conn, labelT }, points, jumps);
+  const g = polylineGeometry(labelT === undefined ? conn : { ...conn, labelT }, points, jumps);
+  // Safety net: whatever the route had to cross (no way around, waypoints), the text stays on top, readable.
+  const holes = conn.avoidText ? texts.filter((r) => crossesRect(points, r)).map((r) => inflate(r, 2)) : [];
+  return holes.length ? { ...g, holes } : g;
 }
 
 /** The drawing of a polyline connector through `points`: path (arrow insets, rounded bends, jumps), ends and label. */
@@ -596,11 +605,25 @@ export function obstacleRects(conn: ConnectorElement, obstacles: ShapeElement[],
   return out;
 }
 
+/** Text near the route an avoidText connector must keep readable: the obstacles' text and its ends' captions. */
+export function textRects(conn: ConnectorElement, obstacles: ShapeElement[], lookup: Lookup): Rect[] {
+  if (!conn.avoidText) return [];
+  const ends = [shapeAt(conn.source, lookup), shapeAt(conn.target, lookup)].filter((s): s is ShapeElement => !!s && hasOutsideLabel(s));
+  return [...obstacles, ...ends].map(labelInkBox).filter((r): r is Rect => !!r);
+}
+
+/** Whether a polyline runs through `r` (touching its border does not count). */
+function crossesRect(pts: Vec[], r: Rect): boolean {
+  const q = inflate(r, -1);
+  return q.w > 0 && q.h > 0 && pts.some((p, k) => k > 0 && segmentHitsRect(pts[k - 1], p, q));
+}
+
 /** Geometry using the whole document for obstacle avoidance (exports, overlays, bounds). */
 export function connectorGeometryInDoc(conn: ConnectorElement, elements: Record<string, DiagramElement>): ConnectorGeometry {
   const lookup: Lookup = (id) => elements[id];
   const shapes = Object.values(elements).filter((e): e is ShapeElement => e.type === 'shape');
-  return connectorGeometry(conn, lookup, obstacleRects(conn, routeObstacles(conn, shapes, lookup), lookup));
+  const near = routeObstacles(conn, shapes, lookup);
+  return connectorGeometry(conn, lookup, obstacleRects(conn, near, lookup), [], textRects(conn, near, lookup));
 }
 
 /** Pull a path end back from the tip so filled/hollow arrowheads aren't overdrawn. */
