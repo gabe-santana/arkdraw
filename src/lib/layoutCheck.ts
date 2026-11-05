@@ -9,16 +9,18 @@
  * - `text-outside-container`: text that starts inside a shape spills over its edge.
  * - `text-overlap`: two labels' text overlap.
  * - `shape-over-text`: a filled shape drawn above a label covers part of it.
- * - `connector-crosses-text`: a connector's line runs through a label.
+ * - `connector-crosses-text`: a connector's line runs through a label (another connector's included).
+ * - `connector-crosses-shape`: a connector runs through a shape that is not one of its ends
+ *   (containers and shapes holding an end excepted).
  * - `connector-label-overlap`: a connector's label covers a label or a shape.
  */
 import type { ConnectorElement, Doc, Rect, ShapeElement, Vec } from '@/model/types';
+import { isShape } from '@/model/types';
+
+export { labelInkBox, segmentHitsRect };
 import { connectorGeometryInDoc } from '@/lib/connectorGeometry';
-import { containsPoint, containsRect, inflate, intersects } from '@/lib/geometry';
-import { lineHeight, measureText, wrapText } from '@/lib/text';
-import { shapeLabelBox } from '@/text/labelLayout';
-import { needsRich, richSize } from '@/text/RichTextBlock';
-import { labelLayout } from '@/canvas/ElementBodies';
+import { containsPoint, containsRect, inflate, intersects, segmentHitsRect } from '@/lib/geometry';
+import { connectorLabelBox, labelInkBox, shapeLabelBox } from '@/text/labelLayout';
 import { isContainerShape } from '@/interaction/container';
 import { getShapeDef } from '@/shapes/registry';
 
@@ -28,6 +30,7 @@ export type LayoutIssueKind =
   | 'text-overlap'
   | 'shape-over-text'
   | 'connector-crosses-text'
+  | 'connector-crosses-shape'
   | 'connector-label-overlap';
 
 export interface LayoutIssue {
@@ -43,32 +46,6 @@ const TOLERANCE = 1;
 /** Text may exceed its box by this much (px) before it counts as overflow: line-height rounding. */
 const OVERFLOW_SLACK = 2;
 
-/**
- * Bounds of the text a shape's label actually draws (not its box): aligned in
- * the label box like TextBlock / RichTextBlock do, so unwrapped or too-long
- * text sticks out of the box. Unrotated shapes only; null when nothing shows.
- */
-export function labelInkBox(el: ShapeElement): Rect | null {
-  if (!el.text || el.hidden || el.rotation) return null;
-  const layout = shapeLabelBox(el);
-  if (!layout || layout.style.verticalText) return null;
-  const { box, style } = layout;
-  const wrap = style.wrap !== false;
-  let w: number;
-  let h: number;
-  if (needsRich(el.text, style)) {
-    ({ w, h } = richSize(el.text, box.w, style, wrap));
-  } else {
-    const lines = wrap ? wrapText(el.text, box.w, style) : el.text.split('\n');
-    w = Math.max(0, ...lines.map((l) => measureText(l, style)));
-    h = lines.length * lineHeight(style.fontSize);
-  }
-  if (w <= 0 || h <= 0) return null;
-  const x = style.textAlign === 'left' ? box.x : style.textAlign === 'right' ? box.x + box.w - w : box.x + (box.w - w) / 2;
-  const y = style.verticalAlign === 'top' ? box.y : style.verticalAlign === 'bottom' ? box.y + box.h - h : box.y + (box.h - h) / 2;
-  return { x, y, w, h };
-}
-
 const overlap = (a: Rect, b: Rect): Rect | null => {
   const x = Math.max(a.x, b.x);
   const y = Math.max(a.y, b.y);
@@ -76,31 +53,6 @@ const overlap = (a: Rect, b: Rect): Rect | null => {
   const h = Math.min(a.y + a.h, b.y + b.h) - y;
   return w > TOLERANCE && h > TOLERANCE ? { x, y, w, h } : null;
 };
-
-/** Whether segment p→q passes through `r` (Liang–Barsky clipping). */
-export function segmentHitsRect(p: Vec, q: Vec, r: Rect): boolean {
-  let t0 = 0;
-  let t1 = 1;
-  const dx = q.x - p.x;
-  const dy = q.y - p.y;
-  const edges: Array<[number, number]> = [
-    [-dx, p.x - r.x],
-    [dx, r.x + r.w - p.x],
-    [-dy, p.y - r.y],
-    [dy, r.y + r.h - p.y],
-  ];
-  for (const [pk, qk] of edges) {
-    if (pk === 0) {
-      if (qk < 0) return false;
-      continue;
-    }
-    const t = qk / pk;
-    if (pk < 0) t0 = Math.max(t0, t);
-    else t1 = Math.min(t1, t);
-    if (t0 > t1) return false;
-  }
-  return true;
-}
 
 /** Lints one page. Hidden elements are skipped; the result is in z-order. */
 export function checkLayout(doc: Doc): LayoutIssue[] {
@@ -150,24 +102,32 @@ export function checkLayout(doc: Doc): LayoutIssue[] {
     }
   }
 
+  const geos = new Map(conns.map((c) => [c.id, connectorGeometryInDoc(c, doc.elements)]));
+  const labels = conns.filter((c) => c.text).map((c) => ({ c, box: connectorLabelBox(c, geos.get(c.id)!.label) }));
+  const crosses = (pts: Vec[], r: Rect) => {
+    // Shrunk a bit: a line ending on a border is not a crossing.
+    const q = inflate(r, -TOLERANCE);
+    return q.w > 0 && q.h > 0 && pts.some((p, k) => k > 0 && segmentHitsRect(pts[k - 1], p, q));
+  };
+  const inside = (e: ShapeElement | undefined, o: ShapeElement) => !!e && containsRect(o, e);
+
   for (const c of conns) {
-    const g = connectorGeometryInDoc(c, doc.elements);
-    const pts = g.samples;
+    const pts = geos.get(c.id)!.samples;
     for (const { s, ink } of texts) {
-      // Shrunk a bit: a line ending on a text shape's border is not a crossing.
-      const r = inflate(ink, -TOLERANCE);
-      if (r.w <= 0 || r.h <= 0) continue;
-      for (let k = 1; k < pts.length; k++) {
-        if (segmentHitsRect(pts[k - 1], pts[k], r)) {
-          issues.push({ kind: 'connector-crosses-text', ids: [s.id, c.id], rect: ink });
-          break;
-        }
-      }
+      if (crosses(pts, ink)) issues.push({ kind: 'connector-crosses-text', ids: [s.id, c.id], rect: ink });
     }
-    if (!c.text) continue;
-    const { w, h } = labelLayout(c);
-    // Padded like the label's background (ConnectorLabel in src/canvas/ElementBodies.tsx).
-    const lab = { x: g.label.x - w / 2 - 6, y: g.label.y - h / 2 - 3, w: w + 12, h: h + 6 };
+    for (const l of labels) {
+      if (l.c.id !== c.id && crosses(pts, l.box)) issues.push({ kind: 'connector-crosses-text', ids: [l.c.id, c.id], rect: l.box });
+    }
+    // Cards in the way: not its ends, nor containers or shapes holding an end (routes may cross those).
+    const ends = [c.source.elementId, c.target.elementId].map((id) => (id ? doc.elements[id] : undefined)).filter(isShape);
+    for (const o of shapes) {
+      if (o.kind === 'text' || o.rotation || isContainerShape(o) || ends.some((e) => e.id === o.id || inside(e, o))) continue;
+      if (crosses(pts, o)) issues.push({ kind: 'connector-crosses-shape', ids: [o.id, c.id], rect: { x: o.x, y: o.y, w: o.w, h: o.h } });
+    }
+  }
+
+  for (const { c, box: lab } of labels) {
     for (const { s, ink } of texts) {
       const hit = overlap(lab, ink);
       if (hit) issues.push({ kind: 'connector-label-overlap', ids: [s.id, c.id], rect: hit });

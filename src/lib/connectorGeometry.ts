@@ -11,8 +11,9 @@ import type { AnchorSide, ArrowHead, ConnectorElement, DiagramElement, Endpoint,
 import { getShapeDef } from '@/shapes/registry';
 import {
   anchorPoint, axisDirection, center, dist, normalize, pointAlongPolyline, rotatePoint, rotateVec, rotatedBounds,
-  segmentIntersection, SIDE_NORMALS, sideFacing, snapToAxis, sub,
+  segmentHitsRect, segmentIntersection, SIDE_NORMALS, sideFacing, snapToAxis, sub, unionRects,
 } from './geometry';
+import { connectorLabelBox, hasOutsideLabel, labelInkBox } from '@/text/labelLayout';
 import { routeOrthogonal, simplify, type RouteEnd } from './routing';
 
 export type Lookup = (id: string) => DiagramElement | undefined;
@@ -188,8 +189,8 @@ function fixedEnd(e: Endpoint, shape: ShapeElement, mode: EndMode): { point: Vec
   return { point, dir: mode === 'perimeter' ? normalize(normal) : snapToAxis(normal) };
 }
 
-function resolveEnd(e: Endpoint, shape: ShapeElement | undefined, otherRef: Vec, mode: EndMode, spacing = 0): RouteEnd {
-  const end = resolveEndRaw(e, shape, otherRef, mode);
+function resolveEnd(e: Endpoint, shape: ShapeElement | undefined, otherRef: Vec, mode: EndMode, spacing = 0, avoidText = false): RouteEnd {
+  const end = (avoidText && shape && mode === 'side' && !e.fixed && captionEnd(e, shape, otherRef)) || resolveEndRaw(e, shape, otherRef, mode);
   // Perimeter spacing: keep a gap between the shape and the connector end.
   if (!spacing || !end.rect) return end;
   return { ...end, point: { x: end.point.x + end.dir.x * spacing, y: end.point.y + end.dir.y * spacing } };
@@ -214,6 +215,24 @@ function resolveEndRaw(e: Endpoint, shape: ShapeElement | undefined, otherRef: V
   return { point, dir: mode === 'perimeter' ? normalize(normal) : snapToAxis(normal), rect: bounds };
 }
 
+/**
+ * An end on a shape with a caption outside it (icon labels): the shape and its caption count as one
+ * box, and an end on the caption's side leaves past the caption instead of through it.
+ */
+function captionEnd(e: Endpoint, shape: ShapeElement, otherRef: Vec): RouteEnd | null {
+  const ink = !shape.rotation && hasOutsideLabel(shape) ? labelInkBox(shape) : null;
+  if (!ink) return null;
+  const rect = rectOf(shape);
+  const all = unionRects([rect, ink])!;
+  const side = !e.side || e.side === 'auto' ? sideFacing(all, otherRef) : e.side;
+  const n = SIDE_NORMALS[side];
+  let point = anchorPoint(rect, side);
+  if (segmentHitsRect(point, { x: point.x + n.x * 1e4, y: point.y + n.y * 1e4 }, ink)) {
+    point = n.x ? { x: n.x > 0 ? ink.x + ink.w : ink.x, y: point.y } : { x: point.x, y: n.y > 0 ? ink.y + ink.h : ink.y };
+  }
+  return { point, dir: n, rect: all };
+}
+
 const modeFor = (conn: ConnectorElement): EndMode =>
   conn.routing === 'straight' || conn.routing === 'curved' ? 'perimeter' : conn.routing === 'entity' ? 'horizontal' : 'side';
 
@@ -230,8 +249,8 @@ export function endpointPositions(conn: ConnectorElement, lookup: Lookup) {
   const tEdge = tShape ? undefined : edgeAt(conn.target, lookup, conn.id);
   const spacing = conn.perimeterSpacing ?? 0;
   return {
-    a: sEdge ? edgeEnd(conn.source, sEdge, lookup, sRef) : alignToWaypoint(resolveEnd(conn.source, sShape, sRef, mode, spacing), conn.source, sShape, wps[0]),
-    b: tEdge ? edgeEnd(conn.target, tEdge, lookup, tRef) : alignToWaypoint(resolveEnd(conn.target, tShape, tRef, mode, spacing), conn.target, tShape, wps[wps.length - 1]),
+    a: sEdge ? edgeEnd(conn.source, sEdge, lookup, sRef) : alignToWaypoint(resolveEnd(conn.source, sShape, sRef, mode, spacing, conn.avoidText), conn.source, sShape, wps[0]),
+    b: tEdge ? edgeEnd(conn.target, tEdge, lookup, tRef) : alignToWaypoint(resolveEnd(conn.target, tShape, tRef, mode, spacing, conn.avoidText), conn.target, tShape, wps[wps.length - 1]),
   };
 }
 
@@ -440,7 +459,8 @@ export function connectorGeometry(conn: ConnectorElement, lookup: Lookup, obstac
   // Never through the shapes it connects: stop at the first contact with each end's shape.
   points = stopAtEndShape(points, shapeAt(conn.target, lookup));
   points = stopAtEndShape([...points].reverse(), shapeAt(conn.source, lookup)).reverse();
-  return polylineGeometry(conn, points, jumps);
+  const labelT = freeLabelT(conn, points, [...obstacles, a.rect, b.rect].filter((r): r is Rect => !!r));
+  return polylineGeometry(labelT === undefined ? conn : { ...conn, labelT }, points, jumps);
 }
 
 /** The drawing of a polyline connector through `points`: path (arrow insets, rounded bends, jumps), ends and label. */
@@ -463,6 +483,20 @@ export function polylineGeometry(conn: ConnectorElement, points: Vec[], jumps: V
     samples: points,
     polyline: true,
   };
+}
+
+/** Where along the path the label covers least of `avoid` (avoidText connectors whose label was not placed by hand). */
+function freeLabelT(conn: ConnectorElement, pts: Vec[], avoid: Rect[]): number | undefined {
+  if (!conn.avoidText || !conn.text || conn.labelT !== undefined) return undefined;
+  let best = 0.5;
+  let least = Infinity;
+  for (const t of [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8]) {
+    const box = connectorLabelBox(conn, labelAt(pts, t, conn.labelOffset));
+    const covered = avoid.reduce((n, r) => n + Math.max(0, Math.min(box.x + box.w, r.x + r.w) - Math.max(box.x, r.x)) * Math.max(0, Math.min(box.y + box.h, r.y + r.h) - Math.max(box.y, r.y)), 0);
+    if (covered < least) [best, least] = [t, covered];
+    if (!covered) break;
+  }
+  return best;
 }
 
 /** Label anchor: `labelT` along the path, offset perpendicular by `labelOffset`. */
@@ -507,7 +541,9 @@ export function computeJumps(order: string[], elements: Record<string, DiagramEl
 /**
  * Shapes an orthogonal connector should steer around: those near the straight
  * span between its ends, excluding its own endpoints, containers (routes are
- * meant to cross those) and anything that contains an endpoint.
+ * meant to cross those) and anything that contains an endpoint. With
+ * `avoidText`, text elements and those skipped shapes come back too: only their
+ * text is in the way (see obstacleRects).
  */
 export function routeObstacles(conn: ConnectorElement, shapes: Iterable<ShapeElement>, lookup: Lookup): ShapeElement[] {
   if (conn.routing !== 'orthogonal') return [];
@@ -520,16 +556,42 @@ export function routeObstacles(conn: ConnectorElement, shapes: Iterable<ShapeEle
   const x2 = Math.max(pts[0].x + pts[0].w, pts[1].x + pts[1].w) + pad;
   const y2 = Math.max(pts[0].y + pts[0].h, pts[1].y + pts[1].h) + pad;
   const out: ShapeElement[] = [];
+  // ponytail: capped so the A* grid stays small; text-heavy areas get a higher cap.
+  const cap = conn.avoidText ? 64 : 24;
   for (const s of shapes) {
-    if (s.id === src?.id || s.id === tgt?.id || s.kind === 'text') continue;
+    if (s.id === src?.id || s.id === tgt?.id) continue;
     const sb = rotatedBounds(s);
     if (sb.x > x2 || sb.x + sb.w < x1 || sb.y > y2 || sb.y + sb.h < y1) continue;
-    const def = getShapeDef(s.kind);
-    if (def.container) continue;
-    const contains = (e?: ShapeElement) => !!e && e.x >= s.x && e.y >= s.y && e.x + e.w <= s.x + s.w && e.y + e.h <= s.y + s.h;
-    if (contains(src) || contains(tgt)) continue;
+    if (!conn.avoidText && (s.kind === 'text' || textOnlyObstacle(s, src, tgt))) continue;
     out.push(s);
-    if (out.length >= 24) break;
+    if (out.length >= cap) break;
+  }
+  return out;
+}
+
+/** Shapes the route may cross, though not their text: containers and shapes holding an endpoint. */
+function textOnlyObstacle(s: ShapeElement, src?: ShapeElement, tgt?: ShapeElement): boolean {
+  if (getShapeDef(s.kind).container) return true;
+  const contains = (e?: ShapeElement) => !!e && e.x >= s.x && e.y >= s.y && e.x + e.w <= s.x + s.w && e.y + e.h <= s.y + s.h;
+  return contains(src) || contains(tgt);
+}
+
+/**
+ * Boxes to route around, for the shapes routeObstacles picked: their bounds
+ * or, with `avoidText`, their bounds plus their text (captions, overflowing
+ * labels), or just the text for text elements, containers and shapes holding
+ * an endpoint (a container's title, a card's heading).
+ */
+export function obstacleRects(conn: ConnectorElement, obstacles: ShapeElement[], lookup: Lookup): Rect[] {
+  if (!conn.avoidText) return obstacles.map(boundsOf);
+  const src = shapeAt(conn.source, lookup);
+  const tgt = shapeAt(conn.target, lookup);
+  const out: Rect[] = [];
+  for (const s of obstacles) {
+    const ink = labelInkBox(s);
+    if (s.kind === 'text' || textOnlyObstacle(s, src, tgt)) {
+      if (ink) out.push(ink);
+    } else out.push(ink ? unionRects([boundsOf(s), ink])! : boundsOf(s));
   }
   return out;
 }
@@ -538,7 +600,7 @@ export function routeObstacles(conn: ConnectorElement, shapes: Iterable<ShapeEle
 export function connectorGeometryInDoc(conn: ConnectorElement, elements: Record<string, DiagramElement>): ConnectorGeometry {
   const lookup: Lookup = (id) => elements[id];
   const shapes = Object.values(elements).filter((e): e is ShapeElement => e.type === 'shape');
-  return connectorGeometry(conn, lookup, routeObstacles(conn, shapes, lookup).map(boundsOf));
+  return connectorGeometry(conn, lookup, obstacleRects(conn, routeObstacles(conn, shapes, lookup), lookup));
 }
 
 /** Pull a path end back from the tip so filled/hollow arrowheads aren't overdrawn. */

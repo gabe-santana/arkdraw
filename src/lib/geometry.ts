@@ -188,3 +188,28 @@ export function segmentIntersection(a: Vec, b: Vec, c: Vec, d: Vec): Vec | null 
   if (t <= 0.02 || t >= 0.98 || u <= 0.02 || u >= 0.98) return null;
   return { x: a.x + t * r.x, y: a.y + t * r.y };
 }
+
+/** Whether segment p→q passes through `r` (Liang–Barsky clipping). */
+export function segmentHitsRect(p: Vec, q: Vec, r: Rect): boolean {
+  let t0 = 0;
+  let t1 = 1;
+  const dx = q.x - p.x;
+  const dy = q.y - p.y;
+  const edges: Array<[number, number]> = [
+    [-dx, p.x - r.x],
+    [dx, r.x + r.w - p.x],
+    [-dy, p.y - r.y],
+    [dy, r.y + r.h - p.y],
+  ];
+  for (const [pk, qk] of edges) {
+    if (pk === 0) {
+      if (qk < 0) return false;
+      continue;
+    }
+    const t = qk / pk;
+    if (pk < 0) t0 = Math.max(t0, t);
+    else t1 = Math.min(t1, t);
+    if (t0 > t1) return false;
+  }
+  return true;
+}

@@ -15,9 +15,11 @@ import { connectorStroke, ExtraLabels, SketchConnector } from './connectorShapes
 import { connectorEffect, hideProgress, revealProgress, shapeEffect, type Packet } from '@/animation/timeline';
 import { ConnectorShadowFilter, CustomShadowFilter, customShadowId, hasCustomShadow, SHADOW_DEFAULTS, shadowFilterUrl } from '@/styling/shadow';
 import { preAdapt } from '@/styling/darkColors';
-import { shapeLabelBox } from '@/text/labelLayout';
+import { connectorLabelLayout as labelLayout, LABEL_MAX_WIDTH, shapeLabelBox } from '@/text/labelLayout';
+
+export { labelLayout };
 import { localizedText } from '@/text/translations';
-import { needsRich, richSize, RichTextBlock } from '@/text/RichTextBlock';
+import { needsRich, RichTextBlock } from '@/text/RichTextBlock';
 
 export const SHADOW_FILTER_ID = 'od-shadow';
 export const GLASS_GRADIENT_ID = 'od-glass';
@@ -323,7 +325,6 @@ export const ConnectorBody = memo(function ConnectorBody({
   );
 });
 
-const LABEL_MAX_WIDTH = 220;
 
 /**
  * Lets the scene cut every line under connector labels. Used where no label
@@ -346,18 +347,6 @@ function labelHoles(el: ConnectorElement, g: ConnectorGeometry, label: string): 
     hole(labelAt(g.samples, l.t, l.offset), Math.max(...lines.map((s) => measureText(s, el.style)), 4), lines.length * lineHeight(el.style.fontSize));
   }
   return holes;
-}
-
-/** Wrapped lines and size of a connector label. */
-export function labelLayout(el: ConnectorElement, text = el.text) {
-  if (needsRich(text, el.style)) {
-    const r = richSize(text, LABEL_MAX_WIDTH, el.style);
-    return { lines: [] as string[], w: Math.max(r.w, 4), h: r.h };
-  }
-  const lines = wrapText(text, LABEL_MAX_WIDTH, el.style);
-  const w = Math.max(...lines.map((l) => measureText(l, el.style)), 4);
-  const h = lines.length * lineHeight(el.style.fontSize);
-  return { lines, w, h };
 }
 
 function ConnectorLabel({ el, text, at, bg }: { el: ConnectorElement; text: string; at: { x: number; y: number }; bg: string }) {

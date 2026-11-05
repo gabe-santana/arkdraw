@@ -338,6 +338,12 @@ export interface ConnectorElement extends ElementBase {
   perimeterSpacing?: number;
   /** Labels beyond the main one (mxGraph child edge labels). */
   labels?: ConnectorLabel[];
+  /**
+   * Keep clear of text (orthogonal routing): route around text elements, shape captions and
+   * container titles, leave captioned shapes past their caption, and move the label (unless
+   * `labelT` is set) off text and shapes. Absent = the original routing, so files keep their look.
+   */
+  avoidText?: boolean;
 }
 
 export type DiagramElement = ShapeElement | ConnectorElement;
