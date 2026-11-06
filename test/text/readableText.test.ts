@@ -23,6 +23,16 @@ describe('makeTextReadable', () => {
     expect(checkLayout(d)).toEqual([]);
   });
 
+  it('grows a text element in a card only to the card edge, then wraps', () => {
+    const c = card(0, 0, 240, 70);
+    const t = text(12, 12, 200, 20, 'A description that is much longer than the card that holds it');
+    const d = makeTextReadable(doc(c, t));
+    const f = shape(d, t.id);
+    expect(f.x + f.w).toBeLessThanOrEqual(240);
+    expect(f.style.wrap).toBe(true);
+    expect(checkLayout(d)).toEqual([]);
+  });
+
   it('fits a label to its card without resizing the card: wraps, then a smaller font', () => {
     const c = card(0, 0, 120, 60, 'A cell label that is far too long for one line');
     const d = makeTextReadable(doc({ ...c, style: { ...c.style, wrap: false } }));

@@ -28,6 +28,7 @@ import type { DiagramElement, Page } from '@/model/types';
 import { SvgDefs } from '@/canvas/ElementBodies';
 import { visualBounds } from '@/io/export/svg';
 import { clearTextCache } from '@/lib/text';
+import { readablePages } from '@/lib/readableText';
 import { cn } from '@/lib/cn';
 import { isTauri } from '@/lib/platform';
 import { NON_HTTP_URL_ERROR, resolvePageParam, urlWithoutSource, type LaunchParams } from '@/web/launch';
@@ -35,6 +36,14 @@ import { t as tNow, useT } from '@/i18n';
 import { pagesFromContent, resolveSource } from '@/web/loadDiagram';
 import { PwaUpdatePrompt } from '@/web/PwaUpdatePrompt';
 import { ViewerScene } from './ViewerScene';
+
+/** Pages as the editor shows them once loaded: readableText pages fixed with the real fonts' metrics. */
+async function readable(pages: Page[]): Promise<Page[]> {
+  if (!pages.some((p) => p.settings.readableText)) return pages;
+  await document.fonts?.ready;
+  clearTextCache();
+  return readablePages(pages);
+}
 import { useViewerActions } from '@/automation/viewerActions';
 import { isActionLink } from '@/automation/linkActions';
 import { placeholderLookup } from '@/automation/placeholders';
@@ -79,7 +88,7 @@ export default function Viewer({ launch }: { launch: LaunchParams }) {
     if (!launch.source) return;
     const ac = new AbortController();
     resolveSource(launch.source, launch.title, ac.signal)
-      .then(({ pages, name }) => setState({ status: 'ready', pages, name }))
+      .then(async ({ pages, name }) => setState({ status: 'ready', pages: await readable(pages), name }))
       .catch((e) => !ac.signal.aborted && setState({ status: 'error', message: (e as Error)?.message ?? String(e) }));
     return () => ac.abort();
   }, [launch]);
@@ -88,7 +97,7 @@ export default function Viewer({ launch }: { launch: LaunchParams }) {
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
       const pages = await pagesFromContent(bytes, file.name);
-      setState({ status: 'ready', pages, name: file.name.replace(/(\.drawio)?\.[^.]+$/, '') });
+      setState({ status: 'ready', pages: await readable(pages), name: file.name.replace(/(\.drawio)?\.[^.]+$/, '') });
     } catch (e) {
       setState({ status: 'error', message: (e as Error)?.message ?? String(e) });
     }

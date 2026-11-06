@@ -6,7 +6,7 @@
  *
  * Pure: returns a new Doc. In order:
  * 1. Overflowing text: text elements grow to fit (anchored by their
- *    alignment); a label that overflows its shape (cards, table cells) wraps,
+ *    alignment) up to the edge of the card they sit in, then wrap; a label that overflows its shape (cards, table cells) wraps,
  *    then steps its font size down, so the layout around it does not move.
  * 2. Shapes drawn over text: a small shape (a badge) moves out of the way; a
  *    big one (a card) goes behind the text instead.
@@ -36,16 +36,40 @@ const isFreeText = (s: ShapeElement) => s.kind === 'text' && !s.rotation && !s.l
 const isContainer = (s: ShapeElement) => s.container ?? !!getShapeDef(s.kind).container;
 const isMovable = (s: ShapeElement) => !s.rotation && !s.locked && s.behavior?.movable !== false && !isContainer(s);
 
-/** Text elements: grow the box to the text, keeping the side the text is aligned to in place. */
-function growText(s: ShapeElement): ShapeElement {
+/** The smallest shape the text element sits in (a card, a container), if any. */
+function hostOf(s: ShapeElement, shapes: ShapeElement[]): ShapeElement | undefined {
+  const at = { x: s.x + 1, y: s.y + 1 };
+  return shapes
+    .filter((o) => o.id !== s.id && o.kind !== 'text' && !o.rotation && at.x > o.x && at.x < o.x + o.w && at.y > o.y && at.y < o.y + o.h)
+    .sort((a, b) => area(rectOf(a)) - area(rectOf(b)))[0];
+}
+
+/**
+ * Text elements: grow the box to the text, keeping the side the text is aligned to in place.
+ * Inside a card the box only grows to the card's edge; past that the text wraps, then shrinks.
+ */
+function growText(s: ShapeElement, host: ShapeElement | undefined): ShapeElement {
   const ink = labelInkBox(s);
   if (!ink || fits(s, ink)) return s;
+  if (host && !containsRect(inflate(rectOf(host), SLACK), { ...rectOf(s), ...growBox(s, ink) })) {
+    const room = { x: Math.max(s.x, host.x), y: s.y, w: host.x + host.w - GAP - Math.max(s.x, host.x), h: host.y + host.h - GAP - s.y };
+    const inRoom = { ...s, ...room, style: { ...s.style, wrap: true } };
+    const fitted = fitLabel(inRoom);
+    // Shrink the box back to the text it holds (no taller than it needs).
+    const r = labelInkBox(fitted);
+    if (r && fits(fitted, r)) return { ...fitted, h: Math.max(Math.ceil(r.h), Math.min(s.h, fitted.h)) };
+  }
+  return { ...s, ...growBox(s, ink) };
+}
+
+/** The text element's box grown to `ink`, around its alignment. */
+function growBox(s: ShapeElement, ink: Rect): Rect {
   const w = Math.max(s.w, Math.ceil(ink.w));
   const h = Math.max(s.h, Math.ceil(ink.h));
   const { textAlign, verticalAlign } = s.style;
   const x = textAlign === 'center' ? s.x - (w - s.w) / 2 : textAlign === 'right' ? s.x - (w - s.w) : s.x;
   const y = verticalAlign === 'middle' ? s.y - (h - s.h) / 2 : verticalAlign === 'bottom' ? s.y - (h - s.h) : s.y;
-  return { ...s, x, y, w, h };
+  return { x, y, w, h };
 }
 
 /** Labels inside a shape: wrap, then smaller font, never a bigger shape. */
@@ -82,7 +106,7 @@ export function makeTextReadable(doc: Doc): Doc {
   // 1. Overflow.
   for (const s of shapes()) {
     if (!s.text || s.rotation || hasOutsideLabel(s)) continue;
-    els[s.id] = s.kind === 'text' ? growText(s) : fitLabel(s);
+    els[s.id] = s.kind === 'text' ? growText(s, hostOf(s, shapes())) : fitLabel(s);
   }
 
   // 2. Shapes over text.
