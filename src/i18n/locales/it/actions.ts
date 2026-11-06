@@ -102,6 +102,7 @@ export default {
   'action.arrange.flipH': 'Capovolgi orizzontalmente',
   'action.arrange.flipV': 'Capovolgi verticalmente',
   'action.arrange.autosize': 'Dimensione automatica',
+  'action.arrange.readableText': 'Rendi leggibile il testo',
   'action.arrange.equalSize': 'Stessa dimensione',
   'action.arrange.equalWidth': 'Stessa larghezza',
   'action.arrange.equalHeight': 'Stessa altezza',

@@ -385,6 +385,11 @@ export interface PageSettings {
   shadow?: boolean;
   /** Diagram language: labels show their `label_<lang>` translation from element data when present. */
   language?: string;
+  /**
+   * Keep every label readable (src/lib/readableText.ts): applied when the page loads and kept
+   * when saved. New pages get it; pages from existing files without it are left as they are.
+   */
+  readableText?: boolean;
   /** Per-page grid & snap (absent = the global setting); see src/styling/pageGrid.ts. */
   grid?: boolean;
   gridSize?: number;

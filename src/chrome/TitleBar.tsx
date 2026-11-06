@@ -166,7 +166,7 @@ function buildMenu(label: string, recent: RecentFile[]): MenuEntry[] {
           items: ['align.left', 'align.hcenter', 'align.right', 'align.top', 'align.vcenter', 'align.bottom', 'arrange.alignGrid'].map(toEntry),
         },
         { label: t('menu.distribute'), items: ['distribute.h', 'distribute.v'].map(toEntry) },
-        { label: t('menu.size'), items: ['arrange.autosize', 'arrange.equalSize', 'arrange.equalWidth', 'arrange.equalHeight'].map(toEntry) },
+        { label: t('menu.size'), items: ['arrange.autosize', 'arrange.readableText', 'arrange.equalSize', 'arrange.equalWidth', 'arrange.equalHeight'].map(toEntry) },
         { label: t('menu.rotateFlip'), items: ['arrange.rotate', 'arrange.rotateCcw', 'arrange.flipH', 'arrange.flipV'].map(toEntry) },
         sep,
         { label: t('menu.layout'), items: ACTIONS.filter((a) => a.group === 'Layout').map((a) => toEntry(a.id)) },

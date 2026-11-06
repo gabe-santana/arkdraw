@@ -7,6 +7,7 @@ import { isConnector, isShape } from '@/model/types';
 import { setUserDefaultStyle } from '@/model/defaults';
 import { getShapeDef, textBoxOf, compartmentHeight, c4Layout } from '@/shapes/registry';
 import { textSize } from '@/text/labelLayout';
+import { makeTextReadable } from '@/lib/readableText';
 import { measureText } from '@/lib/text';
 import { groupMembers, isLocked, selectionBounds, shapeRect, useEditor } from '@/store/editor';
 import { paperSize } from '@/canvas/paper';
@@ -186,6 +187,14 @@ export function autosizeSelection() {
     patches[s.id] = { w: Math.max(20, w), h: Math.max(20, h) };
   }
   ed().updateElements(patches);
+}
+
+/** Makes every label on the page readable (undoable) and keeps it so on reload (see src/lib/readableText.ts). */
+export function makePageTextReadable() {
+  ed().updatePageSettings({ readableText: true }); // no-op when already on
+  const { doc } = ed();
+  const next = makeTextReadable(doc);
+  if (next.order.some((id, i) => id !== doc.order[i] || next.elements[id] !== doc.elements[id])) ed().commitDoc(next);
 }
 
 /** Makes every selected shape the same size as the first. */

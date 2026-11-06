@@ -12,6 +12,7 @@
 import { isTauri } from '@/lib/platform';
 import { baseName, readFile, saveFile, windowControls } from '@/io/native';
 import { parsePages } from '@/io/fileFormat';
+import { readablePages } from '@/lib/readableText';
 import { importDrawioPages } from '@/io/drawio';
 import { clearTextCache } from '@/lib/text';
 import { newPage } from '@/store/editor';
@@ -110,11 +111,13 @@ export function outputPaths(output: string, files: ExportFile[]): string[] {
 export async function runCliExport(job: CliExportJob): Promise<number> {
   try {
     const opened = await readFile(job.input);
-    const pages = await pagesFromText(opened.contents);
-    const s = settingsForJob(job, pages.length);
+    const parsed = await pagesFromText(opened.contents);
+    const s = settingsForJob(job, parsed.length);
     // Text is measured on canvas: wait for the bundled fonts so wrapping matches the editor.
     await document.fonts?.ready;
     clearTextCache();
+    // As the editor shows them once loaded (readableText pages only).
+    const pages = readablePages(parsed);
 
     const name = baseName(job.input).replace(/(\.drawio)?\.(arkdraw|drawio|xml|svg)$/i, '');
     const active = pages[(job.page ?? 1) - 1] ?? pages[0];

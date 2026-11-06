@@ -102,6 +102,7 @@ export default {
   'action.arrange.flipH': 'Espelhar na horizontal',
   'action.arrange.flipV': 'Espelhar na vertical',
   'action.arrange.autosize': 'Tamanho automático',
+  'action.arrange.readableText': 'Deixar o texto legível',
   'action.arrange.equalSize': 'Mesmo tamanho',
   'action.arrange.equalWidth': 'Mesma largura',
   'action.arrange.equalHeight': 'Mesma altura',

@@ -12,7 +12,7 @@
  * - `connector-crosses-text`: a connector's line runs through a label (another connector's included).
  * - `connector-crosses-shape`: a connector runs through a shape that is not one of its ends
  *   (containers and shapes holding an end excepted).
- * - `connector-label-overlap`: a connector's label covers a label or a shape.
+ * - `connector-label-overlap`: a connector's label covers a label, or hides a good part of a shape.
  */
 import type { ConnectorElement, Doc, Rect, ShapeElement, Vec } from '@/model/types';
 import { isShape } from '@/model/types';
@@ -20,7 +20,7 @@ import { isShape } from '@/model/types';
 export { labelInkBox, segmentHitsRect };
 import { connectorGeometryInDoc } from '@/lib/connectorGeometry';
 import { containsPoint, containsRect, inflate, intersects, segmentHitsRect } from '@/lib/geometry';
-import { connectorLabelBox, labelInkBox, shapeLabelBox } from '@/text/labelLayout';
+import { connectorLabelBox, hasOutsideLabel, labelInkBox, shapeLabelBox } from '@/text/labelLayout';
 import { isContainerShape } from '@/interaction/container';
 import { getShapeDef } from '@/shapes/registry';
 
@@ -45,6 +45,8 @@ export interface LayoutIssue {
 const TOLERANCE = 1;
 /** Text may exceed its box by this much (px) before it counts as overflow: line-height rounding. */
 const OVERFLOW_SLACK = 2;
+/** A connector label hiding more than this share of a shape hides the shape. */
+const HIDDEN_SHARE = 0.25;
 
 const overlap = (a: Rect, b: Rect): Rect | null => {
   const x = Math.max(a.x, b.x);
@@ -83,10 +85,12 @@ export function checkLayout(doc: Doc): LayoutIssue[] {
     // Where the text starts: a shape holding this point is the one the text belongs in.
     const align = style.textAlign;
     const anchor = { x: align === 'left' ? ink.x + TOLERANCE : align === 'right' ? ink.x + ink.w - TOLERANCE : ink.x + ink.w / 2, y: ink.y + ink.h / 2 };
+    // Only text that sits in another shape can spill out of it: text elements and captions (a shape's own label overflowing is text-overflow).
+    const placed = s.kind === 'text' || hasOutsideLabel(s);
     for (const o of shapes) {
       if (o.id === s.id || o.kind === 'text' || o.rotation) continue;
       const r = { x: o.x, y: o.y, w: o.w, h: o.h };
-      if (containsPoint(r, anchor) && !containsRect(inflate(r, TOLERANCE), ink)) {
+      if (placed && containsPoint(r, anchor) && !containsRect(inflate(r, TOLERANCE), ink)) {
         issues.push({ kind: 'text-outside-container', ids: [s.id, o.id], rect: ink });
       }
       // ponytail: only shapes above the label in z-order hide it; a translucent fill still counts.
@@ -137,10 +141,11 @@ export function checkLayout(doc: Doc): LayoutIssue[] {
     for (const o of shapes) {
       if (o.kind === 'text' || o.rotation) continue;
       const r = { x: o.x, y: o.y, w: o.w, h: o.h };
-      // A label sitting inside a card or container is fine; one straddling a shape is not.
+      // A label sitting inside a card or container is fine, and so is one over a strip of a big card's
+      // edge (the card still reads); one hiding a good part of a node (an icon, a badge) is not.
       if (isContainerShape(o) || containsRect(r, lab) || !intersects(r, lab)) continue;
       const hit = overlap(r, lab);
-      if (hit) issues.push({ kind: 'connector-label-overlap', ids: [o.id, c.id], rect: hit });
+      if (hit && hit.w * hit.h > HIDDEN_SHARE * o.w * o.h) issues.push({ kind: 'connector-label-overlap', ids: [o.id, c.id], rect: hit });
     }
   }
   return issues;
