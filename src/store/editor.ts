@@ -847,10 +847,24 @@ export const useEditor = create<EditorState>((set, get) => {
       if (pages.length <= 1) return;
       const idx = pages.findIndex((p) => p.id === id);
       const rest = pages.filter((p) => p.id !== id);
+      // The deleted page's history goes; the page we land on keeps its own.
+      const { [id]: _deleted, ...pageHistory } = get().pageHistory;
       if (get().activePageId === id) {
         const next = rest[Math.max(0, idx - 1)];
-        set({ pages: rest, activePageId: next.id, doc: next.doc, past: [], future: [], selection: [], activeLayerId: null, settings: effectiveSettings(loadSettings(), next.settings) });
-      } else set({ pages: rest });
+        const restored = pageHistory[next.id];
+        set({
+          pages: rest,
+          pageHistory,
+          activePageId: next.id,
+          doc: next.doc,
+          past: restored?.past ?? [],
+          future: restored?.future ?? [],
+          camera: restored?.camera ?? get().camera,
+          selection: [],
+          activeLayerId: null,
+          settings: effectiveSettings(loadSettings(), next.settings),
+        });
+      } else set({ pages: rest, pageHistory });
     },
     renamePage: (id, name) => set({ pages: get().pages.map((p) => (p.id === id ? { ...p, name } : p)) }),
     movePage: (id, toIndex) => {
