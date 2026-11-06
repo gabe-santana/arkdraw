@@ -269,6 +269,7 @@ export async function exportFiles(src: ExportSource, s: ExportSettings, ctl: Exp
         const opts = svgOptionsFor(page, src, s);
         let data: string | Uint8Array;
         if (s.format === 'svg') {
+          opts.title = multi ? `${base} – ${page.name}` : base;
           const r = s.embedImages ? await renderSvgStandalone(page.doc, opts) : await renderSvgNoImages(page.doc, opts);
           data = s.embedDiagram ? embedDiagramInSvg(r.svg, embedJson([page])) : r.svg;
         } else {
