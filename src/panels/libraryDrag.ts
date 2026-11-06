@@ -89,12 +89,24 @@ export function startLibraryDrag(e: React.PointerEvent<HTMLElement>, src: Librar
     ghost.style.transform = `translate(${ev.clientX - (src.size.w * useEditor.getState().camera.z) / 2}px, ${ev.clientY - (src.size.h * useEditor.getState().camera.z) / 2}px)`;
   };
 
-  const up = (ev: PointerEvent) => {
+  const detach = () => {
     window.removeEventListener('pointermove', move);
     window.removeEventListener('pointerup', up);
+    window.removeEventListener('pointercancel', cancel);
     window.removeEventListener('keydown', key);
     window.removeEventListener('keyup', key);
     document.body.style.cursor = '';
+  };
+  // The browser cancels the pointer when a touch turns into a scroll. Drop the
+  // gesture without inserting, so a later tap doesn't run a stale `up`.
+  const cancel = () => {
+    detach();
+    ghost?.remove();
+    outline?.remove();
+  };
+
+  const up = (ev: PointerEvent) => {
+    detach();
     if (ghost) {
       ghost.remove();
       outline?.remove();
@@ -126,6 +138,7 @@ export function startLibraryDrag(e: React.PointerEvent<HTMLElement>, src: Librar
 
   window.addEventListener('pointermove', move);
   window.addEventListener('pointerup', up);
+  window.addEventListener('pointercancel', cancel);
   window.addEventListener('keydown', key);
   window.addEventListener('keyup', key);
 }
