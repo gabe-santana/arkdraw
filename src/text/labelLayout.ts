@@ -4,8 +4,10 @@
  * verticalLabelPosition), padded by the global and per-side spacing.
  * Shared by the renderer (ElementBodies) and the in-place editor.
  */
-import type { ElementStyle, LabelPosition, Rect, ShapeElement } from '@/model/types';
+import type { ConnectorElement, ElementStyle, LabelPosition, Rect, ShapeElement } from '@/model/types';
 import { getShapeDef, textBoxOf } from '@/shapes/registry';
+import { lineHeight, measureText, wrapText } from '@/lib/text';
+import { needsRich, richSize } from './RichTextBlock';
 
 /** Positions in 3×3 grid order (row by row) — the Format panel picker. */
 export const LABEL_GRID: LabelPosition[] = ['top-left', 'top', 'top-right', 'left', 'inside', 'right', 'bottom-left', 'bottom', 'bottom-right'];
@@ -80,4 +82,55 @@ export function shapeLabelBox(el: ShapeElement): { box: Rect; style: ElementStyl
     bh = Math.max(1, el.h - pad.top - pad.bottom);
   }
   return { box: { x, y, w, h: bh }, style: { ...st, textAlign, verticalAlign } };
+}
+
+/** Whether a shape's label sits outside it (icon captions, labels moved to a side). */
+export function hasOutsideLabel(el: ShapeElement): boolean {
+  const placement = getShapeDef(el.kind).textPlacement ?? 'inside';
+  return placement !== 'custom' && (el.style.labelPosition ?? (placement === 'below' ? 'bottom' : 'inside')) !== 'inside';
+}
+
+/** Width and height `text` takes when laid out `maxWidth` wide, as TextBlock / RichTextBlock draw it. */
+export function textSize(text: string, maxWidth: number, style: ElementStyle, wrap = true): { w: number; h: number } {
+  if (needsRich(text, style)) return richSize(text, maxWidth, style, wrap);
+  const lines = wrap ? wrapText(text, maxWidth, style) : text.split('\n');
+  return { w: Math.max(0, ...lines.map((l) => measureText(l, style))), h: lines.length * lineHeight(style.fontSize) };
+}
+
+/**
+ * Bounds of the text a shape's label actually draws (not its box): aligned in
+ * the label box like TextBlock / RichTextBlock do, so unwrapped or too-long
+ * text sticks out of the box. Unrotated shapes only; null when nothing shows.
+ */
+export function labelInkBox(el: ShapeElement): Rect | null {
+  if (!el.text || el.hidden || el.rotation) return null;
+  const layout = shapeLabelBox(el);
+  if (!layout || layout.style.verticalText) return null;
+  const { box, style } = layout;
+  const { w, h } = textSize(el.text, box.w, style, style.wrap !== false);
+  if (w <= 0 || h <= 0) return null;
+  const x = style.textAlign === 'left' ? box.x : style.textAlign === 'right' ? box.x + box.w - w : box.x + (box.w - w) / 2;
+  const y = style.verticalAlign === 'top' ? box.y : style.verticalAlign === 'bottom' ? box.y + box.h - h : box.y + (box.h - h) / 2;
+  return { x, y, w, h };
+}
+
+/** Connector labels wrap at this width. */
+export const LABEL_MAX_WIDTH = 220;
+
+/** Wrapped lines and size of a connector label. */
+export function connectorLabelLayout(el: ConnectorElement, text = el.text) {
+  if (needsRich(text, el.style)) {
+    const r = richSize(text, LABEL_MAX_WIDTH, el.style);
+    return { lines: [] as string[], w: Math.max(r.w, 4), h: r.h };
+  }
+  const lines = wrapText(text, LABEL_MAX_WIDTH, el.style);
+  const w = Math.max(...lines.map((l) => measureText(l, el.style)), 4);
+  const h = lines.length * lineHeight(el.style.fontSize);
+  return { lines, w, h };
+}
+
+/** A connector label's background box (padded like ConnectorLabel draws it) centred on `at`. */
+export function connectorLabelBox(el: ConnectorElement, at: { x: number; y: number }): Rect {
+  const { w, h } = connectorLabelLayout(el);
+  return { x: at.x - w / 2 - 6, y: at.y - h / 2 - 3, w: w + 12, h: h + 6 };
 }

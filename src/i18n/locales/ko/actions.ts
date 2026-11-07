@@ -102,6 +102,7 @@ export default {
   'action.arrange.flipH': '좌우 대칭',
   'action.arrange.flipV': '상하 대칭',
   'action.arrange.autosize': '자동 크기',
+  'action.arrange.readableText': '텍스트를 읽기 쉽게',
   'action.arrange.equalSize': '같은 크기',
   'action.arrange.equalWidth': '같은 너비',
   'action.arrange.equalHeight': '같은 높이',

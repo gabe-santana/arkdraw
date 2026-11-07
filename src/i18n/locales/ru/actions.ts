@@ -102,6 +102,7 @@ export default {
   'action.arrange.flipH': 'Отразить по горизонтали',
   'action.arrange.flipV': 'Отразить по вертикали',
   'action.arrange.autosize': 'Автоподбор размера',
+  'action.arrange.readableText': 'Сделать текст читаемым',
   'action.arrange.equalSize': 'Одинаковый размер',
   'action.arrange.equalWidth': 'Одинаковая ширина',
   'action.arrange.equalHeight': 'Одинаковая высота',

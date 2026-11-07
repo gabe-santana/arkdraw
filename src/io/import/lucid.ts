@@ -200,6 +200,7 @@ function convertPage(page: LPage, index: number, warn: (m: string) => void): Imp
     };
     const texts = (l.text ?? []).filter((t) => t.text);
     const conn = createConnector(endpoint(l.endpoint1, ends.a), endpoint(l.endpoint2, ends.b), {
+      avoidText: undefined, // an existing diagram keeps its routing
       routing: l.lineType === 'elbow' ? 'orthogonal' : l.lineType === 'curved' ? 'curved' : 'straight',
       startArrow: ARROWS[l.endpoint1?.style ?? 'none'] ?? 'none',
       endArrow: ARROWS[l.endpoint2?.style ?? 'none'] ?? 'none',

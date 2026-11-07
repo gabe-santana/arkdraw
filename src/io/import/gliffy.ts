@@ -241,6 +241,7 @@ export function importGliffy(text: string): ImportResult {
     const p1 = path[path.length - 1] ?? (b ? { x: b.x + b.w / 2, y: b.y + b.h / 2 } : { x: bx + n(o.width), y: by + n(o.height) });
     const routing = g.ortho ? 'orthogonal' : /curve|quad|spline/i.test(g.interpolationType ?? '') ? 'curved' : 'straight';
     const conn = createConnector(a ? attach(a, p1) : endpointAt(undefined, p0), b ? attach(b, p0) : endpointAt(undefined, p1), {
+      avoidText: undefined, // an existing diagram keeps its routing
       routing,
       startArrow: arrowOf(g.startArrow),
       endArrow: arrowOf(g.endArrow),

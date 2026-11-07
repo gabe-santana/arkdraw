@@ -102,6 +102,7 @@ export default {
   'action.arrange.flipH': 'Horizontal spiegeln',
   'action.arrange.flipV': 'Vertikal spiegeln',
   'action.arrange.autosize': 'Automatische Größe',
+  'action.arrange.readableText': 'Text lesbar machen',
   'action.arrange.equalSize': 'Gleiche Größe',
   'action.arrange.equalWidth': 'Gleiche Breite',
   'action.arrange.equalHeight': 'Gleiche Höhe',

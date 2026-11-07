@@ -102,6 +102,7 @@ export default {
   'action.arrange.flipH': '水平翻转',
   'action.arrange.flipV': '垂直翻转',
   'action.arrange.autosize': '自动调整大小',
+  'action.arrange.readableText': '使文字清晰可读',
   'action.arrange.equalSize': '相同大小',
   'action.arrange.equalWidth': '相同宽度',
   'action.arrange.equalHeight': '相同高度',

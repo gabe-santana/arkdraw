@@ -24,7 +24,7 @@ import { newDocument, openDocument, saveDocument } from './fileCommands';
 import { copyToClipboard, pasteFromClipboard } from './clipboard';
 import { togglePlayback } from './playback';
 import {
-  addTreeNode, alignToGrid, applyLayout, autosizeSelection, clearDefaultStyle, clearWaypoints, cloneConnect, connectSelection,
+  addTreeNode, alignToGrid, applyLayout, autosizeSelection, makePageTextReadable, clearDefaultStyle, clearWaypoints, cloneConnect, connectSelection,
   copyAsImage, copyStyle, editTable, equalSize, flipSelection, gotoPage, insertTable, pasteHere, pasteStyle, pickImage,
   removeFromGroup, reverseConnectors, rotateSelection, selectByType, selectGroupOrChildren, setDefaultStyleFromSelection,
   toggleFullscreen, toggleTextStyle, stepFontSize, pickReplacement, zoomToPage,
@@ -299,6 +299,7 @@ export const ACTIONS: Action[] = [
   { id: 'arrange.flipH', label: 'Flip horizontal', group: 'Arrange', icon: <FlipHorizontal2 />, run: () => flipSelection('h'), enabled: hasShapes },
   { id: 'arrange.flipV', label: 'Flip vertical', group: 'Arrange', icon: <FlipVertical2 />, run: () => flipSelection('v'), enabled: hasShapes },
   { id: 'arrange.autosize', label: 'Autosize', group: 'Arrange', icon: <Shrink />, shortcuts: ['Mod+Shift+Y'], run: autosizeSelection, enabled: hasShapes, keywords: 'fit text' },
+  { id: 'arrange.readableText', label: 'Make text readable', group: 'Arrange', run: makePageTextReadable, keywords: 'legible overlap overflow fit text labels badge' },
   { id: 'arrange.equalSize', label: 'Equal size', group: 'Arrange', icon: <Scaling />, run: () => equalSize('both'), enabled: multi(2) },
   { id: 'arrange.equalWidth', label: 'Equal width', group: 'Arrange', run: () => equalSize('w'), enabled: multi(2) },
   { id: 'arrange.equalHeight', label: 'Equal height', group: 'Arrange', run: () => equalSize('h'), enabled: multi(2) },

@@ -1155,6 +1155,7 @@ function textShape(it: Extract<Item, { k: 'text' }>, warn: Set<string>): ShapeEl
 function lineConnector(pts: Vec[], paint: Paint, scale: number): ConnectorElement {
   const P = (p: Vec) => ({ x: r2(p.x), y: r2(p.y) });
   const c = createConnector(P(pts[0]), P(pts[pts.length - 1]), {
+    avoidText: undefined, // an existing drawing keeps its lines
     routing: 'straight',
     connectorShape: 'line',
     lineJumps: 'none',

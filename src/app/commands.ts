@@ -6,7 +6,9 @@ import type { ConnectorElement, DiagramElement, ElementStyle, ShapeElement, Vec 
 import { isConnector, isShape } from '@/model/types';
 import { setUserDefaultStyle } from '@/model/defaults';
 import { getShapeDef, textBoxOf, compartmentHeight, c4Layout } from '@/shapes/registry';
-import { lineHeight, measureText, wrapText } from '@/lib/text';
+import { textSize } from '@/text/labelLayout';
+import { makeTextReadable } from '@/lib/readableText';
+import { measureText } from '@/lib/text';
 import { groupMembers, isLocked, selectionBounds, shapeRect, useEditor } from '@/store/editor';
 import { paperSize } from '@/canvas/paper';
 import { useUi } from '@/store/ui';
@@ -175,16 +177,24 @@ export function autosizeSelection() {
       continue;
     }
     if (!s.text) continue;
-    const lines = s.text.split('\n');
-    const textW = Math.max(...lines.map((l) => measureText(l, s.style)));
+    // Measured as the label draws (formatted labels included): the widest line, unwrapped.
+    const textW = textSize(s.text, Infinity, s.style, false).w;
     const box = textBoxOf(def, s.w, s.h, s.params);
     const padX = s.w - box.w;
     const padY = s.h - box.h;
     const w = Math.ceil(textW + padX + 4);
-    const h = Math.ceil(wrapText(s.text, w - padX, s.style).length * lineHeight(s.style.fontSize) + padY + 4);
+    const h = Math.ceil(textSize(s.text, w - padX, s.style).h + padY + 4);
     patches[s.id] = { w: Math.max(20, w), h: Math.max(20, h) };
   }
   ed().updateElements(patches);
+}
+
+/** Makes every label on the page readable (undoable) and keeps it so on reload (see src/lib/readableText.ts). */
+export function makePageTextReadable() {
+  ed().updatePageSettings({ readableText: true }); // no-op when already on
+  const { doc } = ed();
+  const next = makeTextReadable(doc);
+  if (next.order.some((id, i) => id !== doc.order[i] || next.elements[id] !== doc.elements[id])) ed().commitDoc(next);
 }
 
 /** Makes every selected shape the same size as the first. */

@@ -102,6 +102,7 @@ export default {
   'action.arrange.flipH': 'Retourner horizontalement',
   'action.arrange.flipV': 'Retourner verticalement',
   'action.arrange.autosize': 'Taille automatique',
+  'action.arrange.readableText': 'Rendre le texte lisible',
   'action.arrange.equalSize': 'Même taille',
   'action.arrange.equalWidth': 'Même largeur',
   'action.arrange.equalHeight': 'Même hauteur',

@@ -102,6 +102,7 @@ export default {
   'action.arrange.flipH': '左右反転',
   'action.arrange.flipV': '上下反転',
   'action.arrange.autosize': '自動サイズ調整',
+  'action.arrange.readableText': 'テキストを読みやすくする',
   'action.arrange.equalSize': 'サイズを揃える',
   'action.arrange.equalWidth': '幅を揃える',
   'action.arrange.equalHeight': '高さを揃える',

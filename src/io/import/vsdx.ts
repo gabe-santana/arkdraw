@@ -376,6 +376,7 @@ function convertPage(files: Files, part: string, name: string, pageH: number, ma
     }
     const lp = cell('LinePattern');
     const conn = createConnector(endpointAt(a, p0), endpointAt(b, p1), {
+      avoidText: undefined, // an existing diagram keeps its routing
       routing: cell('ShapeRouteStyle') !== undefined || /connector/i.test(s.name) || (a && b) ? 'orthogonal' : 'straight',
       startArrow: arrow(cell('BeginArrow')),
       endArrow: arrow(cell('EndArrow')),

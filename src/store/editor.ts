@@ -14,6 +14,8 @@ import { uid } from '@/lib/id';
 import { rememberConnectorStyle } from '@/model/defaults';
 import { clamp, rotatedBounds, unionRects } from '@/lib/geometry';
 import { connectorGeometryInDoc } from '@/lib/connectorGeometry';
+import { readablePages } from '@/lib/readableText';
+import { clearTextCache } from '@/lib/text';
 import { boundsOfPoints } from '@/lib/geometry';
 import { effectiveSettings, pageGridPatch } from '@/styling/pageGrid';
 
@@ -172,6 +174,8 @@ export interface EditorState {
   endInteraction: () => void;
   /** Mutate without recording history (used inside interactions). */
   setDoc: (doc: Doc) => void;
+  /** Replaces the page's drawing as one undoable edit. */
+  commitDoc: (doc: Doc) => void;
 
   // --- file
   loadDoc: (doc: Doc, file: { path: string | null; name: string }) => void;
@@ -184,6 +188,8 @@ export interface EditorState {
   /** Pages with the live doc merged in (for saving/exporting). */
   allPages: () => Page[];
   loadPages: (pages: Page[], file: { path: string | null; name: string; meta?: DocumentMeta; assistant?: unknown[] }) => void;
+  /** Applies readableText to just-loaded pages (internal to loadPages). */
+  makeLoadedReadable: (pages: Page[]) => void;
   /** Replace the saved AI conversation (marks the file unsaved). */
   setAiHistory: (runs: unknown[]) => void;
   addPage: (name?: string, doc?: Doc) => void;
@@ -335,6 +341,11 @@ export function renderOrder(doc: Doc): string[] {
 }
 
 export const newPage = (name: string, doc: Doc = EMPTY_DOC): Page => ({ id: uid(), name, doc, settings: { ...DEFAULT_PAGE_SETTINGS } });
+/** A page drawn from scratch: born keeping its text readable (see src/lib/readableText.ts). */
+const blankPage = (name: string): Page => {
+  const p = newPage(name);
+  return { ...p, settings: { ...p.settings, readableText: true } };
+};
 
 const pagesMeta = (pages: Page[]) => JSON.stringify(pages.map((p) => [p.id, p.name, p.settings, p.data]));
 
@@ -771,11 +782,12 @@ export const useEditor = create<EditorState>((set, get) => {
       } else set({ interactionBase: null });
     },
     setDoc: (doc) => set({ doc }),
+    commitDoc: (doc) => commit(doc),
 
     // --- file ---------------------------------------------------------------
     loadDoc: (doc, file) => get().loadPages([newPage('Page 1', doc)], file),
     newDoc: () => {
-      get().loadPages([newPage('Page 1')], { path: null, name: 'Untitled' });
+      get().loadPages([blankPage('Page 1')], { path: null, name: 'Untitled' });
       const v = get().viewport;
       set({ camera: { x: v.w / 2, y: v.h / 2, z: 1 } });
     },
@@ -823,11 +835,31 @@ export const useEditor = create<EditorState>((set, get) => {
           savedMeta: pagesMeta(list),
         },
       });
+      if (list.some((p) => p.settings.readableText && p.doc.order.length)) {
+        // Text is measured on canvas: wait for the bundled fonts, as the canvas does.
+        const fonts = typeof document !== 'undefined' ? document.fonts?.ready : undefined;
+        if (fonts) void fonts.then(() => (clearTextCache(), get().makeLoadedReadable(list)));
+        else get().makeLoadedReadable(list);
+      }
+    },
+    // Not an edit: what the file shows once its text is readable is the saved baseline.
+    makeLoadedReadable: (list) => {
+      if (get().pages !== list) return; // Another file was opened meanwhile.
+      const fixed = readablePages(list);
+      if (fixed.every((p, i) => p === list[i])) return;
+      const { file, activePageId } = get();
+      const active = fixed.find((p) => p.id === activePageId) ?? fixed[0];
+      set({
+        pages: fixed,
+        doc: active.doc,
+        file: { ...file, savedDoc: active.doc, savedDocs: Object.fromEntries(fixed.map((p) => [p.id, p.doc])) },
+      });
     },
     setAiHistory: (runs) => set({ aiHistory: runs, file: { ...get().file, savedMeta: '' } }),
     addPage: (name, doc) => {
       const pages = get().allPages();
-      const page = newPage(name ?? `Page ${pages.length + 1}`, doc);
+      const pageName = name ?? `Page ${pages.length + 1}`;
+      const page = doc ? newPage(pageName, doc) : blankPage(pageName);
       set({ pages: [...pages, page] });
       get().switchPage(page.id);
     },
