@@ -53,6 +53,10 @@ export interface SvgExportOptions {
   inline?: boolean;
   /** Prefix for every id in the output, so several SVGs can share one HTML document. */
   idPrefix?: string;
+  /** Accessible name: adds `role="img"` and a `<title>` to the root `<svg>`. */
+  title?: string;
+  /** Optional long description: adds a `<desc>` to the root `<svg>`. */
+  desc?: string;
 }
 
 export interface RenderedSvg {
@@ -316,7 +320,10 @@ export function renderSvg(doc: Doc, opts: SvgExportOptions, resolveIcon = iconUr
           width={width}
           height={height}
           viewBox={`0 0 ${width} ${height}`}
+          role={opts.title ? 'img' : undefined}
         >
+          {opts.title && <title>{opts.title}</title>}
+          {opts.desc && <desc>{opts.desc}</desc>}
           {css && <style>{css}</style>}
           <SvgDefs />
           <g className={opts.appearance && opts.appearance !== 'light' ? 'od-art' : undefined}>
