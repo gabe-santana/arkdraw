@@ -14,15 +14,19 @@ interface DialogProps {
   labelledBy?: string;
 }
 
-/** Modal with a blurred backdrop, focus trap-lite and Esc to close. */
+const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** Modal with a blurred backdrop, focus trapped inside it and Esc to close. */
 export function Dialog({ open, onClose, children, className, placement = 'center', labelledBy }: DialogProps) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
     const prev = document.activeElement as HTMLElement | null;
     const t = setTimeout(() => {
-      const first = ref.current?.querySelector<HTMLElement>('[autofocus], input, button, [tabindex]');
-      (first ?? ref.current)?.focus();
+      // Prefer an explicit autofocus, then the first field; the header's close button comes first in the DOM.
+      const root = ref.current;
+      const first = root?.querySelector<HTMLElement>('[autofocus]') ?? root?.querySelector<HTMLElement>('input:not([type="hidden"]), textarea, select') ?? root?.querySelector<HTMLElement>(FOCUSABLE);
+      (first ?? root)?.focus();
     }, 10);
     return () => {
       clearTimeout(t);
@@ -37,6 +41,21 @@ export function Dialog({ open, onClose, children, className, placement = 'center
       onKeyDown={(e) => {
         e.stopPropagation();
         if (e.key === 'Escape') onClose();
+        if (e.key !== 'Tab' || !ref.current) return;
+        // Keep Tab / Shift+Tab cycling within the dialog.
+        const items = Array.from(ref.current.querySelectorAll<HTMLElement>(FOCUSABLE));
+        if (items.length === 0) return;
+        const first = items[0];
+        const last = items[items.length - 1];
+        const active = document.activeElement as HTMLElement | null;
+        const inside = !!active && ref.current.contains(active);
+        if (e.shiftKey && (!inside || active === first)) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (!inside || active === last)) {
+          e.preventDefault();
+          first.focus();
+        }
       }}
     >
       <div ref={ref} role="dialog" aria-modal aria-labelledby={labelledBy} tabIndex={-1} className={cn('animate-pop rounded-2xl bg-panel shadow-pop outline-none', className)}>
