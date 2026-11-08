@@ -249,7 +249,7 @@ vp.addEventListener("click",function(e){
   if(moved)return;var a=e.target.closest&&e.target.closest("[data-link]");if(!a)return;
   var href=a.getAttribute("data-link");
   if(href.indexOf("page:")===0){var id=href.slice(5);for(var i=0;i<pages.length;i++)if(pages[i].id===id){show(i);return}return}
-  if(/^(javascript|data|vbscript):/i.test(href))return;
+  if(!/^(https?:|mailto:)/i.test(href))return;
   window.open(href,"_blank","noopener");
 });
 
