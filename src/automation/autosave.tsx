@@ -29,9 +29,18 @@ export function autosaveTarget(): 'path' | 'handle' | 'library' | null {
 }
 
 let failedOnce = false;
+/** The file handle whose write permission lapsed. Cleared on a successful write or when another document is open. */
+let pausedHandle: FileSystemFileHandle | null = null;
+
+function setPaused(handle: FileSystemFileHandle | null) {
+  pausedHandle = handle;
+  if (useUi.getState().autosavePaused !== !!handle) useUi.getState().set({ autosavePaused: !!handle });
+}
 
 /** Writes the document to its current target without dialogs. Returns true on success. */
 export async function autosaveNow(): Promise<boolean> {
+  const current = docOrigin();
+  if (pausedHandle && (current?.kind !== 'handle' || current.handle !== pausedHandle)) setPaused(null);
   const target = autosaveTarget();
   if (!target || !isDirty()) return false;
   const s = useEditor.getState();
@@ -50,13 +59,20 @@ export async function autosaveNow(): Promise<boolean> {
     } else {
       const o = docOrigin();
       // No permission prompt here: autosave has no user gesture. Save (Mod+S) asks.
-      if (o?.kind !== 'handle' || !(await writeHandle(o.handle, data, false))) return false;
+      if (o?.kind !== 'handle') return false;
+      if (!(await writeHandle(o.handle, data, false))) {
+        // The browser revoked write access (e.g. after a restart). Say so once per document; the next Save (Mod+S) re-grants it.
+        if (pausedHandle !== o.handle) useUi.getState().toast(t('prefs.autosavePaused'), 'error');
+        setPaused(o.handle);
+        return false;
+      }
     }
     commitSavedMeta(meta);
     // Only mark saved if nothing changed while writing.
     const now = useEditor.getState();
     if (now.doc === docAtStart && now.pages === pagesAtStart) now.markSaved(now.file.path, now.file.name);
     failedOnce = false;
+    setPaused(null);
     return true;
   } catch (e) {
     if (!failedOnce) useUi.getState().toast(t('prefs.autosaveFailed', { error: (e as Error)?.message ?? String(e) }), 'error');

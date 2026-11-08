@@ -194,6 +194,7 @@ export function TitleBar() {
   const t = useT();
   const name = useEditor((s) => s.file.name);
   const dirty = useIsDirty();
+  const autosavePaused = useUi((s) => s.autosavePaused);
   const canUndo = useEditor((s) => s.past.length > 0);
   const canRedo = useEditor((s) => s.future.length > 0);
   const theme = useUi((s) => s.theme);
@@ -261,6 +262,11 @@ export function TitleBar() {
             className={cn('size-1.5 shrink-0 rounded-full transition-all duration-300', dirty ? 'scale-100 bg-amber-500' : 'scale-0 bg-transparent')}
             title={dirty ? t('common.unsavedChanges') : t('common.saved')}
           />
+          {autosavePaused && (
+            <span className="shrink-0 text-[11.5px] text-amber-600 dark:text-amber-400" title={t('prefs.autosavePaused')}>
+              {t('prefs.autosavePausedBadge')}
+            </span>
+          )}
         </div>
       </div>
 
