@@ -35,6 +35,10 @@ function run<T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore) => IDBRequ
           db.close();
           reject(tx.error);
         };
+        tx.onabort = () => {
+          db.close();
+          reject(tx.error ?? new Error('aborted'));
+        };
       }),
   );
 }
