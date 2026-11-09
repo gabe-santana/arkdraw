@@ -4,7 +4,7 @@ import { openai } from '@/ai/providers/openai';
 import { gemini } from '@/ai/providers/gemini';
 import { ollama } from '@/ai/providers/ollama';
 import type { ChatMessage, ChatRequest, ChatTool } from '@/ai/providers/types';
-import { chat, deleteKey, hasKey, keyRejectedError, saveKey, testConnection } from '@/ai/transport';
+import { chat, deleteKey, hasKey, keyRejectedError, saveKey, sendRequest, testConnection } from '@/ai/transport';
 import { checkKeyPrefix } from '@/ai/providers';
 import { bedrock } from '@/ai/providers/bedrock';
 import { vertex } from '@/ai/providers/gemini';
@@ -201,6 +201,28 @@ describe('browser transport (no Tauri)', () => {
     expect(url).toBe('https://bedrock-runtime.eu-west-1.amazonaws.com/model/us.amazon.nova-pro-v1%3A0/converse');
     expect(init.headers.Authorization).toBe('Bearer ABSKkey');
     expect(JSON.parse(init.body).toolConfig).toBeUndefined();
+  });
+
+  it('never sends a custom endpoint key to another origin', async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    await saveKey('custom', 'secret-A', { baseUrl: 'https://a.example.com/v1', auth: 'bearer' });
+    await expect(testConnection({ provider: 'custom', model: 'm', baseUrl: 'https://b.example.com/v1' })).rejects.toThrow();
+    expect(fetchMock).not.toHaveBeenCalled();
+    await deleteKey('custom');
+  });
+
+  it('refuses redirects on every request', async () => {
+    fetchMock.mockResolvedValue(new Response('{}', { status: 200 }));
+    await chat({ provider: 'openai', model: 'gpt-5' }, req).catch(() => {});
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.redirect).toBe('error');
+  });
+
+  it('never sends a hosted key to a host other than its official one', async () => {
+    fetchMock.mockReset();
+    await saveKey('openai', 'sk-test');
+    await expect(sendRequest('openai', { method: 'POST', url: 'https://evil.example.com/v1/chat/completions', body: {} })).rejects.toThrow();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('requires a key for hosted providers', async () => {

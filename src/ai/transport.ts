@@ -12,7 +12,9 @@
  */
 import { invoke } from '@tauri-apps/api/core';
 import { ADAPTERS, AiError, PROVIDER_META, type HttpRequest, type HttpResponse, type ModelInfo, type ProviderConfig, type ProviderId, type ChatRequest, type ChatResponse } from './providers';
-import { ANTHROPIC_VERSION } from './providers/anthropic';
+import { ANTHROPIC_BASE, ANTHROPIC_VERSION } from './providers/anthropic';
+import { GEMINI_BASE } from './providers/gemini';
+import { HOSTED_OPENAI_BASES } from './providers/openai';
 import { getAiSettings, type CustomAuthStyle } from './settings';
 import { vaultAll, vaultAvailable, vaultClear, vaultDelete, vaultPut } from './keyVault';
 import { t } from '@/i18n';
@@ -25,6 +27,13 @@ interface MemoryKey {
   auth: CustomAuthStyle;
 }
 const memoryKeys = new Map<ProviderId, MemoryKey>();
+
+/** Official origins of the hosted providers with a fixed host (their keys may only go there). */
+const FIXED_ORIGINS: Partial<Record<ProviderId, string>> = {
+  anthropic: new URL(ANTHROPIC_BASE).origin,
+  gemini: new URL(GEMINI_BASE).origin,
+  ...Object.fromEntries(Object.entries(HOSTED_OPENAI_BASES).map(([id, base]) => [id, new URL(base as string).origin])),
+};
 
 /** Keys remembered from earlier sessions, loaded once (browser only). */
 let restored: Promise<void> | null = null;
@@ -158,17 +167,22 @@ export async function sendRequest(provider: ProviderId, req: HttpRequest, signal
     return abortable(p, signal);
   }
   await restoreKeys();
+  const mk = memoryKeys.get(provider);
+  const host = new URL(req.url).host;
+  // A key is only ever sent to the endpoint it was saved for (custom / Ollama), or to a hosted provider's official origin.
+  const expectedOrigin = mk?.origin ?? FIXED_ORIGINS[provider];
+  if (expectedOrigin && new URL(req.url).origin !== expectedOrigin) throw new AiError(t('ai.error.unreachable', { host }));
   const headers: Record<string, string> = {
     ...(body ? { 'content-type': 'application/json' } : {}),
     ...(req.headers ?? {}),
-    ...authHeaders(provider, memoryKeys.get(provider)),
+    ...authHeaders(provider, mk),
   };
   let res: Response;
   try {
-    res = await fetch(req.url, { method: req.method, headers, body, signal });
+    // Never follow redirects: a redirect could carry the key elsewhere.
+    res = await fetch(req.url, { method: req.method, headers, body, signal, redirect: 'error' });
   } catch (e) {
     if ((e as Error)?.name === 'AbortError') throw e;
-    const host = new URL(req.url).host;
     throw new AiError(provider === 'ollama' ? t('ai.error.unreachableOllama', { host }) : t('ai.error.unreachable', { host }));
   }
   return { status: res.status, body: await res.text() };
