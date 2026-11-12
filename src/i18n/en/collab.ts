@@ -45,4 +45,6 @@ export default {
   'prefs.autosaveDesktop': 'Saved files are written about a second after each change (a .bkp keeps the previous version when backups are on).',
   'prefs.autosaveWeb': 'Works for files opened or saved through the browser’s file picker, and for documents in the browser library.',
   'prefs.autosaveFailed': 'Autosave failed: {error}',
+  'prefs.autosavePaused': 'Autosave paused: the browser no longer allows writing to this file. Press Ctrl+S to allow saving again.',
+  'prefs.autosavePausedBadge': 'Autosave paused',
 } as const;

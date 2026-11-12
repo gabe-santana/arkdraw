@@ -61,9 +61,11 @@ interface UiState {
   prefsOpen: boolean;
   units: 'px' | 'pt' | 'in' | 'mm' | 'm';
   toasts: Toast[];
+  /** Autosave is paused because the browser revoked write access to the open file. */
+  autosavePaused: boolean;
   confirm: ConfirmRequest | null;
 
-  set: (patch: Partial<Omit<UiState, 'set' | 'toast' | 'ask'>>) => void;
+  set:(patch: Partial<Omit<UiState, 'set' | 'toast' | 'ask'>>) => void;
   toast: (message: string, kind?: Toast['kind']) => void;
   ask: (req: Omit<ConfirmRequest, 'resolve'>) => Promise<'confirm' | 'deny' | 'cancel'>;
 }
@@ -116,6 +118,7 @@ export const useUi = create<UiState>((set, get) => ({
   prefsOpen: false,
   units: load('arkdraw:units', { units: 'px' as UiUnits }).units,
   toasts: [],
+  autosavePaused: false,
   confirm: null,
 
   set: (patch) => {
