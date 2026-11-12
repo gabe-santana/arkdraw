@@ -55,7 +55,8 @@ if (mode === '--nginx') {
   Content-Security-Policy: ${csp()}
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Permissions-Policy: camera=(), microphone=(self), geolocation=(), payment=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
 
 /index.html
   Cache-Control: no-cache
