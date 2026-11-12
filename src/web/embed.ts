@@ -151,12 +151,25 @@ export function initEmbedMode(opts: EmbedOptions = {}): () => void {
   let lastPosted: Page[] = useEditor.getState().allPages();
   const cleanups: Array<() => void> = [];
 
+  /** Set when the verified parent window has an opaque ("null") origin: it cannot be pinned, so replies use '*'. */
+  let opaqueHost = false;
+  /** Origin to target, or null until the host is known. */
+  const targetOrigin = () => pinnedOrigin ?? inferredOrigin ?? (opaqueHost ? '*' : null);
+  /** A save requested before the origin is known; sent once the host pins it. */
+  let heldSave: { exit: boolean } | null = null;
+
+  // `init` carries no diagram, so it may go to '*' before the origin is known.
   const post = (msg: EmbedEvent, replyTo?: unknown) => {
     const body = replyTo !== undefined ? { ...msg, id: replyTo } : msg;
-    host.parent.postMessage(jsonProto ? JSON.stringify(body) : body, pinnedOrigin ?? inferredOrigin ?? '*');
+    host.parent.postMessage(jsonProto ? JSON.stringify(body) : body, targetOrigin() ?? '*');
   };
 
   const emitSave = (exit = false) => {
+    if (!targetOrigin()) {
+      heldSave = { exit: exit || !!heldSave?.exit };
+      return;
+    }
+    heldSave = null;
     const s = useEditor.getState();
     const pages = s.allPages();
     post({ event: 'save', json: serializePages(pages), title: fileTitle(), modified: isDirtyState(s), exit });
@@ -219,7 +232,13 @@ export function initEmbedMode(opts: EmbedOptions = {}): () => void {
       jsonProto = true;
     }
     if (!data || typeof data !== 'object' || typeof (data as { action?: unknown }).action !== 'string') return;
+    if (!targetOrigin() && !e.origin) return;
+    const hadTarget = !!targetOrigin();
     if (!pinnedOrigin && e.origin && e.origin !== 'null') pinnedOrigin = e.origin;
+    // An opaque origin (e.g. a sandboxed iframe) cannot be pinned, but e.source already proved this is our parent.
+    else if (!hadTarget && e.origin === 'null') opaqueHost = true;
+    if (!hadTarget && targetOrigin()) scheduleAutosave();
+    if (heldSave && targetOrigin()) emitSave(heldSave.exit);
     void handle(data as EmbedAction);
   };
   host.self.addEventListener('message', onMessage);
@@ -238,16 +257,20 @@ export function initEmbedMode(opts: EmbedOptions = {}): () => void {
 
   // Debounced autosave.
   let timer: ReturnType<typeof setTimeout> | undefined;
-  const unsub = useEditor.subscribe((s, prev) => {
-    if (s.doc === prev.doc && s.pages === prev.pages) return;
+  const scheduleAutosave = () => {
     clearTimeout(timer);
     timer = setTimeout(() => {
-      if (!autosave) return;
+      // Without a known origin, leave lastPosted alone so the change is sent once the host is known.
+      if (!autosave || !targetOrigin()) return;
       const pages = useEditor.getState().allPages();
       if (samePages(pages, lastPosted)) return;
       lastPosted = pages;
       post({ event: 'autosave', json: serializePages(pages), title: fileTitle() });
     }, opts.autosaveDelay ?? 1000);
+  };
+  const unsub = useEditor.subscribe((s, prev) => {
+    if (s.doc === prev.doc && s.pages === prev.pages) return;
+    scheduleAutosave();
   });
   cleanups.push(() => {
     unsub();

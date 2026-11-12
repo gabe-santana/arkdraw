@@ -137,6 +137,50 @@ describe('embed mode', () => {
     expect(posted.length).toBe(before);
   });
 
+  it('holds save events until the host origin is known instead of posting to *', async () => {
+    // No parentOrigin, no ancestorOrigins and no referrer: the origin is unknown.
+    await start();
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true, cancelable: true }));
+    await tick();
+    const leaked = posted.some((p) => p.origin === '*' && (p.msg as { event?: string }).event === 'save');
+    expect(leaked, 'diagram posted to * before host origin is known').toBe(false);
+
+    // The first host message pins the origin; the held save is then sent to it.
+    send({ action: 'status', modified: true });
+    await tick();
+    const saved = posted.find((p) => (p.msg as { event?: string }).event === 'save');
+    expect(saved?.origin).toBe('https://host.example.com');
+  });
+
+  it('sends an autosave for edits made before the host origin was known', async () => {
+    await start({ autosave: true });
+    const s = useEditor.getState();
+    useEditor.getState().loadPages(s.allPages().map((p, i) => (i === 0 ? { ...p, doc: { elements: { z: shape('z') }, order: ['z'] } } : p)), { path: null, name: 'Arch' });
+    await tick(60);
+    expect(events().some((e) => e.event === 'autosave')).toBe(false);
+
+    send({ action: 'status', modified: true });
+    await tick(60);
+    const auto = events().filter((e) => e.event === 'autosave');
+    expect(auto).toHaveLength(1);
+    expect(posted.find((p) => (p.msg as { event?: string }).event === 'autosave')?.origin).toBe('https://host.example.com');
+  });
+
+  it('accepts an opaque-origin parent (sandboxed iframe) and replies with * only after its own message', async () => {
+    await start();
+    send({ action: 'export', format: 'json', id: 9 }, { origin: 'null' });
+    await tick();
+    const reply = posted.find((p) => (p.msg as { event?: string }).event === 'export');
+    expect(reply?.origin).toBe('*');
+  });
+
+  it('still ignores opaque-origin messages from a window that is not the parent', async () => {
+    await start();
+    send({ action: 'export', format: 'json', id: 9 }, { origin: 'null', from: {} });
+    await tick();
+    expect(events().some((e) => e.event === 'export')).toBe(false);
+  });
+
   it('only talks to the configured origin', async () => {
     await start({ parentOrigin: 'https://host.example.com' });
     await tick();
