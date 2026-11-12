@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { ErrorBoundary } from './ui/ErrorBoundary';
 import { useEditor } from './store/editor';
 import { useUi } from './store/ui';
 import { isTauri } from './lib/platform';
@@ -14,7 +15,9 @@ if (import.meta.env.DEV) Object.assign(window, { __arkdraw: { useEditor, useUi, 
 const root = createRoot(document.getElementById('root')!);
 const editor = (
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>
 );
 // Load the UI language first (English is bundled; others are a small lazy chunk).
