@@ -73,6 +73,21 @@ describe('HTML export', () => {
     const html = await exportHtml([{ page: samplePages(1)[0], svg: { background: '#ffffff' } }], { title: 'T', appearance: 'auto' });
     expect(html).toContain('@media (prefers-color-scheme: dark){.od-art{filter:invert(');
   });
+
+  it('viewer opens only http, https and mailto links (allowlist, not a blocklist)', async () => {
+    const html = await exportHtml([{ page: samplePages(1)[0], svg: { background: '#ffffff' } }], { title: 'T', appearance: 'auto' });
+    expect(html).not.toContain('javascript|data|vbscript');
+    // Run the exact guard the viewer uses against hostile and benign hrefs.
+    const guard = html.match(/if\(!(\/\^\(https\?:\|mailto:\)\/i)\.test\(href\)\)return;/);
+    expect(guard, 'allowlist guard is present in the viewer').not.toBeNull();
+    const allowed = new RegExp(guard![1].slice(1, guard![1].lastIndexOf('/')), 'i');
+    for (const href of ['\tjavascript:alert(1)', 'java\nscript:alert(1)', 'JavaScript:alert(1)', 'data:text/html,x', 'vbscript:x', 'ftp://example.com', 'tel:+15551234']) {
+      expect(allowed.test(href), href).toBe(false);
+    }
+    for (const href of ['https://example.com', 'http://example.com', 'mailto:a@example.com']) {
+      expect(allowed.test(href), href).toBe(true);
+    }
+  });
 });
 
 describe('editable exports (embed / extract)', () => {
